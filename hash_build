@@ -1,0 +1,72 @@
+build_arch = "64"
+executable_name = "raster"
+
+object_add_compile_options(fPIC)
+object_add_compile_options(g) # include debug symbols
+object_set_include_path("include/")
+
+load_module("misc/scripts/raster_module.py")
+
+if eq(get_platform(), windows) {
+    shared_lib_prefix = ""
+    shared_lib_ext = ".dll"
+} else {
+    shared_lib_prefix = "libraster_"
+    shared_lib_ext = ".so"
+}
+
+build_modules = [
+    [ImGui, shared],
+    [gpu, shared, [glfw, raster_ImGui]],
+    [app, shared, [raster_ImGui, raster_gpu]],
+    [core, binary, [raster_app]]
+]
+
+
+scenario build_master {
+    info("Building Raster (master)")
+
+    for_each($build_modules, target_build_module, execute_dispatch_module_safe)
+}
+
+# DISPATCHER LOGIC
+
+scenario execute_dispatch_module_safe {
+    try_scenario(execute_dispatch_module, execute_dispatch_error, dispatch_exception_msg)
+}
+
+scenario execute_dispatch_module {
+    info(cat("Dispatching module: ", list_nth($target_build_module, 0)))
+    call_scenario(dispatch_module_builder)
+}
+
+scenario dispatch_module_builder {
+    target_module_name = list_nth($target_build_module, 0)
+    target_module_type = list_nth($target_build_module, 1)
+
+    targets = glob_files(cat("src/", $target_module_name), "cpp")
+    objects = object_compile($targets, $build_arch)
+    deps = []
+
+    if greater(list_len($target_build_module), 2) {
+        deps = cat($deps, list_nth($target_build_module, 2))
+    }
+
+    target_executable_name = $target_module_name
+    if eq($target_module_type, shared) {
+        target_executable_name = cat($shared_lib_prefix, cat($target_module_name, $shared_lib_ext))
+    }
+
+    link_executable($objects, $target_executable_name, $deps, $target_module_type)
+}
+
+scenario execute_dispatch_error {
+    fatal(cat(cat("Fatal error while trying to build Raster! (no dispatcher for ", list_nth($target_build_module, 0)), " module)"))
+    fatal($dispatch_exception_msg)
+}
+
+scenario clean {
+    object_clean()
+}
+
+default_scenario = build_master
