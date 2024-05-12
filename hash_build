@@ -8,7 +8,7 @@ object_set_include_path("include/")
 load_module("misc/scripts/raster_module.py")
 
 if eq(get_platform(), windows) {
-    shared_lib_prefix = ""
+    shared_lib_prefix = "raster_"
     shared_lib_ext = ".dll"
 } else {
     shared_lib_prefix = "libraster_"
@@ -17,11 +17,13 @@ if eq(get_platform(), windows) {
 
 build_modules = [
     [ImGui, shared],
-    [gpu, shared, [glfw, raster_ImGui]],
-    [app, shared, [raster_ImGui, raster_gpu]],
-    [core, binary, [raster_app]]
+    [font, shared],
+    [common, shared],
+    [gpu, shared, [glfw, raster_common, raster_ImGui]],
+    [ui, shared, [raster_common, raster_ImGui, raster_gpu]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font]],
+    [core, binary, [raster_common, raster_app]]
 ]
-
 
 scenario build_master {
     info("Building Raster (master)")
