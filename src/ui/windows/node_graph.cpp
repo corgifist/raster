@@ -16,23 +16,23 @@ namespace Raster {
             auto& style = Nodes::GetStyle();
             style.Colors[Nodes::StyleColor_Bg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
             style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
+            style.NodeRounding = 0;
+            style.NodeBorderWidth = 2.0f;
 
             Nodes::Begin("SimpleEditor");
                 int uniqueId = 1;
 
-                Nodes::NodeId nodeA_Id = uniqueId++;
-                Nodes::PinId  nodeA_InputPinId = uniqueId++;
-                Nodes::PinId  nodeA_OutputPinId = uniqueId++;
-                Nodes::BeginNode(nodeA_Id);
-                    ImGui::Text("Node A");
-                    Nodes::BeginPin(nodeA_InputPinId, Nodes::PinKind::Input);
-                        ImGui::Text("-> In");
-                    Nodes::EndPin();
-                    ImGui::SameLine();
-                    Nodes::BeginPin(nodeA_OutputPinId, Nodes::PinKind::Output);
-                        ImGui::Text("Out ->");
-                    Nodes::EndPin();
-                Nodes::EndNode();
+                for (auto& node : Workspace::s_nodes) {
+                    Nodes::BeginNode(node->nodeID);
+                        ImGui::Text("%s", node->Header().c_str());
+                        ImGui::SetWindowFontScale(0.8f);
+                        auto footer = node->Footer();
+                        if (footer.has_value()) {
+                            ImGui::Text("%s", footer.value_or("").c_str());
+                        }
+                        ImGui::SetWindowFontScale(1.0f);
+                    Nodes::EndNode();
+                }
             Nodes::End();
             Nodes::SetCurrentEditor(nullptr);
         ImGui::End();

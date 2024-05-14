@@ -14,6 +14,8 @@ namespace Raster {
     void App::Initialize() {
         GPU::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
+        Workspace::Initialize();
+        Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
 
         ImGuiIO& io = ImGui::GetIO();
         ImFontConfig fontCfg = {};
@@ -99,8 +101,6 @@ namespace Raster {
         style.GrabRounding = 4;
 
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
-
-        std::cout << Randomizer::GetRandomInteger() << std::endl;
     }
 
     void App::RenderLoop() {

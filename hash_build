@@ -22,7 +22,10 @@ build_modules = [
     [gpu, shared, [glfw, raster_common, raster_ImGui]],
     [ui, shared, [raster_common, raster_ImGui, raster_gpu]],
     [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font]],
-    [core, binary, [raster_common, raster_app]]
+    [core, binary, [raster_common, raster_app]],
+    
+
+    [debug_print, node, [raster_common]]
 ]
 
 scenario build_master {
@@ -46,7 +49,17 @@ scenario dispatch_module_builder {
     target_module_name = list_nth($target_build_module, 0)
     target_module_type = list_nth($target_build_module, 1)
 
-    targets = glob_files(cat("src/", $target_module_name), "cpp")
+    is_node = false
+    if eq($target_module_type, node) {
+        is_node = true
+        target_module_type = shared
+    }
+
+    targets_glob_path = cat("src/", $target_module_name)
+    if eq($is_node, true) {
+        targets_glob_path = cat("src/nodes/", $target_module_name)
+    }
+    targets = glob_files($targets_glob_path, "cpp")
     objects = object_compile($targets, $build_arch)
     deps = []
 
@@ -60,6 +73,10 @@ scenario dispatch_module_builder {
     }
 
     link_executable($objects, $target_executable_name, $deps, $target_module_type)
+
+    if eq($is_node, true) {
+        mv($target_executable_name, cat("nodes/", $target_executable_name))
+    }
 }
 
 scenario execute_dispatch_error {

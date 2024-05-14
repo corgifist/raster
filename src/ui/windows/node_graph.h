@@ -2,6 +2,7 @@
 
 #include "raster.h"
 #include "ui/ui.h"
+#include "common/common.h"
 
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_node_editor.h"
