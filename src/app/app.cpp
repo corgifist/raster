@@ -4,6 +4,7 @@
 #include "../ImGui/imgui_node_editor.h"
 #include "../ImGui/imgui.h"
 #include "common/common.h"
+#include "traverser/traverser.h"
 
 namespace Nodes = ax::NodeEditor;
 
@@ -23,11 +24,21 @@ namespace Raster {
         io.Fonts->AddFontFromMemoryCompressedTTF(
                     Font::s_fontBytes.data(), Font::s_fontSize,
                     16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic());
-        
+
+        static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+        fontCfg.MergeMode = true;
+        fontCfg.PixelSnapH = true;
+        // fontCfg.GlyphMinAdvanceX = 16.0f * 2.0f / 3.0f;
+        io.Fonts->AddFontFromMemoryCompressedTTF(
+            Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
+            16.0f * 0.85f, &fontCfg, icons_ranges
+        );
+
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+
 
         ImVec4 *colors = ImGui::GetStyle().Colors;
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -111,6 +122,8 @@ namespace Raster {
                 for (const auto& window : s_windows) {
                     window->Render();
                 }
+
+                Traverser::TraverseAll();
             GPU::EndFrame();
         }
     }

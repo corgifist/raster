@@ -4,6 +4,8 @@
 
 namespace Raster {
     struct DebugPrintNode : public NodeBase {
+        DebugPrintNode();
+        
         AbstractPinMap Execute();
 
         std::string Header();

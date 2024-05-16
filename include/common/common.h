@@ -10,14 +10,21 @@ namespace Raster {
     struct GenericPin {
         int linkID, pinID, connectedPinID;
         std::string linkedAttribute;
+
+        GenericPin(std::string t_linkedAttribute);
+        GenericPin();
     };
     struct NodeBase {
         int nodeID;
+        std::optional<GenericPin> flowInputPin, flowOutputPin;
         std::vector<GenericPin> inputPins, outputPins;
 
         virtual AbstractPinMap Execute() = 0;
         virtual std::string Header() = 0;
         virtual std::optional<std::string> Footer() = 0;
+
+        protected:
+        void GenerateFlowPins();
     };
 
     using AbstractNode = std::unique_ptr<NodeBase>;

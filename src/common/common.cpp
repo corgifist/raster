@@ -9,6 +9,22 @@ namespace Raster {
         return s_distribution(s_random);
     }
 
+    GenericPin::GenericPin(std::string t_linkedAttribute) {
+        this->linkID = Randomizer::GetRandomInteger();
+        this->pinID = Randomizer::GetRandomInteger();
+        this->connectedPinID = -1;
+        this->linkedAttribute = t_linkedAttribute;
+    }
+
+    GenericPin::GenericPin() {
+        this->linkID = this->pinID = this->connectedPinID = -1;
+    }
+
+    void NodeBase::GenerateFlowPins() {
+        this->flowInputPin = GenericPin("");
+        this->flowOutputPin = GenericPin("");
+    }
+
     std::unordered_map<std::string, internalDylib> Libraries::s_registry;
 
     std::vector<AbstractNode> Workspace::s_nodes;
