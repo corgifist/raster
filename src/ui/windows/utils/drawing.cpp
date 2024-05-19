@@ -14,7 +14,7 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
           auto rect_center_y  = (rect.Min.y + rect.Max.y) * 0.5f;
           auto rect_center    = ImVec2(rect_center_x, rect_center_y);
     const auto outline_scale  = rect_w / 24.0f;
-    const auto extra_segments = static_cast<int>(2 * outline_scale); // for full circle
+    const auto extra_segments = static_cast<int>(2 * outline_scale) + 50; // for full circle
 
     if (type == IconType::Flow)
     {

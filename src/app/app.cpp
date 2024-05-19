@@ -17,6 +17,8 @@ namespace Raster {
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
         Workspace::Initialize();
         Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
+        Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
+        Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
 
         ImGuiIO& io = ImGui::GetIO();
         ImFontConfig fontCfg = {};

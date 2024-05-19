@@ -8,14 +8,19 @@ namespace Raster {
 
     DebugPrintNode::DebugPrintNode() {
         NodeBase::GenerateFlowPins();
-        this->inputPins.push_back(GenericPin("Exposed Input"));
-        this->outputPins.push_back(GenericPin("Exposed Output"));
+        this->inputPins.push_back(GenericPin("ExposedInput", PinType::Input));
+        this->inputPins.push_back(GenericPin("EEEEEEEEEEEEEEEE", PinType::Input));
+        this->outputPins.push_back(GenericPin("ExposedOutput", PinType::Output));
+        this->outputPins.push_back(GenericPin("", PinType::Output));
     }
 
-    AbstractPinMap DebugPrintNode::Execute() {
+    AbstractPinMap DebugPrintNode::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
-        std::cout << "OMG!! Debug Print!" << std::endl;
-        result[this->outputPins[0].pinID] = "Hello?";
+        std::optional<std::string> inputAttribute = GetStringAttribute("ExposedInput");
+        if (inputAttribute.has_value()) {
+            std::cout << inputAttribute.value() << std::endl;
+        }
+        result[this->outputPins[0].pinID] = std::string("NodeID: ") + std::to_string(nodeID);
         return result;
     }
 
@@ -24,12 +29,12 @@ namespace Raster {
     }
 
     std::optional<std::string> DebugPrintNode::Footer() {
-        return std::optional{"A mighty footer just landed!"};
+        return std::optional{"ExposedInput: " + GetStringAttribute("ExposedInput").value_or("")};
     }
 }
 
 extern "C" {
     Raster::AbstractNode SpawnNode() {
-        return (Raster::AbstractNode) std::make_unique<Raster::DebugPrintNode>();
+        return (Raster::AbstractNode) std::make_shared<Raster::DebugPrintNode>();
     }
 }

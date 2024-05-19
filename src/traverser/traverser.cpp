@@ -2,9 +2,10 @@
 
 namespace Raster {
     void Traverser::TraverseAll() {
+        AbstractPinMap accumulator = {};
         for (auto& node : Workspace::s_nodes) {
-            if (node->flowOutputPin.value_or(GenericPin()).pinID < 0) {
-                node->Execute();
+            if (node->flowInputPin.value_or(GenericPin()).connectedPinID < 0) {
+                accumulator = node->Execute(accumulator);
             }
         }
     }

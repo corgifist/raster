@@ -7,27 +7,39 @@ namespace Raster {
 
     using AbstractPinMap = std::unordered_map<int, std::any>;
 
+    enum class PinType {
+        Input, Output
+    };
+
     struct GenericPin {
         int linkID, pinID, connectedPinID;
         std::string linkedAttribute;
+        PinType type;
 
-        GenericPin(std::string t_linkedAttribute);
+        GenericPin(std::string t_linkedAttribute, PinType t_type);
         GenericPin();
     };
+
     struct NodeBase {
         int nodeID;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
         std::vector<GenericPin> inputPins, outputPins;
 
-        virtual AbstractPinMap Execute() = 0;
+        AbstractPinMap Execute(AbstractPinMap accumulator = {});
         virtual std::string Header() = 0;
         virtual std::optional<std::string> Footer() = 0;
 
+        std::optional<std::string> GetStringAttribute(std::string t_attribute);
+
         protected:
+        virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
+
+        private:
+        AbstractPinMap m_accumulator;
     };
 
-    using AbstractNode = std::unique_ptr<NodeBase>;
+    using AbstractNode = std::shared_ptr<NodeBase>;
 
     struct Randomizer {
         static int GetRandomInteger();
@@ -45,6 +57,10 @@ namespace Raster {
 
         static std::optional<AbstractNode> InstantiateNode(std::string t_nodeName);
         static AbstractNode PopulateNode(AbstractNode node);
+
+        static std::optional<AbstractNode> GetNodeByPinID(int pinID);
+        static std::optional<GenericPin> GetPinByPinID(int pinID);
+        static void UpdatePinByID(GenericPin pin, int pinID);
 
         template<class T>
         static T GetBaseName(T const & path, T const & delims = "/\\") {
