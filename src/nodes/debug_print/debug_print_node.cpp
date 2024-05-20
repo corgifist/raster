@@ -9,14 +9,12 @@ namespace Raster {
     DebugPrintNode::DebugPrintNode() {
         NodeBase::GenerateFlowPins();
         this->inputPins.push_back(GenericPin("ExposedInput", PinType::Input));
-        this->inputPins.push_back(GenericPin("EEEEEEEEEEEEEEEE", PinType::Input));
         this->outputPins.push_back(GenericPin("ExposedOutput", PinType::Output));
-        this->outputPins.push_back(GenericPin("", PinType::Output));
     }
 
     AbstractPinMap DebugPrintNode::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
-        std::optional<std::string> inputAttribute = GetStringAttribute("ExposedInput");
+        std::optional<std::string> inputAttribute = GetAttribute<std::string>("ExposedInput");
         if (inputAttribute.has_value()) {
             std::cout << inputAttribute.value() << std::endl;
         }
@@ -29,7 +27,7 @@ namespace Raster {
     }
 
     std::optional<std::string> DebugPrintNode::Footer() {
-        return std::optional{"ExposedInput: " + GetStringAttribute("ExposedInput").value_or("")};
+        return std::optional{"ExposedInput: " + GetAttribute<std::string>("ExposedInput").value_or("")};
     }
 }
 

@@ -10,9 +10,9 @@ namespace Raster {
     void NodeGraphUI::RenderInputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
-            Nodes::PinPivotAlignment(ImVec2(-0.45f, 0.54f));
+            Nodes::PinPivotAlignment(ImVec2(-0.45f, 0.45f));
 
-            if (!flow) Nodes::PinPivotAlignment(ImVec2(-0.115, 0.494997) * (s_maxInputPinX / linkedAttributeSize.x));
+            if (!flow) Nodes::PinPivotAlignment(ImVec2(-0.115, 0.494997) * ImVec2(s_maxInputPinX / linkedAttributeSize.x, 1));
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, pin.connectedPinID > 0);
             ImGui::SameLine(0, 2.0f);
@@ -57,7 +57,7 @@ namespace Raster {
     }
 
     void NodeGraphUI::Render() {
-        ImGui::Begin("Nodes Test");
+        ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
             static Nodes::EditorContext* ctx = nullptr;
             if (!ctx) {
                 Nodes::Config cfg;
@@ -213,7 +213,7 @@ namespace Raster {
                             if (endPin.pinID == startPin.pinID) {
                                 Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
                             } else if (endPin.type == startPin.type) {
-                                showLabel("x Incompatible Pin Kind", ImColor(45, 32, 32, 180));
+                                showLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()).c_str(), ImColor(45, 32, 32, 180));
                                 Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
                             } else {
                                 if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
@@ -228,8 +228,87 @@ namespace Raster {
                     }
                 }
                 Nodes::EndCreate();
+
+                if (Nodes::BeginDelete()) {
+                    Nodes::NodeId nodeID = 0;
+                    while (Nodes::QueryDeletedNode(&nodeID)) {
+                        int rawNodeID = (int) nodeID.Get();
+                        if (Nodes::AcceptDeletedItem()) {
+                            int targetNodeDelete = -1;
+                            int nodeIndex = 0;
+                            for (auto& node : Workspace::s_nodes) {
+                                if (node->nodeID == rawNodeID) {
+                                    targetNodeDelete = nodeIndex;
+                                    break; 
+                                }
+                                nodeIndex++;
+                            }
+                            Workspace::s_nodes.erase(Workspace::s_nodes.begin() + targetNodeDelete);
+                        }
+                    }
+
+                    Nodes::LinkId linkID = 0;
+                    while (Nodes::QueryDeletedLink(&linkID)) {
+                        int rawLinkID = (int) linkID.Get();
+                        auto pin = Workspace::GetPinByLinkID(rawLinkID);
+                        if (pin.has_value()) {
+                            auto correctedPin = pin.value();
+                            correctedPin.connectedPinID = -1;
+                            Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                        }
+                    }
+                }
+                Nodes::EndDelete();
+
+            Nodes::Suspend();
+            if (Nodes::ShowBackgroundContextMenu()) {
+                ImGui::OpenPopup("##createNewNode");
+            }
+            Nodes::Resume();
+
+            Nodes::Suspend();
+            static float dimA = 0.0f;
+            static float dimB = 0.3f;
+            static float dimPercentage = -1.0f;
+            static float previousDimPercentage;
+            static bool dimming = false;
+            previousDimPercentage = dimPercentage;
+            if (dimPercentage >= 0 && dimming) {
+                dimPercentage += ImGui::GetIO().DeltaTime * 2.5;
+                if (dimPercentage >= dimB) {
+                    dimming = false;
+                }
+                dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
+            }
+            bool popupVisible = true;
+            if (ImGui::BeginPopup("##createNewNode")) {
+                static std::string searchFilter = "";
+                ImGui::InputText("##searchFilter", &searchFilter);
+                ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str());
+                ImGui::EndPopup();
+                if (dimPercentage < 0) {
+                    dimPercentage = 0.0f;
+                    dimming = true;
+                }
+            } else {
+                dimming = false;
+                popupVisible = false;
+            }
+            if (!popupVisible) {
+                dimPercentage -= ImGui::GetIO().DeltaTime * 2.5;
+                if (dimPercentage < 0) {
+                    dimPercentage = -1;
+                    dimming = true;
+                }
+            }
+            Nodes::Resume();
             Nodes::End();
             Nodes::SetCurrentEditor(nullptr);
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+    
+            if (dimPercentage > 0) {
+                drawList->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, dimPercentage)));
+            }
         ImGui::End();
     }
 }

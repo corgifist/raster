@@ -1,0 +1,11 @@
+{
+    "LANGUAGE_CODE": "en",
+    "LANGUAGE_NAME": "English",
+    "UTILITIES": "Utilities",
+    "RESOURCES": "Resources",
+    "OTHER": "Other",
+    "NODE_GRAPH": "Node Graph",
+    "LOCALIZATION": "Localization",
+    "INVALID_LINK": "Invalid Link",
+    "SEARCH_FILTER": "Search Filter"
+}

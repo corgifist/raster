@@ -15,6 +15,15 @@ namespace Raster {
     void App::Initialize() {
         GPU::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
+
+        Workspace::s_configuration = Configuration(ReadJson("misc/config.json"));
+
+        try {
+            Localization::Load(ReadJson(FormatString("misc/localizations/%s.json", Workspace::s_configuration.localizationCode.c_str())));
+        } catch (std::exception ex) {
+            Localization::Load(ReadJson("misc/localizations/en.json"));
+        }
+
         Workspace::Initialize();
         Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
         Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());

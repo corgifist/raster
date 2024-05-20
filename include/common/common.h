@@ -2,13 +2,46 @@
 
 #include "raster.h"
 #include "dylib.hpp"
+#include "font/IconsFontAwesome5.h"
+
+#define INSTANTIATE_ATTRIBUTE_TEMPLATE(T) \
+    template std::optional<T> NodeBase::GetAttribute<T>(std::string);
 
 namespace Raster {
 
     using AbstractPinMap = std::unordered_map<int, std::any>;
+    using Json = nlohmann::json;
 
     enum class PinType {
         Input, Output
+    };
+
+    enum class NodeCategory {
+        Resources,
+        Utilities,
+        Other
+    };
+
+    struct NodeCategoryUtils {
+        static std::string ToIcon(NodeCategory t_category);
+        static std::string ToString(NodeCategory t_category);
+    };
+
+    struct Localization {
+        static void Load(Json t_map);
+        static std::string GetString(std::string t_key);
+
+        protected:
+        static std::unordered_map<std::string, std::string> m_map;
+    };
+
+    struct Configuration {
+        std::string localizationCode;
+
+        Configuration(Json data);
+        Configuration();
+
+        Json Serialize();
     };
 
     struct GenericPin {
@@ -20,6 +53,11 @@ namespace Raster {
         GenericPin();
     };
 
+    struct NodeDescription {
+        std::string prettyName;
+        NodeCategory category;
+    };
+
     struct NodeBase {
         int nodeID;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
@@ -29,7 +67,8 @@ namespace Raster {
         virtual std::string Header() = 0;
         virtual std::optional<std::string> Footer() = 0;
 
-        std::optional<std::string> GetStringAttribute(std::string t_attribute);
+        template <typename T>
+        std::optional<T> GetAttribute(std::string t_attribute);
 
         protected:
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
@@ -52,6 +91,7 @@ namespace Raster {
     struct Workspace {
         static std::vector<AbstractNode> s_nodes;
         static std::vector<std::string> s_initializedNodes;
+        static Configuration s_configuration;
 
         static void Initialize();
 
@@ -60,6 +100,7 @@ namespace Raster {
 
         static std::optional<AbstractNode> GetNodeByPinID(int pinID);
         static std::optional<GenericPin> GetPinByPinID(int pinID);
+        static std::optional<GenericPin> GetPinByLinkID(int linkID);
         static void UpdatePinByID(GenericPin pin, int pinID);
 
         template<class T>
@@ -93,4 +134,17 @@ namespace Raster {
         }
     };
 
+    template<typename ... Args>
+    static std::string FormatString( const std::string& format, Args ... args ) {
+        int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
+        if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
+        auto size = static_cast<size_t>( size_s );
+        std::unique_ptr<char[]> buf( new char[ size ] );
+        std::snprintf( buf.get(), size, format.c_str(), args ... );
+        return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+    }
+
+    static Json ReadJson(std::string path) {
+        return Json::parse(std::fstream(path));
+    }
 }
