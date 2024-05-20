@@ -11,7 +11,8 @@ namespace Raster {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
             Nodes::PinPivotAlignment(ImVec2(-0.45f, 0.54f));
-            if (!flow) Nodes::PinPivotAlignment(ImVec2(-0.126, 0.4859));
+
+            if (!flow) Nodes::PinPivotAlignment(ImVec2(-0.115, 0.494997) * (s_maxInputPinX / linkedAttributeSize.x));
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, pin.connectedPinID > 0);
             ImGui::SameLine(0, 2.0f);

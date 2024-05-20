@@ -28,7 +28,7 @@ namespace Raster {
         if (outputPin.connectedPinID > 0) {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value()) {
-                return connectedNode.value()->AbstractExecute(pinMap);
+                return connectedNode.value()->Execute(pinMap);
             }
         }
         return pinMap;
@@ -50,7 +50,7 @@ namespace Raster {
         }
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value()) {
-            auto dynamicAttribute = targetNode.value()->Execute()[attributePin.connectedPinID];
+            auto dynamicAttribute = targetNode.value()->AbstractExecute()[attributePin.connectedPinID];
             if (dynamicAttribute.type() == typeid(std::string)) {
                 return std::any_cast<std::string>(dynamicAttribute);
             }
