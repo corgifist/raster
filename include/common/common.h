@@ -55,6 +55,7 @@ namespace Raster {
 
     struct NodeDescription {
         std::string prettyName;
+        std::string packageName;
         NodeCategory category;
     };
 
@@ -88,13 +89,23 @@ namespace Raster {
         static std::uniform_int_distribution<std::mt19937::result_type> s_distribution;
     };
 
+    using NodeSpawnProcedure = std::function<AbstractNode()>;
+
+    struct NodeImplementation {
+        std::string libraryName;
+        NodeDescription description;    
+        NodeSpawnProcedure spawn;
+    };
+
     struct Workspace {
+        static std::vector<NodeCategory> s_categories;
         static std::vector<AbstractNode> s_nodes;
-        static std::vector<std::string> s_initializedNodes;
+        static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 
         static void Initialize();
 
+        static void AddNode(std::string t_nodeName);
         static std::optional<AbstractNode> InstantiateNode(std::string t_nodeName);
         static AbstractNode PopulateNode(AbstractNode node);
 

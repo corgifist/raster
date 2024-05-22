@@ -123,11 +123,14 @@ namespace Raster {
         style.GrabRounding = 4;
 
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
+
+        GPU::GenerateTexture(128, 128);
     }
 
     void App::RenderLoop() {
         while (!GPU::MustTerminate()) {
             GPU::BeginFrame();
+                ImGui::DockSpaceOverViewport();
                 ImGui::ShowDemoWindow();
 
                 for (const auto& window : s_windows) {

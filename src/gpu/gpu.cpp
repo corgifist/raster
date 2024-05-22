@@ -73,6 +73,34 @@ namespace Raster {
         glfwSwapBuffers((GLFWwindow*) info.display);
     }
 
+    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, TexturePrecision precision) {
+        GLuint textureHandle;
+        glGenTextures(1, &textureHandle);
+        glBindTexture(GL_TEXTURE_2D, textureHandle);
+        
+        auto format = GL_RGBA8;
+        if (precision == TexturePrecision::Full) format = GL_RGBA32F;
+        if (precision == TexturePrecision::Half) format = GL_RGBA16F;
+        glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+
+        Texture texture;
+        texture.width = width;
+        texture.height = height;
+        texture.precision = precision;
+        texture.handle = (void*) textureHandle;
+        return texture;
+    }
+
+    void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, void* pixels) {
+        GLuint textureHandle = (uint32_t) (uint64_t) texture.handle;
+        glBindTexture(GL_TEXTURE_2D, textureHandle);
+
+        auto format = GL_RGBA8;
+        if (texture.precision == TexturePrecision::Full) format = GL_RGBA32F;
+        if (texture.precision == TexturePrecision::Half) format = GL_RGBA16F;
+        glTexSubImage2D(GL_TEXTURE_2D, 1, x, y, w, h, GL_RGBA, texture.precision == TexturePrecision::Usual ? GL_UNSIGNED_BYTE : GL_FLOAT, pixels);
+    }
+
     void GPU::Terminate() {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();

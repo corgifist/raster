@@ -1,8 +1,15 @@
 #include "common/common.h"
 
 namespace Raster {
+
+    std::vector<NodeCategory> Workspace::s_categories = {
+        NodeCategory::Resources,
+        NodeCategory::Utilities,
+        NodeCategory::Other
+    };
+
     std::vector<AbstractNode> Workspace::s_nodes;
-    std::vector<std::string> Workspace::s_initializedNodes;
+    std::vector<NodeImplementation> Workspace::s_nodeImplementations;
     Configuration Workspace::s_configuration;
 
     void Workspace::Initialize() {
@@ -14,17 +21,34 @@ namespace Raster {
             std::string transformedPath = std::regex_replace(
                 GetBaseName(entry.path().string()), std::regex(".dll|.so|lib"), "");
             Libraries::LoadLibrary("nodes", transformedPath);
-            s_initializedNodes.push_back(transformedPath);
-            std::cout << transformedPath << std::endl;
+            NodeImplementation implementation;
+            implementation.libraryName = transformedPath;
+            implementation.description = Libraries::GetFunction<NodeDescription()>(transformedPath, "GetDescription")();
+            implementation.spawn = Libraries::GetFunction<AbstractNode()>(transformedPath, "SpawnNode");
+            s_nodeImplementations.push_back(implementation);
+            std::cout << "Loading node '" << transformedPath << std::endl;
+        }
+    }
+
+    void Workspace::AddNode(std::string t_nodeName) {
+        auto node = InstantiateNode(t_nodeName);
+        if (node.has_value()) {
+            s_nodes.push_back(node.value());
         }
     }
 
     std::optional<AbstractNode> Workspace::InstantiateNode(std::string t_nodeName) {
-        try {
-            return std::optional<AbstractNode>(PopulateNode(Libraries::GetFunction<AbstractNode()>(t_nodeName, "SpawnNode")()));
-        } catch (...) {
-            return std::nullopt;
+        std::optional<NodeImplementation> nodeImplementation;
+        for (auto& impl : s_nodeImplementations) {
+            if (impl.libraryName == t_nodeName) {
+                nodeImplementation = impl;
+                break;
+            }
         }
+        if (nodeImplementation.has_value()) {
+            return PopulateNode(nodeImplementation.value().spawn());
+        }
+        return std::nullopt;
     }
 
     AbstractNode Workspace::PopulateNode(AbstractNode node) {

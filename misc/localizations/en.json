@@ -7,5 +7,6 @@
     "NODE_GRAPH": "Node Graph",
     "LOCALIZATION": "Localization",
     "INVALID_LINK": "Invalid Link",
-    "SEARCH_FILTER": "Search Filter"
+    "SEARCH_FILTER": "Search Filter",
+    "NOTHING_TO_SHOW": "Nothing To Show"
 }

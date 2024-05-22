@@ -281,10 +281,44 @@ namespace Raster {
                 dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
             }
             bool popupVisible = true;
-            if (ImGui::BeginPopup("##createNewNode")) {
+            if (ImGui::BeginPopup("##createNewNode", ImGuiWindowFlags_AlwaysAutoResize)) {
                 static std::string searchFilter = "";
                 ImGui::InputText("##searchFilter", &searchFilter);
+                ImGui::SameLine(0, 0);
+                float searchBarWidth = ImGui::GetCursorPosX();
+                ImGui::NewLine();
                 ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str());
+                static float tabBarHeight = 0;
+                NodeCategory targetCategory = NodeCategory::Other;
+                ImGui::BeginChild("##tabChild", ImVec2(searchBarWidth, tabBarHeight));
+                    if (ImGui::BeginTabBar("##searchCategories")) {
+                        for (auto& category : Workspace::s_categories) {
+                            if (ImGui::BeginTabItem(NodeCategoryUtils::ToString(category).c_str())) {
+                                targetCategory = category;
+                                ImGui::EndTabItem();
+                            }
+                        }
+                        ImGui::EndTabBar();
+                    }
+                    tabBarHeight = ImGui::GetCursorPosY();
+                ImGui::EndChild();
+                ImGui::BeginChild("##nodeCandidates", ImVec2(searchBarWidth, 200));
+                bool hasCandidates = false;
+                for (auto& node : Workspace::s_nodeImplementations) {
+                    if (node.description.category != targetCategory) continue;
+                    if (!searchFilter.empty() && node.description.prettyName.find(searchFilter) == std::string::npos) continue;
+                    hasCandidates = true;
+                    if (ImGui::MenuItem(FormatString("%s %s",
+                            NodeCategoryUtils::ToIcon(node.description.category).c_str(), 
+                            node.description.prettyName.c_str()).c_str())) {
+                        Workspace::AddNode(node.libraryName);
+                    }
+                }
+                if (!hasCandidates) {
+                    ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
+                    ImGui::Text(Localization::GetString("NOTHING_TO_SHOW").c_str());
+                }
+                ImGui::EndChild();
                 ImGui::EndPopup();
                 if (dimPercentage < 0) {
                     dimPercentage = 0.0f;
@@ -305,8 +339,8 @@ namespace Raster {
             Nodes::End();
             Nodes::SetCurrentEditor(nullptr);
             ImDrawList* drawList = ImGui::GetWindowDrawList();
-    
-            if (dimPercentage > 0) {
+            if (dimPercentage > 0.05f) {
+                std::cout << "dimming" << std::endl;
                 drawList->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, dimPercentage)));
             }
         ImGui::End();
