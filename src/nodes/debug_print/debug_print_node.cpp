@@ -8,18 +8,22 @@ namespace Raster {
 
     DebugPrintNode::DebugPrintNode() {
         NodeBase::GenerateFlowPins();
-        this->inputPins.push_back(GenericPin("ExposedInput", PinType::Input));
-        this->outputPins.push_back(GenericPin("ExposedOutput", PinType::Output));
+        this->m_attributes["ArbitraryValue"] = std::string("Ummm");
+
+        AddOutputPin("ExposedOutput");
+        AddOutputPin("EEEEE");
+        AddOutputPin("Um, Pins?");
     }
 
     AbstractPinMap DebugPrintNode::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
-        std::optional<std::string> inputAttribute = GetAttribute<std::string>("ExposedInput");
-        if (inputAttribute.has_value()) {
-            std::cout << inputAttribute.value() << std::endl;
-        }
-        result[this->outputPins[0].pinID] = std::string("NodeID: ") + std::to_string(nodeID);
+        std::optional<std::string> inputAttribute = GetAttribute<std::string>("ArbitraryValue");
+        TryAppendAbstractPinMap(result, "ExposedOutput", std::string("Exposed Output Works!"));
         return result;
+    }
+
+    void DebugPrintNode::AbstractRenderProperties() {
+        RenderAttributeProperty("ArbitraryValue");
     }
 
     std::string DebugPrintNode::Header() {
@@ -27,7 +31,7 @@ namespace Raster {
     }
 
     std::optional<std::string> DebugPrintNode::Footer() {
-        return std::optional{"ExposedInput: " + GetAttribute<std::string>("ExposedInput").value_or("")};
+        return "ExposedInput: " + GetAttribute<std::string>("ArbitraryValue").value_or("");
     }
 }
 

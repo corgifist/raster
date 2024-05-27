@@ -12,6 +12,8 @@ namespace Raster {
     std::vector<NodeImplementation> Workspace::s_nodeImplementations;
     Configuration Workspace::s_configuration;
 
+    std::unordered_map<int, std::any> Workspace::s_pinCache;
+
     void Workspace::Initialize() {
         if (!std::filesystem::exists("nodes/")) {
             std::filesystem::create_directory("nodes");
@@ -26,15 +28,22 @@ namespace Raster {
             implementation.description = Libraries::GetFunction<NodeDescription()>(transformedPath, "GetDescription")();
             implementation.spawn = Libraries::GetFunction<AbstractNode()>(transformedPath, "SpawnNode");
             s_nodeImplementations.push_back(implementation);
-            std::cout << "Loading node '" << transformedPath << std::endl;
+            std::cout << "Loading node '" << transformedPath << "'" << std::endl;
         }
     }
 
-    void Workspace::AddNode(std::string t_nodeName) {
+    void Workspace::UpdatePinCache(AbstractPinMap& t_pinMap) {
+        for (auto& pair : t_pinMap) {
+            s_pinCache[pair.first] = pair.second;
+        }
+    }
+
+    std::optional<AbstractNode> Workspace::AddNode(std::string t_nodeName) {
         auto node = InstantiateNode(t_nodeName);
         if (node.has_value()) {
             s_nodes.push_back(node.value());
         }
+        return node;
     }
 
     std::optional<AbstractNode> Workspace::InstantiateNode(std::string t_nodeName) {
@@ -46,13 +55,60 @@ namespace Raster {
             }
         }
         if (nodeImplementation.has_value()) {
-            return PopulateNode(nodeImplementation.value().spawn());
+            return PopulateNode(t_nodeName, nodeImplementation.value().spawn());
         }
         return std::nullopt;
     }
 
-    AbstractNode Workspace::PopulateNode(AbstractNode node) {
+    std::optional<AbstractNode> Workspace::InstantiateSerializedNode(Json data) {
+        auto nodeImplementation = GetNodeImplementationByPackageName((std::string) data["PackageName"]);
+        if (nodeImplementation.has_value()) {
+            auto nodeInstance = InstantiateNode(nodeImplementation.value().libraryName);
+            if (nodeInstance.has_value()) {
+                auto node = nodeInstance.value();
+                node->nodeID = data["NodeID"];
+                node->libraryName = nodeImplementation.value().libraryName;
+                if (!data["FlowInputPin"].is_null()) {
+                    node->flowInputPin = GenericPin(data["FlowInputPin"]);
+                }
+                if (!data["FlowOutputPin"].is_null()) {
+                    node->flowOutputPin = GenericPin(data["FlowOutputPin"]);
+                }
+
+                for (auto& pin : data["InputPins"]) {
+                    node->inputPins.push_back(GenericPin(pin));
+                }
+                for (auto& pin : data["OutputPins"]) {
+                    node->outputPins.push_back(GenericPin(pin));
+                }
+
+                return node;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<NodeImplementation> Workspace::GetNodeImplementationByLibraryName(std::string t_libraryName) {
+        for (auto& impl : s_nodeImplementations) {
+            if (impl.libraryName == t_libraryName) {
+                return impl;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<NodeImplementation> Workspace::GetNodeImplementationByPackageName(std::string t_packageName) {
+        for (auto& impl : s_nodeImplementations) {
+            if (impl.description.packageName == t_packageName) {
+                return impl;
+            }
+        }
+        return std::nullopt;
+    }
+
+    AbstractNode Workspace::PopulateNode(std::string t_nodeName, AbstractNode node) {
         node->nodeID = Randomizer::GetRandomInteger();
+        node->libraryName = t_nodeName;
         return node;
     }
 

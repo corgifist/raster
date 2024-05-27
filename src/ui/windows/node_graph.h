@@ -17,6 +17,8 @@ namespace Raster {
     struct NodeGraphUI : public UI {
         void Render();
 
+
+        void ShowLabel(std::string t_label, ImU32 t_color);
         void RenderInputPin(GenericPin& pin, bool flow = false);
         void RenderOutputPin(GenericPin& pin, bool flow = false);
     };

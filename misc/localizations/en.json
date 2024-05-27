@@ -8,5 +8,10 @@
     "LOCALIZATION": "Localization",
     "INVALID_LINK": "Invalid Link",
     "SEARCH_FILTER": "Search Filter",
-    "NOTHING_TO_SHOW": "Nothing To Show"
+    "NOTHING_TO_SHOW": "Nothing To Show",
+    "VALUE": "Value",
+    "EXPOSE": "Expose",
+    "EXPOSE_TIP": "Expose Attribute for Node Links",
+    "HIDE": "Hide",
+    "VALUE_TYPE": "Value Type"
 }

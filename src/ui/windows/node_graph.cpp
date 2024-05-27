@@ -7,56 +7,111 @@ namespace Raster {
 
     static float s_pinTextScale = 0.7f;
 
+    static std::optional<std::any> s_outerTooltip = "";
+
+    void NodeGraphUI::ShowLabel(std::string t_label, ImU32 t_color) {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetTextLineHeight());
+        auto size = ImGui::CalcTextSize(t_label.c_str());
+
+        auto padding = ImGui::GetStyle().FramePadding;
+        auto spacing = ImGui::GetStyle().ItemSpacing;
+
+        ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(spacing.x, -spacing.y));
+
+        auto rectMin = ImGui::GetCursorScreenPos() - padding;
+        auto rectMax = ImGui::GetCursorScreenPos() + size + padding;
+
+        auto drawList = ImGui::GetWindowDrawList();
+        drawList->AddRectFilled(rectMin, rectMax, t_color, size.y * 0.15f);
+        ImGui::TextUnformatted(t_label.c_str());
+    }
+
     void NodeGraphUI::RenderInputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
-            Nodes::PinPivotAlignment(ImVec2(-0.45f, 0.45f));
+            Nodes::PinPivotAlignment({-0.45f, 0.5});
 
-            if (!flow) Nodes::PinPivotAlignment(ImVec2(-0.115, 0.494997) * ImVec2(s_maxInputPinX / linkedAttributeSize.x, 1));
+
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
-            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, pin.connectedPinID > 0);
-            ImGui::SameLine(0, 2.0f);
-            ImGui::SetWindowFontScale(s_pinTextScale);
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.5f);
-                ImGui::Text(pin.linkedAttribute.c_str());
-            ImGui::SetWindowFontScale(1.0f);
+            bool isConnected = false;
+            if (pin.flow) {
+                for (auto& node : Workspace::s_nodes) {
+                    if (node->flowInputPin.has_value()) {
+                        if (node->flowInputPin.value().connectedPinID == pin.pinID) isConnected = true;
+                    }
+                    
+                    if (node->flowOutputPin.has_value()) {
+                        if (node->flowOutputPin.value().connectedPinID == pin.pinID) isConnected = true;
+                    }
+
+                    if (isConnected) break;
+                }
+            }
+            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected || pin.connectedPinID > 0);
         Nodes::EndPin();
+        if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end() && (int) Nodes::GetHoveredPin().Get() == pin.pinID) {
+            s_outerTooltip = Workspace::s_pinCache[pin.connectedPinID];
+        }
+        ImGui::SameLine(0, 0.0f);
+        ImGui::SetWindowFontScale(s_pinTextScale);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.5f);
+            ImGui::Text(pin.linkedAttribute.c_str());
+        ImGui::SetWindowFontScale(1.0f);
     }
 
     void NodeGraphUI::RenderOutputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
         ImGui::SetCursorPosX(s_originalCursor.x + (s_maxInputPinX + s_headerSize.x / 4.0f + (flow ? s_maxOutputPinX : 0)));
+        if (s_maxInputPinX <= 3) {
+            ImGui::SetCursorPosX(s_originalCursor.x + s_headerSize.x - 20);
+        }
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Output);
-            Nodes::PinPivotAlignment(ImVec2(1.44f, 0.45f));
-            if (!flow) {
-                Nodes::PinPivotAlignment(ImVec2(1.097, 0.521));
-            }
             float reservedCursor = ImGui::GetCursorPosY();
 
+            Nodes::PinPivotAlignment({1.44f, 0.51f});
+
             ImGui::SetCursorPosX(s_originalCursor.x + s_maxInputPinX + s_maxOutputPinX + s_headerSize.x / 4.0f);
+            if (s_maxInputPinX <= 3) {
+                ImGui::SetCursorPosX(s_originalCursor.x + s_headerSize.x - 20);
+            }
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
-            bool beingUsed = false;
+            bool isConnected = false;
             for (auto& node : Workspace::s_nodes) {
                 for (auto& inputPin : node->inputPins) {
-                    if (inputPin.connectedPinID == pin.pinID) {
-                        beingUsed = true;
-                        break;
-                    }
+                    if (inputPin.connectedPinID == pin.pinID) isConnected = true;
                 }
-                if (node->flowInputPin.has_value() && !beingUsed) {
-                    beingUsed = node->flowInputPin.value().connectedPinID == pin.pinID;
+                for (auto& outputPin : node->outputPins) {
+                    if (outputPin.connectedPinID == pin.pinID) isConnected = true;
                 }
+
+                if (node->flowInputPin.has_value()) {
+                    if (node->flowInputPin.value().pinID == pin.connectedPinID) isConnected = true;
+                }
+                
+                if (node->flowOutputPin.has_value()) {
+                    if (node->flowOutputPin.value().pinID == pin.connectedPinID) isConnected = true;
+                }
+
+                if (isConnected) break;
             }
-            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, beingUsed);
+            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected);
             ImGui::SetWindowFontScale(s_pinTextScale);
                 ImGui::SetCursorPosY(reservedCursor + 2.5f);
                 ImGui::SetCursorPosX((s_originalCursor.x + s_maxInputPinX + s_maxOutputPinX + s_headerSize.x / 4.0f - 5) - linkedAttributeSize.x * s_pinTextScale + 3);
+                if (s_maxInputPinX <= 3) {
+                    ImGui::SetCursorPosX((s_originalCursor.x + s_headerSize.x - 20) - linkedAttributeSize.x * s_pinTextScale);
+                }
                 ImGui::Text(pin.linkedAttribute.c_str());
             ImGui::SetWindowFontScale(1.0f);
         Nodes::EndPin();
+
+        if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end() && (int) Nodes::GetHoveredPin().Get() == pin.pinID) {
+            s_outerTooltip = Workspace::s_pinCache[pin.pinID];
+        }
     }
 
     void NodeGraphUI::Render() {
+        s_outerTooltip = std::nullopt;
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
             static Nodes::EditorContext* ctx = nullptr;
             if (!ctx) {
@@ -72,6 +127,7 @@ namespace Raster {
             style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
             style.Colors[Nodes::StyleColor_NodeSelRect] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
             style.Colors[Nodes::StyleColor_NodeSelRectBorder] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[Nodes::StyleColor_HighlightLinkBorder] = ImVec4(0.9f, 0.9f, 0.9f, 1.0f);
             style.NodeRounding = 0;
             style.NodeBorderWidth = 2.0f;
             style.SnapLinkToPinDir = 1;
@@ -80,6 +136,7 @@ namespace Raster {
 
 
             Nodes::Begin("SimpleEditor");
+                ImVec2 mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
                 for (auto& node : Workspace::s_nodes) {
                     float maxInputXCandidate = 0;
                     for (auto& pin : node->inputPins) {
@@ -163,33 +220,17 @@ namespace Raster {
 
                     for (auto& pin : node->inputPins) {
                         if (pin.connectedPinID > 0) {
-                            Nodes::Link(pin.linkID, pin.pinID, pin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
+                            Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
                         }
                     }
                     for (auto& pin : node->outputPins) {
                         if (pin.connectedPinID > 0) {
-                            Nodes::Link(pin.linkID, pin.pinID, pin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
+                            Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
                         }
                     }
                 }
 
                 if (Nodes::BeginCreate()) {
-                    auto showLabel = [](const char* label, ImColor color) {
-                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetTextLineHeight());
-                        auto size = ImGui::CalcTextSize(label);
-
-                        auto padding = ImGui::GetStyle().FramePadding;
-                        auto spacing = ImGui::GetStyle().ItemSpacing;
-
-                        ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(spacing.x, -spacing.y));
-
-                        auto rectMin = ImGui::GetCursorScreenPos() - padding;
-                        auto rectMax = ImGui::GetCursorScreenPos() + size + padding;
-
-                        auto drawList = ImGui::GetWindowDrawList();
-                        drawList->AddRectFilled(rectMin, rectMax, color, size.y * 0.15f);
-                        ImGui::TextUnformatted(label);
-                    };
                     Nodes::PinId startPinID, endPinID;
                     if (Nodes::QueryNewLink(&startPinID, &endPinID)) {
                         int rawStartPinID = (int) startPinID.Get();
@@ -213,12 +254,15 @@ namespace Raster {
                             if (endPin.pinID == startPin.pinID) {
                                 Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
                             } else if (endPin.type == startPin.type) {
-                                showLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()).c_str(), ImColor(45, 32, 32, 180));
+                                ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
                                 Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
                             } else {
                                 if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
-                                    // startPin.connectedPinID = endPin.pinID;
-                                    endPin.connectedPinID = startPin.pinID;
+                                    if (startPin.flow) {
+                                        startPin.connectedPinID = endPin.pinID;
+                                    } else {
+                                        endPin.connectedPinID = startPin.pinID;
+                                    }
                                 }
                             }
 
@@ -311,7 +355,14 @@ namespace Raster {
                     if (ImGui::MenuItem(FormatString("%s %s",
                             NodeCategoryUtils::ToIcon(node.description.category).c_str(), 
                             node.description.prettyName.c_str()).c_str())) {
-                        Workspace::AddNode(node.libraryName);
+                        auto targetNode = Workspace::AddNode(node.libraryName);
+                        if (targetNode.has_value()) {
+                            auto node = targetNode.value();
+                            Nodes::BeginNode(node->nodeID);
+                                Nodes::SetNodePosition(node->nodeID, mousePos);
+                            Nodes::EndNode();
+                        }
+                        ImGui::CloseCurrentPopup();
                     }
                 }
                 if (!hasCandidates) {
@@ -324,11 +375,11 @@ namespace Raster {
                     dimPercentage = 0.0f;
                     dimming = true;
                 }
-            } else {
+            } else if (!ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
                 dimming = false;
                 popupVisible = false;
             }
-            if (!popupVisible) {
+            if (!popupVisible && !ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
                 dimPercentage -= ImGui::GetIO().DeltaTime * 2.5;
                 if (dimPercentage < 0) {
                     dimPercentage = -1;
@@ -340,9 +391,17 @@ namespace Raster {
             Nodes::SetCurrentEditor(nullptr);
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             if (dimPercentage > 0.05f) {
-                std::cout << "dimming" << std::endl;
                 drawList->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, dimPercentage)));
             }
+
+        if (s_outerTooltip.has_value()) {
+            if (ImGui::BeginTooltip()) {
+                auto value = s_outerTooltip.value();
+                ImGui::Text("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str(), value.type().name());
+                NodeBase::DispatchValueAttribute(value);
+                ImGui::EndTooltip();
+            }
+        }
         ImGui::End();
     }
 }

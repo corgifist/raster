@@ -5,12 +5,24 @@
 #include "font/IconsFontAwesome5.h"
 
 #define INSTANTIATE_ATTRIBUTE_TEMPLATE(T) \
-    template std::optional<T> NodeBase::GetAttribute<T>(std::string);
+    template std::optional<T> NodeBase::GetAttribute<T>(std::string); 
+
+#define ATTRIBUTE_TYPE(T) \
+    std::type_index(typeid(T))
 
 namespace Raster {
 
-    using AbstractPinMap = std::unordered_map<int, std::any>;
+    struct NodeBase;
+
+    
     using Json = nlohmann::json;
+    using AbstractPinMap = std::unordered_map<int, std::any>;
+
+    using PropertyDispatcherFunction = std::function<void(NodeBase*, std::string, std::any&, bool)>;
+    using PropertyDispatchersCollection = std::unordered_map<std::type_index, PropertyDispatcherFunction>;
+
+    using StringDispatcherFunction = std::function<void(std::any&)>;
+    using StringDispatchersCollection = std::unordered_map<std::type_index, StringDispatcherFunction>;
 
     enum class PinType {
         Input, Output
@@ -48,9 +60,13 @@ namespace Raster {
         int linkID, pinID, connectedPinID;
         std::string linkedAttribute;
         PinType type;
+        bool flow;
 
-        GenericPin(std::string t_linkedAttribute, PinType t_type);
+        GenericPin(std::string t_linkedAttribute, PinType t_type, bool t_flow = false);
+        GenericPin(Json data);
         GenericPin();
+
+        Json Serialize();
     };
 
     struct NodeDescription {
@@ -60,22 +76,53 @@ namespace Raster {
     };
 
     struct NodeBase {
+        static PropertyDispatchersCollection s_dispatchers;
+        static StringDispatchersCollection s_stringDispatchers;
+
+        static void DispatchValueAttribute(std::any& t_attribute);
+
         int nodeID;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
         std::vector<GenericPin> inputPins, outputPins;
+        std::string libraryName;
 
         AbstractPinMap Execute(AbstractPinMap accumulator = {});
         virtual std::string Header() = 0;
         virtual std::optional<std::string> Footer() = 0;
 
+        virtual void AbstractLoadSerialized(Json data) {};
+        virtual void AbstractRenderProperties() {};
+
+        std::optional<GenericPin> GetAttributePin(std::string t_attribute);
+
+        void TryAppendAbstractPinMap(AbstractPinMap& t_map, std::string t_attribute, std::any t_value);
+
+        Json Serialize();
+
         template <typename T>
         std::optional<T> GetAttribute(std::string t_attribute);
 
         protected:
+        std::unordered_map<std::string, std::any> m_attributes;
+
+        virtual Json AbstractSerialize() { return {}; };
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
+        void AddOutputPin(std::string t_attribute);
+        void AddInputPin(std::string t_attribute);
+
+        void RenderAttributeProperty(std::string t_attribute);
 
         private:
+        std::unordered_map<std::string, std::any> m_attributesCache;
+
+        // Attribute Dispatchers
+        static void DispatchStringAttribute(NodeBase* owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed);
+
+        // Value Dispatchers
+        static void DispatchStringValue(std::any& attribute);
+        static void DispatchTextureValue(std::any& attribute);
+
         AbstractPinMap m_accumulator;
     };
 
@@ -103,11 +150,20 @@ namespace Raster {
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 
+        static std::unordered_map<int, std::any> s_pinCache;
+
         static void Initialize();
 
-        static void AddNode(std::string t_nodeName);
+        static void UpdatePinCache(AbstractPinMap& t_pinMap);
+
+        static std::optional<AbstractNode> AddNode(std::string t_nodeName);
         static std::optional<AbstractNode> InstantiateNode(std::string t_nodeName);
-        static AbstractNode PopulateNode(AbstractNode node);
+        static std::optional<AbstractNode> InstantiateSerializedNode(Json node);
+ 
+        static std::optional<NodeImplementation> GetNodeImplementationByLibraryName(std::string t_libraryName);
+        static std::optional<NodeImplementation> GetNodeImplementationByPackageName(std::string t_packageName);
+
+        static AbstractNode PopulateNode(std::string t_nodeName, AbstractNode node);
 
         static std::optional<AbstractNode> GetNodeByPinID(int pinID);
         static std::optional<GenericPin> GetPinByPinID(int pinID);

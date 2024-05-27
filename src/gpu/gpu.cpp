@@ -3,6 +3,9 @@
 #define GLAD_GLES2_IMPLEMENTATION
 #include "gles2.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include <GLFW/glfw3.h>
 
 #include "../ImGui/imgui.h"
@@ -12,6 +15,20 @@
 namespace Raster {
 
     GPUInfo GPU::info{};
+
+    static void GLAPIENTRY
+    MessageCallback( GLenum source,
+                    GLenum type,
+                    GLuint id,
+                    GLenum severity,
+                    GLsizei length,
+                    const GLchar* message,
+                    const void* userParam )
+    {
+    fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+            ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+                type, severity, message );
+    }
 
     void GPU::Initialize() {
         if (!glfwInit()) {
@@ -40,6 +57,9 @@ namespace Raster {
         ImGui_ImplGlfw_InitForOpenGL(display, true);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        glEnable              ( GL_DEBUG_OUTPUT );
+        glDebugMessageCallback( MessageCallback, 0 );
 
         glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
             glViewport(0, 0, width, height);
@@ -81,7 +101,12 @@ namespace Raster {
         auto format = GL_RGBA8;
         if (precision == TexturePrecision::Full) format = GL_RGBA32F;
         if (precision == TexturePrecision::Half) format = GL_RGBA16F;
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Texture texture;
         texture.width = width;
@@ -92,13 +117,24 @@ namespace Raster {
     }
 
     void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, void* pixels) {
-        GLuint textureHandle = (uint32_t) (uint64_t) texture.handle;
-        glBindTexture(GL_TEXTURE_2D, textureHandle);
+        glBindTexture(GL_TEXTURE_2D, (uint32_t) uint64_t(texture.handle));
 
-        auto format = GL_RGBA8;
-        if (texture.precision == TexturePrecision::Full) format = GL_RGBA32F;
-        if (texture.precision == TexturePrecision::Half) format = GL_RGBA16F;
-        glTexSubImage2D(GL_TEXTURE_2D, 1, x, y, w, h, GL_RGBA, texture.precision == TexturePrecision::Usual ? GL_UNSIGNED_BYTE : GL_FLOAT, pixels);
+        auto format = GL_UNSIGNED_BYTE;
+        if (texture.precision == TexturePrecision::Full) format = GL_FLOAT;
+        if (texture.precision == TexturePrecision::Half) format = GL_HALF_FLOAT;
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, format, pixels);
+    }
+
+    Texture GPU::ImportTexture(const char* path) {
+        int width, height;
+        stbi_uc* image = stbi_load(path, &width, &height, nullptr, 4);
+
+        auto texture = GenerateTexture(width, height);
+        UpdateTexture(texture, 0, 0, width, height, image);
+
+        stbi_image_free(image);
+
+        return texture;
     }
 
     void GPU::Terminate() {

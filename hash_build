@@ -26,7 +26,8 @@ build_modules = [
     [core, binary, [raster_common, raster_app]],
     
 
-    [debug_print, node, [raster_common]]
+    [debug_print, node, [raster_common]],
+    [load_texture_by_path, node, [raster_common, raster_gpu]]
 ]
 
 scenario build_master {

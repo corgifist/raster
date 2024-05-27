@@ -7,6 +7,7 @@ namespace Raster {
         DebugPrintNode();
         
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        void AbstractRenderProperties();
 
         std::string Header();
         std::optional<std::string> Footer();

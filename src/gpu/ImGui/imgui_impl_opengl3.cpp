@@ -695,6 +695,7 @@ bool ImGui_ImplOpenGL3_CreateFontsTexture()
     GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, 0));
 #endif
     GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels));
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     // Store our identifier
     io.Fonts->SetTexID((ImTextureID)(intptr_t)bd->FontTexture);

@@ -14,5 +14,6 @@
 #include <regex>
 #include <optional>
 #include <fstream>
+#include <typeindex>
 
 #include "json.hpp"

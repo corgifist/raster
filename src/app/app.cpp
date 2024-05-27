@@ -27,7 +27,6 @@ namespace Raster {
         Workspace::Initialize();
         Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
         Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
-        Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
 
         ImGuiIO& io = ImGui::GetIO();
         ImFontConfig fontCfg = {};
@@ -51,7 +50,9 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 
 
-        ImVec4 *colors = ImGui::GetStyle().Colors;
+        auto& style = ImGui::GetStyle();
+        style.CurveTessellationTol = 0.01f;
+        ImVec4 *colors = style.Colors;
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
         colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
         colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);
@@ -113,7 +114,6 @@ namespace Raster {
         colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
         colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
         colors[ImGuiCol_TabActive] = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
-        ImGuiStyle &style = ImGui::GetStyle();
         style.WindowRounding = 4;
         style.FrameRounding = 4;
         style.ChildRounding = 4;
@@ -131,11 +131,14 @@ namespace Raster {
         while (!GPU::MustTerminate()) {
             GPU::BeginFrame();
                 ImGui::DockSpaceOverViewport();
-                ImGui::ShowDemoWindow();
 
                 for (const auto& window : s_windows) {
                     window->Render();
                 }
+
+                ImGui::Begin("Test");
+                    if (Workspace::s_nodes.size() > 0) Workspace::s_nodes[0]->AbstractRenderProperties();
+                ImGui::End();
 
                 Traverser::TraverseAll();
             GPU::EndFrame();
