@@ -150,6 +150,8 @@ namespace Raster {
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 
+        static std::vector<int> s_selectedNodes;
+
         static std::unordered_map<int, std::any> s_pinCache;
 
         static void Initialize();
@@ -165,7 +167,9 @@ namespace Raster {
 
         static AbstractNode PopulateNode(std::string t_nodeName, AbstractNode node);
 
+        static std::optional<AbstractNode> GetNodeByNodeID(int nodeID);
         static std::optional<AbstractNode> GetNodeByPinID(int pinID);
+
         static std::optional<GenericPin> GetPinByPinID(int pinID);
         static std::optional<GenericPin> GetPinByLinkID(int linkID);
         static void UpdatePinByID(GenericPin pin, int pinID);

@@ -2,7 +2,6 @@
 #include "gpu/gpu.h"
 #include "font/font.h"
 #include "../ImGui/imgui_node_editor.h"
-#include "../ImGui/imgui.h"
 #include "common/common.h"
 #include "traverser/traverser.h"
 
@@ -11,6 +10,7 @@ namespace Nodes = ax::NodeEditor;
 namespace Raster {
 
     std::vector<AbstractUI> App::s_windows{};
+    ImFont* App::s_denseFont = nullptr;
 
     void App::Initialize() {
         GPU::Initialize();
@@ -31,7 +31,7 @@ namespace Raster {
         ImGuiIO& io = ImGui::GetIO();
         ImFontConfig fontCfg = {};
         fontCfg.RasterizerDensity = 5;
-        io.Fonts->AddFontFromMemoryCompressedTTF(
+        App::s_denseFont = io.Fonts->AddFontFromMemoryCompressedTTF(
                     Font::s_fontBytes.data(), Font::s_fontSize,
                     16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic());
 
@@ -123,6 +123,7 @@ namespace Raster {
         style.GrabRounding = 4;
 
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
+        s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
 
         GPU::GenerateTexture(128, 128);
     }
@@ -136,9 +137,8 @@ namespace Raster {
                     window->Render();
                 }
 
-                ImGui::Begin("Test");
-                    if (Workspace::s_nodes.size() > 0) Workspace::s_nodes[0]->AbstractRenderProperties();
-                ImGui::End();
+                
+                ImGui::ShowDemoWindow();
 
                 Traverser::TraverseAll();
             GPU::EndFrame();

@@ -11,5 +11,6 @@ namespace Raster {
 
     struct UIFactory {
         static std::unique_ptr<UI> SpawnNodeGraphUI();
+        static std::unique_ptr<UI> SpawnNodePropertiesUI();
     };
 }

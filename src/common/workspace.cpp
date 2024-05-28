@@ -14,6 +14,8 @@ namespace Raster {
 
     std::unordered_map<int, std::any> Workspace::s_pinCache;
 
+    std::vector<int> Workspace::s_selectedNodes;
+
     void Workspace::Initialize() {
         if (!std::filesystem::exists("nodes/")) {
             std::filesystem::create_directory("nodes");
@@ -110,6 +112,13 @@ namespace Raster {
         node->nodeID = Randomizer::GetRandomInteger();
         node->libraryName = t_nodeName;
         return node;
+    }
+
+    std::optional<AbstractNode> Workspace::GetNodeByNodeID(int nodeID) {
+        for (auto& node : s_nodes) {
+            if (node->nodeID == nodeID) return node;
+        }
+        return std::nullopt;
     }
 
     std::optional<AbstractNode> Workspace::GetNodeByPinID(int pinID) {

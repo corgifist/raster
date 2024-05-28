@@ -131,6 +131,10 @@ namespace Raster {
             std::string exposeButtonTest = 
                 !isAttributeExposed ? FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE").c_str()) :
                                      FormatString("%s %s", ICON_FA_LINK_SLASH, Localization::GetString("HIDE").c_str());
+            ImGui::SetWindowFontScale(1.2f);
+                bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+            ImGui::SetWindowFontScale(1.0f);
+            ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Button) * ImVec4(isAttributeExposed ? 1.2f : 1.0f));
             if (ImGui::Button(exposeButtonTest.c_str())) {
                 if (isAttributeExposed) {
@@ -146,14 +150,21 @@ namespace Raster {
                     AddInputPin(t_attribute);
                 }
             }
-            ImGui::SameLine();
             ImGui::PopStyleColor();
-        }
-        for (auto& dispatcher : s_dispatchers) {
-            if (std::type_index(dynamicCandidate.type()) == dispatcher.first) {
-                dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
-                m_attributes[t_attribute] = dynamicCandidate;
-            } 
+            if (attributeTreeExpanded) {
+                bool dispatcherWasFound = false;
+                for (auto& dispatcher : s_dispatchers) {
+                    if (std::type_index(dynamicCandidate.type()) == dispatcher.first) {
+                        dispatcherWasFound = true;
+                        dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
+                        m_attributes[t_attribute] = dynamicCandidate;
+                    } 
+                }
+                if (!dispatcherWasFound) {
+                    ImGui::Text("%s %s '%s'", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_DISPATCHER_WAS_FOUND").c_str(), dynamicCandidate.type().name());
+                }
+                ImGui::TreePop();
+            }
         }
     }
 

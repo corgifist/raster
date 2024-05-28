@@ -112,6 +112,7 @@ namespace Raster {
 
     void NodeGraphUI::Render() {
         s_outerTooltip = std::nullopt;
+        Workspace::s_selectedNodes.clear();
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
             static Nodes::EditorContext* ctx = nullptr;
             if (!ctx) {
@@ -387,6 +388,14 @@ namespace Raster {
                 }
             }
             Nodes::Resume();
+
+            std::vector<Nodes::NodeId> temporarySelectedNodes(Nodes::GetSelectedObjectCount());
+            Nodes::GetSelectedNodes(temporarySelectedNodes.data(), Nodes::GetSelectedObjectCount());
+
+            for (auto& nodeID : temporarySelectedNodes) {
+                Workspace::s_selectedNodes.push_back((int) nodeID.Get());
+            }
+
             Nodes::End();
             Nodes::SetCurrentEditor(nullptr);
             ImDrawList* drawList = ImGui::GetWindowDrawList();

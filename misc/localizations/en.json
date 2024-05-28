@@ -13,5 +13,7 @@
     "EXPOSE": "Expose",
     "EXPOSE_TIP": "Expose Attribute for Node Links",
     "HIDE": "Hide",
-    "VALUE_TYPE": "Value Type"
+    "VALUE_TYPE": "Value Type",
+    "NODE_PROPERTIES": "Node Properties",
+    "NO_DISPATCHER_WAS_FOUND": "No Dispatcher Was Found for Type"
 }
