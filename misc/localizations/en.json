@@ -15,5 +15,10 @@
     "HIDE": "Hide",
     "VALUE_TYPE": "Value Type",
     "NODE_PROPERTIES": "Node Properties",
-    "NO_DISPATCHER_WAS_FOUND": "No Dispatcher Was Found for Type"
+    "NO_DISPATCHER_WAS_FOUND": "No Dispatcher Was Found for Type",
+    "PACKAGE_NAME": "Package Name",
+    "PRETTY_NODE_NAME": "Pretty Node Name",
+    "NODE_ID": "Node ID",
+    "CATEGORY": "Node Category",
+    "SELECT_NODE": "Select Node"
 }

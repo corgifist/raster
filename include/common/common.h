@@ -150,6 +150,8 @@ namespace Raster {
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 
+        static std::vector<int> s_targetSelectNodes;
+
         static std::vector<int> s_selectedNodes;
 
         static std::unordered_map<int, std::any> s_pinCache;

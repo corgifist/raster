@@ -61,19 +61,19 @@ namespace Raster {
 
     void NodeGraphUI::RenderOutputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
-        ImGui::SetCursorPosX(s_originalCursor.x + (s_maxInputPinX + s_headerSize.x / 4.0f + (flow ? s_maxOutputPinX : 0)));
-        if (s_maxInputPinX <= 3) {
-            ImGui::SetCursorPosX(s_originalCursor.x + s_headerSize.x - 20);
-        }
+
+        float maximumOffset = s_maxInputPinX + s_maxOutputPinX + 5;
+        maximumOffset = std::max(maximumOffset, s_headerSize.x);
+
+        ImGui::SetCursorPosX(s_originalCursor.x + maximumOffset - 20 - s_maxOutputPinX);
+
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Output);
             float reservedCursor = ImGui::GetCursorPosY();
 
             Nodes::PinPivotAlignment({1.44f, 0.51f});
 
-            ImGui::SetCursorPosX(s_originalCursor.x + s_maxInputPinX + s_maxOutputPinX + s_headerSize.x / 4.0f);
-            if (s_maxInputPinX <= 3) {
-                ImGui::SetCursorPosX(s_originalCursor.x + s_headerSize.x - 20);
-            }
+            float iconCursorX = maximumOffset - 20 + s_maxInputPinX;
+            ImGui::SetCursorPosX(s_originalCursor.x + iconCursorX);
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
             for (auto& node : Workspace::s_nodes) {
@@ -95,15 +95,16 @@ namespace Raster {
                 if (isConnected) break;
             }
             Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected);
-            ImGui::SetWindowFontScale(s_pinTextScale);
-                ImGui::SetCursorPosY(reservedCursor + 2.5f);
-                ImGui::SetCursorPosX((s_originalCursor.x + s_maxInputPinX + s_maxOutputPinX + s_headerSize.x / 4.0f - 5) - linkedAttributeSize.x * s_pinTextScale + 3);
-                if (s_maxInputPinX <= 3) {
-                    ImGui::SetCursorPosX((s_originalCursor.x + s_headerSize.x - 20) - linkedAttributeSize.x * s_pinTextScale);
-                }
-                ImGui::Text(pin.linkedAttribute.c_str());
-            ImGui::SetWindowFontScale(1.0f);
         Nodes::EndPin();
+
+        ImGui::SetWindowFontScale(s_pinTextScale);
+            ImGui::SetCursorPosY(reservedCursor + 2.5f);
+            ImGui::SetCursorPosX((s_originalCursor.x + iconCursorX) - linkedAttributeSize.x * s_pinTextScale);
+            if (s_maxInputPinX <= 3) {
+                ImGui::SetCursorPosX((s_originalCursor.x + iconCursorX) - linkedAttributeSize.x * s_pinTextScale);
+            }
+            ImGui::Text(pin.linkedAttribute.c_str());
+        ImGui::SetWindowFontScale(1.0f);
 
         if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end() && (int) Nodes::GetHoveredPin().Get() == pin.pinID) {
             s_outerTooltip = Workspace::s_pinCache[pin.pinID];
@@ -137,6 +138,10 @@ namespace Raster {
 
 
             Nodes::Begin("SimpleEditor");
+                for (auto& target : Workspace::s_targetSelectNodes) {
+                    Nodes::SelectNode(target, true);
+                }
+                Workspace::s_targetSelectNodes.clear();
                 ImVec2 mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
                 for (auto& node : Workspace::s_nodes) {
                     float maxInputXCandidate = 0;

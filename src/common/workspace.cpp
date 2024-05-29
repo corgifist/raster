@@ -15,6 +15,7 @@ namespace Raster {
     std::unordered_map<int, std::any> Workspace::s_pinCache;
 
     std::vector<int> Workspace::s_selectedNodes;
+    std::vector<int> Workspace::s_targetSelectNodes;
 
     void Workspace::Initialize() {
         if (!std::filesystem::exists("nodes/")) {
