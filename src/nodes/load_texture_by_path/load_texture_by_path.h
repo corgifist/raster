@@ -24,6 +24,7 @@ namespace Raster {
 
         void AbstractRenderProperties();
 
+        std::string Icon();
         std::string Header();
         std::optional<std::string> Footer();
     };

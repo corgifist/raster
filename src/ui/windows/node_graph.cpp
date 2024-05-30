@@ -1,4 +1,5 @@
 #include "node_graph.h"
+#include "font/font.h"
 
 namespace Raster {
 
@@ -8,6 +9,15 @@ namespace Raster {
     static float s_pinTextScale = 0.7f;
 
     static std::optional<std::any> s_outerTooltip = "";
+
+    std::optional<ImVec4> NodeGraphUI::GetColorByDynamicValue(std::any& value) {
+        for (auto& color : Workspace::s_typeColors) {
+            if (color.first == std::type_index(value.type())) {
+                return ImGui::ColorConvertU32ToFloat4(color.second);
+            }
+        }
+        return std::nullopt;
+    }
 
     void NodeGraphUI::ShowLabel(std::string t_label, ImU32 t_color) {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetTextLineHeight());
@@ -28,6 +38,10 @@ namespace Raster {
 
     void NodeGraphUI::RenderInputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+        std::any cachedValue = std::nullopt;
+        if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
+            cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+        }
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
             Nodes::PinPivotAlignment({-0.45f, 0.5});
 
@@ -47,10 +61,16 @@ namespace Raster {
                     if (isConnected) break;
                 }
             }
-            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected || pin.connectedPinID > 0);
+            ImVec4 pinColor = ImVec4(1, 1, 1, 1);
+            auto colorCandidate = GetColorByDynamicValue(cachedValue);
+            if (colorCandidate.has_value()) {
+                pinColor = colorCandidate.value();
+            }
+            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected || pin.connectedPinID > 0, pinColor);
         Nodes::EndPin();
-        if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end() && (int) Nodes::GetHoveredPin().Get() == pin.pinID) {
-            s_outerTooltip = Workspace::s_pinCache[pin.connectedPinID];
+
+        if ((int) Nodes::GetHoveredPin().Get() == pin.pinID && cachedValue.type() != typeid(std::nullopt)) {
+            s_outerTooltip = cachedValue;
         }
         ImGui::SameLine(0, 0.0f);
         ImGui::SetWindowFontScale(s_pinTextScale);
@@ -62,10 +82,15 @@ namespace Raster {
     void NodeGraphUI::RenderOutputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
 
+        std::any cachedValue = std::nullopt;
+        if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end()) {
+            cachedValue = Workspace::s_pinCache[pin.pinID];
+        }
+
         float maximumOffset = s_maxInputPinX + s_maxOutputPinX + 5;
         maximumOffset = std::max(maximumOffset, s_headerSize.x);
 
-        ImGui::SetCursorPosX(s_originalCursor.x + maximumOffset - 20 - s_maxOutputPinX);
+        ImGui::SetCursorPosX(s_originalCursor.x + maximumOffset - 20);
 
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Output);
             float reservedCursor = ImGui::GetCursorPosY();
@@ -94,27 +119,30 @@ namespace Raster {
 
                 if (isConnected) break;
             }
-            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected);
+            ImVec4 pinColor = ImVec4(1, 1, 1, 1);
+            auto colorCandidate = GetColorByDynamicValue(cachedValue);
+            if (colorCandidate.has_value()) {
+                pinColor = colorCandidate.value();
+            }
+            Widgets::Icon(ImVec2(20, linkedAttributeSize.y), flow ? Widgets::IconType::Flow : Widgets::IconType::Circle, isConnected, pinColor);
         Nodes::EndPin();
+
+        if ((int) Nodes::GetHoveredPin().Get() == pin.pinID && cachedValue.type() != typeid(std::nullopt)) {
+            s_outerTooltip = cachedValue;
+        }
 
         ImGui::SetWindowFontScale(s_pinTextScale);
             ImGui::SetCursorPosY(reservedCursor + 2.5f);
             ImGui::SetCursorPosX((s_originalCursor.x + iconCursorX) - linkedAttributeSize.x * s_pinTextScale);
-            if (s_maxInputPinX <= 3) {
-                ImGui::SetCursorPosX((s_originalCursor.x + iconCursorX) - linkedAttributeSize.x * s_pinTextScale);
-            }
             ImGui::Text(pin.linkedAttribute.c_str());
         ImGui::SetWindowFontScale(1.0f);
-
-        if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end() && (int) Nodes::GetHoveredPin().Get() == pin.pinID) {
-            s_outerTooltip = Workspace::s_pinCache[pin.pinID];
-        }
     }
 
     void NodeGraphUI::Render() {
         s_outerTooltip = std::nullopt;
         Workspace::s_selectedNodes.clear();
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
+        ImGui::PushFont(Font::s_denseFont);
             static Nodes::EditorContext* ctx = nullptr;
             if (!ctx) {
                 Nodes::Config cfg;
@@ -169,7 +197,8 @@ namespace Raster {
                     Nodes::BeginNode(node->nodeID);
                         s_originalCursor = ImGui::GetCursorScreenPos();
                         ImVec2 originalCursor = ImGui::GetCursorScreenPos();
-                        s_headerSize = ImGui::CalcTextSize(node->Header().c_str());
+                        std::string header = node->Icon() + (node->Icon().empty() ? "" : " ") + node->Header();
+                        s_headerSize = ImGui::CalcTextSize(header.c_str());
                         if (node->Footer().has_value()) {
                             auto footer = node->Footer().value();
                             ImGui::SetWindowFontScale(0.8f);
@@ -179,7 +208,7 @@ namespace Raster {
                                 s_headerSize = footerSize;
                             }
                         }
-                        ImGui::Text("%s", node->Header().c_str());
+                        ImGui::Text("%s", header.c_str());
                         if (node->flowInputPin.has_value()) {
                             RenderInputPin(node->flowInputPin.value(), true);
                         }
@@ -226,7 +255,16 @@ namespace Raster {
 
                     for (auto& pin : node->inputPins) {
                         if (pin.connectedPinID > 0) {
-                            Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
+                            std::any cachedValue = std::nullopt;
+                            if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                            }
+                            ImVec4 linkColor = ImVec4(1, 1, 1, 1);
+                            auto colorCandidate = GetColorByDynamicValue(cachedValue);
+                            if (colorCandidate.has_value() && cachedValue.type() != typeid(std::nullopt)) {
+                                linkColor = colorCandidate.value();
+                            }
+                            Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, linkColor, 2.0f);
                         }
                     }
                     for (auto& pin : node->outputPins) {
@@ -402,6 +440,7 @@ namespace Raster {
             }
 
             Nodes::End();
+            ImGui::PopFont();
             Nodes::SetCurrentEditor(nullptr);
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             if (dimPercentage > 0.05f) {

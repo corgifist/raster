@@ -10,6 +10,8 @@
 #define ATTRIBUTE_TYPE(T) \
     std::type_index(typeid(T))
 
+#define RASTER_COLOR32(R,G,B,A)    (((uint32_t)(A)<<24) | ((uint32_t)(B)<<16) | ((uint32_t)(G)<<8) | ((uint32_t)(R)<<0))
+
 namespace Raster {
 
     struct NodeBase;
@@ -89,6 +91,7 @@ namespace Raster {
         AbstractPinMap Execute(AbstractPinMap accumulator = {});
         virtual std::string Header() = 0;
         virtual std::optional<std::string> Footer() = 0;
+        virtual std::string Icon() = 0;
 
         virtual void AbstractLoadSerialized(Json data) {};
         virtual void AbstractRenderProperties() {};
@@ -151,10 +154,10 @@ namespace Raster {
         static Configuration s_configuration;
 
         static std::vector<int> s_targetSelectNodes;
-
         static std::vector<int> s_selectedNodes;
 
         static std::unordered_map<int, std::any> s_pinCache;
+        static std::unordered_map<std::type_index, uint32_t> s_typeColors;
 
         static void Initialize();
 

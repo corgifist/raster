@@ -27,7 +27,11 @@ namespace Raster {
     }
 
     std::string DebugPrintNode::Header() {
-        return ICON_FA_CIRCLE_NODES " Expressions Test";
+        return "Expressions Test";
+    }
+
+    std::string DebugPrintNode::Icon() {
+        return ICON_FA_CIRCLE_NODES;
     }
 
     std::optional<std::string> DebugPrintNode::Footer() {

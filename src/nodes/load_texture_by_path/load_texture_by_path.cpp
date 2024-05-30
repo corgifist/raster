@@ -47,11 +47,15 @@ namespace Raster {
     }
 
     std::string LoadTextureByPath::Header() {
-        return FormatString(ICON_FA_FOLDER " Load Texture By Path: %s", GetAttribute<std::string>("Path").value_or("").c_str());
+        return FormatString(" Load Texture By Path: %s", GetAttribute<std::string>("Path").value_or("").c_str());
     }
 
     std::optional<std::string> LoadTextureByPath::Footer() {
         return std::nullopt;
+    }
+
+    std::string LoadTextureByPath::Icon() {
+        return ICON_FA_FOLDER_OPEN;
     }
 }
 
@@ -62,7 +66,7 @@ extern "C" {
 
     Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
-            .prettyName = ICON_FA_FOLDER " Load Texture By Path",
+            .prettyName = "Load Texture By Path",
             .packageName = "packaged.raster.load_texture_by_path",
             .category = Raster::NodeCategory::Resources
         };

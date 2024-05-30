@@ -1,6 +1,9 @@
 #include "font/font.h"
 
 namespace Raster {
+
+    ImFont* Font::s_denseFont = nullptr;
+
     size_t Font::s_fontSize = 115741;
     std::vector<uint32_t> Font::s_fontBytes = {
         0x0000bc57, 0x00000000, 0x1c7b0200, 0x00000400, 0x00010025, 0x82110000, 0x042e0804, 0x50471000, 0xaa7d534f, 0x02008c71, 0x0000a808, 0x53470c59,

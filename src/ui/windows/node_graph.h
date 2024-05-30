@@ -17,6 +17,7 @@ namespace Raster {
     struct NodeGraphUI : public UI {
         void Render();
 
+        std::optional<ImVec4> GetColorByDynamicValue(std::any& value);
 
         void ShowLabel(std::string t_label, ImU32 t_color);
         void RenderInputPin(GenericPin& pin, bool flow = false);

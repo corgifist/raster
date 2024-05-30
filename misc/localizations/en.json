@@ -20,5 +20,6 @@
     "PRETTY_NODE_NAME": "Pretty Node Name",
     "NODE_ID": "Node ID",
     "CATEGORY": "Node Category",
-    "SELECT_NODE": "Select Node"
+    "SELECT_NODE": "Select Node",
+    "READ_ONLY": "Read-Only"
 }

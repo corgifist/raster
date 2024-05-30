@@ -10,7 +10,6 @@ namespace Nodes = ax::NodeEditor;
 namespace Raster {
 
     std::vector<AbstractUI> App::s_windows{};
-    ImFont* App::s_denseFont = nullptr;
 
     void App::Initialize() {
         GPU::Initialize();
@@ -29,16 +28,31 @@ namespace Raster {
         Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
 
         ImGuiIO& io = ImGui::GetIO();
+
         ImFontConfig fontCfg = {};
+        fontCfg.PixelSnapH = true;
+
+        static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+
+        io.Fonts->AddFontFromMemoryCompressedTTF(
+            Font::s_fontBytes.data(), Font::s_fontSize,
+            16.0f
+        );
+
+        fontCfg.MergeMode = true;
+        io.Fonts->AddFontFromMemoryCompressedTTF(
+            Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
+            16.0f * 0.85f, &fontCfg, icons_ranges
+        );
+
         fontCfg.RasterizerDensity = 5;
-        App::s_denseFont = io.Fonts->AddFontFromMemoryCompressedTTF(
+        fontCfg.MergeMode = false;
+        Font::s_denseFont = io.Fonts->AddFontFromMemoryCompressedTTF(
                     Font::s_fontBytes.data(), Font::s_fontSize,
                     16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic());
 
-        static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
-        fontCfg.MergeMode = true;
-        fontCfg.PixelSnapH = true;
         // fontCfg.GlyphMinAdvanceX = 16.0f * 2.0f / 3.0f;
+        fontCfg.MergeMode = true;
         io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
             16.0f * 0.85f, &fontCfg, icons_ranges

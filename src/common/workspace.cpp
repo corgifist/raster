@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "gpu/gpu.h"
 
 namespace Raster {
 
@@ -16,6 +17,11 @@ namespace Raster {
 
     std::vector<int> Workspace::s_selectedNodes;
     std::vector<int> Workspace::s_targetSelectNodes;
+
+    std::unordered_map<std::type_index, uint32_t> Workspace::s_typeColors = {
+        {ATTRIBUTE_TYPE(std::string), RASTER_COLOR32(204, 0, 103, 255)},
+        {ATTRIBUTE_TYPE(Texture), RASTER_COLOR32(0, 102, 255, 255)}
+    };
 
     void Workspace::Initialize() {
         if (!std::filesystem::exists("nodes/")) {

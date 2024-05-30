@@ -1,5 +1,7 @@
 #include "common/common.h"
 #include "gpu/gpu.h"
+#include "app/app.h"
+#include "font/font.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
 
@@ -131,9 +133,11 @@ namespace Raster {
             std::string exposeButtonTest = 
                 !isAttributeExposed ? FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE").c_str()) :
                                      FormatString("%s %s", ICON_FA_LINK_SLASH, Localization::GetString("HIDE").c_str());
-            ImGui::SetWindowFontScale(1.2f);
-                bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PushFont(Font::s_denseFont);
+                ImGui::SetWindowFontScale(1.2f);
+                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+                ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
             ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Button) * ImVec4(isAttributeExposed ? 1.2f : 1.0f));
             if (ImGui::Button(exposeButtonTest.c_str())) {
@@ -205,7 +209,13 @@ namespace Raster {
 
     void NodeBase::DispatchStringAttribute(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed) {
         std::string string = std::any_cast<std::string>(t_value);
-        ImGui::InputText(t_attrbute.c_str(), &string, t_isAttributeExposed ? ImGuiInputTextFlags_ReadOnly : 0);
+        if (t_isAttributeExposed) {
+            ImGui::Text("%s ", ICON_FA_LINK);
+            ImGui::SameLine(0.0f, 0.0f);
+        }
+        ImGui::Text("%s", t_attrbute.c_str());
+        ImGui::SameLine();
+        ImGui::InputText(FormatString("##%s", t_attrbute.c_str()).c_str(), &string, t_isAttributeExposed ? ImGuiInputTextFlags_ReadOnly : 0);
         t_value = string;
     }
 
