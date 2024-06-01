@@ -24,8 +24,13 @@ namespace Raster {
         }
 
         Workspace::Initialize();
-        Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
-        Workspace::s_nodes.push_back(Workspace::InstantiateNode("raster_debug_print").value());
+        Workspace::s_project = Project();
+        Composition newComposition;
+        Workspace::s_project.value().compositions.push_back(newComposition);
+        Workspace::s_selectedCompositions = {newComposition.id};
+
+        Workspace::AddNode("raster_debug_print");
+        Workspace::AddNode("raster_debug_print");
 
         ImGuiIO& io = ImGui::GetIO();
 

@@ -18,6 +18,97 @@ namespace Raster {
 
     void NodePropertiesUI::Render() {
         ImGui::Begin(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("NODE_PROPERTIES").c_str()).c_str());
+            if (Workspace::s_project.has_value()) {
+                auto& project = Workspace::s_project.value();
+                ImGui::PushFont(Font::s_denseFont);
+                    ImGui::SetWindowFontScale(1.5f);
+                    bool treeExpanded = ImGui::TreeNode(FormatString("%s %s###%s_project", ICON_FA_LIST, project.name.c_str(), project.name.c_str()).c_str());
+                    ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopFont();
+                if (treeExpanded) {
+                    static bool isEditingDescription = false;
+                        if (isEditingDescription) {
+                            ImGui::Text("%s %s", ICON_FA_FONT, Localization::GetString("PROJECT_NAME").c_str());
+                            ImGui::SameLine();
+                            ImGui::InputText("##projectName", &project.name);
+
+                            ImGui::Text("%s %s", ICON_FA_COMMENT, Localization::GetString("PROJECT_DESCRIPTION").c_str());
+                            ImGui::SameLine();
+                            isEditingDescription = !ImGui::InputTextMultiline("##descriptionEditor", &project.description, ImVec2(0, 0), ImGuiInputTextFlags_EnterReturnsTrue);
+                            ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("CTRL_CLICK_TO_CLOSE").c_str());
+
+                            ImGui::Text("%s %s", ICON_FA_VIDEO, Localization::GetString("PROJECT_FRAMERATE").c_str());
+                            ImGui::SameLine();
+
+                            int signedFramerate = project.framerate;
+                            ImGui::DragInt("##projectFramerate", &signedFramerate, 1, 1);
+                            project.framerate = signedFramerate;
+
+                            if (CenteredButton(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str())) {
+                                isEditingDescription = false;
+                            }
+                        } else {
+                            ImGui::Text("%s", project.description.c_str());
+                            ImGui::Text("%s %s: %i", ICON_FA_VIDEO, Localization::GetString("FRAMERATE").c_str(), project.framerate);
+                            ImGui::Text("%s %s: %i", ICON_FA_LAYER_GROUP, Localization::GetString("TOTAL_COMPOSITIONS_COUNT").c_str(), (int) project.compositions.size());
+                            if (CenteredButton(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT").c_str()).c_str())) {
+                                isEditingDescription = true;
+                            }
+                        }
+                    ImGui::TreePop();
+                }
+            }
+            auto compositionsCandidate = Workspace::GetSelectedCompositions();
+            if (compositionsCandidate.has_value() && !compositionsCandidate.value().empty()) {
+                auto composition = compositionsCandidate.value()[0];
+                ImGui::PushID(composition->id);
+                    ImGui::PushFont(Font::s_denseFont);
+                        ImGui::SetWindowFontScale(1.5f);
+                        bool treeExpanded = ImGui::TreeNode(FormatString("%s %s###composition", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str());
+                        ImGui::SetWindowFontScale(1.0f);
+                    ImGui::PopFont();
+                    if (treeExpanded) {
+                        static bool isEditingDescription = false;
+                        static int previousCompositionID = composition->id;
+                        if (previousCompositionID != composition->id) {
+                            isEditingDescription = false;
+                        }
+                        if (isEditingDescription) {
+
+                            ImGui::Text("%s %s", ICON_FA_FONT, Localization::GetString("COMPOSITION_NAME").c_str());
+                            ImGui::SameLine();
+                            ImGui::InputText("##compositionName", &composition->name);
+
+                            ImGui::Text("%s %s", ICON_FA_MESSAGE, Localization::GetString("COMPOSITION_DESCRIPTION").c_str());
+                            ImGui::SameLine();
+                            isEditingDescription = !ImGui::InputTextMultiline("##descriptionEditor", &composition->description, ImVec2(0, 0), ImGuiInputTextFlags_EnterReturnsTrue);
+                            ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("CTRL_CLICK_TO_CLOSE").c_str());
+                        
+                            int signedValues[] = {
+                                composition->beginFrame, composition->endFrame
+                            };
+                            ImGui::Text("%s %s", ICON_FA_STOPWATCH, Localization::GetString("COMPOSITION_TIMING").c_str());
+                            ImGui::SameLine();
+                            ImGui::DragInt2("##compositionTiming", signedValues, 1, 0);
+                            composition->beginFrame = signedValues[0];
+                            composition->endFrame = signedValues[1];
+
+                            if (CenteredButton(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str())) {
+                                isEditingDescription = false;
+                            }
+                        } else {
+                            auto& project = Workspace::s_project.value();
+                            ImGui::Text("%s", composition->description.c_str());
+                            ImGui::Text("%s %s: %i -> %i", ICON_FA_STOPWATCH, Localization::GetString("COMPOSITION_TIMING").c_str(), int(composition->beginFrame / project.framerate), int(composition->endFrame / project.framerate));
+                            ImGui::Text("%s %s: %i", ICON_FA_CIRCLE_NODES, Localization::GetString("TOTAL_NODES_COUNT").c_str(), (int) composition->nodes.size());
+                            isEditingDescription = CenteredButton(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT").c_str()).c_str());
+                        }
+                        ImGui::TreePop();
+                        previousCompositionID = composition->id;
+                    }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
             for (auto& nodeID : Workspace::s_selectedNodes) {
                 auto maybeNode = Workspace::GetNodeByNodeID(nodeID);
                 if (maybeNode.has_value()) {

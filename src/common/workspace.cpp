@@ -9,7 +9,8 @@ namespace Raster {
         NodeCategory::Other
     };
 
-    std::vector<AbstractNode> Workspace::s_nodes;
+    std::optional<Project> Workspace::s_project;
+    std::vector<int> Workspace::s_selectedCompositions;
     std::vector<NodeImplementation> Workspace::s_nodeImplementations;
     Configuration Workspace::s_configuration;
 
@@ -41,6 +42,28 @@ namespace Raster {
         }
     }
 
+    std::optional<Composition*> Workspace::GetCompositionByID(int t_id) {
+        if (!s_project.has_value()) return std::nullopt;
+        auto& project = s_project.value();
+        for (auto& composition : project.compositions) {
+            if (composition.id == t_id) return &composition;
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::vector<Composition*>> Workspace::GetSelectedCompositions() {
+        if (!s_project.has_value()) return std::nullopt;
+        auto& project = s_project.value();
+        std::vector<Composition*> result;
+        for (auto& id : s_selectedCompositions) {
+            auto compositionCandidate = GetCompositionByID(id);
+            if (!compositionCandidate.has_value()) return std::nullopt;
+            result.push_back(compositionCandidate.value());
+        }
+        if (result.empty()) return std::nullopt;
+        return result;
+    }
+
     void Workspace::UpdatePinCache(AbstractPinMap& t_pinMap) {
         for (auto& pair : t_pinMap) {
             s_pinCache[pair.first] = pair.second;
@@ -50,7 +73,12 @@ namespace Raster {
     std::optional<AbstractNode> Workspace::AddNode(std::string t_nodeName) {
         auto node = InstantiateNode(t_nodeName);
         if (node.has_value()) {
-            s_nodes.push_back(node.value());
+            auto compositionsCandidate = GetSelectedCompositions();
+            std::cout << (compositionsCandidate.has_value() ? "true" : "false") << std::endl;
+            if (compositionsCandidate.has_value()) {
+                compositionsCandidate.value()[0]->nodes.push_back(node.value());
+                std::cout << compositionsCandidate.value()[0]->nodes.size() << std::endl;
+            }
         }
         return node;
     }
@@ -122,98 +150,122 @@ namespace Raster {
     }
 
     std::optional<AbstractNode> Workspace::GetNodeByNodeID(int nodeID) {
-        for (auto& node : s_nodes) {
-            if (node->nodeID == nodeID) return node;
+        auto compositionsCandidate = GetSelectedCompositions();
+        if (!compositionsCandidate.has_value()) return std::nullopt;
+        for (auto& composition : compositionsCandidate.value()) {
+            for (auto& node : composition->nodes) {
+                if (node->nodeID == nodeID) return node;
+            }
         }
         return std::nullopt;
     }
 
     std::optional<AbstractNode> Workspace::GetNodeByPinID(int pinID) {
-        for (auto& node : s_nodes) {
-            if (node->flowInputPin.has_value()) {
-                if (node->flowInputPin.value().pinID == pinID) {
-                    return std::optional{node};
+        auto compositionsCandidate = GetSelectedCompositions();
+        if (!compositionsCandidate.has_value()) return std::nullopt;
+        auto compositions = compositionsCandidate.value();
+        for (auto& composition : compositions) {
+            for (auto& node : composition->nodes) {
+                if (node->flowInputPin.has_value()) {
+                    if (node->flowInputPin.value().pinID == pinID) {
+                        return std::optional{node};
+                    }
                 }
-            }
-            if (node->flowOutputPin.has_value()) {
-                if (node->flowOutputPin.value().pinID == pinID) {
-                    return std::optional{node};
+                if (node->flowOutputPin.has_value()) {
+                    if (node->flowOutputPin.value().pinID == pinID) {
+                        return std::optional{node};
+                    }
                 }
-            }
-            for (auto& inputPin : node->inputPins) {
-                if (inputPin.pinID == pinID) return std::optional{node};
-            }
-            for (auto& outputPin : node->outputPins) {
-                if (outputPin.pinID == pinID) return std::optional{node};
+                for (auto& inputPin : node->inputPins) {
+                    if (inputPin.pinID == pinID) return std::optional{node};
+                }
+                for (auto& outputPin : node->outputPins) {
+                    if (outputPin.pinID == pinID) return std::optional{node};
+                }
             }
         }
         return std::nullopt;
     }
 
     std::optional<GenericPin> Workspace::GetPinByLinkID(int linkID) {
-        for (auto& node : s_nodes) {
-            if (node->flowInputPin.has_value()) {
-                if (node->flowInputPin.value().linkID == linkID) {
-                    return node->flowInputPin.value();
+        auto compositionsCandidate = GetSelectedCompositions();
+        if (!compositionsCandidate.has_value()) return std::nullopt;
+        auto compositions = compositionsCandidate.value();
+        for (auto& composition : compositions) {
+            for (auto& node : composition->nodes) {
+                if (node->flowInputPin.has_value()) {
+                    if (node->flowInputPin.value().linkID == linkID) {
+                        return node->flowInputPin.value();
+                    }
                 }
-            }
-            if (node->flowOutputPin.has_value()) {
-                if (node->flowOutputPin.value().linkID== linkID) {
-                    return node->flowOutputPin.value();
+                if (node->flowOutputPin.has_value()) {
+                    if (node->flowOutputPin.value().linkID== linkID) {
+                        return node->flowOutputPin.value();
+                    }
                 }
-            }
-            for (auto& inputPin : node->inputPins) {
-                if (inputPin.linkID == linkID) return inputPin;
-            }
-            for (auto& outputPin : node->outputPins) {
-                if (outputPin.linkID == linkID) return outputPin;
+                for (auto& inputPin : node->inputPins) {
+                    if (inputPin.linkID == linkID) return inputPin;
+                }
+                for (auto& outputPin : node->outputPins) {
+                    if (outputPin.linkID == linkID) return outputPin;
+                }
             }
         }
         return std::nullopt;
     }
 
     std::optional<GenericPin> Workspace::GetPinByPinID(int pinID) {
-        for (auto& node : s_nodes) {
-            if (node->flowInputPin.has_value()) {
-                if (node->flowInputPin.value().pinID == pinID) {
-                    return node->flowInputPin;
+        auto compositionsCandidate = GetSelectedCompositions();
+        if (!compositionsCandidate.has_value()) return std::nullopt;
+        auto compositions = compositionsCandidate.value();
+        for (auto& composition : compositions) {
+            for (auto& node : composition->nodes) {
+                if (node->flowInputPin.has_value()) {
+                    if (node->flowInputPin.value().pinID == pinID) {
+                        return node->flowInputPin;
+                    }
                 }
-            }
-            if (node->flowOutputPin.has_value()) {
-                if (node->flowOutputPin.value().pinID == pinID) {
-                    return node->flowOutputPin;
+                if (node->flowOutputPin.has_value()) {
+                    if (node->flowOutputPin.value().pinID == pinID) {
+                        return node->flowOutputPin;
+                    }
                 }
-            }
-            for (auto& inputPin : node->inputPins) {
-                if (inputPin.pinID == pinID) return std::optional{inputPin};
-            }
-            for (auto& outputPin : node->outputPins) {
-                if (outputPin.pinID == pinID) return std::optional{outputPin};
+                for (auto& inputPin : node->inputPins) {
+                    if (inputPin.pinID == pinID) return std::optional{inputPin};
+                }
+                for (auto& outputPin : node->outputPins) {
+                    if (outputPin.pinID == pinID) return std::optional{outputPin};
+                }
             }
         }
         return std::nullopt;
     }
 
     void Workspace::UpdatePinByID(GenericPin pin, int pinID) {
-        for (auto& node : s_nodes) {
-            if (node->flowInputPin.has_value()) {
-                if (node->flowInputPin.value().pinID == pinID) {
-                    node->flowInputPin = pin;
+        auto compositionsCandidate = GetSelectedCompositions();
+        if (!compositionsCandidate.has_value()) return;
+        auto compositions = compositionsCandidate.value();
+        for (auto& composition : compositions) {
+            for (auto& node : composition->nodes) {
+                if (node->flowInputPin.has_value()) {
+                    if (node->flowInputPin.value().pinID == pinID) {
+                        node->flowInputPin = pin;
+                    }
                 }
-            }
-            if (node->flowOutputPin.has_value()) {
-                if (node->flowOutputPin.value().pinID == pinID) {
-                    node->flowOutputPin = pin;
+                if (node->flowOutputPin.has_value()) {
+                    if (node->flowOutputPin.value().pinID == pinID) {
+                        node->flowOutputPin = pin;
+                    }
                 }
-            }
-            for (auto& inputPin : node->inputPins) {
-                if (inputPin.pinID == pinID) {
-                    inputPin = pin;
+                for (auto& inputPin : node->inputPins) {
+                    if (inputPin.pinID == pinID) {
+                        inputPin = pin;
+                    }
                 }
-            }
-            for (auto& outputPin : node->outputPins) {
-                if (outputPin.pinID == pinID) {
-                    outputPin = pin;
+                for (auto& outputPin : node->outputPins) {
+                    if (outputPin.pinID == pinID) {
+                        outputPin = pin;
+                    }
                 }
             }
         }

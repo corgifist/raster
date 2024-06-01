@@ -10,6 +10,8 @@ namespace Raster {
 
     static std::optional<std::any> s_outerTooltip = "";
 
+    static Composition* s_currentComposition = nullptr;
+
     std::optional<ImVec4> NodeGraphUI::GetColorByDynamicValue(std::any& value) {
         for (auto& color : Workspace::s_typeColors) {
             if (color.first == std::type_index(value.type())) {
@@ -49,7 +51,7 @@ namespace Raster {
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
             if (pin.flow) {
-                for (auto& node : Workspace::s_nodes) {
+                for (auto& node : s_currentComposition->nodes) {
                     if (node->flowInputPin.has_value()) {
                         if (node->flowInputPin.value().connectedPinID == pin.pinID) isConnected = true;
                     }
@@ -101,7 +103,7 @@ namespace Raster {
             ImGui::SetCursorPosX(s_originalCursor.x + iconCursorX);
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
-            for (auto& node : Workspace::s_nodes) {
+            for (auto& node : s_currentComposition->nodes) {
                 for (auto& inputPin : node->inputPins) {
                     if (inputPin.connectedPinID == pin.pinID) isConnected = true;
                 }
@@ -171,7 +173,15 @@ namespace Raster {
                 }
                 Workspace::s_targetSelectNodes.clear();
                 ImVec2 mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
-                for (auto& node : Workspace::s_nodes) {
+
+                auto compositionsCandidate = Workspace::GetSelectedCompositions();
+                if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
+                auto compositions = compositionsCandidate.value();
+                if (compositions.empty()) s_currentComposition = nullptr;
+                s_currentComposition = compositions[0];
+
+                if (s_currentComposition)
+                for (auto& node : s_currentComposition->nodes) {
                     float maxInputXCandidate = 0;
                     for (auto& pin : node->inputPins) {
                         ImGui::SetWindowFontScale(s_pinTextScale);
@@ -243,7 +253,7 @@ namespace Raster {
                     Nodes::EndNode();
                 }
 
-                for (auto& node : Workspace::s_nodes) {
+                for (auto& node : s_currentComposition->nodes) {
                     if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
                         auto sourcePin = node->flowInputPin.value();
                         Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
@@ -324,14 +334,14 @@ namespace Raster {
                         if (Nodes::AcceptDeletedItem()) {
                             int targetNodeDelete = -1;
                             int nodeIndex = 0;
-                            for (auto& node : Workspace::s_nodes) {
+                            for (auto& node : s_currentComposition->nodes) {
                                 if (node->nodeID == rawNodeID) {
                                     targetNodeDelete = nodeIndex;
                                     break; 
                                 }
                                 nodeIndex++;
                             }
-                            Workspace::s_nodes.erase(Workspace::s_nodes.begin() + targetNodeDelete);
+                            s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                         }
                     }
 
@@ -352,9 +362,29 @@ namespace Raster {
             if (Nodes::ShowBackgroundContextMenu()) {
                 ImGui::OpenPopup("##createNewNode");
             }
+            static Nodes::NodeId contextNodeID;
+            if (Nodes::ShowNodeContextMenu(&contextNodeID)) {
+                ImGui::OpenPopup("##nodeContextMenu");
+            }
             Nodes::Resume();
 
             Nodes::Suspend();
+
+            if (ImGui::BeginPopup("##nodeContextMenu")) {
+                auto nodeCandidate = Workspace::GetNodeByNodeID((int) contextNodeID.Get());
+                if (nodeCandidate.has_value()) {
+                    auto node = nodeCandidate.value();
+                    ImGui::SeparatorText(node->Header().c_str());
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_NODE").c_str()).c_str())) {
+                        Nodes::DeleteNode(node->nodeID);
+                    }
+                } else {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
+
             static float dimA = 0.0f;
             static float dimB = 0.3f;
             static float dimPercentage = -1.0f;

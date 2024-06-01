@@ -147,11 +147,36 @@ namespace Raster {
         NodeSpawnProcedure spawn;
     };
 
+    struct Composition {
+        int id;
+        std::string name, description;
+        std::vector<AbstractNode> nodes;
+        uint64_t beginFrame, endFrame;
+
+        Composition();
+        Composition(Json data);
+
+        Json Serialize();
+    };
+
+    struct Project {
+        std::string name, description;
+        uint64_t framerate;
+        std::vector<Composition> compositions;
+
+        Project();
+        Project(Json data);
+
+        Json Serialize();
+    };
+
     struct Workspace {
         static std::vector<NodeCategory> s_categories;
-        static std::vector<AbstractNode> s_nodes;
+        static std::optional<Project> s_project;
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
+
+        static std::vector<int> s_selectedCompositions;
 
         static std::vector<int> s_targetSelectNodes;
         static std::vector<int> s_selectedNodes;
@@ -162,6 +187,9 @@ namespace Raster {
         static void Initialize();
 
         static void UpdatePinCache(AbstractPinMap& t_pinMap);
+
+        static std::optional<Composition*> GetCompositionByID(int t_id);
+        static std::optional<std::vector<Composition*>> GetSelectedCompositions();
 
         static std::optional<AbstractNode> AddNode(std::string t_nodeName);
         static std::optional<AbstractNode> InstantiateNode(std::string t_nodeName);
