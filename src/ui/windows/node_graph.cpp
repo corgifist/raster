@@ -12,6 +12,8 @@ namespace Raster {
 
     static Composition* s_currentComposition = nullptr;
 
+    static AbstractNode s_currentNode = nullptr;
+
     std::optional<ImVec4> NodeGraphUI::GetColorByDynamicValue(std::any& value) {
         for (auto& color : Workspace::s_typeColors) {
             if (color.first == std::type_index(value.type())) {
@@ -89,17 +91,16 @@ namespace Raster {
             cachedValue = Workspace::s_pinCache[pin.pinID];
         }
 
-        float maximumOffset = s_maxInputPinX + s_maxOutputPinX + 5;
+        float maximumOffset = s_maxInputPinX + s_maxOutputPinX;
         maximumOffset = std::max(maximumOffset, s_headerSize.x);
 
-        ImGui::SetCursorPosX(s_originalCursor.x + maximumOffset - 20);
+        float iconCursorX = maximumOffset - 20 + s_maxInputPinX;
+        ImGui::SetCursorPosX(s_originalCursor.x + iconCursorX);
 
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Output);
             float reservedCursor = ImGui::GetCursorPosY();
 
             Nodes::PinPivotAlignment({1.44f, 0.51f});
-
-            float iconCursorX = maximumOffset - 20 + s_maxInputPinX;
             ImGui::SetCursorPosX(s_originalCursor.x + iconCursorX);
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
@@ -154,6 +155,8 @@ namespace Raster {
 
             Nodes::SetCurrentEditor(ctx);
 
+            Nodes::EnableShortcuts(true);
+
             auto& style = Nodes::GetStyle();
             style.Colors[Nodes::StyleColor_Bg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
             style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
@@ -182,6 +185,7 @@ namespace Raster {
 
                 if (s_currentComposition)
                 for (auto& node : s_currentComposition->nodes) {
+                    s_currentNode = node;
                     float maxInputXCandidate = 0;
                     for (auto& pin : node->inputPins) {
                         ImGui::SetWindowFontScale(s_pinTextScale);
@@ -467,6 +471,28 @@ namespace Raster {
 
             for (auto& nodeID : temporarySelectedNodes) {
                 Workspace::s_selectedNodes.push_back((int) nodeID.Get());
+            }
+
+
+            static std::vector<AbstractNode> s_copyAccumulator;
+
+            if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_C)) {
+                s_copyAccumulator.clear();
+                for (auto& selectedNode : Workspace::s_selectedNodes) {
+                    auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNode);
+                    if (nodeCandidate.has_value()) {
+                        s_copyAccumulator.push_back(Workspace::CopyAbstractNode(nodeCandidate.value()).value());
+                    }
+                }
+            }
+
+            if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_V)) {
+                for (auto& accumulatedNode : s_copyAccumulator) {
+                    s_currentComposition->nodes.push_back(accumulatedNode);
+                    Nodes::BeginNode(accumulatedNode->nodeID);
+                        Nodes::SetNodePosition(accumulatedNode->nodeID, mousePos);
+                    Nodes::EndNode();
+                }
             }
 
             Nodes::End();

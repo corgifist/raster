@@ -42,6 +42,16 @@ namespace Raster {
         }
     }
 
+    std::optional<AbstractNode> Workspace::CopyAbstractNode(AbstractNode node) {
+        auto nodeCandidate = InstantiateNode(node->libraryName);
+        if (nodeCandidate.has_value()) {
+            auto node = nodeCandidate.value();
+            node->AbstractLoadSerialized(node->Serialize()["Data"]);
+            return node;
+        }
+        return std::nullopt;
+    }
+
     std::optional<Composition*> Workspace::GetCompositionByID(int t_id) {
         if (!s_project.has_value()) return std::nullopt;
         auto& project = s_project.value();

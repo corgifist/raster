@@ -194,6 +194,8 @@ namespace Raster {
         static std::optional<AbstractNode> AddNode(std::string t_nodeName);
         static std::optional<AbstractNode> InstantiateNode(std::string t_nodeName);
         static std::optional<AbstractNode> InstantiateSerializedNode(Json node);
+
+        static std::optional<AbstractNode> CopyAbstractNode(AbstractNode node);
  
         static std::optional<NodeImplementation> GetNodeImplementationByLibraryName(std::string t_libraryName);
         static std::optional<NodeImplementation> GetNodeImplementationByPackageName(std::string t_packageName);
