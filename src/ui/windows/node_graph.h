@@ -19,6 +19,9 @@ namespace Raster {
 
         std::optional<ImVec4> GetColorByDynamicValue(std::any& value);
 
+        void ProcessCopyAction();
+        void ProcessPasteAction();
+
         void ShowLabel(std::string t_label, ImU32 t_color);
         void RenderInputPin(GenericPin& pin, bool flow = false);
         void RenderOutputPin(GenericPin& pin, bool flow = false);

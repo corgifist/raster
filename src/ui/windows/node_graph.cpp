@@ -3,6 +3,12 @@
 
 namespace Raster {
 
+    struct CopyAccumulatorBundle {
+        AbstractNode node;
+        ImVec2 relativeNodeOffset;
+    };
+
+
     static ImVec2 s_headerSize, s_originalCursor;
     static float s_maxInputPinX, s_maxOutputPinX;
 
@@ -11,8 +17,11 @@ namespace Raster {
     static std::optional<std::any> s_outerTooltip = "";
 
     static Composition* s_currentComposition = nullptr;
-
     static AbstractNode s_currentNode = nullptr;
+
+    static std::vector<CopyAccumulatorBundle> s_copyAccumulator;
+
+    static ImVec2 s_mousePos;
 
     std::optional<ImVec4> NodeGraphUI::GetColorByDynamicValue(std::any& value) {
         for (auto& color : Workspace::s_typeColors) {
@@ -101,6 +110,7 @@ namespace Raster {
             float reservedCursor = ImGui::GetCursorPosY();
 
             Nodes::PinPivotAlignment({1.44f, 0.51f});
+
             ImGui::SetCursorPosX(s_originalCursor.x + iconCursorX);
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
@@ -141,6 +151,48 @@ namespace Raster {
         ImGui::SetWindowFontScale(1.0f);
     }
 
+    void NodeGraphUI::ProcessCopyAction() {
+        s_copyAccumulator.clear();
+
+        ImVec2 minNodePosition = ImVec2(FLT_MAX, FLT_MAX);
+        for (auto& selectedNode : Workspace::s_selectedNodes) {
+            auto nodePos = Nodes::GetNodePosition(selectedNode);
+            if (nodePos.x < minNodePosition.x) {
+                minNodePosition.x = nodePos.x;
+            }
+            if (nodePos.y < minNodePosition.y) {
+                minNodePosition.y = nodePos.y;
+            }
+        }
+
+        for (auto& selectedNode : Workspace::s_selectedNodes) {
+            auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNode);
+            if (nodeCandidate.has_value()) {
+                CopyAccumulatorBundle bundle;
+                bundle.node = Workspace::CopyAbstractNode(nodeCandidate.value()).value();
+                bundle.relativeNodeOffset = minNodePosition - Nodes::GetNodePosition(nodeCandidate.value()->nodeID);
+                s_copyAccumulator.push_back(bundle);
+            }
+        }
+    }
+
+    void NodeGraphUI::ProcessPasteAction() {
+        for (auto& accumulatedNode : s_copyAccumulator) {
+            s_currentComposition->nodes.push_back(accumulatedNode.node);
+            Nodes::BeginNode(accumulatedNode.node->nodeID);
+                Nodes::SetNodePosition(accumulatedNode.node->nodeID, s_mousePos + accumulatedNode.relativeNodeOffset);
+            Nodes::EndNode();
+        }
+
+        if (s_copyAccumulator.size() != 0) {
+            bool first = true;
+            for (auto& accumulatedNode : s_copyAccumulator) {
+                Nodes::SelectNode(accumulatedNode.node->nodeID, !first);
+                first = false;
+            }
+        }
+    }
+
     void NodeGraphUI::Render() {
         s_outerTooltip = std::nullopt;
         Workspace::s_selectedNodes.clear();
@@ -175,7 +227,7 @@ namespace Raster {
                     Nodes::SelectNode(target, true);
                 }
                 Workspace::s_targetSelectNodes.clear();
-                ImVec2 mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
+                s_mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
 
                 auto compositionsCandidate = Workspace::GetSelectedCompositions();
                 if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
@@ -382,6 +434,16 @@ namespace Raster {
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_NODE").c_str()).c_str())) {
                         Nodes::DeleteNode(node->nodeID);
                     }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY").c_str()).c_str())) {
+                        ProcessCopyAction();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE").c_str()).c_str())) {
+                        ProcessPasteAction();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
+                        ProcessCopyAction();
+                        ProcessPasteAction();
+                    }
                 } else {
                     ImGui::CloseCurrentPopup();
                 }
@@ -403,7 +465,18 @@ namespace Raster {
                 dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
             }
             bool popupVisible = true;
-            if (ImGui::BeginPopup("##createNewNode", ImGuiWindowFlags_AlwaysAutoResize)) {
+            bool openSearchPopup = false;
+            if (ImGui::BeginPopup("##createNewNode")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str()).c_str());
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
+                    openSearchPopup = true;
+                }
+                ImGui::EndPopup();
+            }
+            if (openSearchPopup) {
+                ImGui::OpenPopup("##createNewNodeSearch");
+            }
+            if (ImGui::BeginPopup("##createNewNodeSearch", ImGuiWindowFlags_AlwaysAutoResize)) {
                 static std::string searchFilter = "";
                 ImGui::InputText("##searchFilter", &searchFilter);
                 ImGui::SameLine(0, 0);
@@ -437,7 +510,7 @@ namespace Raster {
                         if (targetNode.has_value()) {
                             auto node = targetNode.value();
                             Nodes::BeginNode(node->nodeID);
-                                Nodes::SetNodePosition(node->nodeID, mousePos);
+                                Nodes::SetNodePosition(node->nodeID, s_mousePos);
                             Nodes::EndNode();
                         }
                         ImGui::CloseCurrentPopup();
@@ -473,31 +546,50 @@ namespace Raster {
                 Workspace::s_selectedNodes.push_back((int) nodeID.Get());
             }
 
-
-            static std::vector<AbstractNode> s_copyAccumulator;
-
             if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_C)) {
-                s_copyAccumulator.clear();
-                for (auto& selectedNode : Workspace::s_selectedNodes) {
-                    auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNode);
-                    if (nodeCandidate.has_value()) {
-                        s_copyAccumulator.push_back(Workspace::CopyAbstractNode(nodeCandidate.value()).value());
-                    }
-                }
+                ProcessCopyAction();
             }
 
             if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_V)) {
-                for (auto& accumulatedNode : s_copyAccumulator) {
-                    s_currentComposition->nodes.push_back(accumulatedNode);
-                    Nodes::BeginNode(accumulatedNode->nodeID);
-                        Nodes::SetNodePosition(accumulatedNode->nodeID, mousePos);
-                    Nodes::EndNode();
-                }
+                ProcessPasteAction();
             }
 
             Nodes::End();
-            ImGui::PopFont();
             Nodes::SetCurrentEditor(nullptr);
+            ImGui::PopFont();
+            if (s_currentComposition) {
+                ImGui::SetCursorPos(ImGui::GetCursorStartPos());
+                ImGui::PushFont(Font::s_denseFont);
+                    ImGui::SetWindowFontScale(1.5f);
+                        ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str());
+                    ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopFont();
+                static bool isDescriptionHovered = false;
+                static bool isEditingDescription = false;
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, isDescriptionHovered && !isEditingDescription ? 0.8f : 1.0f);
+                    if (isEditingDescription) {
+                        isDescriptionHovered = false;
+                    } 
+                    ImGui::Text("%s", s_currentComposition->description.c_str());
+                    if (isDescriptionHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                        std::cout << "clicked" << std::endl;
+                        ImGui::OpenPopup("##compositionDescriptionEditor");
+                        isEditingDescription = true;
+                    }
+                    isDescriptionHovered = ImGui::IsItemHovered();
+                ImGui::PopStyleVar();
+                if (ImGui::BeginPopup("##compositionDescriptionEditor")) {
+                    ImGui::InputTextMultiline("##description", &s_currentComposition->description);
+                    ImGui::SameLine();
+                    if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str())) {
+                        isEditingDescription = false;
+                        isDescriptionHovered = false;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+            }
+
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             if (dimPercentage > 0.05f) {
                 drawList->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, dimPercentage)));

@@ -229,6 +229,10 @@ namespace Raster {
         auto texture = std::any_cast<Texture>(t_attribute);
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - 64);
         ImGui::Image(texture.handle, FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height)));
+        
+        auto footerText = FormatString("%ix%i; %s", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str());
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);
+        ImGui::Text(footerText.c_str());
     }
 
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);

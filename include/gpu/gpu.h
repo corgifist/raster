@@ -1,6 +1,7 @@
 #pragma once
 
 #include "raster.h"
+#include "common/common.h"
 
 namespace Raster {
     struct GPUInfo {
@@ -20,6 +21,21 @@ namespace Raster {
         uint32_t width, height;
         TexturePrecision precision;
         void* handle;
+
+        std::string PrecisionToString() {
+            switch (precision) {
+                case TexturePrecision::Full: {
+                    return Localization::GetString("FULL_PRECISION");
+                }
+                case TexturePrecision::Half: {
+                    return Localization::GetString("HALF_PRECISION");
+                }
+                case TexturePrecision::Usual: {
+                    return Localization::GetString("USUAL_PRECISION");
+                }
+            }
+            return Localization::GetString("UNKNOWN_PRECISION");
+        };
     };
 
     struct GPU {
