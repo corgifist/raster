@@ -35,6 +35,8 @@ build_modules = [
 scenario build_master {
     info("Building Raster (master)")
 
+    write_build_number()
+
     for_each($build_modules, target_build_module, execute_dispatch_module_safe)
 }
 

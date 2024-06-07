@@ -53,6 +53,8 @@ namespace Raster {
 
         static void Terminate();
 
+        static void SetWindowTitle(std::string title);
+
         static void* GetImGuiContext();
     };
 }

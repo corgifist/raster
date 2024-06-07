@@ -115,6 +115,8 @@ namespace Raster {
                 auto node = nodeInstance.value();
                 node->nodeID = data["NodeID"];
                 node->libraryName = nodeImplementation.value().libraryName;
+                node->enabled = data["Enabled"];
+                node->bypassed = data["Bypassed"];
                 if (!data["FlowInputPin"].is_null()) {
                     node->flowInputPin = GenericPin(data["FlowInputPin"]);
                 }

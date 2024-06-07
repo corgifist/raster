@@ -27,9 +27,19 @@ def greater(a, b):
 def less(a, b):
     return float(a) < float(b)
 
+def write_build_number():
+    bn_content = open("include/build_number.h", "r").read()
+    with open("include/build_number.h", "w+") as bn_file:
+        print(bn_content)
+        bn_lines = bn_content.split("\n")
+        bn_second_parts = bn_lines[1].split(" ")
+        incremented_number = int(bn_second_parts[2]) + 1
+        bn_file.write("#pragma once\n#define BUILD_NUMBER " + str(incremented_number))
+
 
 functions["greater"] = greater
 functions["less"] = less
 functions["list_len"] = list_len
 functions["list_nth"] = list_nth
 functions["try_scenario"] = try_scenario
+functions["write_build_number"] = write_build_number

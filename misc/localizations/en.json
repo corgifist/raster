@@ -42,5 +42,11 @@
     "COPY": "Copy",
     "PASTE": "Paste",
     "DUPLICATE": "Duplicate",
-    "CREATE_NEW_NODE": "New Node"
+    "CREATE_NEW_NODE": "New Node",
+    "ENABLED": "Enabled",
+    "BYPASSED": "Bypassed",
+    "DESCRIPTION": "Description",
+    "ATTRIBUTES": "Attributes",
+    "PREVIEW_DISPATCHER_UNAVAILABLE": "Preview Dispatcher Unavailable",
+    "RENDERING": "Rendering"
 }

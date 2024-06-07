@@ -15,5 +15,6 @@
 #include <optional>
 #include <fstream>
 #include <typeindex>
+#include <set>
 
 #include "json.hpp"

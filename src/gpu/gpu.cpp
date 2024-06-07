@@ -146,6 +146,10 @@ namespace Raster {
         glfwTerminate();
     }
 
+    void GPU::SetWindowTitle(std::string title) {
+        glfwSetWindowTitle((GLFWwindow*) info.display, title.c_str());
+    }
+
     void* GPU::GetImGuiContext() {
         return ImGui::GetCurrentContext();
     }

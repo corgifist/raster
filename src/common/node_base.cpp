@@ -31,22 +31,46 @@ namespace Raster {
         }
     }
 
+    void NodeBase::Initialize() {
+        this->enabled = true;
+        this->bypassed = false;
+    }
+
     AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator) {
         this->m_accumulator = t_accumulator;
         this->m_attributesCache = {};
+        if (!enabled) return {};
+        if (bypassed) {
+            auto outputPin = flowOutputPin.value();
+            if (outputPin.connectedPinID > 0) {
+                auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
+                if (connectedNode.has_value()) {
+                    connectedNode.value()->Execute({});
+                    return {};
+                }
+            }
+            return {};
+        }
         Workspace::UpdatePinCache(t_accumulator);
         auto pinMap = AbstractExecute(t_accumulator);
         Workspace::UpdatePinCache(pinMap);
         auto outputPin = flowOutputPin.value_or(GenericPin());
         if (outputPin.connectedPinID > 0) {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
-            if (connectedNode.has_value()) {
+            if (connectedNode.has_value() && connectedNode.value()->enabled) {
                 auto newPinMap = connectedNode.value()->Execute(pinMap);
                 Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
         }
         return pinMap;
+    }
+
+    std::string NodeBase::Header() {
+        if (!overridenHeader.empty()) {
+            return overridenHeader;
+        }
+        return AbstractHeader();
     }
 
     Json NodeBase::Serialize() {
@@ -73,11 +97,15 @@ namespace Raster {
             data["PackageName"] = nodeImplementation.value().description.packageName;
         }
 
+        data["Enabled"] = enabled;
+        data["Bypassed"] = bypassed;
+
         return data;
     }
 
     template <typename T>
     std::optional<T> NodeBase::GetAttribute(std::string t_attribute) {
+        if (!enabled || bypassed) return std::nullopt;
         auto attributePin = GenericPin();
         for (auto& pin : inputPins) {
             if (pin.linkedAttribute == t_attribute) {
@@ -93,7 +121,7 @@ namespace Raster {
             }
         }
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
-        if (targetNode.has_value()) {
+        if (targetNode.has_value() && targetNode.value()->enabled) {
             auto dynamicAttribute = targetNode.value()->AbstractExecute()[attributePin.connectedPinID];
             if (dynamicAttribute.type() == typeid(T)) {
                 m_attributesCache[t_attribute] = dynamicAttribute;
@@ -172,6 +200,14 @@ namespace Raster {
         }
     }
 
+    std::set<std::string> NodeBase::GetAttributesList() {
+        std::set<std::string> result;
+        for (auto& attribute : m_attributes) {
+            result.insert(attribute.first);
+        }
+        return result;
+    }
+
     void NodeBase::GenerateFlowPins() {
         this->flowInputPin = GenericPin("", PinType::Input, true);
         this->flowOutputPin = GenericPin("", PinType::Output, true);
@@ -210,8 +246,11 @@ namespace Raster {
     void NodeBase::DispatchStringAttribute(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed) {
         std::string string = std::any_cast<std::string>(t_value);
         if (t_isAttributeExposed) {
+            float originalCursorX = ImGui::GetCursorPosX();
+            ImGui::SetCursorPosX(originalCursorX - ImGui::CalcTextSize(ICON_FA_LINK).x - 5);
             ImGui::Text("%s ", ICON_FA_LINK);
-            ImGui::SameLine(0.0f, 0.0f);
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(originalCursorX);
         }
         ImGui::Text("%s", t_attrbute.c_str());
         ImGui::SameLine();

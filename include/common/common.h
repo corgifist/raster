@@ -87,9 +87,12 @@ namespace Raster {
         std::optional<GenericPin> flowInputPin, flowOutputPin;
         std::vector<GenericPin> inputPins, outputPins;
         std::string libraryName;
+        std::string overridenHeader;
+        bool enabled, bypassed;
 
         AbstractPinMap Execute(AbstractPinMap accumulator = {});
-        virtual std::string Header() = 0;
+        std::string Header();
+
         virtual std::optional<std::string> Footer() = 0;
         virtual std::string Icon() = 0;
 
@@ -102,17 +105,23 @@ namespace Raster {
 
         Json Serialize();
 
+        std::set<std::string> GetAttributesList();
+
         template <typename T>
         std::optional<T> GetAttribute(std::string t_attribute);
 
         protected:
         std::unordered_map<std::string, std::any> m_attributes;
 
+        virtual std::string AbstractHeader() = 0;
+
         virtual Json AbstractSerialize() { return {}; };
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
         void AddOutputPin(std::string t_attribute);
         void AddInputPin(std::string t_attribute);
+
+        void Initialize();
 
         void RenderAttributeProperty(std::string t_attribute);
 
@@ -162,10 +171,15 @@ namespace Raster {
     struct Project {
         std::string name, description;
         uint64_t framerate;
+        uint64_t currentFrame;
+        
         std::vector<Composition> compositions;
 
         Project();
         Project(Json data);
+
+        uint64_t GetProjectLength();
+        std::string FormatFrameToTime(uint64_t frame);
 
         Json Serialize();
     };

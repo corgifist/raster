@@ -74,7 +74,6 @@ namespace Raster {
                             isEditingDescription = false;
                         }
                         if (isEditingDescription) {
-
                             ImGui::Text("%s %s", ICON_FA_FONT, Localization::GetString("COMPOSITION_NAME").c_str());
                             ImGui::SameLine();
                             ImGui::InputText("##compositionName", &composition->name);
@@ -112,7 +111,7 @@ namespace Raster {
             for (auto& nodeID : Workspace::s_selectedNodes) {
                 auto maybeNode = Workspace::GetNodeByNodeID(nodeID);
                 if (maybeNode.has_value()) {
-                    auto node = maybeNode.value();
+                    auto& node = maybeNode.value();
                     auto nodeImplementation = Workspace::GetNodeImplementationByLibraryName(node->libraryName).value();
                     ImGui::PushID(nodeID);
                         ImGui::PushFont(Font::s_denseFont);
@@ -126,6 +125,14 @@ namespace Raster {
                             ImGui::Text("%s %s: %s", ICON_FA_STAR, Localization::GetString("PRETTY_NODE_NAME").c_str(), nodeImplementation.description.prettyName.c_str());
                             ImGui::Text("%s %s: %s", ICON_FA_LIST, Localization::GetString("CATEGORY").c_str(), NodeCategoryUtils::ToString(nodeImplementation.description.category).c_str());
                             ImGui::EndTooltip();
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button(FormatString("%s %s", !node->enabled ? ICON_FA_XMARK : ICON_FA_CHECK, Localization::GetString("ENABLED").c_str()).c_str())) {
+                            node->enabled = !node->enabled;
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str())) {
+                            node->bypassed = !node->bypassed;
                         }
                         if (treeExpanded) {
                             node->AbstractRenderProperties();

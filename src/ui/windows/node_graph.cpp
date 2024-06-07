@@ -307,6 +307,13 @@ namespace Raster {
                         }
                         ImGui::SetWindowFontScale(1.0f);
                     Nodes::EndNode();
+
+                    if (node->bypassed || !node->enabled) {
+                        ImDrawList* drawList = ImGui::GetWindowDrawList();
+                        ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
+                        ImVec2 nodeSize = Nodes::GetNodeSize(node->nodeID);
+                        drawList->AddRectFilled(s_originalCursor - padding, s_originalCursor + Nodes::GetNodeSize(node->nodeID) - padding, ImColor(0, 0, 0, 60));
+                    }
                 }
 
                 for (auto& node : s_currentComposition->nodes) {
@@ -427,10 +434,47 @@ namespace Raster {
             Nodes::Suspend();
 
             if (ImGui::BeginPopup("##nodeContextMenu")) {
+                ImGui::PushFont(Font::s_normalFont);
                 auto nodeCandidate = Workspace::GetNodeByNodeID((int) contextNodeID.Get());
                 if (nodeCandidate.has_value()) {
-                    auto node = nodeCandidate.value();
-                    ImGui::SeparatorText(node->Header().c_str());
+                    auto& node = nodeCandidate.value();
+                    ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
+                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ATTRIBUTES").c_str()).c_str())) {
+                        for (auto& attribute : node->GetAttributesList()) {
+                            bool isAttributeExposed = false;
+                            int attributeIndex = 0;
+                            std::optional<std::any> attributeValue;
+                            for (auto& inputPin : node->inputPins) {
+                                if (inputPin.linkedAttribute == attribute) {
+                                    isAttributeExposed = true;
+                                    if (Workspace::s_pinCache.find(inputPin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                        attributeValue = Workspace::s_pinCache[inputPin.connectedPinID];
+                                    }
+                                    break;
+                                }
+                                attributeIndex++;
+                            }
+
+                            ImGui::BulletText("%s", attribute.c_str());
+                            if (ImGui::IsItemHovered() && attributeValue.has_value()) {
+                                s_outerTooltip = attributeValue.value();
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton(FormatString("%s %s", isAttributeExposed ? ICON_FA_LINK_SLASH : ICON_FA_LINK, Localization::GetString(isAttributeExposed ? "HIDE" : "EXPOSE").c_str()).c_str())) {
+                                if (!isAttributeExposed) {
+                                    node->inputPins.push_back(GenericPin(attribute, PinType::Input));
+                                } else {
+                                    node->inputPins.erase(node->inputPins.begin() + attributeIndex);
+                                }
+                            }
+                        }
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str()).c_str())) {
+                        ImGui::InputText("##nodeDescription", &node->overridenHeader);
+                        ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str());
+                        ImGui::EndMenu();
+                    }
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_NODE").c_str()).c_str())) {
                         Nodes::DeleteNode(node->nodeID);
                     }
@@ -447,6 +491,7 @@ namespace Raster {
                 } else {
                     ImGui::CloseCurrentPopup();
                 }
+                ImGui::PopFont();
                 ImGui::EndPopup();
             }
 
@@ -467,16 +512,19 @@ namespace Raster {
             bool popupVisible = true;
             bool openSearchPopup = false;
             if (ImGui::BeginPopup("##createNewNode")) {
+                ImGui::PushFont(Font::s_normalFont);
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str()).c_str());
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
                     openSearchPopup = true;
                 }
+                ImGui::PopFont();
                 ImGui::EndPopup();
             }
             if (openSearchPopup) {
                 ImGui::OpenPopup("##createNewNodeSearch");
             }
             if (ImGui::BeginPopup("##createNewNodeSearch", ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::PushFont(Font::s_normalFont);
                 static std::string searchFilter = "";
                 ImGui::InputText("##searchFilter", &searchFilter);
                 ImGui::SameLine(0, 0);
@@ -521,6 +569,7 @@ namespace Raster {
                     ImGui::Text(Localization::GetString("NOTHING_TO_SHOW").c_str());
                 }
                 ImGui::EndChild();
+                ImGui::PopFont();
                 ImGui::EndPopup();
                 if (dimPercentage < 0) {
                     dimPercentage = 0.0f;
@@ -553,12 +602,17 @@ namespace Raster {
             if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_V)) {
                 ProcessPasteAction();
             }
+            
+            if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_D)) {
+                ProcessCopyAction();
+                ProcessPasteAction();
+            }
 
             Nodes::End();
             Nodes::SetCurrentEditor(nullptr);
             ImGui::PopFont();
             if (s_currentComposition) {
-                ImGui::SetCursorPos(ImGui::GetCursorStartPos());
+                ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
                 ImGui::PushFont(Font::s_denseFont);
                     ImGui::SetWindowFontScale(1.5f);
                         ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str());
@@ -570,6 +624,7 @@ namespace Raster {
                     if (isEditingDescription) {
                         isDescriptionHovered = false;
                     } 
+                    ImGui::SetCursorPosX(ImGui::GetCursorStartPos().x + 5);
                     ImGui::Text("%s", s_currentComposition->description.c_str());
                     if (isDescriptionHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                         std::cout << "clicked" << std::endl;

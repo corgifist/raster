@@ -7,6 +7,7 @@
 namespace Raster {
 
     LoadTextureByPath::LoadTextureByPath() {
+        NodeBase::Initialize();
         NodeBase::GenerateFlowPins();
 
         AddOutputPin("Texture");
@@ -46,7 +47,7 @@ namespace Raster {
         RenderAttributeProperty("Path");
     }
 
-    std::string LoadTextureByPath::Header() {
+    std::string LoadTextureByPath::AbstractHeader() {
         return FormatString(" Load Texture By Path: %s", GetAttribute<std::string>("Path").value_or("").c_str());
     }
 

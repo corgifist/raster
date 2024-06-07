@@ -10,7 +10,8 @@ namespace Raster {
     using AbstractUI = std::unique_ptr<UI>;
 
     struct UIFactory {
-        static std::unique_ptr<UI> SpawnNodeGraphUI();
-        static std::unique_ptr<UI> SpawnNodePropertiesUI();
+        static AbstractUI SpawnNodeGraphUI();
+        static AbstractUI SpawnNodePropertiesUI();
+        static AbstractUI SpawnRenderingUI();
     };
 }

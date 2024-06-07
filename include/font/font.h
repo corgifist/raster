@@ -13,6 +13,6 @@ namespace Raster {
         static size_t s_fontAwesomeSize;
         static std::vector<uint32_t> s_fontAwesomeBytes;
 
-        static ImFont* s_denseFont;
+        static ImFont* s_denseFont, *s_normalFont;
     };
 }

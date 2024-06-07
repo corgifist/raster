@@ -4,6 +4,7 @@
 #include "../ImGui/imgui_node_editor.h"
 #include "common/common.h"
 #include "traverser/traverser.h"
+#include "build_number.h"
 
 namespace Nodes = ax::NodeEditor;
 
@@ -39,9 +40,9 @@ namespace Raster {
 
         static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
 
-        io.Fonts->AddFontFromMemoryCompressedTTF(
+        Font::s_normalFont = io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontBytes.data(), Font::s_fontSize,
-            16.0f
+            16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic()
         );
 
         fontCfg.MergeMode = true;
@@ -71,6 +72,7 @@ namespace Raster {
 
         auto& style = ImGui::GetStyle();
         style.CurveTessellationTol = 0.01f;
+        style.ScrollSmooth = 3;
         ImVec4 *colors = style.Colors;
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
         colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -143,12 +145,15 @@ namespace Raster {
 
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
+        s_windows.push_back(UIFactory::SpawnRenderingUI());
 
         GPU::GenerateTexture(128, 128);
     }
 
     void App::RenderLoop() {
         while (!GPU::MustTerminate()) {
+            GPU::SetWindowTitle(FormatString("Raster - Build Number %i", BUILD_NUMBER));
+
             GPU::BeginFrame();
                 ImGui::DockSpaceOverViewport();
 

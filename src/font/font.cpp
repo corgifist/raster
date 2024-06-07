@@ -3,6 +3,7 @@
 namespace Raster {
 
     ImFont* Font::s_denseFont = nullptr;
+    ImFont* Font::s_normalFont = nullptr;
 
     size_t Font::s_fontSize = 115741;
     std::vector<uint32_t> Font::s_fontBytes = {

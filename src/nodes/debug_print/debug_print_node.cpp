@@ -7,6 +7,7 @@
 namespace Raster {
 
     DebugPrintNode::DebugPrintNode() {
+        NodeBase::Initialize();
         NodeBase::GenerateFlowPins();
         this->m_attributes["ArbitraryValue"] = std::string("Ummm");
 
@@ -26,7 +27,7 @@ namespace Raster {
         RenderAttributeProperty("ArbitraryValue");
     }
 
-    std::string DebugPrintNode::Header() {
+    std::string DebugPrintNode::AbstractHeader() {
         return "Expressions Test";
     }
 
