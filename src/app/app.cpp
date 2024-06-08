@@ -152,16 +152,19 @@ namespace Raster {
 
     void App::RenderLoop() {
         while (!GPU::MustTerminate()) {
-            GPU::SetWindowTitle(FormatString("Raster - Build Number %i", BUILD_NUMBER));
+            std::string constructedTitle = "Raster - Build Number " + std::to_string(BUILD_NUMBER);
+            if (Workspace::s_project.has_value()) {
+                auto& project = Workspace::s_project.value();
+                constructedTitle += " - " + project.name;
+            }
+            GPU::SetWindowTitle(constructedTitle);
 
             GPU::BeginFrame();
                 ImGui::DockSpaceOverViewport();
-
                 for (const auto& window : s_windows) {
                     window->Render();
                 }
 
-                
                 ImGui::ShowDemoWindow();
 
                 Traverser::TraverseAll();

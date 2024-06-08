@@ -7,24 +7,8 @@
 
 namespace Raster {
 
-    PropertyDispatchersCollection NodeBase::s_dispatchers = {
-        {ATTRIBUTE_TYPE(std::string), NodeBase::DispatchStringAttribute}
-    };
-
-    StringDispatchersCollection NodeBase::s_stringDispatchers = {
-        {ATTRIBUTE_TYPE(std::string), NodeBase::DispatchStringValue},
-        {ATTRIBUTE_TYPE(Texture), NodeBase::DispatchTextureValue}
-    };
-
-    static ImVec2 FitRectInRect(ImVec2 screen, ImVec2 rectangle) {
-        ImVec2 dst = screen;
-        ImVec2 src = rectangle;
-        float scale = std::min(dst.x / src.x, dst.y / src.y);
-        return ImVec2{src.x * scale, src.y * scale};
-    }
-
     void NodeBase::DispatchValueAttribute(std::any& t_attribute) {
-        for (auto& dispatcher : s_stringDispatchers) {
+        for (auto& dispatcher : Dispatchers::s_stringDispatchers) {
             if (std::type_index(t_attribute.type()) == dispatcher.first) {
                 dispatcher.second(t_attribute);
             } 
@@ -103,8 +87,7 @@ namespace Raster {
         return data;
     }
 
-    template <typename T>
-    std::optional<T> NodeBase::GetAttribute(std::string t_attribute) {
+    std::optional<std::any> NodeBase::GetDynamicAttribute(std::string t_attribute) {
         if (!enabled || bypassed) return std::nullopt;
         auto attributePin = GenericPin();
         for (auto& pin : inputPins) {
@@ -115,27 +98,31 @@ namespace Raster {
         }
         if (this->m_accumulator.find(attributePin.connectedPinID) != this->m_accumulator.end()) {
             auto dynamicAttribute = this->m_accumulator.at(attributePin.connectedPinID);
-            if (dynamicAttribute.type() == typeid(T)) {
-                m_attributesCache[t_attribute] = dynamicAttribute;
-                return std::optional(std::any_cast<T>(dynamicAttribute));
-            }
+            return dynamicAttribute;
         }
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value() && targetNode.value()->enabled) {
             auto dynamicAttribute = targetNode.value()->AbstractExecute()[attributePin.connectedPinID];
-            if (dynamicAttribute.type() == typeid(T)) {
-                m_attributesCache[t_attribute] = dynamicAttribute;
-                return std::any_cast<T>(dynamicAttribute);
-            }
+            return dynamicAttribute;
         }
 
         if (m_attributes.find(t_attribute) != m_attributes.end()) {
             auto dynamicAttribute = m_attributes[t_attribute];
+            return dynamicAttribute;
+        }
+
+        return std::nullopt;
+    }
+
+    template<typename T>
+    std::optional<T> NodeBase::GetAttribute(std::string t_attribute) {
+        auto dynamicAttributeCandidate = GetDynamicAttribute(t_attribute);
+        if (dynamicAttributeCandidate.has_value()) {
+            auto& dynamicAttribute = dynamicAttributeCandidate.value();
             if (dynamicAttribute.type() == typeid(T)) {
                 return std::any_cast<T>(dynamicAttribute);
             }
         }
-
         return std::nullopt;
     }
 
@@ -185,7 +172,7 @@ namespace Raster {
             ImGui::PopStyleColor();
             if (attributeTreeExpanded) {
                 bool dispatcherWasFound = false;
-                for (auto& dispatcher : s_dispatchers) {
+                for (auto& dispatcher : Dispatchers::s_propertyDispatchers) {
                     if (std::type_index(dynamicCandidate.type()) == dispatcher.first) {
                         dispatcherWasFound = true;
                         dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
@@ -241,39 +228,7 @@ namespace Raster {
         this->outputPins.push_back(GenericPin(t_attribute, PinType::Output));
     }
 
-    // Attribute Dispatchers
-
-    void NodeBase::DispatchStringAttribute(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed) {
-        std::string string = std::any_cast<std::string>(t_value);
-        if (t_isAttributeExposed) {
-            float originalCursorX = ImGui::GetCursorPosX();
-            ImGui::SetCursorPosX(originalCursorX - ImGui::CalcTextSize(ICON_FA_LINK).x - 5);
-            ImGui::Text("%s ", ICON_FA_LINK);
-            ImGui::SameLine();
-            ImGui::SetCursorPosX(originalCursorX);
-        }
-        ImGui::Text("%s", t_attrbute.c_str());
-        ImGui::SameLine();
-        ImGui::InputText(FormatString("##%s", t_attrbute.c_str()).c_str(), &string, t_isAttributeExposed ? ImGuiInputTextFlags_ReadOnly : 0);
-        t_value = string;
-    }
-
-    // Value Dispatchers
-
-    void NodeBase::DispatchStringValue(std::any& t_attribute) {
-        ImGui::Text("%s %s: '%s'", ICON_FA_QUOTE_LEFT, Localization::GetString("VALUE").c_str(), std::any_cast<std::string>(t_attribute).c_str());
-    }
-
-    void NodeBase::DispatchTextureValue(std::any& t_attribute) {
-        auto texture = std::any_cast<Texture>(t_attribute);
-        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - 64);
-        ImGui::Image(texture.handle, FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height)));
-        
-        auto footerText = FormatString("%ix%i; %s", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str());
-        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);
-        ImGui::Text(footerText.c_str());
-    }
-
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(std::any);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Texture);
 };
