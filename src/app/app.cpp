@@ -146,6 +146,7 @@ namespace Raster {
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
         s_windows.push_back(UIFactory::SpawnRenderingUI());
+        s_windows.push_back(UIFactory::SpawnTimelineUI());
 
         GPU::GenerateTexture(128, 128);
     }

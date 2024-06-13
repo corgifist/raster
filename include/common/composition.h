@@ -8,7 +8,7 @@ namespace Raster {
         int id;
         std::string name, description;
         std::vector<AbstractNode> nodes;
-        uint64_t beginFrame, endFrame;
+        float beginFrame, endFrame;
 
         Composition();
         Composition(Json data);

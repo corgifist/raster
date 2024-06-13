@@ -13,5 +13,6 @@ namespace Raster {
         static AbstractUI SpawnNodeGraphUI();
         static AbstractUI SpawnNodePropertiesUI();
         static AbstractUI SpawnRenderingUI();
+        static AbstractUI SpawnTimelineUI();
     };
 }

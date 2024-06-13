@@ -2,6 +2,7 @@
 #include "windows/node_graph.h"
 #include "windows/node_properties.h"
 #include "windows/rendering.h"
+#include "windows/timeline.h"
 
 namespace Raster {
     AbstractUI UIFactory::SpawnNodeGraphUI() {
@@ -14,5 +15,9 @@ namespace Raster {
 
     AbstractUI UIFactory::SpawnRenderingUI() {
         return (AbstractUI) std::make_unique<RenderingUI>();
+    }
+
+    AbstractUI UIFactory::SpawnTimelineUI() {
+        return (AbstractUI) std::make_unique<TimelineUI>();
     }
 }

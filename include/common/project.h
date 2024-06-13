@@ -5,8 +5,8 @@
 namespace Raster {
     struct Project {
         std::string name, description;
-        uint64_t framerate;
-        uint64_t currentFrame;
+        float framerate;
+        float currentFrame;
         
         std::vector<Composition> compositions;
 

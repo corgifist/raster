@@ -32,7 +32,7 @@ namespace Raster {
     std::string Project::FormatFrameToTime(uint64_t frame) {
         auto transformedFrame = frame / framerate;
         float minutes = std::floor(transformedFrame / 60);
-        float seconds = std::floor( transformedFrame % 60);
+        float seconds = std::floor(remainder(transformedFrame, 60.0f));
         return FormatString("%02i:%02i", (int) minutes, (int) seconds);
     }
 
