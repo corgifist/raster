@@ -26,7 +26,7 @@ namespace Raster {
                 candidate = composition.endFrame;
             }
         }
-        return candidate;
+        return candidate == UINT64_MAX ? 0 : candidate;
     }
 
     std::string Project::FormatFrameToTime(uint64_t frame) {

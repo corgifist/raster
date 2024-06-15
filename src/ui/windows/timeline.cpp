@@ -45,8 +45,7 @@ namespace Raster {
     }
 
     void TimelineUI::Render() {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        PushStyleVars();
         ImGui::Begin(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
                 s_pixelsPerFrame += 1;
@@ -60,6 +59,16 @@ namespace Raster {
             RenderCompositionsEditor();
             RenderSplitter();
         ImGui::End();
+        PopStyleVars();
+    }
+
+    void TimelineUI::PushStyleVars() {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+    }
+
+
+    void TimelineUI::PopStyleVars() {
         ImGui::PopStyleVar(2);
     }
 
@@ -179,10 +188,13 @@ namespace Raster {
             auto& composition = compositionCandidate.value();
             ImGui::SetCursorPosX(composition->beginFrame * s_pixelsPerFrame);
             ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_Button));
+            buttonColor.w = 1.0f;
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
             ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
             ImVec2 buttonCursor = ImGui::GetCursorPos();
-            bool compositionPressed = ImGui::Button(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str(), ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame, LAYER_HEIGHT));
+            ImVec2 buttonSize = ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame, LAYER_HEIGHT);
+            bool compositionPressed = ImGui::Button(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str(), buttonSize);
+            bool compositionHovered = ImGui::IsItemHovered();
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
             auto& io = ImGui::GetIO();
@@ -190,8 +202,54 @@ namespace Raster {
                 Workspace::s_selectedCompositions = {composition->id};
             }
             static DragStructure s_layerDrag;
-            s_anyLayerDragged = s_layerDrag.isActive;
-            if (ImGui::IsItemHovered() || s_layerDrag.isActive && !s_timelineRulerDragged) {
+            static DragStructure s_forwardBoundsDrag, s_backwardBoundsDrag;
+            s_anyLayerDragged = s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive;
+
+            ImVec2 dragSize = ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame / 10, LAYER_HEIGHT);
+            dragSize.x = std::clamp(dragSize.x, 1.0f, 30.0f);
+
+            ImGui::SetCursorPos({0, 0});
+            RectBounds forwardBoundsDrag(
+                ImVec2(buttonCursor.x + buttonSize.x - dragSize.x, buttonCursor.y),
+                dragSize
+            );
+
+            RectBounds backwardBoundsDrag(
+                buttonCursor, dragSize
+            );
+
+            ImVec4 dragColor = buttonColor * 0.7f;
+            dragColor.w = 1.0f;
+            DrawRect(forwardBoundsDrag, dragColor);
+            DrawRect(backwardBoundsDrag, dragColor);
+
+            if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive) {
+                s_forwardBoundsDrag.Activate();
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+                float boundsDragDistance;
+                if (s_forwardBoundsDrag.GetDragDistance(boundsDragDistance)) {
+                    composition->endFrame += boundsDragDistance / s_pixelsPerFrame;
+                } else s_forwardBoundsDrag.Deactivate();
+
+                float scrollAmount = ProcessLayerScroll();
+                composition->endFrame += scrollAmount / s_pixelsPerFrame;
+            }
+
+            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive) {
+                s_backwardBoundsDrag.Activate();
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+                float boundsDragDistance;
+                if (s_backwardBoundsDrag.GetDragDistance(boundsDragDistance)) {
+                    composition->beginFrame += boundsDragDistance / s_pixelsPerFrame;
+                } else s_backwardBoundsDrag.Deactivate();
+
+                float scrollAmount = ProcessLayerScroll();
+                composition->beginFrame += scrollAmount / s_pixelsPerFrame;
+            }
+ 
+            if ((ImGui::IsItemHovered() || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive) {
                 s_layerDrag.Activate();
 
                 float layerDragDistance;
@@ -201,6 +259,10 @@ namespace Raster {
                     composition->beginFrame += layerDragDistance / s_pixelsPerFrame;
                     composition->endFrame += layerDragDistance / s_pixelsPerFrame;
 
+                    float scrollAmount = ProcessLayerScroll();
+                    composition->beginFrame += scrollAmount / s_pixelsPerFrame;
+                    composition->endFrame += scrollAmount / s_pixelsPerFrame;
+
                     if (composition->beginFrame < 0) {
                         composition->beginFrame = reservedBounds.x;
                         composition->endFrame = reservedBounds.y;
@@ -208,11 +270,36 @@ namespace Raster {
 
                     composition->beginFrame = std::max(composition->beginFrame, 0.0f);
                     composition->endFrame = std::max(composition->endFrame, 0.0f);
+                    
                 } else s_layerDrag.Deactivate();
             }
+
+            if (compositionHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                ImGui::OpenPopup(FormatString("##compositionPopup%i", composition->id).c_str());
+            }
+
+            PopStyleVars();
+            if (ImGui::BeginPopup(FormatString("##compositionPopup%i", composition->id).c_str())) {
+                RenderCompositionPopup(composition);
+                ImGui::EndPopup();
+            }
+            PushStyleVars();
         }
     }
 
+    void TimelineUI::RenderCompositionPopup(Composition* composition) {
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_COMPOSITION").c_str()).c_str())) {
+            auto& project = Workspace::s_project.value();
+            Workspace::s_selectedCompositions = {};
+            int targetCompositionIndex = 0;
+            for (auto& iterationComposition : project.compositions) {
+                if (composition->id == iterationComposition.id) break;
+                targetCompositionIndex++;
+            }
+            project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
+        }
+    }
+ 
     void TimelineUI::RenderTimelineRuler() {
         ImGui::SetCursorPos({0, 0});
         auto& project = Workspace::s_project.value();
@@ -282,6 +369,25 @@ namespace Raster {
         } else splitterDragging = false;
 
         s_splitterState = std::clamp(s_splitterState, 0.2f, 0.6f);
+    }
+
+    float TimelineUI::ProcessLayerScroll() {
+        ImGui::SetCursorPos({0, 0});
+        float mouseX = GetRelativeMousePos().x;
+        float eventZone = ImGui::GetWindowSize().x / 10.0f;
+        if (mouseX > ImGui::GetWindowSize().x - eventZone) {
+            ImGui::SetScrollX(ImGui::GetScrollX() + 5);
+            return 5;
+        }
+
+        if (mouseX < eventZone) {
+            if (ImGui::GetScrollX() - 5 > 0) {
+                ImGui::SetScrollX(ImGui::GetScrollX() - 5);
+            }
+            return -5;
+        }
+
+        return 0;
     }
 
     ImVec2 TimelineUI::GetRelativeMousePos() {

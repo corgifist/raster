@@ -38,7 +38,7 @@ namespace Raster {
             textOffset = textOffset + ImGui::GetIO().MouseDelta;
         } else textDrag.Deactivate();
 
-        if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+        if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused()) {
             zoom += ImGui::GetIO().MouseWheel * 0.1f;
             zoom = std::max(zoom, 0.5f);
         }
@@ -74,7 +74,7 @@ namespace Raster {
             } else imageDrag.Deactivate();
         ImGui::EndChild();
 
-        if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+        if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused()) {
             zoom += ImGui::GetIO().MouseWheel * 0.1f;
             zoom = std::max(zoom, 0.5f);
         }

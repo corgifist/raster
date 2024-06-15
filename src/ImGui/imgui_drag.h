@@ -14,7 +14,7 @@ namespace Raster {
 
         bool GetDragDistance(float& distance) {
             ImGuiIO& io = ImGui::GetIO();
-            if (io.MouseDown[ImGuiMouseButton_Left] && isActive) {
+            if (io.MouseDown[ImGuiMouseButton_Left] && isActive && ImGui::IsWindowFocused()) {
                 distance = io.MouseDelta.x;
                 return true;
             }
@@ -23,7 +23,7 @@ namespace Raster {
 
         void Activate() {
             ImGuiIO& io = ImGui::GetIO();
-            if (io.MouseDown[ImGuiMouseButton_Left] && !isActive) {
+            if (io.MouseDown[ImGuiMouseButton_Left] && !isActive && ImGui::IsWindowFocused()) {
                 isActive = true;
             }
         }

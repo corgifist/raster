@@ -48,5 +48,9 @@
     "DESCRIPTION": "Description",
     "ATTRIBUTES": "Attributes",
     "PREVIEW_DISPATCHER_UNAVAILABLE": "Preview Dispatcher Unavailable",
-    "RENDERING": "Rendering"
+    "RENDERING": "Rendering",
+    "ATTRIBUTE": "Attribute",
+    "NO_PREVIEW_DISPATCHER_FOR_TYPE": "No Preview Dispatcher For Type",
+    "TIMELINE": "Timeline",
+    "DELETE_COMPOSITION": "Delete Composition"
 }

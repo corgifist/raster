@@ -209,6 +209,7 @@ namespace Raster {
 
             Nodes::EnableShortcuts(true);
 
+
             auto& style = Nodes::GetStyle();
             style.Colors[Nodes::StyleColor_Bg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
             style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
@@ -222,6 +223,7 @@ namespace Raster {
             style.PinArrowWidth = 10.0f;
 
 
+            static Nodes::NodeId contextNodeID;
             Nodes::Begin("SimpleEditor");
                 for (auto& target : Workspace::s_targetSelectNodes) {
                     Nodes::SelectNode(target, true);
@@ -231,205 +233,207 @@ namespace Raster {
 
                 auto compositionsCandidate = Workspace::GetSelectedCompositions();
                 if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
-                auto compositions = compositionsCandidate.value();
-                if (compositions.empty()) s_currentComposition = nullptr;
-                s_currentComposition = compositions[0];
+                if (compositionsCandidate.has_value()) {
+                    auto compositions = compositionsCandidate.value();
+                    if (compositions.empty()) s_currentComposition = nullptr;
+                    s_currentComposition = compositions[0];
+                }
 
-                if (s_currentComposition)
-                for (auto& node : s_currentComposition->nodes) {
-                    s_currentNode = node;
-                    float maxInputXCandidate = 0;
-                    for (auto& pin : node->inputPins) {
-                        ImGui::SetWindowFontScale(s_pinTextScale);
-                            auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
-                        ImGui::SetWindowFontScale(1.0f);
-                        if (attributeSize.x > maxInputXCandidate) {
-                            maxInputXCandidate = attributeSize.x;
-                        }
-                    }
-                    s_maxInputPinX = maxInputXCandidate;
-
-                    float maxOutputXCandidate = 0;
-                    for (auto& pin : node->outputPins) {
-                        ImGui::SetWindowFontScale(s_pinTextScale);
-                            auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
-                        ImGui::SetWindowFontScale(1.0f);
-                        if (attributeSize.x > maxOutputXCandidate) {
-                            maxOutputXCandidate = attributeSize.x;
-                        }
-                    }
-                    s_maxOutputPinX = maxOutputXCandidate;
-
-                    Nodes::BeginNode(node->nodeID);
-                        s_originalCursor = ImGui::GetCursorScreenPos();
-                        ImVec2 originalCursor = ImGui::GetCursorScreenPos();
-                        std::string header = node->Icon() + (node->Icon().empty() ? "" : " ") + node->Header();
-                        s_headerSize = ImGui::CalcTextSize(header.c_str());
-                        if (node->Footer().has_value()) {
-                            auto footer = node->Footer().value();
-                            ImGui::SetWindowFontScale(0.8f);
-                            ImVec2 footerSize = ImGui::CalcTextSize(footer.c_str());
-                            ImGui::SetWindowFontScale(1.0f);
-                            if (footerSize.x > s_headerSize.x) {
-                                s_headerSize = footerSize;
-                            }
-                        }
-                        ImGui::Text("%s", header.c_str());
-                        if (node->flowInputPin.has_value()) {
-                            RenderInputPin(node->flowInputPin.value(), true);
-                        }
-                        if (node->flowOutputPin.has_value()) {
-                            ImGui::SameLine();
-                            RenderOutputPin(node->flowOutputPin.value(), true);
-                        }
-                        float headerY = ImGui::GetCursorPosY();
-
-                        ImGui::SetCursorPosX(originalCursor.x);
-
-                        // Pins Rendering
+                if (s_currentComposition) {
+                    for (auto& node : s_currentComposition->nodes) {
+                        s_currentNode = node;
+                        float maxInputXCandidate = 0;
                         for (auto& pin : node->inputPins) {
-                            RenderInputPin(pin);
+                            ImGui::SetWindowFontScale(s_pinTextScale);
+                                auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+                            ImGui::SetWindowFontScale(1.0f);
+                            if (attributeSize.x > maxInputXCandidate) {
+                                maxInputXCandidate = attributeSize.x;
+                            }
                         }
+                        s_maxInputPinX = maxInputXCandidate;
 
-
-                        ImGui::SetCursorPosY(headerY);
+                        float maxOutputXCandidate = 0;
                         for (auto& pin : node->outputPins) {
-                            RenderOutputPin(pin);
-                        }
-
-                        // Footer Rendering
-
-                        ImGui::SetWindowFontScale(0.8f);
-                        auto footer = node->Footer();
-                        if (footer.has_value()) {
-                            ImGui::Spacing();
-                            ImGui::Text(footer.value().c_str());
-                        }
-                        ImGui::SetWindowFontScale(1.0f);
-                    Nodes::EndNode();
-
-                    if (node->bypassed || !node->enabled) {
-                        ImDrawList* drawList = ImGui::GetWindowDrawList();
-                        ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
-                        ImVec2 nodeSize = Nodes::GetNodeSize(node->nodeID);
-                        drawList->AddRectFilled(s_originalCursor - padding, s_originalCursor + Nodes::GetNodeSize(node->nodeID) - padding, ImColor(0, 0, 0, 60));
-                    }
-                }
-
-                for (auto& node : s_currentComposition->nodes) {
-                    if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
-                        auto sourcePin = node->flowInputPin.value();
-                        Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
-                    }
-                    if (node->flowOutputPin.has_value() && node->flowOutputPin.value().connectedPinID > 0) {
-                        auto sourcePin = node->flowOutputPin.value();
-                        Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
-                    }
-
-                    for (auto& pin : node->inputPins) {
-                        if (pin.connectedPinID > 0) {
-                            std::any cachedValue = std::nullopt;
-                            if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                            ImGui::SetWindowFontScale(s_pinTextScale);
+                                auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+                            ImGui::SetWindowFontScale(1.0f);
+                            if (attributeSize.x > maxOutputXCandidate) {
+                                maxOutputXCandidate = attributeSize.x;
                             }
-                            ImVec4 linkColor = ImVec4(1, 1, 1, 1);
-                            auto colorCandidate = GetColorByDynamicValue(cachedValue);
-                            if (colorCandidate.has_value() && cachedValue.type() != typeid(std::nullopt)) {
-                                linkColor = colorCandidate.value();
+                        }
+                        s_maxOutputPinX = maxOutputXCandidate;
+
+                        Nodes::BeginNode(node->nodeID);
+                            s_originalCursor = ImGui::GetCursorScreenPos();
+                            ImVec2 originalCursor = ImGui::GetCursorScreenPos();
+                            std::string header = node->Icon() + (node->Icon().empty() ? "" : " ") + node->Header();
+                            s_headerSize = ImGui::CalcTextSize(header.c_str());
+                            if (node->Footer().has_value()) {
+                                auto footer = node->Footer().value();
+                                ImGui::SetWindowFontScale(0.8f);
+                                ImVec2 footerSize = ImGui::CalcTextSize(footer.c_str());
+                                ImGui::SetWindowFontScale(1.0f);
+                                if (footerSize.x > s_headerSize.x) {
+                                    s_headerSize = footerSize;
+                                }
                             }
-                            Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, linkColor, 2.0f);
-                        }
-                    }
-                    for (auto& pin : node->outputPins) {
-                        if (pin.connectedPinID > 0) {
-                            Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
-                        }
-                    }
-                }
+                            ImGui::Text("%s", header.c_str());
+                            if (node->flowInputPin.has_value()) {
+                                RenderInputPin(node->flowInputPin.value(), true);
+                            }
+                            if (node->flowOutputPin.has_value()) {
+                                ImGui::SameLine();
+                                RenderOutputPin(node->flowOutputPin.value(), true);
+                            }
+                            float headerY = ImGui::GetCursorPosY();
 
-                if (Nodes::BeginCreate()) {
-                    Nodes::PinId startPinID, endPinID;
-                    if (Nodes::QueryNewLink(&startPinID, &endPinID)) {
-                        int rawStartPinID = (int) startPinID.Get();
-                        int rawEndPinID = (int) endPinID.Get();
-                        auto startNode = Workspace::GetNodeByPinID(rawStartPinID);
-                        auto endNode = Workspace::GetNodeByPinID(rawEndPinID);
-                        
-                        auto startPinContainer = Workspace::GetPinByPinID(rawStartPinID);
-                        auto endPinContainer = Workspace::GetPinByPinID(rawEndPinID);
-                        if (startNode.has_value() && endNode.has_value() && startPinContainer.has_value() && endPinContainer.has_value()) {
-                            auto startPin = startPinContainer.value();
-                            auto endPin = endPinContainer.value();
+                            ImGui::SetCursorPosX(originalCursor.x);
 
-                            if (startPin.type == PinType::Input) {
-                                std::swap(startPin, endPin);
-                                std::swap(startPinContainer, endPinContainer);
-                                std::swap(startPinID, endPinID);
-                                std::swap(rawStartPinID, rawEndPinID);
+                            // Pins Rendering
+                            for (auto& pin : node->inputPins) {
+                                RenderInputPin(pin);
                             }
 
-                            if (endPin.pinID == startPin.pinID) {
-                                Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                            } else if (endPin.type == startPin.type) {
-                                ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
-                                Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                            } else {
-                                if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
-                                    if (startPin.flow) {
-                                        startPin.connectedPinID = endPin.pinID;
-                                    } else {
-                                        endPin.connectedPinID = startPin.pinID;
+
+                            ImGui::SetCursorPosY(headerY);
+                            for (auto& pin : node->outputPins) {
+                                RenderOutputPin(pin);
+                            }
+
+                            // Footer Rendering
+
+                            ImGui::SetWindowFontScale(0.8f);
+                            auto footer = node->Footer();
+                            if (footer.has_value()) {
+                                ImGui::Spacing();
+                                ImGui::Text(footer.value().c_str());
+                            }
+                            ImGui::SetWindowFontScale(1.0f);
+                        Nodes::EndNode();
+
+                        if (node->bypassed || !node->enabled) {
+                            ImDrawList* drawList = ImGui::GetWindowDrawList();
+                            ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
+                            ImVec2 nodeSize = Nodes::GetNodeSize(node->nodeID);
+                            drawList->AddRectFilled(s_originalCursor - padding, s_originalCursor + Nodes::GetNodeSize(node->nodeID) - padding, ImColor(0, 0, 0, 60));
+                        }
+                    }
+
+                    for (auto& node : s_currentComposition->nodes) {
+                        if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
+                            auto sourcePin = node->flowInputPin.value();
+                            Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
+                        }
+                        if (node->flowOutputPin.has_value() && node->flowOutputPin.value().connectedPinID > 0) {
+                            auto sourcePin = node->flowOutputPin.value();
+                            Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
+                        }
+
+                        for (auto& pin : node->inputPins) {
+                            if (pin.connectedPinID > 0) {
+                                std::any cachedValue = std::nullopt;
+                                if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                    cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                                }
+                                ImVec4 linkColor = ImVec4(1, 1, 1, 1);
+                                auto colorCandidate = GetColorByDynamicValue(cachedValue);
+                                if (colorCandidate.has_value() && cachedValue.type() != typeid(std::nullopt)) {
+                                    linkColor = colorCandidate.value();
+                                }
+                                Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, linkColor, 2.0f);
+                            }
+                        }
+                        for (auto& pin : node->outputPins) {
+                            if (pin.connectedPinID > 0) {
+                                Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
+                            }
+                        }
+                    }
+
+                    if (Nodes::BeginCreate()) {
+                        Nodes::PinId startPinID, endPinID;
+                        if (Nodes::QueryNewLink(&startPinID, &endPinID)) {
+                            int rawStartPinID = (int) startPinID.Get();
+                            int rawEndPinID = (int) endPinID.Get();
+                            auto startNode = Workspace::GetNodeByPinID(rawStartPinID);
+                            auto endNode = Workspace::GetNodeByPinID(rawEndPinID);
+                            
+                            auto startPinContainer = Workspace::GetPinByPinID(rawStartPinID);
+                            auto endPinContainer = Workspace::GetPinByPinID(rawEndPinID);
+                            if (startNode.has_value() && endNode.has_value() && startPinContainer.has_value() && endPinContainer.has_value()) {
+                                auto startPin = startPinContainer.value();
+                                auto endPin = endPinContainer.value();
+
+                                if (startPin.type == PinType::Input) {
+                                    std::swap(startPin, endPin);
+                                    std::swap(startPinContainer, endPinContainer);
+                                    std::swap(startPinID, endPinID);
+                                    std::swap(rawStartPinID, rawEndPinID);
+                                }
+
+                                if (endPin.pinID == startPin.pinID) {
+                                    Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+                                } else if (endPin.type == startPin.type) {
+                                    ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
+                                    Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+                                } else {
+                                    if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
+                                        if (startPin.flow) {
+                                            startPin.connectedPinID = endPin.pinID;
+                                        } else {
+                                            endPin.connectedPinID = startPin.pinID;
+                                        }
                                     }
                                 }
-                            }
 
-                            Workspace::UpdatePinByID(startPin, startPin.pinID);
-                            Workspace::UpdatePinByID(endPin, endPin.pinID);
+                                Workspace::UpdatePinByID(startPin, startPin.pinID);
+                                Workspace::UpdatePinByID(endPin, endPin.pinID);
+                            }
                         }
                     }
-                }
-                Nodes::EndCreate();
+                    Nodes::EndCreate();
 
-                if (Nodes::BeginDelete()) {
-                    Nodes::NodeId nodeID = 0;
-                    while (Nodes::QueryDeletedNode(&nodeID)) {
-                        int rawNodeID = (int) nodeID.Get();
-                        if (Nodes::AcceptDeletedItem()) {
-                            int targetNodeDelete = -1;
-                            int nodeIndex = 0;
-                            for (auto& node : s_currentComposition->nodes) {
-                                if (node->nodeID == rawNodeID) {
-                                    targetNodeDelete = nodeIndex;
-                                    break; 
+                    if (Nodes::BeginDelete()) {
+                        Nodes::NodeId nodeID = 0;
+                        while (Nodes::QueryDeletedNode(&nodeID)) {
+                            int rawNodeID = (int) nodeID.Get();
+                            if (Nodes::AcceptDeletedItem()) {
+                                int targetNodeDelete = -1;
+                                int nodeIndex = 0;
+                                for (auto& node : s_currentComposition->nodes) {
+                                    if (node->nodeID == rawNodeID) {
+                                        targetNodeDelete = nodeIndex;
+                                        break; 
+                                    }
+                                    nodeIndex++;
                                 }
-                                nodeIndex++;
+                                s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                             }
-                            s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                         }
-                    }
 
-                    Nodes::LinkId linkID = 0;
-                    while (Nodes::QueryDeletedLink(&linkID)) {
-                        int rawLinkID = (int) linkID.Get();
-                        auto pin = Workspace::GetPinByLinkID(rawLinkID);
-                        if (pin.has_value()) {
-                            auto correctedPin = pin.value();
-                            correctedPin.connectedPinID = -1;
-                            Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                        Nodes::LinkId linkID = 0;
+                        while (Nodes::QueryDeletedLink(&linkID)) {
+                            int rawLinkID = (int) linkID.Get();
+                            auto pin = Workspace::GetPinByLinkID(rawLinkID);
+                            if (pin.has_value()) {
+                                auto correctedPin = pin.value();
+                                correctedPin.connectedPinID = -1;
+                                Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                            }
                         }
                     }
+                    Nodes::EndDelete();
+
+                    Nodes::Suspend();
+                    if (Nodes::ShowBackgroundContextMenu()) {
+                        ImGui::OpenPopup("##createNewNode");
+                    }
+                    if (Nodes::ShowNodeContextMenu(&contextNodeID)) {
+                        ImGui::OpenPopup("##nodeContextMenu");
+                    }
+                    Nodes::Resume();
                 }
-                Nodes::EndDelete();
-
-            Nodes::Suspend();
-            if (Nodes::ShowBackgroundContextMenu()) {
-                ImGui::OpenPopup("##createNewNode");
-            }
-            static Nodes::NodeId contextNodeID;
-            if (Nodes::ShowNodeContextMenu(&contextNodeID)) {
-                ImGui::OpenPopup("##nodeContextMenu");
-            }
-            Nodes::Resume();
 
             Nodes::Suspend();
 
