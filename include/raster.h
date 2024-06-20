@@ -19,3 +19,5 @@
 #include <cmath>
 
 #include "json.hpp"
+
+#define RASTER_PACKAGED_PACKAGE "packaged.raster."
