@@ -23,8 +23,9 @@ build_modules = [
     [common, shared],
     [traverser, shared, [raster_common]],
     [gpu, shared, [glfw, raster_common, raster_ImGui]],
+    [attributes, shared, [raster_common, raster_ImGui]]
     [ui, shared, [raster_common, raster_ImGui, raster_gpu]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes]],
     [core, binary, [raster_common, raster_app]],
     
 

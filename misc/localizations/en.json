@@ -52,5 +52,8 @@
     "ATTRIBUTE": "Attribute",
     "NO_PREVIEW_DISPATCHER_FOR_TYPE": "No Preview Dispatcher For Type",
     "TIMELINE": "Timeline",
-    "DELETE_COMPOSITION": "Delete Composition"
+    "DELETE_COMPOSITION": "Delete Composition",
+    "NEW_COMPOSITION": "New Composition",
+    "REVERT_VIEW": "Revert View",
+    "ADD_ATTRIBUTE": "Add Attribute"
 }
