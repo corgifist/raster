@@ -5,6 +5,8 @@
 #include "common/common.h"
 #include "traverser/traverser.h"
 #include "build_number.h"
+#include "attributes/attributes.h"
+#include "../ImGui/imgui_theme.h"
 
 namespace Nodes = ax::NodeEditor;
 
@@ -69,10 +71,12 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 
+        Attributes::Initialize();
 
         auto& style = ImGui::GetStyle();
         style.CurveTessellationTol = 0.01f;
         style.ScrollSmooth = 3;
+
         ImVec4 *colors = style.Colors;
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
         colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -143,12 +147,11 @@ namespace Raster {
         style.ScrollbarRounding = 4;
         style.GrabRounding = 4;
 
+
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
         s_windows.push_back(UIFactory::SpawnRenderingUI());
         s_windows.push_back(UIFactory::SpawnTimelineUI());
-
-        GPU::GenerateTexture(128, 128);
     }
 
     void App::RenderLoop() {

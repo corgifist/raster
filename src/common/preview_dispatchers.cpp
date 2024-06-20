@@ -42,6 +42,17 @@ namespace Raster {
             zoom += ImGui::GetIO().MouseWheel * 0.1f;
             zoom = std::max(zoom, 0.5f);
         }
+
+        if (ImGui::IsWindowFocused() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            ImGui::OpenPopup("##stringPreviewPopup");
+        } 
+        if (ImGui::BeginPopup("##stringPreviewPopup")) {
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FONT, Localization::GetString("REVERT_VIEW").c_str()).c_str())) {
+                textOffset = {0, 0};
+                zoom = 1.0f;
+            }
+            ImGui::EndPopup();
+        }
     }
 
     void PreviewDispatchers::DispatchTextureValue(std::any& t_attribute) {

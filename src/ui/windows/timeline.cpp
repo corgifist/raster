@@ -1,15 +1,32 @@
 #include "timeline.h"
 #include "font/font.h"
+#include "attributes/attributes.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
 #define TICKS_BAR_HEIGHT 30
 #define TICK_SMALL_WIDTH 3
 #define LAYER_HEIGHT 44
+#define LAYER_SEPARATOR 1.5f
 
 #define ROUND_EVEN(x) std::round( (x) * 0.5f ) * 2.0f
 
 namespace Raster {
+
+    enum class TimelineChannels {
+        Separators,
+        Compositions,
+        Timestamps,
+        Count
+    };
+
+    static void SplitDrawList() {
+        ImGui::GetWindowDrawList()->ChannelsSplit(static_cast<int>(TimelineChannels::Count));
+    }
+
+    static void SetDrawListChannel(TimelineChannels channel) {
+        ImGui::GetWindowDrawList()->ChannelsSetCurrent(static_cast<int>(channel));
+    }
 
     static float s_splitterState = 0.3f;
     static DragStructure s_dragStructure;
@@ -21,8 +38,15 @@ namespace Raster {
     static bool s_timelineRulerDragged = false;
     static bool s_anyLayerDragged = false;
     static bool s_scrollbarActive = true;
+    static bool s_layerPopupActive = false;
+
+    static float s_timelineScrollY = 0;
+
+    static float s_compositionsEditorCursorX = 0;
 
     static DragStructure s_timelineDrag;
+
+    static std::unordered_map<int, float> s_legendOffsets;
 
     static float precision(float f, int places) {
         float n = std::pow(10.0f, places ) ;
@@ -44,8 +68,71 @@ namespace Raster {
         return ImGui::IsMouseHoveringRect(bounds.UL, bounds.BR);
     }
 
+    static bool ClampedButton(const char* label, const ImVec2& size_arg, ImGuiButtonFlags flags, bool& hovered)
+    {
+        ImVec2 baseCursor = ImGui::GetCursorPos();
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        ImGuiContext& g = *GImGui;
+        const ImGuiStyle& style = g.Style;
+        const ImGuiID id = window->GetID(label);
+        const ImVec2 label_size = ImGui::CalcTextSize(label, NULL, true);
+
+        ImVec2 pos = window->DC.CursorPos;
+        if ((flags & ImGuiButtonFlags_AlignTextBaseLine) && style.FramePadding.y < window->DC.CurrLineTextBaseOffset) // Try to vertically align buttons that are smaller/have no padding so that text baseline matches (bit hacky, since it shouldn't be a flag)
+            pos.y += window->DC.CurrLineTextBaseOffset - style.FramePadding.y;
+        ImVec2 size = ImGui::CalcItemSize(size_arg, label_size.x + style.FramePadding.x * 2.0f, label_size.y + style.FramePadding.y * 2.0f);
+
+        const ImRect bb(pos, pos + size);
+        ImGui::ItemSize(size, style.FramePadding.y);
+        if (!ImGui::ItemAdd(bb, id))
+            return false;
+
+        bool held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held, flags);
+
+        // Render
+        const ImU32 col = ImGui::GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+        ImGui::RenderNavHighlight(bb, id);
+        ImGui::RenderFrame(bb.Min, bb.Max, col, true, style.FrameRounding);
+
+        if (g.LogEnabled)
+            ImGui::LogSetNextTextDecoration("[", "]");
+
+        ImVec2 textMin = bb.Min + style.FramePadding;
+        ImVec2 textMax = bb.Max - style.FramePadding;
+
+        ImVec2 reservedCursor = ImGui::GetCursorPos();
+
+        ImVec2 labelCursor = {
+            baseCursor.x + size.x / 2.0f - label_size.x / 2.0f,
+            baseCursor.y + size.y / 2.0f - label_size.y / 2.0f
+        };
+        if (labelCursor.x - ImGui::GetScrollX() <= style.FramePadding.x) {
+            labelCursor.x = ImGui::GetScrollX() + style.FramePadding.x;
+        }
+        if (labelCursor.x - ImGui::GetScrollX() >= ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x) {
+            labelCursor.x = ImGui::GetScrollX() + ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x;
+        }
+
+        ImGui::SetCursorPos(labelCursor);
+        ImGui::Text("%s", label);
+        ImGui::SetCursorPos(reservedCursor);
+
+        // Automatically close popups
+        //if (pressed && !(flags & ImGuiButtonFlags_DontClosePopups) && (window->Flags & ImGuiWindowFlags_Popup))
+        //    CloseCurrentPopup();
+
+        IMGUI_TEST_ENGINE_ITEM_INFO(id, label, g.LastItemData.StatusFlags);
+        return pressed;
+    }
+
     void TimelineUI::Render() {
         PushStyleVars();
+
+        s_layerPopupActive = false;
         ImGui::Begin(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
                 s_pixelsPerFrame += 1;
@@ -58,6 +145,7 @@ namespace Raster {
             RenderLegend();
             RenderCompositionsEditor();
             RenderSplitter();
+            s_legendOffsets.clear();
         ImGui::End();
         PopStyleVars();
     }
@@ -119,13 +207,13 @@ namespace Raster {
             ImVec2 timestampSize = ImGui::CalcTextSize(timestampFormattedText.c_str());
 
             ImDrawList* drawList = ImGui::GetWindowDrawList();
-            drawList->ChannelsSetCurrent(0);
+            SetDrawListChannel(TimelineChannels::Compositions);
             DrawRect(tickBounds, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
 
             ticksMajorAccumulator++;
 
             if (majorTick) {
-                drawList->ChannelsSetCurrent(1);
+                SetDrawListChannel(TimelineChannels::Timestamps);
                 drawList->AddText(
                     ImGui::GetCursorScreenPos() + ImVec2(tickBounds.pos.x + 5, 6.0f),
                     IM_COL32(255, 255, 255, 255), timestampFormattedText.c_str()
@@ -133,7 +221,7 @@ namespace Raster {
                 previousTickPositionAccumulator = tickPositionAccumulator;
                 ticksMajorAccumulator = 0;
             }
-            drawList->ChannelsSetCurrent(0);
+            SetDrawListChannel(TimelineChannels::Compositions);
 
             tickPositionAccumulator += tickPositionStep;
             tickAccumulator += tickStep;
@@ -142,6 +230,7 @@ namespace Raster {
 
     void TimelineUI::RenderCompositionsEditor() {
         ImGui::SameLine();
+        s_compositionsEditorCursorX = ImGui::GetCursorPosX();
 
         auto& project = Workspace::s_project.value();
 
@@ -159,6 +248,7 @@ namespace Raster {
         if (showVerticalScrollbar)
             timelineFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
         ImGui::BeginChild("##timelineCompositions", ImVec2(ImGui::GetWindowSize().x * (1 - s_splitterState), ImGui::GetContentRegionAvail().y), 0, timelineFlags);
+            s_timelineScrollY = ImGui::GetScrollY();
             ImVec2 windowMouseCoords = GetRelativeMousePos();
             bool previousVerticalBar = showVerticalScrollbar;
             bool previousHorizontalBar = showHorizontalScrollbar;
@@ -170,13 +260,22 @@ namespace Raster {
                 showHorizontalScrollbar = true;
 
             ImDrawList* drawList = ImGui::GetWindowDrawList();
-            drawList->ChannelsSplit(2);
+            SplitDrawList();
             RenderTicks();
 
-            ImGui::SetCursorPosY(backgroundBounds.size.y);
-            for (auto& composition : project.compositions) {
+            float layerAccumulator = 0;
+            for (int i = project.compositions.size(); i --> 0;) {
+                auto& composition = project.compositions[i];
+                ImGui::SetCursorPosY(backgroundBounds.size.y + layerAccumulator);
                 RenderComposition(composition.id);
+                float legendOffset = 0;
+                if (s_legendOffsets.find(composition.id) != s_legendOffsets.end()) {
+                    legendOffset = s_legendOffsets[composition.id];
+                }
+                layerAccumulator += LAYER_HEIGHT + legendOffset;
             }
+            
+            RenderTimelinePopup();
 
             RenderTimelineRuler();
         ImGui::EndChild();
@@ -184,8 +283,10 @@ namespace Raster {
 
     void TimelineUI::RenderComposition(int t_id) {
         auto compositionCandidate = Workspace::GetCompositionByID(t_id);
+        auto& project = Workspace::s_project.value();
         if (compositionCandidate.has_value()) {
             auto& composition = compositionCandidate.value();
+            ImGui::PushID(composition->id);
             ImGui::SetCursorPosX(composition->beginFrame * s_pixelsPerFrame);
             ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_Button));
             buttonColor.w = 1.0f;
@@ -193,16 +294,29 @@ namespace Raster {
             ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
             ImVec2 buttonCursor = ImGui::GetCursorPos();
             ImVec2 buttonSize = ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame, LAYER_HEIGHT);
-            bool compositionPressed = ImGui::Button(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str(), buttonSize);
-            bool compositionHovered = ImGui::IsItemHovered();
+            bool compositionHovered;
+            bool compositionPressed = ClampedButton(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str(), buttonSize, 0, compositionHovered);
             ImGui::PopStyleVar();
             ImGui::PopStyleColor();
             auto& io = ImGui::GetIO();
             if (compositionPressed && !io.KeyCtrl) {
                 Workspace::s_selectedCompositions = {composition->id};
             }
-            static DragStructure s_layerDrag;
-            static DragStructure s_forwardBoundsDrag, s_backwardBoundsDrag;
+
+            static std::vector<DragStructure> s_layerDrags, s_forwardBoundsDrags, s_backwardBoundsDrags;
+            s_layerDrags.resize(project.compositions.size());
+            s_forwardBoundsDrags.resize(project.compositions.size());
+            s_backwardBoundsDrags.resize(project.compositions.size());
+
+            int compositionIndex = 0;
+            for (auto& compositionIterable : project.compositions) {
+                if (compositionIterable.id == t_id) break;
+                compositionIndex++;
+            }
+
+            DragStructure& s_layerDrag = s_layerDrags[compositionIndex];
+            DragStructure& s_forwardBoundsDrag = s_forwardBoundsDrags[compositionIndex];
+            DragStructure& s_backwardBoundsDrag = s_backwardBoundsDrags[compositionIndex];
             s_anyLayerDragged = s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive;
 
             ImVec2 dragSize = ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame / 10, LAYER_HEIGHT);
@@ -236,7 +350,7 @@ namespace Raster {
                 composition->endFrame += scrollAmount / s_pixelsPerFrame;
             }
 
-            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive) {
+            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive) {
                 s_backwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
 
@@ -249,7 +363,7 @@ namespace Raster {
                 composition->beginFrame += scrollAmount / s_pixelsPerFrame;
             }
  
-            if ((ImGui::IsItemHovered() || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive) {
+            if ((compositionHovered || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive) {
                 s_layerDrag.Activate();
 
                 float layerDragDistance;
@@ -280,24 +394,57 @@ namespace Raster {
 
             PopStyleVars();
             if (ImGui::BeginPopup(FormatString("##compositionPopup%i", composition->id).c_str())) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str());
                 RenderCompositionPopup(composition);
                 ImGui::EndPopup();
+                s_layerPopupActive = true;
+            } else if (!s_layerPopupActive) {
+                s_layerPopupActive = false;
             }
             PushStyleVars();
+            ImGui::PopID();
+
+            SetDrawListChannel(TimelineChannels::Separators);
+            ImGui::SetCursorPosX(0);
+            RectBounds separatorBounds(
+                ImVec2(ImGui::GetScrollX(), buttonCursor.y + buttonSize.y - LAYER_SEPARATOR / 2.0f),
+                ImVec2(ImGui::GetWindowSize().x, LAYER_SEPARATOR)
+            );
+            DrawRect(separatorBounds, ImGui::GetStyleColorVec4(ImGuiCol_Separator));
+            SetDrawListChannel(TimelineChannels::Compositions);
         }
+    }
+
+    void TimelineUI::DeleteComposition(Composition* composition) {
+        auto& project = Workspace::s_project.value();
+        Workspace::s_selectedCompositions = {};
+        int targetCompositionIndex = 0;
+        for (auto& iterationComposition : project.compositions) {
+            if (composition->id == iterationComposition.id) break;
+            targetCompositionIndex++;
+        }
+        project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
     }
 
     void TimelineUI::RenderCompositionPopup(Composition* composition) {
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_COMPOSITION").c_str()).c_str())) {
-            auto& project = Workspace::s_project.value();
-            Workspace::s_selectedCompositions = {};
-            int targetCompositionIndex = 0;
-            for (auto& iterationComposition : project.compositions) {
-                if (composition->id == iterationComposition.id) break;
-                targetCompositionIndex++;
-            }
-            project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
+            DeleteComposition(composition);
         }
+    }
+
+    void TimelineUI::RenderTimelinePopup() {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !s_layerPopupActive && ImGui::IsWindowFocused()) {
+            ImGui::OpenPopup("##layerPopup");
+        }
+        PopStyleVars();
+        if (ImGui::BeginPopup("##layerPopup")) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_COMPOSITION").c_str()).c_str())) {
+                Workspace::s_project.value().compositions.push_back(Composition());
+            }
+            ImGui::EndPopup();
+        }
+        PushStyleVars();
     }
  
     void TimelineUI::RenderTimelineRuler() {
@@ -323,6 +470,7 @@ namespace Raster {
 
     void TimelineUI::RenderLegend() {
         ImGui::BeginChild("##timelineLegend", ImVec2(ImGui::GetWindowSize().x * s_splitterState, ImGui::GetContentRegionAvail().y));
+            ImGui::SetScrollY(s_timelineScrollY);
             RenderTicksBar();
             RectBounds backgroundBounds = RectBounds(
                 ImVec2(ImGui::GetScrollX(), ImGui::GetScrollY()),
@@ -340,7 +488,86 @@ namespace Raster {
             ImGui::Text("%s", formattedTimestamp.c_str());
             ImGui::PopFont();
             ImGui::SetWindowFontScale(1.0f);
+
+            ImGui::SetCursorPos({0, backgroundBounds.size.y});
+
+            Composition* targetCompositionDelete = nullptr;
+            float layerAccumulator = 0;
+            for (int i = project.compositions.size(); i --> 0;) {
+                auto& composition = project.compositions[i];
+                std::string compositionName = FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str());
+                ImVec2 compositionNameSize = ImGui::CalcTextSize(compositionName.c_str());
+                ImVec2 baseCursor = ImVec2{
+                    0, backgroundBounds.size.y + layerAccumulator
+                };
+                PopStyleVars();
+                ImGui::SetCursorPos({5, backgroundBounds.size.y + layerAccumulator + LAYER_HEIGHT * 0.5f - compositionNameSize.y / 2.0f});
+                ImGui::PushID(composition.id);
+                if (ImGui::Button(ICON_FA_TRASH_CAN)) {
+                    targetCompositionDelete = &composition;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_PLUS)) {
+                    ImGui::OpenPopup(FormatString("##createAttribute%i", composition.id).c_str());
+                }
+                if (ImGui::BeginPopup(FormatString("##createAttribute%i", composition.id).c_str())) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
+                    for (auto& entry : Attributes::s_attributes) {
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, entry.packageName.c_str()).c_str())) {
+                            auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
+                            if (attributeCandidate.has_value()) {
+                                composition.attributes.push_back(attributeCandidate.value());
+                            }
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::SameLine();
+                bool compositionTreeExpanded = ImGui::TreeNode(compositionName.c_str());
+                auto treeNodeID = ImGui::GetItemID();
+                ImGui::SetCursorPos(baseCursor);
+                ImGui::SetNextItemAllowOverlap();
+                if (ImGui::InvisibleButton("##accessibilityButton", ImVec2(ImGui::GetWindowSize().x, LAYER_HEIGHT))) {
+                    ImGui::TreeNodeSetOpen(treeNodeID, !compositionTreeExpanded);
+                }
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                    ImGui::OpenPopup(FormatString("##compositionLegendPopup%i", composition.id).c_str());
+                }
+
+                ImVec2 reservedCursor = ImGui::GetCursorPos();
+                ImGui::SetCursorPos({0, backgroundBounds.size.y + layerAccumulator + LAYER_HEIGHT - LAYER_SEPARATOR / 2.0f});
+                RectBounds separatorBounds(
+                    ImVec2(0, 0), 
+                    ImVec2(ImGui::GetWindowSize().x, LAYER_SEPARATOR)
+                );
+
+                DrawRect(separatorBounds, ImGui::GetStyleColorVec4(ImGuiCol_Separator));
+                ImGui::SetCursorPos(reservedCursor);
+
+                if (ImGui::BeginPopup(FormatString("##compositionLegendPopup%i", composition.id).c_str())) {
+                    RenderCompositionPopup(&composition);
+                    ImGui::EndPopup();
+                }
+
+                if (compositionTreeExpanded) {
+                    float firstCursor = ImGui::GetCursorPosY();
+                    for (auto& attribute : composition.attributes) {
+                        attribute->RenderLegend(&composition);
+                    }
+                    ImGui::TreePop();
+                    s_legendOffsets[composition.id] = ImGui::GetCursorPosY() - firstCursor;
+                }
+                ImGui::PopID();
+                PushStyleVars();
+
+                layerAccumulator += LAYER_HEIGHT;
+            }
+
         ImGui::EndChild();
+
+        if (targetCompositionDelete) {
+            DeleteComposition(targetCompositionDelete);
+        }
     }
 
     void TimelineUI::RenderSplitter() {
@@ -375,12 +602,12 @@ namespace Raster {
         ImGui::SetCursorPos({0, 0});
         float mouseX = GetRelativeMousePos().x;
         float eventZone = ImGui::GetWindowSize().x / 10.0f;
-        if (mouseX > ImGui::GetWindowSize().x - eventZone) {
+        if (mouseX > ImGui::GetWindowSize().x - eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
             ImGui::SetScrollX(ImGui::GetScrollX() + 5);
             return 5;
         }
 
-        if (mouseX < eventZone) {
+        if (mouseX < eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
             if (ImGui::GetScrollX() - 5 > 0) {
                 ImGui::SetScrollX(ImGui::GetScrollX() - 5);
             }

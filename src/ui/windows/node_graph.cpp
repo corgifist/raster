@@ -196,7 +196,9 @@ namespace Raster {
     void NodeGraphUI::Render() {
         s_outerTooltip = std::nullopt;
         Workspace::s_selectedNodes.clear();
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
+        ImGui::PopStyleVar();
         ImGui::PushFont(Font::s_denseFont);
             static Nodes::EditorContext* ctx = nullptr;
             if (!ctx) {
@@ -211,7 +213,7 @@ namespace Raster {
 
 
             auto& style = Nodes::GetStyle();
-            style.Colors[Nodes::StyleColor_Bg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+            style.Colors[Nodes::StyleColor_Bg] = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
             style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
             style.Colors[Nodes::StyleColor_NodeSelRect] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
             style.Colors[Nodes::StyleColor_NodeSelRectBorder] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);

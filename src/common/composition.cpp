@@ -24,6 +24,7 @@ namespace Raster {
                 nodes.push_back(node);
             }
         }
+        
     }
 
     Json Composition::Serialize() {

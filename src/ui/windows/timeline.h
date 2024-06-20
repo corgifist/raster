@@ -29,6 +29,10 @@ namespace Raster {
 
         void RenderTimelineRuler();
 
+        void RenderTimelinePopup();
+
+        void DeleteComposition(Composition* composition);
+
         float ProcessLayerScroll();
 
         ImVec2 GetRelativeMousePos();
