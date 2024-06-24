@@ -1,6 +1,7 @@
 #include "timeline.h"
 #include "font/font.h"
 #include "attributes/attributes.h"
+#include "common/ui_shared.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -32,6 +33,8 @@ namespace Raster {
     static DragStructure s_dragStructure;
 
     static std::vector<float> s_layerSeparators;
+
+    static std::unordered_map<int, float> s_attributeYCursors;
 
     static float s_pixelsPerFrame = 4;
 
@@ -133,6 +136,8 @@ namespace Raster {
         PushStyleVars();
 
         s_layerPopupActive = false;
+
+        UIShared::s_timelinePixelsPerFrame = s_pixelsPerFrame;
         ImGui::Begin(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
                 s_pixelsPerFrame += 1;
@@ -141,6 +146,7 @@ namespace Raster {
                 s_pixelsPerFrame -= 1;
             }
             s_pixelsPerFrame = std::clamp((int) s_pixelsPerFrame, 1, 10);
+            UIShared::s_timelineDragged = s_timelineRulerDragged;
 
             RenderLegend();
             RenderCompositionsEditor();
@@ -337,7 +343,7 @@ namespace Raster {
             DrawRect(forwardBoundsDrag, dragColor);
             DrawRect(backwardBoundsDrag, dragColor);
 
-            if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive) {
+            if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
                 s_forwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
 
@@ -350,7 +356,7 @@ namespace Raster {
                 composition->endFrame += scrollAmount / s_pixelsPerFrame;
             }
 
-            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive) {
+            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
                 s_backwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
 
@@ -363,7 +369,7 @@ namespace Raster {
                 composition->beginFrame += scrollAmount / s_pixelsPerFrame;
             }
  
-            if ((compositionHovered || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive) {
+            if ((compositionHovered || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
                 s_layerDrag.Activate();
 
                 float layerDragDistance;
@@ -394,7 +400,6 @@ namespace Raster {
 
             PopStyleVars();
             if (ImGui::BeginPopup(FormatString("##compositionPopup%i", composition->id).c_str())) {
-                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str());
                 RenderCompositionPopup(composition);
                 ImGui::EndPopup();
                 s_layerPopupActive = true;
@@ -412,6 +417,11 @@ namespace Raster {
             );
             DrawRect(separatorBounds, ImGui::GetStyleColorVec4(ImGuiCol_Separator));
             SetDrawListChannel(TimelineChannels::Compositions);
+
+            for (auto& attribute : composition->attributes) {
+                ImGui::SetCursorPosY(s_attributeYCursors[attribute->id]);
+                attribute->RenderKeyframes();
+            }
         }
     }
 
@@ -427,6 +437,7 @@ namespace Raster {
     }
 
     void TimelineUI::RenderCompositionPopup(Composition* composition) {
+        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str());
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_COMPOSITION").c_str()).c_str())) {
             DeleteComposition(composition);
         }
@@ -463,7 +474,7 @@ namespace Raster {
         }
 
         float timelineDragDistance;
-        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && !s_anyLayerDragged) {
+        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             project.currentFrame = GetRelativeMousePos().x / s_pixelsPerFrame;
         } else s_timelineDrag.Deactivate();
     }
@@ -513,7 +524,7 @@ namespace Raster {
                 if (ImGui::BeginPopup(FormatString("##createAttribute%i", composition.id).c_str())) {
                     ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
                     for (auto& entry : Attributes::s_attributes) {
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, entry.packageName.c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
                             auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
                             if (attributeCandidate.has_value()) {
                                 composition.attributes.push_back(attributeCandidate.value());
@@ -524,6 +535,13 @@ namespace Raster {
                 }
                 ImGui::SameLine();
                 bool compositionTreeExpanded = ImGui::TreeNode(compositionName.c_str());
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                    ImGui::OpenPopup(FormatString("##accessibilityPopup%i", composition.id).c_str());
+                }
+                if (ImGui::BeginPopup(FormatString("##accessibilityPopup%i", composition.id).c_str())) {
+                    RenderCompositionPopup(&composition);
+                    ImGui::EndPopup();
+                }
                 auto treeNodeID = ImGui::GetItemID();
                 ImGui::SetCursorPos(baseCursor);
                 ImGui::SetNextItemAllowOverlap();
@@ -552,7 +570,10 @@ namespace Raster {
                 if (compositionTreeExpanded) {
                     float firstCursor = ImGui::GetCursorPosY();
                     for (auto& attribute : composition.attributes) {
+                        s_attributeYCursors[attribute->id] = ImGui::GetCursorPosY();
+                        float firstAttribueCursor = ImGui::GetCursorPosY();
                         attribute->RenderLegend(&composition);
+                        UIShared::s_timelineAttributeHeights[composition.id] = ImGui::GetCursorPosY() - firstAttribueCursor;
                     }
                     ImGui::TreePop();
                     s_legendOffsets[composition.id] = ImGui::GetCursorPosY() - firstCursor;
@@ -560,7 +581,7 @@ namespace Raster {
                 ImGui::PopID();
                 PushStyleVars();
 
-                layerAccumulator += LAYER_HEIGHT;
+                layerAccumulator += LAYER_HEIGHT + s_legendOffsets[composition.id];
             }
 
         ImGui::EndChild();
@@ -591,7 +612,7 @@ namespace Raster {
                 splitterDragging = true;   
             }
         }
-        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) &&ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) &&ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             s_splitterState = GetRelativeMousePos().x / ImGui::GetWindowSize().x;
         } else splitterDragging = false;
 

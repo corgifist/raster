@@ -282,4 +282,36 @@ namespace Raster {
             }
         }
     }
+
+    std::optional<AbstractAttribute> Workspace::GetAttributeByKeyframeID(int t_keyframeID) {
+        if (s_project.has_value()) {
+            auto& project = s_project.value();
+            for (auto& composition : project.compositions) {
+                for (auto& attribute : composition.attributes) {
+                    for (auto& keyframe : attribute->keyframes) {
+                        if (keyframe.id == t_keyframeID) {
+                            return attribute;
+                        }
+                    }
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AttributeKeyframe*> Workspace::GetKeyframeByKeyframeID(int t_keyframeID) {
+        if (s_project.has_value()) {
+            auto& project = s_project.value();
+            for (auto& composition : project.compositions) {
+                for (auto& attribute : composition.attributes) {
+                    for (auto& keyframe : attribute->keyframes) {
+                        if (keyframe.id == t_keyframeID) {
+                            return &keyframe;
+                        }
+                    }
+                }
+            }
+        }
+        return std::nullopt;
+    }
 }

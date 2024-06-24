@@ -40,6 +40,7 @@ namespace Raster {
     void Attributes::Initialize() {
         s_attributes.push_back(AttributeDescription{
             .packageName = RASTER_PACKAGED_PACKAGE "float_attribute",
+            .prettyName = ICON_FA_DIVIDE " Float",
             .spawnProcedure = SpawnFloatAttribute
         });
 

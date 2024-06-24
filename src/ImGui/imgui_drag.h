@@ -3,13 +3,16 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "common/randomizer.h"
 
 namespace Raster {
     struct DragStructure {
+        int id;
         bool isActive;
 
         DragStructure() {
             isActive = false;
+            id = Randomizer::GetRandomInteger();
         }
 
         bool GetDragDistance(float& distance) {
