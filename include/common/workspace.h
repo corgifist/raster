@@ -7,6 +7,7 @@
 #include "project.h"
 #include "configuration.h"
 #include "composition.h"
+#include "attribute.h"
 
 
 namespace Raster {
@@ -48,6 +49,9 @@ namespace Raster {
         static std::optional<GenericPin> GetPinByPinID(int pinID);
         static std::optional<GenericPin> GetPinByLinkID(int linkID);
         static void UpdatePinByID(GenericPin pin, int pinID);
+
+        static std::optional<AbstractAttribute> GetAttributeByKeyframeID(int t_keyframeID);
+        static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
 
         template<class T>
         static T GetBaseName(T const & path, T const & delims = "/\\") {

@@ -8,6 +8,7 @@ namespace Raster {
         
     struct AttributeDescription {
         std::string packageName;
+        std::string prettyName;
         AttributeSpawnProcedure spawnProcedure;
     };
 
