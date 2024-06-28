@@ -7,6 +7,7 @@
 #include "build_number.h"
 #include "attributes/attributes.h"
 #include "../ImGui/imgui_theme.h"
+#include "common/ui_shared.h"
 
 namespace Nodes = ax::NodeEditor;
 
@@ -156,6 +157,8 @@ namespace Raster {
 
     void App::RenderLoop() {
         while (!GPU::MustTerminate()) {
+            UIShared::s_timelineAnykeyframeDragged = false;
+
             std::string constructedTitle = "Raster - Build Number " + std::to_string(BUILD_NUMBER);
             if (Workspace::s_project.has_value()) {
                 auto& project = Workspace::s_project.value();

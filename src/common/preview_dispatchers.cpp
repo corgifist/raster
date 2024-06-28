@@ -17,7 +17,7 @@ namespace Raster {
         static float zoom = 1.0f;
 
         std::string str = std::any_cast<std::string>(t_attribute);
-        if (std::floor(zoom) > 1) {
+        if (zoom > 1) {
             ImGui::PushFont(Font::s_denseFont);
         }
         ImGui::SetWindowFontScale(zoom);
@@ -28,7 +28,7 @@ namespace Raster {
             } + textOffset);
             ImGui::Text(str.c_str());
         ImGui::SetWindowFontScale(1.0f);
-        if (std::floor(zoom) > 1) {
+        if (zoom > 1) {
             ImGui::PopFont();
         }
 
@@ -83,11 +83,10 @@ namespace Raster {
             if (imageDrag.GetDragDistance(imageDragDistance)) {
                 imageOffset = imageOffset + ImGui::GetIO().MouseDelta;
             } else imageDrag.Deactivate();
+            if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused()) {
+                zoom += ImGui::GetIO().MouseWheel * 0.1f;
+                zoom = std::max(zoom, 0.5f);
+            }
         ImGui::EndChild();
-
-        if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused()) {
-            zoom += ImGui::GetIO().MouseWheel * 0.1f;
-            zoom = std::max(zoom, 0.5f);
-        }
     }
 };

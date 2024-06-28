@@ -29,6 +29,7 @@ namespace Raster {
         if (t_data.contains("PackageName")) {
             auto attributeCandidate = InstantiateAttribute(t_data["PackageName"]);
             if (attributeCandidate.has_value()) {
+                attributeCandidate.value()->id = t_data["ID"];
                 attributeCandidate.value()->Load(t_data["Data"]);
                 attributeCandidate.value()->packageName = t_data["PackageName"];
                 return attributeCandidate;

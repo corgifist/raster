@@ -24,6 +24,12 @@ namespace Raster {
                 nodes.push_back(node);
             }
         }
+        for (auto& composition : data["Attributes"]) {
+            auto attributeCandidate = Attributes::InstantiateSerializedAttribute(composition);
+            if (attributeCandidate.has_value()) {
+                attributes.push_back(attributeCandidate.value());
+            }
+        }
         
     }
 
@@ -37,6 +43,10 @@ namespace Raster {
         data["Nodes"] = {};
         for (auto& node : nodes) {
             data["Nodes"].push_back(node->Serialize());
+        }
+        data["Attributes"] = {};
+        for (auto& attribute : attributes) {
+            data["Attributes"].push_back(attribute->Serialize());
         }
         return data;
     }

@@ -12,58 +12,31 @@ namespace Raster {
         );
     }
 
-    std::any FloatAttribute::Get(float t_frame, Composition* t_composition) {
-        this->composition = composition;
-        SortKeyframes();
-        auto& project = Workspace::s_project.value();
+    std::any FloatAttribute::AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) {
+        float a = std::any_cast<float>(t_beginValue);
+        float b = std::any_cast<float>(t_endValue);
+        float t = t_percentage;
 
-        int targetKeyframeIndex = -1;
-        int keyframesLength = keyframes.size();
-        float renderViewTime = project.currentFrame - composition->beginFrame;
-
-        for (int i = 0; i < keyframesLength; i++) {
-            float keyframeTimestamp = keyframes.at(i).timestamp;
-            if (renderViewTime <= keyframeTimestamp) {
-                targetKeyframeIndex = i;
-                break;
-            }
-        }
-
-        if (targetKeyframeIndex == -1) {
-            return keyframes.back().value;
-        }
-
-        if (targetKeyframeIndex == 0) {
-            return keyframes.front().value;
-        }
-
-        float keyframeTimestamp = keyframes.at(targetKeyframeIndex).timestamp;
-        float interpolationPercentage = 0;
-        if (targetKeyframeIndex == 1) {
-            interpolationPercentage = renderViewTime / keyframeTimestamp;
-        } else {
-            float previousFrame = keyframes.at(targetKeyframeIndex - 1).timestamp;
-            interpolationPercentage = (renderViewTime - previousFrame) / (keyframeTimestamp - previousFrame);
-        }
-
-        auto& beginKeyframeValue = keyframes.at(targetKeyframeIndex - 1).value;
-        auto& endkeyframeValue = keyframes.at(targetKeyframeIndex).value;
-
-        float beginValue = std::any_cast<float>(beginKeyframeValue);
-        float endValue = std::any_cast<float>(endkeyframeValue);
-
-        return beginValue + interpolationPercentage * (endValue - beginValue);
+        return a + t * (b - a);
     }
 
     void FloatAttribute::RenderKeyframes() {
         for (auto& keyframe : keyframes) {
-
             RenderKeyframe(keyframe);
         }
     }
 
     void FloatAttribute::Load(Json t_data) {
-
+        keyframes.clear();
+        for (auto& keyframe : t_data["Keyframes"]) {
+            keyframes.push_back(
+                AttributeKeyframe(
+                    keyframe["ID"],
+                    keyframe["Timestamp"],
+                    keyframe["Value"].get<float>()
+                )
+            );
+        }
     }
 
     void FloatAttribute::RenderLegend(Composition* t_composition) {
@@ -107,6 +80,16 @@ namespace Raster {
     }
 
     Json FloatAttribute::AbstractSerialize() {
-        return {};
+        Json result = {
+            {"Keyframes", {}}
+        };
+        for (auto& keyframe : keyframes) {
+            result["Keyframes"].push_back({
+                {"Timestamp", keyframe.timestamp},
+                {"Value", std::any_cast<float>(keyframe.value)},
+                {"ID", keyframe.id}
+            });
+        }
+        return result;
     }
 }

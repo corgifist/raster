@@ -22,6 +22,7 @@ namespace Raster {
 
         void RenderComposition(int t_id);
         void RenderCompositionPopup(Composition* composition);
+        void RenderNewAttributePopup(Composition* t_composition);
 
         void RenderCompositionsEditor();
         void RenderLegend();
@@ -32,6 +33,7 @@ namespace Raster {
         void RenderTimelinePopup();
 
         void DeleteComposition(Composition* composition);
+        void AppendSelectedCompositions(Composition* composition);
 
         float ProcessLayerScroll();
 

@@ -196,15 +196,31 @@ namespace Raster {
     void NodeGraphUI::Render() {
         s_outerTooltip = std::nullopt;
         Workspace::s_selectedNodes.clear();
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
-        ImGui::PopStyleVar();
         ImGui::PushFont(Font::s_denseFont);
-            static Nodes::EditorContext* ctx = nullptr;
+            static std::unordered_map<int, Nodes::EditorContext*> compositionContexts;
+            Nodes::EditorContext* ctx = nullptr;
+            
+            auto compositionsCandidate = Workspace::GetSelectedCompositions();
+            if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
+            if (compositionsCandidate.has_value()) {
+                auto compositions = compositionsCandidate.value();
+                if (compositions.empty()) s_currentComposition = nullptr;
+                s_currentComposition = compositions[0];
+            }
+
+            if (s_currentComposition && compositionContexts.find(s_currentComposition->id) != compositionContexts.end()) {
+                ctx = compositionContexts[s_currentComposition->id];
+            }
+
             if (!ctx) {
+                std::string compositionPath = FormatString("%i.json", s_currentComposition->id);
                 Nodes::Config cfg;
                 cfg.EnableSmoothZoom = true;
+                cfg.SettingsFile = compositionPath.c_str();
                 ctx = Nodes::CreateEditor(&cfg);
+                compositionContexts[s_currentComposition->id] = ctx;
             }
 
             Nodes::SetCurrentEditor(ctx);
@@ -225,21 +241,30 @@ namespace Raster {
             style.PinArrowWidth = 10.0f;
 
 
+            if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable)) {
+                for (auto& compositionID : Workspace::s_selectedCompositions) {
+                    auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+                    if (compositionCandidate.has_value()) {
+                        auto& composition = compositionCandidate.value();
+                        if (ImGui::BeginTabItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str())) {
+                            s_currentComposition = composition;
+                            ImGui::EndTabItem();
+                        }
+                    }
+                }
+                ImGui::EndTabBar();
+            }
+
             static Nodes::NodeId contextNodeID;
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+            ImGui::BeginChild("##nodeGraphCOntainer", ImGui::GetContentRegionAvail());
+            ImGui::PopStyleVar();
             Nodes::Begin("SimpleEditor");
                 for (auto& target : Workspace::s_targetSelectNodes) {
                     Nodes::SelectNode(target, true);
                 }
                 Workspace::s_targetSelectNodes.clear();
                 s_mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
-
-                auto compositionsCandidate = Workspace::GetSelectedCompositions();
-                if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
-                if (compositionsCandidate.has_value()) {
-                    auto compositions = compositionsCandidate.value();
-                    if (compositions.empty()) s_currentComposition = nullptr;
-                    s_currentComposition = compositions[0];
-                }
 
                 if (s_currentComposition) {
                     for (auto& node : s_currentComposition->nodes) {
@@ -615,8 +640,6 @@ namespace Raster {
             }
 
             Nodes::End();
-            Nodes::SetCurrentEditor(nullptr);
-            ImGui::PopFont();
             if (s_currentComposition) {
                 ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
                 ImGui::PushFont(Font::s_denseFont);
@@ -650,6 +673,9 @@ namespace Raster {
                     ImGui::EndPopup();
                 }
             }
+            ImGui::EndChild();
+            Nodes::SetCurrentEditor(nullptr);
+            ImGui::PopFont();
 
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             if (dimPercentage > 0.05f) {

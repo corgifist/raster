@@ -11,7 +11,7 @@ namespace Raster {
     struct FloatAttribute : public AttributeBase {
         FloatAttribute();
 
-        std::any Get(float t_frame, Composition* composition);
+        std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition);
         void RenderKeyframes();
         void RenderLegend(Composition* t_composition);
 

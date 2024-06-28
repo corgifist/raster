@@ -28,6 +28,12 @@ namespace Raster {
         this->value = t_value;
     }
 
+    AttributeKeyframe::AttributeKeyframe(int t_id, float t_timestamp, std::any t_value) {
+        this->id = t_id;
+        this->timestamp = t_timestamp;
+        this->value = t_value;
+    }
+
     AttributeBase::AttributeBase() {
         
     }
@@ -43,8 +49,49 @@ namespace Raster {
         return {
             {"PackageName", packageName},
             {"Name", name},
-            {"ID", id}
+            {"ID", id},
+            {"Data", AbstractSerialize()}
         };
+    }
+
+    std::any AttributeBase::Get(float t_frame, Composition* t_composition) {
+        this->composition = composition;
+        SortKeyframes();
+        auto& project = Workspace::s_project.value();
+
+        int targetKeyframeIndex = -1;
+        int keyframesLength = keyframes.size();
+        float renderViewTime = project.currentFrame - composition->beginFrame;
+
+        for (int i = 0; i < keyframesLength; i++) {
+            float keyframeTimestamp = keyframes.at(i).timestamp;
+            if (renderViewTime <= keyframeTimestamp) {
+                targetKeyframeIndex = i;
+                break;
+            }
+        }
+
+        if (targetKeyframeIndex == -1) {
+            return keyframes.back().value;
+        }
+
+        if (targetKeyframeIndex == 0) {
+            return keyframes.front().value;
+        }
+
+        float keyframeTimestamp = keyframes.at(targetKeyframeIndex).timestamp;
+        float interpolationPercentage = 0;
+        if (targetKeyframeIndex == 1) {
+            interpolationPercentage = renderViewTime / keyframeTimestamp;
+        } else {
+            float previousFrame = keyframes.at(targetKeyframeIndex - 1).timestamp;
+            interpolationPercentage = (renderViewTime - previousFrame) / (keyframeTimestamp - previousFrame);
+        }
+
+        auto& beginKeyframeValue = keyframes.at(targetKeyframeIndex - 1).value;
+        auto& endkeyframeValue = keyframes.at(targetKeyframeIndex).value;
+
+        return AbstractInterpolate(beginKeyframeValue, endkeyframeValue, interpolationPercentage, t_frame, t_composition);
     }
 
     void AttributeBase::SortKeyframes() {
@@ -114,7 +161,9 @@ namespace Raster {
         }
 
         auto& drags = s_keyframeDrags[id];
-        drags.resize(keyframes.size());
+        if (drags.size() != keyframes.size()) {
+            drags = std::vector<DragStructure>(keyframes.size());
+        }
 
         int targetKeyframeIndex = 0;
         for (auto& keyframe : keyframes) {
@@ -138,15 +187,39 @@ namespace Raster {
         
 
         if ((MouseHoveringBounds(keyframeLogicBounds) || keyframeDrag.isActive)) {
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-                s_selectedKeyframes = {t_keyframe.id};
-            }
-
+            bool previousDragActive = keyframeDrag.isActive;
             keyframeDrag.Activate();
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                if (!ImGui::GetIO().KeyCtrl && !previousDragActive & s_selectedKeyframes.size() <= 1) {
+                    s_selectedKeyframes = {t_keyframe.id};
+                    std::cout << "overriding selected keyframes" << std::endl;
+                } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl) {
+                    auto keyframeIterator = std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), t_keyframe.id);
+                    if (keyframeIterator == s_selectedKeyframes.end()) {
+                        s_selectedKeyframes.push_back(t_keyframe.id);
+                        std::cout << "appending selected keyframes" << std::endl;
+                    } else if (ImGui::GetIO().KeyCtrl) {
+                        std::cout << "removing unused keyframes" << std::endl;
+                        s_selectedKeyframes.erase(keyframeIterator);
+                    }
+                }
+            }
 
             float keyframeDragDistance;
             if (keyframeDrag.GetDragDistance(keyframeDragDistance)) {
                 for (auto& keyframeID : s_selectedKeyframes) {
+                    bool breakDrag = false;
+                    for (auto& testingKeyframeID : s_selectedKeyframes) {
+                        auto selectedKeyframeCandidate = Workspace::GetKeyframeByKeyframeID(testingKeyframeID);
+                        if (selectedKeyframeCandidate.has_value()) {
+                            auto& selectedKeyframe = selectedKeyframeCandidate.value();
+                            if (selectedKeyframe->timestamp <= 0) {
+                                breakDrag = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (breakDrag) break;
                     auto selectedKeyframeCandidate = Workspace::GetKeyframeByKeyframeID(keyframeID);
                     if (selectedKeyframeCandidate.has_value()) {
                         auto& selectedKeyframe = selectedKeyframeCandidate.value();
@@ -158,9 +231,41 @@ namespace Raster {
             } else {
                 keyframeDrag.Deactivate();
             }
+        } else if (!keyframeDrag.isActive) {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().KeyCtrl) {
+                auto keyframeIterator = std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), t_keyframe.id);
+                if (keyframeIterator != s_selectedKeyframes.end() && !UIShared::s_timelineDragged && keyframeDrag.isActive) {
+                    s_selectedKeyframes.erase(keyframeIterator);
+                }
+
+                bool oneKeyframeTouched = false;
+                for (auto& keyframe : keyframes) {
+                    RectBounds keyframeTestLogicBounds(
+                        ImVec2((composition->beginFrame + keyframe.timestamp) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
+                        ImVec2(keyframeWidth, keyframeHeight)
+                    );
+                    if (MouseHoveringBounds(keyframeTestLogicBounds)) {
+                        oneKeyframeTouched = true;
+                    }
+                }
+                if (!oneKeyframeTouched) {
+                    s_selectedKeyframes.clear();
+                }
+            } else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                for (auto& keyframeID : s_selectedKeyframes) {
+                    auto selectedKeyframeCandidate = Workspace::GetKeyframeByKeyframeID(keyframeID);
+                    if (selectedKeyframeCandidate.has_value()) {
+                        auto& selectedKeyframe = selectedKeyframeCandidate.value();
+                        selectedKeyframe->timestamp = std::floor(selectedKeyframe->timestamp);
+                    }
+                }
+            }
         }
 
 
+        if (std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), t_keyframe.id) != s_selectedKeyframes.end()) {
+            keyframeColor = keyframeColor * 2;
+        }
         keyframeColor.w = 1.0f;
         DrawRect(keyframeBounds, keyframeColor);
 
