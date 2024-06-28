@@ -55,5 +55,9 @@
     "DELETE_COMPOSITION": "Delete Composition",
     "NEW_COMPOSITION": "New Composition",
     "REVERT_VIEW": "Revert View",
-    "ADD_ATTRIBUTE": "Add Attribute"
+    "ADD_ATTRIBUTE": "Add Attribute",
+    "SELECT_COMPOSITION": "Select Composition",
+    "DELETE_SELECTED_COMPOSITIONS": "Delete Selected Compositions",
+    "NO_ATTRIBUTES": "No Attributes Presented",
+    "EDIT_METADATA": "Edit Metadata"
 }

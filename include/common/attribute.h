@@ -13,6 +13,7 @@ namespace Raster {
         std::any value;
 
         AttributeKeyframe(float t_timestamp, std::any t_value);
+        AttributeKeyframe(int t_id, float t_timestamp, std::any t_value);
     };
 
     struct AttributeBase {
@@ -22,7 +23,7 @@ namespace Raster {
 
         AttributeBase();
 
-        virtual std::any Get(float t_frame, Composition* composition) = 0;
+        std::any Get(float t_frame, Composition* composition);
         virtual void RenderKeyframes() = 0;
         virtual void RenderLegend(Composition* t_composition) = 0;
         virtual void Load(Json t_data) = 0;
@@ -32,6 +33,8 @@ namespace Raster {
         Json Serialize();
 
         protected:
+
+        virtual std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) = 0;
 
         void RenderKeyframe(AttributeKeyframe t_keyframe);
 
@@ -43,7 +46,6 @@ namespace Raster {
 
         void Initialize();
 
-        protected:
         Composition* composition;
     };
 
