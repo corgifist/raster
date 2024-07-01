@@ -43,6 +43,9 @@ namespace Raster {
         AbstractPinMap Execute(AbstractPinMap accumulator = {});
         std::string Header();
 
+        bool DetailsAvailable();
+        void RenderDetails();
+
         virtual std::optional<std::string> Footer() = 0;
         virtual std::string Icon() = 0;
 
@@ -67,6 +70,9 @@ namespace Raster {
 
         virtual std::string AbstractHeader() = 0;
 
+        virtual bool AbstractDetailsAvailable() = 0;
+        virtual void AbstractRenderDetails() {}
+
         virtual Json AbstractSerialize() { return {}; };
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
@@ -86,7 +92,7 @@ namespace Raster {
     using AbstractNode = std::shared_ptr<NodeBase>;
     using NodeSpawnProcedure = std::function<AbstractNode()>;
 
-        struct NodeDescription {
+    struct NodeDescription {
         std::string prettyName;
         std::string packageName;
         NodeCategory category;

@@ -57,7 +57,11 @@
     "REVERT_VIEW": "Revert View",
     "ADD_ATTRIBUTE": "Add Attribute",
     "SELECT_COMPOSITION": "Select Composition",
-    "DELETE_SELECTED_COMPOSITIONS": "Delete Selected Compositions",
+    "DELETE_SELECTED_COMPOSITIONS": "Delete Compositions",
     "NO_ATTRIBUTES": "No Attributes Presented",
-    "EDIT_METADATA": "Edit Metadata"
+    "EDIT_METADATA": "Edit Metadata",
+    "COPY_SELECTED_COMPOSITIONS": "Copy Compositions",
+    "PASTE_SELECTED_COMPOSITIONS": "Paste Compositions",
+    "NO_DISPATCHER_FOR_TYPE": "No Dispatcher for Type",
+    "DETAILS": "Details"
 }
