@@ -39,44 +39,11 @@ namespace Raster {
         }
     }
 
-    void FloatAttribute::RenderLegend(Composition* t_composition) {
-        this->composition = t_composition;
-        auto& project = Workspace::s_project.value();
-        float currentFrame = project.currentFrame - t_composition->beginFrame;
-        auto currentValue = Get(currentFrame, t_composition);
-        float fCurrentValue = std::any_cast<float>(currentValue);
-        ImGui::PushID(id);
-            bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
-            bool shouldAddKeyframe = buttonPressed;
-            ImGui::SameLine();
-            ImGui::Text("%s %s", ICON_FA_LINK, name.c_str()); 
-            ImGui::SameLine();
-            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
-                ImGui::DragFloat("##floatDrag", &fCurrentValue);
-                shouldAddKeyframe = shouldAddKeyframe || ImGui::IsItemEdited();
-                currentValue = fCurrentValue;
-            ImGui::PopItemWidth();
-        ImGui::PopID();
-
-        if (shouldAddKeyframe && !KeyframeExists(currentFrame)) {
-            keyframes.push_back(
-                AttributeKeyframe(
-                    currentFrame,
-                    currentValue
-                )
-            );
-        } else if (shouldAddKeyframe && !buttonPressed) {
-            auto keyframeCandidate = GetKeyframeByTimestamp(currentFrame);
-            if (keyframeCandidate.has_value()) {
-                auto* keyframe = keyframeCandidate.value();
-                keyframe->value = currentValue;
-            }
-        } else if (shouldAddKeyframe && buttonPressed) {
-            auto indexCandidate = GetKeyframeIndexByTimestamp(currentFrame);
-            if (indexCandidate.has_value()) {
-                keyframes.erase(keyframes.begin() + indexCandidate.value());
-            }
-        }
+    std::any FloatAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
+        float fValue = std::any_cast<float>(t_originalValue);
+        ImGui::DragFloat("##dragFloat", &fValue);
+        isItemEdited = ImGui::IsItemEdited();
+        return fValue;
     }
 
     Json FloatAttribute::AbstractSerialize() {

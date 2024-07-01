@@ -187,6 +187,14 @@ namespace Raster {
         }
     }
 
+    void NodeBase::RenderDetails() {
+        AbstractRenderDetails();
+    }
+
+    bool NodeBase::DetailsAvailable() {
+        return AbstractDetailsAvailable();
+    }
+
     std::set<std::string> NodeBase::GetAttributesList() {
         std::set<std::string> result;
         for (auto& attribute : m_attributes) {
@@ -229,6 +237,7 @@ namespace Raster {
     }
 
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(float);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::any);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Texture);
 };

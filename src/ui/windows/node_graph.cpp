@@ -214,7 +214,7 @@ namespace Raster {
                 ctx = compositionContexts[s_currentComposition->id];
             }
 
-            if (!ctx) {
+            if (!ctx && s_currentComposition) {
                 std::string compositionPath = FormatString("%i.json", s_currentComposition->id);
                 Nodes::Config cfg;
                 cfg.EnableSmoothZoom = true;
@@ -223,23 +223,31 @@ namespace Raster {
                 compositionContexts[s_currentComposition->id] = ctx;
             }
 
+
+            static float dimA = 0.0f;
+            static float dimB = 0.3f;
+            static float dimPercentage = -1.0f;
+            static float previousDimPercentage;
+            static bool dimming = false;
+
             Nodes::SetCurrentEditor(ctx);
 
-            Nodes::EnableShortcuts(true);
+            if (ctx) Nodes::EnableShortcuts(true);
 
 
-            auto& style = Nodes::GetStyle();
-            style.Colors[Nodes::StyleColor_Bg] = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
-            style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
-            style.Colors[Nodes::StyleColor_NodeSelRect] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-            style.Colors[Nodes::StyleColor_NodeSelRectBorder] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-            style.Colors[Nodes::StyleColor_HighlightLinkBorder] = ImVec4(0.9f, 0.9f, 0.9f, 1.0f);
-            style.NodeRounding = 0;
-            style.NodeBorderWidth = 2.0f;
-            style.SnapLinkToPinDir = 1;
-            style.PinArrowSize = 10.0f;
-            style.PinArrowWidth = 10.0f;
-
+            if (ctx) {
+                auto& style = Nodes::GetStyle();
+                style.Colors[Nodes::StyleColor_Bg] = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+                style.Colors[Nodes::StyleColor_Grid] = ImVec4(0.09f, 0.09f, 0.09f, 1.0f);
+                style.Colors[Nodes::StyleColor_NodeSelRect] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+                style.Colors[Nodes::StyleColor_NodeSelRectBorder] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+                style.Colors[Nodes::StyleColor_HighlightLinkBorder] = ImVec4(0.9f, 0.9f, 0.9f, 1.0f);
+                style.NodeRounding = 0;
+                style.NodeBorderWidth = 2.0f;
+                style.SnapLinkToPinDir = 1;
+                style.PinArrowSize = 10.0f;
+                style.PinArrowWidth = 10.0f;
+            }
 
             if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable)) {
                 for (auto& compositionID : Workspace::s_selectedCompositions) {
@@ -257,389 +265,418 @@ namespace Raster {
 
             static Nodes::NodeId contextNodeID;
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-            ImGui::BeginChild("##nodeGraphCOntainer", ImGui::GetContentRegionAvail());
+            ImGui::BeginChild("##nodeGraphContainer", ImGui::GetContentRegionAvail());
             ImGui::PopStyleVar();
-            Nodes::Begin("SimpleEditor");
-                for (auto& target : Workspace::s_targetSelectNodes) {
-                    Nodes::SelectNode(target, true);
-                }
-                Workspace::s_targetSelectNodes.clear();
-                s_mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
+            if (ctx) {
+                Nodes::Begin("SimpleEditor");
+                    for (auto& target : Workspace::s_targetSelectNodes) {
+                        Nodes::SelectNode(target, true);
+                    }
+                    Workspace::s_targetSelectNodes.clear();
+                    s_mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
 
-                if (s_currentComposition) {
-                    for (auto& node : s_currentComposition->nodes) {
-                        s_currentNode = node;
-                        float maxInputXCandidate = 0;
-                        for (auto& pin : node->inputPins) {
-                            ImGui::SetWindowFontScale(s_pinTextScale);
-                                auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
-                            ImGui::SetWindowFontScale(1.0f);
-                            if (attributeSize.x > maxInputXCandidate) {
-                                maxInputXCandidate = attributeSize.x;
-                            }
-                        }
-                        s_maxInputPinX = maxInputXCandidate;
-
-                        float maxOutputXCandidate = 0;
-                        for (auto& pin : node->outputPins) {
-                            ImGui::SetWindowFontScale(s_pinTextScale);
-                                auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
-                            ImGui::SetWindowFontScale(1.0f);
-                            if (attributeSize.x > maxOutputXCandidate) {
-                                maxOutputXCandidate = attributeSize.x;
-                            }
-                        }
-                        s_maxOutputPinX = maxOutputXCandidate;
-
-                        Nodes::BeginNode(node->nodeID);
-                            s_originalCursor = ImGui::GetCursorScreenPos();
-                            ImVec2 originalCursor = ImGui::GetCursorScreenPos();
-                            std::string header = node->Icon() + (node->Icon().empty() ? "" : " ") + node->Header();
-                            s_headerSize = ImGui::CalcTextSize(header.c_str());
-                            if (node->Footer().has_value()) {
-                                auto footer = node->Footer().value();
-                                ImGui::SetWindowFontScale(0.8f);
-                                ImVec2 footerSize = ImGui::CalcTextSize(footer.c_str());
-                                ImGui::SetWindowFontScale(1.0f);
-                                if (footerSize.x > s_headerSize.x) {
-                                    s_headerSize = footerSize;
-                                }
-                            }
-                            ImGui::Text("%s", header.c_str());
-                            if (node->flowInputPin.has_value()) {
-                                RenderInputPin(node->flowInputPin.value(), true);
-                            }
-                            if (node->flowOutputPin.has_value()) {
-                                ImGui::SameLine();
-                                RenderOutputPin(node->flowOutputPin.value(), true);
-                            }
-                            float headerY = ImGui::GetCursorPosY();
-
-                            ImGui::SetCursorPosX(originalCursor.x);
-
-                            // Pins Rendering
+                    if (s_currentComposition) {
+                        for (auto& node : s_currentComposition->nodes) {
+                            s_currentNode = node;
+                            float maxInputXCandidate = 0;
                             for (auto& pin : node->inputPins) {
-                                RenderInputPin(pin);
+                                ImGui::SetWindowFontScale(s_pinTextScale);
+                                    auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+                                ImGui::SetWindowFontScale(1.0f);
+                                if (attributeSize.x > maxInputXCandidate) {
+                                    maxInputXCandidate = attributeSize.x;
+                                }
                             }
+                            s_maxInputPinX = maxInputXCandidate;
 
-
-                            ImGui::SetCursorPosY(headerY);
+                            float maxOutputXCandidate = 0;
                             for (auto& pin : node->outputPins) {
-                                RenderOutputPin(pin);
-                            }
-
-                            // Footer Rendering
-
-                            ImGui::SetWindowFontScale(0.8f);
-                            auto footer = node->Footer();
-                            if (footer.has_value()) {
-                                ImGui::Spacing();
-                                ImGui::Text(footer.value().c_str());
-                            }
-                            ImGui::SetWindowFontScale(1.0f);
-                        Nodes::EndNode();
-
-                        if (node->bypassed || !node->enabled) {
-                            ImDrawList* drawList = ImGui::GetWindowDrawList();
-                            ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
-                            ImVec2 nodeSize = Nodes::GetNodeSize(node->nodeID);
-                            drawList->AddRectFilled(s_originalCursor - padding, s_originalCursor + Nodes::GetNodeSize(node->nodeID) - padding, ImColor(0, 0, 0, 60));
-                        }
-                    }
-
-                    for (auto& node : s_currentComposition->nodes) {
-                        if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
-                            auto sourcePin = node->flowInputPin.value();
-                            Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
-                        }
-                        if (node->flowOutputPin.has_value() && node->flowOutputPin.value().connectedPinID > 0) {
-                            auto sourcePin = node->flowOutputPin.value();
-                            Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
-                        }
-
-                        for (auto& pin : node->inputPins) {
-                            if (pin.connectedPinID > 0) {
-                                std::any cachedValue = std::nullopt;
-                                if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                    cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                                ImGui::SetWindowFontScale(s_pinTextScale);
+                                    auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+                                ImGui::SetWindowFontScale(1.0f);
+                                if (attributeSize.x > maxOutputXCandidate) {
+                                    maxOutputXCandidate = attributeSize.x;
                                 }
-                                ImVec4 linkColor = ImVec4(1, 1, 1, 1);
-                                auto colorCandidate = GetColorByDynamicValue(cachedValue);
-                                if (colorCandidate.has_value() && cachedValue.type() != typeid(std::nullopt)) {
-                                    linkColor = colorCandidate.value();
+                            }
+                            s_maxOutputPinX = maxOutputXCandidate;
+
+                            Nodes::BeginNode(node->nodeID);
+                                s_originalCursor = ImGui::GetCursorScreenPos();
+                                ImVec2 originalCursor = ImGui::GetCursorScreenPos();
+                                std::string header = node->Icon() + (node->Icon().empty() ? "" : " ") + node->Header();
+                                s_headerSize = ImGui::CalcTextSize(header.c_str());
+                                if (node->Footer().has_value()) {
+                                    auto footer = node->Footer().value();
+                                    ImGui::SetWindowFontScale(0.8f);
+                                    ImVec2 footerSize = ImGui::CalcTextSize(footer.c_str());
+                                    ImGui::SetWindowFontScale(1.0f);
+                                    if (footerSize.x > s_headerSize.x) {
+                                        s_headerSize.x = footerSize.x;
+                                    }
                                 }
-                                Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, linkColor, 2.0f);
-                            }
-                        }
-                        for (auto& pin : node->outputPins) {
-                            if (pin.connectedPinID > 0) {
-                                Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
-                            }
-                        }
-                    }
+                                ImGui::Text("%s", header.c_str());
+                                if (node->DetailsAvailable()) {
+                                    ImGui::SetWindowFontScale(s_pinTextScale);
+                                    std::optional<float> detailsCursorX = std::nullopt;
+                                    static std::unordered_map<int, bool> s_customTreeNodeMap;
+                                    static std::unordered_map<int, bool> s_customTreeNodeMapHovered;
+                                    if (s_customTreeNodeMap.find(node->nodeID) == s_customTreeNodeMap.end()) {
+                                        s_customTreeNodeMap[node->nodeID] = false;
+                                        s_customTreeNodeMapHovered[node->nodeID] = false;
+                                    }
+                                    bool& customTreeNodeOpened = s_customTreeNodeMap[node->nodeID];
+                                    bool& customTreeNodeHovered = s_customTreeNodeMapHovered[node->nodeID];
+                                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(customTreeNodeHovered ? 0.7f : 1.0f));
+                                        ImGui::Text("%s %s %s", customTreeNodeOpened ? ICON_FA_ANGLE_DOWN : ICON_FA_ANGLE_RIGHT, ICON_FA_CIRCLE_INFO, Localization::GetString("DETAILS").c_str());
+                                    ImGui::PopStyleColor();
+                                    if (ImGui::IsItemClicked()) {
+                                        customTreeNodeOpened = !customTreeNodeOpened;
+                                    }
+                                    customTreeNodeHovered = ImGui::IsItemHovered();
+                                    if (customTreeNodeOpened) {
+                                        ImGui::Indent();
+                                            node->RenderDetails();
+                                            ImGui::SameLine();
+                                            detailsCursorX = ImGui::GetCursorPosX();
+                                            ImGui::NewLine();
+                                        ImGui::Unindent();
+                                    }
+                                    if (detailsCursorX.has_value() && detailsCursorX.value() > s_headerSize.x) {
+                                        s_headerSize.x = detailsCursorX.value() - Nodes::GetNodePosition(node->nodeID).x;
+                                    }
+                                    ImGui::SetWindowFontScale(1.0f);
+                                }
+                                if (node->flowInputPin.has_value()) {
+                                    RenderInputPin(node->flowInputPin.value(), true);
+                                }
+                                if (node->flowOutputPin.has_value()) {
+                                    ImGui::SameLine();
+                                    RenderOutputPin(node->flowOutputPin.value(), true);
+                                }
+                                float headerY = ImGui::GetCursorPosY();
 
-                    if (Nodes::BeginCreate()) {
-                        Nodes::PinId startPinID, endPinID;
-                        if (Nodes::QueryNewLink(&startPinID, &endPinID)) {
-                            int rawStartPinID = (int) startPinID.Get();
-                            int rawEndPinID = (int) endPinID.Get();
-                            auto startNode = Workspace::GetNodeByPinID(rawStartPinID);
-                            auto endNode = Workspace::GetNodeByPinID(rawEndPinID);
-                            
-                            auto startPinContainer = Workspace::GetPinByPinID(rawStartPinID);
-                            auto endPinContainer = Workspace::GetPinByPinID(rawEndPinID);
-                            if (startNode.has_value() && endNode.has_value() && startPinContainer.has_value() && endPinContainer.has_value()) {
-                                auto startPin = startPinContainer.value();
-                                auto endPin = endPinContainer.value();
+                                ImGui::SetCursorPosX(originalCursor.x);
 
-                                if (startPin.type == PinType::Input) {
-                                    std::swap(startPin, endPin);
-                                    std::swap(startPinContainer, endPinContainer);
-                                    std::swap(startPinID, endPinID);
-                                    std::swap(rawStartPinID, rawEndPinID);
+                                // Pins Rendering
+                                for (auto& pin : node->inputPins) {
+                                    RenderInputPin(pin);
                                 }
 
-                                if (endPin.pinID == startPin.pinID) {
-                                    Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                                } else if (endPin.type == startPin.type) {
-                                    ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
-                                    Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                                } else {
-                                    if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
-                                        if (startPin.flow) {
-                                            startPin.connectedPinID = endPin.pinID;
-                                        } else {
-                                            endPin.connectedPinID = startPin.pinID;
+
+                                ImGui::SetCursorPosY(headerY);
+                                for (auto& pin : node->outputPins) {
+                                    RenderOutputPin(pin);
+                                }
+
+                                // Footer Rendering
+
+                                ImGui::SetWindowFontScale(0.8f);
+                                auto footer = node->Footer();
+                                if (footer.has_value()) {
+                                    ImGui::Spacing();
+                                    ImGui::Text(footer.value().c_str());
+                                }
+                                ImGui::SetWindowFontScale(1.0f);
+                            Nodes::EndNode();
+
+                            if (node->bypassed || !node->enabled) {
+                                auto& style = Nodes::GetStyle();
+                                ImDrawList* drawList = ImGui::GetWindowDrawList();
+                                ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
+                                ImVec2 nodeSize = Nodes::GetNodeSize(node->nodeID);
+                                drawList->AddRectFilled(s_originalCursor - padding, s_originalCursor + Nodes::GetNodeSize(node->nodeID) - padding, ImColor(0, 0, 0, 60));
+                            }
+                        }
+
+                        for (auto& node : s_currentComposition->nodes) {
+                            if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
+                                auto sourcePin = node->flowInputPin.value();
+                                Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
+                            }
+                            if (node->flowOutputPin.has_value() && node->flowOutputPin.value().connectedPinID > 0) {
+                                auto sourcePin = node->flowOutputPin.value();
+                                Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
+                            }
+
+                            for (auto& pin : node->inputPins) {
+                                if (pin.connectedPinID > 0) {
+                                    std::any cachedValue = std::nullopt;
+                                    if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                        cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                                    }
+                                    ImVec4 linkColor = ImVec4(1, 1, 1, 1);
+                                    auto colorCandidate = GetColorByDynamicValue(cachedValue);
+                                    if (colorCandidate.has_value() && cachedValue.type() != typeid(std::nullopt)) {
+                                        linkColor = colorCandidate.value();
+                                    }
+                                    Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, linkColor, 2.0f);
+                                }
+                            }
+                            for (auto& pin : node->outputPins) {
+                                if (pin.connectedPinID > 0) {
+                                    Nodes::Link(pin.linkID, pin.connectedPinID, pin.pinID, ImVec4(1, 1, 1, 1), 2.0f);
+                                }
+                            }
+                        }
+
+                        if (Nodes::BeginCreate()) {
+                            Nodes::PinId startPinID, endPinID;
+                            if (Nodes::QueryNewLink(&startPinID, &endPinID)) {
+                                int rawStartPinID = (int) startPinID.Get();
+                                int rawEndPinID = (int) endPinID.Get();
+                                auto startNode = Workspace::GetNodeByPinID(rawStartPinID);
+                                auto endNode = Workspace::GetNodeByPinID(rawEndPinID);
+                                
+                                auto startPinContainer = Workspace::GetPinByPinID(rawStartPinID);
+                                auto endPinContainer = Workspace::GetPinByPinID(rawEndPinID);
+                                if (startNode.has_value() && endNode.has_value() && startPinContainer.has_value() && endPinContainer.has_value()) {
+                                    auto startPin = startPinContainer.value();
+                                    auto endPin = endPinContainer.value();
+
+                                    if (startPin.type == PinType::Input) {
+                                        std::swap(startPin, endPin);
+                                        std::swap(startPinContainer, endPinContainer);
+                                        std::swap(startPinID, endPinID);
+                                        std::swap(rawStartPinID, rawEndPinID);
+                                    }
+
+                                    if (endPin.pinID == startPin.pinID) {
+                                        Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+                                    } else if (endPin.type == startPin.type) {
+                                        ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
+                                        Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+                                    } else {
+                                        if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
+                                            if (startPin.flow) {
+                                                startPin.connectedPinID = endPin.pinID;
+                                            } else {
+                                                endPin.connectedPinID = startPin.pinID;
+                                            }
                                         }
                                     }
-                                }
 
-                                Workspace::UpdatePinByID(startPin, startPin.pinID);
-                                Workspace::UpdatePinByID(endPin, endPin.pinID);
+                                    Workspace::UpdatePinByID(startPin, startPin.pinID);
+                                    Workspace::UpdatePinByID(endPin, endPin.pinID);
+                                }
                             }
                         }
-                    }
-                    Nodes::EndCreate();
+                        Nodes::EndCreate();
 
-                    if (Nodes::BeginDelete()) {
-                        Nodes::NodeId nodeID = 0;
-                        while (Nodes::QueryDeletedNode(&nodeID)) {
-                            int rawNodeID = (int) nodeID.Get();
-                            if (Nodes::AcceptDeletedItem()) {
-                                int targetNodeDelete = -1;
-                                int nodeIndex = 0;
-                                for (auto& node : s_currentComposition->nodes) {
-                                    if (node->nodeID == rawNodeID) {
-                                        targetNodeDelete = nodeIndex;
-                                        break; 
+                        if (Nodes::BeginDelete()) {
+                            Nodes::NodeId nodeID = 0;
+                            while (Nodes::QueryDeletedNode(&nodeID)) {
+                                int rawNodeID = (int) nodeID.Get();
+                                if (Nodes::AcceptDeletedItem()) {
+                                    int targetNodeDelete = -1;
+                                    int nodeIndex = 0;
+                                    for (auto& node : s_currentComposition->nodes) {
+                                        if (node->nodeID == rawNodeID) {
+                                            targetNodeDelete = nodeIndex;
+                                            break; 
+                                        }
+                                        nodeIndex++;
                                     }
-                                    nodeIndex++;
+                                    s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                                 }
-                                s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
+                            }
+
+                            Nodes::LinkId linkID = 0;
+                            while (Nodes::QueryDeletedLink(&linkID)) {
+                                int rawLinkID = (int) linkID.Get();
+                                auto pin = Workspace::GetPinByLinkID(rawLinkID);
+                                if (pin.has_value()) {
+                                    auto correctedPin = pin.value();
+                                    correctedPin.connectedPinID = -1;
+                                    Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                                }
                             }
                         }
+                        Nodes::EndDelete();
 
-                        Nodes::LinkId linkID = 0;
-                        while (Nodes::QueryDeletedLink(&linkID)) {
-                            int rawLinkID = (int) linkID.Get();
-                            auto pin = Workspace::GetPinByLinkID(rawLinkID);
-                            if (pin.has_value()) {
-                                auto correctedPin = pin.value();
-                                correctedPin.connectedPinID = -1;
-                                Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
-                            }
+                        Nodes::Suspend();
+                        if (Nodes::ShowBackgroundContextMenu()) {
+                            ImGui::OpenPopup("##createNewNode");
                         }
+                        if (Nodes::ShowNodeContextMenu(&contextNodeID)) {
+                            ImGui::OpenPopup("##nodeContextMenu");
+                        }
+                        Nodes::Resume();
                     }
-                    Nodes::EndDelete();
 
-                    Nodes::Suspend();
-                    if (Nodes::ShowBackgroundContextMenu()) {
-                        ImGui::OpenPopup("##createNewNode");
-                    }
-                    if (Nodes::ShowNodeContextMenu(&contextNodeID)) {
-                        ImGui::OpenPopup("##nodeContextMenu");
-                    }
-                    Nodes::Resume();
-                }
+                Nodes::Suspend();
 
-            Nodes::Suspend();
-
-            if (ImGui::BeginPopup("##nodeContextMenu")) {
-                ImGui::PushFont(Font::s_normalFont);
-                auto nodeCandidate = Workspace::GetNodeByNodeID((int) contextNodeID.Get());
-                if (nodeCandidate.has_value()) {
-                    auto& node = nodeCandidate.value();
-                    ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
-                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ATTRIBUTES").c_str()).c_str())) {
-                        for (auto& attribute : node->GetAttributesList()) {
-                            bool isAttributeExposed = false;
-                            int attributeIndex = 0;
-                            std::optional<std::any> attributeValue;
-                            for (auto& inputPin : node->inputPins) {
-                                if (inputPin.linkedAttribute == attribute) {
-                                    isAttributeExposed = true;
-                                    if (Workspace::s_pinCache.find(inputPin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                        attributeValue = Workspace::s_pinCache[inputPin.connectedPinID];
+                if (ImGui::BeginPopup("##nodeContextMenu")) {
+                    ImGui::PushFont(Font::s_normalFont);
+                    auto nodeCandidate = Workspace::GetNodeByNodeID((int) contextNodeID.Get());
+                    if (nodeCandidate.has_value()) {
+                        auto& node = nodeCandidate.value();
+                        ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ATTRIBUTES").c_str()).c_str())) {
+                            for (auto& attribute : node->GetAttributesList()) {
+                                bool isAttributeExposed = false;
+                                int attributeIndex = 0;
+                                std::optional<std::any> attributeValue;
+                                for (auto& inputPin : node->inputPins) {
+                                    if (inputPin.linkedAttribute == attribute) {
+                                        isAttributeExposed = true;
+                                        if (Workspace::s_pinCache.find(inputPin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                            attributeValue = Workspace::s_pinCache[inputPin.connectedPinID];
+                                        }
+                                        break;
                                     }
-                                    break;
+                                    attributeIndex++;
                                 }
-                                attributeIndex++;
-                            }
 
-                            ImGui::BulletText("%s", attribute.c_str());
-                            if (ImGui::IsItemHovered() && attributeValue.has_value()) {
-                                s_outerTooltip = attributeValue.value();
-                            }
-                            ImGui::SameLine();
-                            if (ImGui::SmallButton(FormatString("%s %s", isAttributeExposed ? ICON_FA_LINK_SLASH : ICON_FA_LINK, Localization::GetString(isAttributeExposed ? "HIDE" : "EXPOSE").c_str()).c_str())) {
-                                if (!isAttributeExposed) {
-                                    node->inputPins.push_back(GenericPin(attribute, PinType::Input));
-                                } else {
-                                    node->inputPins.erase(node->inputPins.begin() + attributeIndex);
+                                ImGui::BulletText("%s", attribute.c_str());
+                                if (ImGui::IsItemHovered() && attributeValue.has_value()) {
+                                    s_outerTooltip = attributeValue.value();
+                                }
+                                ImGui::SameLine();
+                                if (ImGui::SmallButton(FormatString("%s %s", isAttributeExposed ? ICON_FA_LINK_SLASH : ICON_FA_LINK, Localization::GetString(isAttributeExposed ? "HIDE" : "EXPOSE").c_str()).c_str())) {
+                                    if (!isAttributeExposed) {
+                                        node->inputPins.push_back(GenericPin(attribute, PinType::Input));
+                                    } else {
+                                        node->inputPins.erase(node->inputPins.begin() + attributeIndex);
+                                    }
                                 }
                             }
+                            ImGui::EndMenu();
                         }
-                        ImGui::EndMenu();
-                    }
-                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str()).c_str())) {
-                        ImGui::InputText("##nodeDescription", &node->overridenHeader);
-                        ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str());
-                        ImGui::EndMenu();
-                    }
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_NODE").c_str()).c_str())) {
-                        Nodes::DeleteNode(node->nodeID);
-                    }
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY").c_str()).c_str())) {
-                        ProcessCopyAction();
-                    }
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE").c_str()).c_str())) {
-                        ProcessPasteAction();
-                    }
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
-                        ProcessCopyAction();
-                        ProcessPasteAction();
-                    }
-                } else {
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::PopFont();
-                ImGui::EndPopup();
-            }
-
-
-            static float dimA = 0.0f;
-            static float dimB = 0.3f;
-            static float dimPercentage = -1.0f;
-            static float previousDimPercentage;
-            static bool dimming = false;
-            previousDimPercentage = dimPercentage;
-            if (dimPercentage >= 0 && dimming) {
-                dimPercentage += ImGui::GetIO().DeltaTime * 2.5;
-                if (dimPercentage >= dimB) {
-                    dimming = false;
-                }
-                dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
-            }
-            bool popupVisible = true;
-            bool openSearchPopup = false;
-            if (ImGui::BeginPopup("##createNewNode")) {
-                ImGui::PushFont(Font::s_normalFont);
-                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str()).c_str());
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
-                    openSearchPopup = true;
-                }
-                ImGui::PopFont();
-                ImGui::EndPopup();
-            }
-            if (openSearchPopup) {
-                ImGui::OpenPopup("##createNewNodeSearch");
-            }
-            if (ImGui::BeginPopup("##createNewNodeSearch", ImGuiWindowFlags_AlwaysAutoResize)) {
-                ImGui::PushFont(Font::s_normalFont);
-                static std::string searchFilter = "";
-                ImGui::InputText("##searchFilter", &searchFilter);
-                ImGui::SameLine(0, 0);
-                float searchBarWidth = ImGui::GetCursorPosX();
-                ImGui::NewLine();
-                ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str());
-                static float tabBarHeight = 0;
-                NodeCategory targetCategory = NodeCategory::Other;
-                ImGui::BeginChild("##tabChild", ImVec2(searchBarWidth, tabBarHeight));
-                    if (ImGui::BeginTabBar("##searchCategories")) {
-                        for (auto& category : Workspace::s_categories) {
-                            if (ImGui::BeginTabItem(NodeCategoryUtils::ToString(category).c_str())) {
-                                targetCategory = category;
-                                ImGui::EndTabItem();
-                            }
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str()).c_str())) {
+                            ImGui::InputText("##nodeDescription", &node->overridenHeader);
+                            ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str());
+                            ImGui::EndMenu();
                         }
-                        ImGui::EndTabBar();
-                    }
-                    tabBarHeight = ImGui::GetCursorPosY();
-                ImGui::EndChild();
-                ImGui::BeginChild("##nodeCandidates", ImVec2(searchBarWidth, 200));
-                bool hasCandidates = false;
-                for (auto& node : Workspace::s_nodeImplementations) {
-                    if (node.description.category != targetCategory) continue;
-                    if (!searchFilter.empty() && node.description.prettyName.find(searchFilter) == std::string::npos) continue;
-                    hasCandidates = true;
-                    if (ImGui::MenuItem(FormatString("%s %s",
-                            NodeCategoryUtils::ToIcon(node.description.category).c_str(), 
-                            node.description.prettyName.c_str()).c_str())) {
-                        auto targetNode = Workspace::AddNode(node.libraryName);
-                        if (targetNode.has_value()) {
-                            auto node = targetNode.value();
-                            Nodes::BeginNode(node->nodeID);
-                                Nodes::SetNodePosition(node->nodeID, s_mousePos);
-                            Nodes::EndNode();
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_NODE").c_str()).c_str())) {
+                            Nodes::DeleteNode(node->nodeID);
                         }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY").c_str()).c_str())) {
+                            ProcessCopyAction();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE").c_str()).c_str())) {
+                            ProcessPasteAction();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
+                            ProcessCopyAction();
+                            ProcessPasteAction();
+                        }
+                    } else {
                         ImGui::CloseCurrentPopup();
                     }
+                    ImGui::PopFont();
+                    ImGui::EndPopup();
                 }
-                if (!hasCandidates) {
-                    ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
-                    ImGui::Text(Localization::GetString("NOTHING_TO_SHOW").c_str());
+
+
+                previousDimPercentage = dimPercentage;
+                if (dimPercentage >= 0 && dimming) {
+                    dimPercentage += ImGui::GetIO().DeltaTime * 2.5;
+                    if (dimPercentage >= dimB) {
+                        dimming = false;
+                    }
+                    dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
                 }
-                ImGui::EndChild();
-                ImGui::PopFont();
-                ImGui::EndPopup();
-                if (dimPercentage < 0) {
-                    dimPercentage = 0.0f;
-                    dimming = true;
+                bool popupVisible = true;
+                bool openSearchPopup = false;
+                if (ImGui::BeginPopup("##createNewNode")) {
+                    ImGui::PushFont(Font::s_normalFont);
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str()).c_str());
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
+                        openSearchPopup = true;
+                    }
+                    ImGui::PopFont();
+                    ImGui::EndPopup();
                 }
-            } else if (!ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
-                dimming = false;
-                popupVisible = false;
-            }
-            if (!popupVisible && !ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
-                dimPercentage -= ImGui::GetIO().DeltaTime * 2.5;
-                if (dimPercentage < 0) {
-                    dimPercentage = -1;
-                    dimming = true;
+                if (openSearchPopup) {
+                    ImGui::OpenPopup("##createNewNodeSearch");
                 }
-            }
-            Nodes::Resume();
+                if (ImGui::BeginPopup("##createNewNodeSearch", ImGuiWindowFlags_AlwaysAutoResize)) {
+                    ImGui::PushFont(Font::s_normalFont);
+                    static std::string searchFilter = "";
+                    ImGui::InputText("##searchFilter", &searchFilter);
+                    ImGui::SameLine(0, 0);
+                    float searchBarWidth = ImGui::GetCursorPosX();
+                    ImGui::NewLine();
+                    ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str());
+                    static float tabBarHeight = 0;
+                    NodeCategory targetCategory = NodeCategory::Other;
+                    ImGui::BeginChild("##tabChild", ImVec2(searchBarWidth, tabBarHeight));
+                        if (ImGui::BeginTabBar("##searchCategories")) {
+                            for (auto& category : Workspace::s_categories) {
+                                if (ImGui::BeginTabItem(NodeCategoryUtils::ToString(category).c_str())) {
+                                    targetCategory = category;
+                                    ImGui::EndTabItem();
+                                }
+                            }
+                            ImGui::EndTabBar();
+                        }
+                        tabBarHeight = ImGui::GetCursorPosY();
+                    ImGui::EndChild();
+                    ImGui::BeginChild("##nodeCandidates", ImVec2(searchBarWidth, 200));
+                    bool hasCandidates = false;
+                    for (auto& node : Workspace::s_nodeImplementations) {
+                        if (node.description.category != targetCategory) continue;
+                        if (!searchFilter.empty() && node.description.prettyName.find(searchFilter) == std::string::npos) continue;
+                        hasCandidates = true;
+                        if (ImGui::MenuItem(FormatString("%s %s",
+                                NodeCategoryUtils::ToIcon(node.description.category).c_str(), 
+                                node.description.prettyName.c_str()).c_str())) {
+                            auto targetNode = Workspace::AddNode(node.libraryName);
+                            if (targetNode.has_value()) {
+                                auto node = targetNode.value();
+                                Nodes::BeginNode(node->nodeID);
+                                    Nodes::SetNodePosition(node->nodeID, s_mousePos);
+                                Nodes::EndNode();
+                            }
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                    if (!hasCandidates) {
+                        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
+                        ImGui::Text(Localization::GetString("NOTHING_TO_SHOW").c_str());
+                    }
+                    ImGui::EndChild();
+                    ImGui::PopFont();
+                    ImGui::EndPopup();
+                    if (dimPercentage < 0) {
+                        dimPercentage = 0.0f;
+                        dimming = true;
+                    }
+                } else if (!ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
+                    dimming = false;
+                    popupVisible = false;
+                }
+                if (!popupVisible && !ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
+                    dimPercentage -= ImGui::GetIO().DeltaTime * 2.5;
+                    if (dimPercentage < 0) {
+                        dimPercentage = -1;
+                        dimming = true;
+                    }
+                }
+                Nodes::Resume();
 
-            std::vector<Nodes::NodeId> temporarySelectedNodes(Nodes::GetSelectedObjectCount());
-            Nodes::GetSelectedNodes(temporarySelectedNodes.data(), Nodes::GetSelectedObjectCount());
+                std::vector<Nodes::NodeId> temporarySelectedNodes(Nodes::GetSelectedObjectCount());
+                Nodes::GetSelectedNodes(temporarySelectedNodes.data(), Nodes::GetSelectedObjectCount());
 
-            for (auto& nodeID : temporarySelectedNodes) {
-                Workspace::s_selectedNodes.push_back((int) nodeID.Get());
-            }
+                for (auto& nodeID : temporarySelectedNodes) {
+                    Workspace::s_selectedNodes.push_back((int) nodeID.Get());
+                }
 
-            if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_C)) {
-                ProcessCopyAction();
-            }
+                if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_C)) {
+                    ProcessCopyAction();
+                }
 
-            if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_V)) {
-                ProcessPasteAction();
-            }
-            
-            if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_D)) {
-                ProcessCopyAction();
-                ProcessPasteAction();
-            }
+                if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_V)) {
+                    ProcessPasteAction();
+                }
+                
+                if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_D)) {
+                    ProcessCopyAction();
+                    ProcessPasteAction();
+                }
 
-            Nodes::End();
+                Nodes::End();
+            }
             if (s_currentComposition) {
                 ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
                 ImGui::PushFont(Font::s_denseFont);

@@ -5,6 +5,7 @@
 #include "common/ui_shared.h"
 #include "common/composition.h"
 #include "common/workspace.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
     static void DrawRect(RectBounds bounds, ImVec4 color) {
@@ -92,6 +93,45 @@ namespace Raster {
         auto& endkeyframeValue = keyframes.at(targetKeyframeIndex).value;
 
         return AbstractInterpolate(beginKeyframeValue, endkeyframeValue, interpolationPercentage, t_frame, t_composition);
+    }
+
+    void AttributeBase::RenderLegend(Composition* t_composition) {
+        this->composition = t_composition;
+        auto& project = Workspace::s_project.value();
+        float currentFrame = project.currentFrame - t_composition->beginFrame;
+        auto currentValue = Get(currentFrame, t_composition);
+        ImGui::PushID(id);
+            bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
+            bool shouldAddKeyframe = buttonPressed;
+            ImGui::SameLine();
+            ImGui::Text("%s %s", ICON_FA_LINK, name.c_str()); 
+            ImGui::SameLine();
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                bool isItemEdited = false;
+                currentValue = AbstractRenderLegend(t_composition, currentValue, isItemEdited);
+                shouldAddKeyframe = shouldAddKeyframe || isItemEdited;
+            ImGui::PopItemWidth();
+        ImGui::PopID();
+
+        if (shouldAddKeyframe && !KeyframeExists(currentFrame)) {
+            keyframes.push_back(
+                AttributeKeyframe(
+                    currentFrame,
+                    currentValue
+                )
+            );
+        } else if (shouldAddKeyframe && !buttonPressed) {
+            auto keyframeCandidate = GetKeyframeByTimestamp(currentFrame);
+            if (keyframeCandidate.has_value()) {
+                auto* keyframe = keyframeCandidate.value();
+                keyframe->value = currentValue;
+            }
+        } else if (shouldAddKeyframe && buttonPressed) {
+            auto indexCandidate = GetKeyframeIndexByTimestamp(currentFrame);
+            if (indexCandidate.has_value()) {
+                keyframes.erase(keyframes.begin() + indexCandidate.value());
+            }
+        }
     }
 
     void AttributeBase::SortKeyframes() {
@@ -184,9 +224,14 @@ namespace Raster {
         }
 
         UIShared::s_timelineAnykeyframeDragged = UIShared::s_timelineAnykeyframeDragged || anyKeyframesDragged;
-        
 
         if ((MouseHoveringBounds(keyframeLogicBounds) || keyframeDrag.isActive)) {
+            if (ImGui::BeginTooltip()) {
+                auto& project = Workspace::s_project.value();
+                ImGui::Text("%s %s", ICON_FA_STOPWATCH, project.FormatFrameToTime(composition->beginFrame + t_keyframe.timestamp).c_str());
+                Dispatchers::DispatchString(t_keyframe.value);
+                ImGui::EndTooltip();
+            }
             bool previousDragActive = keyframeDrag.isActive;
             keyframeDrag.Activate();
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {

@@ -43,6 +43,10 @@ namespace Raster {
         }
     }
 
+    bool LoadTextureByPath::AbstractDetailsAvailable() {
+        return false;
+    }
+
     void LoadTextureByPath::AbstractRenderProperties() {
         RenderAttributeProperty("Path");
     }

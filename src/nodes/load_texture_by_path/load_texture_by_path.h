@@ -22,6 +22,8 @@ namespace Raster {
 
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
 
+        bool AbstractDetailsAvailable();
+
         void AbstractRenderProperties();
 
         std::string Icon();

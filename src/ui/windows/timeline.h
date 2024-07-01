@@ -35,6 +35,13 @@ namespace Raster {
         void DeleteComposition(Composition* composition);
         void AppendSelectedCompositions(Composition* composition);
 
+        void ProcessCopyAction();
+        void ProcessPasteAction();
+
+        void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
+
+        void ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
+
         float ProcessLayerScroll();
 
         ImVec2 GetRelativeMousePos();

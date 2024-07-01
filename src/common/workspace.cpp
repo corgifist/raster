@@ -84,10 +84,8 @@ namespace Raster {
         auto node = InstantiateNode(t_nodeName);
         if (node.has_value()) {
             auto compositionsCandidate = GetSelectedCompositions();
-            std::cout << (compositionsCandidate.has_value() ? "true" : "false") << std::endl;
             if (compositionsCandidate.has_value()) {
                 compositionsCandidate.value()[0]->nodes.push_back(node.value());
-                std::cout << compositionsCandidate.value()[0]->nodes.size() << std::endl;
             }
         }
         return node;
@@ -108,6 +106,7 @@ namespace Raster {
     }
 
     std::optional<AbstractNode> Workspace::InstantiateSerializedNode(Json data) {
+        std::cout << data.dump() << std::endl;
         auto nodeImplementation = GetNodeImplementationByPackageName((std::string) data["PackageName"]);
         if (nodeImplementation.has_value()) {
             auto nodeInstance = InstantiateNode(nodeImplementation.value().libraryName);
@@ -117,6 +116,7 @@ namespace Raster {
                 node->libraryName = nodeImplementation.value().libraryName;
                 node->enabled = data["Enabled"];
                 node->bypassed = data["Bypassed"];
+                node->AbstractLoadSerialized(data["NodeData"]);
                 if (!data["FlowInputPin"].is_null()) {
                     node->flowInputPin = GenericPin(data["FlowInputPin"]);
                 }
@@ -127,9 +127,7 @@ namespace Raster {
                 for (auto& pin : data["InputPins"]) {
                     node->inputPins.push_back(GenericPin(pin));
                 }
-                for (auto& pin : data["OutputPins"]) {
-                    node->outputPins.push_back(GenericPin(pin));
-                }
+                // output pins are not being instantiated
 
                 return node;
             }

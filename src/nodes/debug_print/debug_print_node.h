@@ -8,6 +8,8 @@ namespace Raster {
         
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
         void AbstractRenderProperties();
+        bool AbstractDetailsAvailable();
+        void AbstractRenderDetails();
 
         std::string AbstractHeader();
         std::string Icon();

@@ -12,8 +12,9 @@ namespace Raster {
         FloatAttribute();
 
         std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition);
+        std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited);
+
         void RenderKeyframes();
-        void RenderLegend(Composition* t_composition);
 
         void Load(Json t_data);
 

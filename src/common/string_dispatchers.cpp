@@ -23,4 +23,8 @@ namespace Raster {
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);
         ImGui::Text(footerText.c_str());
     }
+
+    void StringDispatchers::DispatchFloatValue(std::any& t_attribute) {
+        ImGui::Text("%s %s: %0.2f", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE").c_str(), std::any_cast<float>(t_attribute));
+    }
 };

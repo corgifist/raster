@@ -18,7 +18,7 @@ namespace Raster {
         this->name = data["Name"];
         this->description = data["Description"];
         for (auto& node : data["Nodes"]) {
-            auto nodeCandidate = Workspace::InstantiateSerializedNode(data);
+            auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
                 auto node = nodeCandidate.value();
                 nodes.push_back(node);

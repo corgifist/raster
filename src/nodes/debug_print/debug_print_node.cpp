@@ -3,6 +3,7 @@
 #include "raster.h"
 
 #include "debug_print_node.h"
+#include "../../ImGui/imgui.h"
 
 namespace Raster {
 
@@ -25,6 +26,14 @@ namespace Raster {
 
     void DebugPrintNode::AbstractRenderProperties() {
         RenderAttributeProperty("ArbitraryValue");
+    }
+
+    bool DebugPrintNode::AbstractDetailsAvailable() {
+        return true;
+    }
+
+    void DebugPrintNode::AbstractRenderDetails() {
+        ImGui::Text("Testing Details Rendering");
     }
 
     std::string DebugPrintNode::AbstractHeader() {

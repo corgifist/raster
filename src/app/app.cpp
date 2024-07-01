@@ -60,7 +60,7 @@ namespace Raster {
                     Font::s_fontBytes.data(), Font::s_fontSize,
                     16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic());
 
-        // fontCfg.GlyphMinAdvanceX = 16.0f * 2.0f / 3.0f;
+        fontCfg.GlyphMinAdvanceX = 16.0f * 2.0f / 3.0f;
         fontCfg.MergeMode = true;
         io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
@@ -70,7 +70,6 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 
         Attributes::Initialize();
 
