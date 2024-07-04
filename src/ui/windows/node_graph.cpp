@@ -341,7 +341,7 @@ namespace Raster {
                                             ImGui::NewLine();
                                         ImGui::Unindent();
                                     }
-                                    if (detailsCursorX.has_value() && detailsCursorX.value() > s_headerSize.x) {
+                                    if (detailsCursorX.has_value() && detailsCursorX.value() - Nodes::GetNodePosition(node->nodeID).x > s_headerSize.x) {
                                         s_headerSize.x = detailsCursorX.value() - Nodes::GetNodePosition(node->nodeID).x;
                                     }
                                     ImGui::SetWindowFontScale(1.0f);

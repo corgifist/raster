@@ -62,6 +62,10 @@
     "EDIT_METADATA": "Edit Metadata",
     "COPY_SELECTED_COMPOSITIONS": "Copy Compositions",
     "PASTE_SELECTED_COMPOSITIONS": "Paste Compositions",
+    "DUPLICATE_SELECTED_COMPOSITIONS": "Duplicate Compositions",
     "NO_DISPATCHER_FOR_TYPE": "No Dispatcher for Type",
-    "DETAILS": "Details"
+    "DETAILS": "Details",
+    "RIGHT_CLICK_FOR_CONTEXT_MENU": "Right Click For Context Menu",
+    "COPY_ATTRIBUTE_NAME": "Copy Attribute Name",
+    "ATTRIBUTE_NAME": "Attribute Name"
 }

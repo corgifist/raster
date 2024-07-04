@@ -258,6 +258,21 @@ namespace Raster {
         if (showVerticalScrollbar)
             timelineFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
         ImGui::BeginChild("##timelineCompositions", ImVec2(ImGui::GetWindowSize().x * (1 - s_splitterState), ImGui::GetContentRegionAvail().y), 0, timelineFlags);
+            AttributeBase::ProcessKeyframeShortcuts();
+            if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_C)) {
+                ProcessCopyAction();
+            }
+            if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_V)) {
+                ProcessPasteAction();
+            }
+            if (ImGui::Shortcut(ImGuiKey_Delete)) {
+                ProcessDeleteAction();
+            }
+            if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_D)) {
+                ProcessCopyAction();
+                ProcessPasteAction();
+            }
+
             s_timelineScrollY = ImGui::GetScrollY();
             ImVec2 windowMouseCoords = GetRelativeMousePos();
             bool previousVerticalBar = showVerticalScrollbar;
@@ -547,6 +562,10 @@ namespace Raster {
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+V")) {
             ProcessPasteAction();
         }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+D")) {
+            ProcessCopyAction();
+            ProcessPasteAction();
+        }
     }
 
     void TimelineUI::ProcessCopyAction() {
@@ -559,10 +578,7 @@ namespace Raster {
                 copiedComposition.name += " (" + Localization::GetString("COPY") + ")";
                 copiedComposition.id = Randomizer::GetRandomInteger();
                 for (auto& attribute : copiedComposition.attributes) {
-                    attribute->id = Randomizer::GetRandomInteger();
-                    for (auto& keyframe : attribute->keyframes) {
-                        keyframe.id = Randomizer::GetRandomInteger();
-                    }
+                    attribute = Attributes::CopyAttribute(attribute).value();
                 }
                 std::unordered_map<int, int> idReplacements;
                 for (auto& node : copiedComposition.nodes) {
@@ -608,6 +624,16 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         for (auto& composition : s_copyCompositions) {
             project.compositions.push_back(composition);
+        }
+    }
+
+    void TimelineUI::ProcessDeleteAction() {
+        auto selectedCompositionsCopy = Workspace::s_selectedCompositions;
+        for (auto& compositionID : selectedCompositionsCopy) {
+            auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+            if (compositionCandidate.has_value()) {
+                DeleteComposition(compositionCandidate.value());
+            }
         }
     }
 

@@ -5,6 +5,7 @@ namespace Raster {
         switch (t_category) {
             case NodeCategory::Resources: return ICON_FA_FOLDER;
             case NodeCategory::Utilities: return ICON_FA_GEARS;
+            case NodeCategory::Attributes: return ICON_FA_STOPWATCH;
             case NodeCategory::Other: return ICON_FA_SHAPES;
         }
         return ICON_FA_QUESTION;
@@ -15,6 +16,7 @@ namespace Raster {
         switch (t_category) {
             case NodeCategory::Resources: return icon + Localization::GetString("RESOURCES");
             case NodeCategory::Utilities: return icon + Localization::GetString("UTILITIES");
+            case NodeCategory::Attributes: return icon + Localization::GetString("ATTRIBUTES");
             case NodeCategory::Other: return icon + Localization::GetString("OTHER");
         }
         return icon + "?";

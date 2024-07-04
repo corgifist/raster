@@ -2,6 +2,7 @@
 #include "common/randomizer.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
+#include "../ImGui/imgui_stdlib.h"
 #include "common/ui_shared.h"
 #include "common/composition.h"
 #include "common/workspace.h"
@@ -105,6 +106,26 @@ namespace Raster {
             bool shouldAddKeyframe = buttonPressed;
             ImGui::SameLine();
             ImGui::Text("%s %s", ICON_FA_LINK, name.c_str()); 
+            ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("RIGHT_CLICK_FOR_CONTEXT_MENU").c_str());
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+                ImGui::OpenPopup(FormatString("##attribute%i", id).c_str());
+            }
+            if (ImGui::BeginPopup(FormatString("##attribute%i", id).c_str())) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, name.c_str()).c_str());
+                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
+                    ImGui::InputText("##attributeName", &name);
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("ATTRIBUTE_NAME").c_str());
+                    ImGui::EndMenu();
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_NAME").c_str()).c_str())) {
+                    ImGui::SetClipboardText(name.c_str());
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
+                    auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
+                    parentComposition->attributes.push_back(Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value());
+                }
+                ImGui::EndPopup();
+            }
             ImGui::SameLine();
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
                 bool isItemEdited = false;
@@ -251,7 +272,7 @@ namespace Raster {
             }
 
             float keyframeDragDistance;
-            if (keyframeDrag.GetDragDistance(keyframeDragDistance)) {
+            if (keyframeDrag.GetDragDistance(keyframeDragDistance) && !UIShared::s_timelineDragged) {
                 for (auto& keyframeID : s_selectedKeyframes) {
                     bool breakDrag = false;
                     for (auto& testingKeyframeID : s_selectedKeyframes) {
@@ -315,5 +336,29 @@ namespace Raster {
         DrawRect(keyframeBounds, keyframeColor);
 
         PopClipRect();
+    }
+
+    std::vector<int> AttributeBase::m_deletedKeyframes;
+
+    void AttributeBase::ProcessKeyframeShortcuts() {
+        if (ImGui::Shortcut(ImGuiKey_Delete)) {
+            m_deletedKeyframes = s_selectedKeyframes;
+        }
+        auto deletedKeyframes = m_deletedKeyframes;
+        m_deletedKeyframes.clear();
+        if (!deletedKeyframes.empty()) {
+            for (auto& keyframeID : deletedKeyframes) {
+                auto attributeCandidate = Workspace::GetAttributeByKeyframeID(keyframeID);
+                if (attributeCandidate.has_value()) {
+                    auto& attribute = attributeCandidate.value();
+                    int keyframeIndex = 0;
+                    for (auto& keyframe : attribute->keyframes) {
+                        if (keyframe.id == keyframeID) break;
+                        keyframeIndex++;
+                    }
+                    attribute->keyframes.erase(attribute->keyframes.begin() + keyframeIndex);
+                }
+            }
+        }
     }
 };

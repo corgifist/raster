@@ -89,4 +89,15 @@ namespace Raster {
             }
         ImGui::EndChild();
     }
+
+    void PreviewDispatchers::DispatchFloatValue(std::any& t_attribute) {
+        static ImVec2 plotSize = ImVec2(200, 40);
+
+        ImGui::SetCursorPos({
+            ImGui::GetWindowSize().x / 2.0f - plotSize.x / 2.0f,
+            ImGui::GetWindowSize().y / 2.0f - plotSize.y / 2.0f
+        });
+        float value = std::any_cast<float>(t_attribute);
+        ImGui::PlotVar("", value);
+    }
 };

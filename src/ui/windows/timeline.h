@@ -37,6 +37,7 @@ namespace Raster {
 
         void ProcessCopyAction();
         void ProcessPasteAction();
+        void ProcessDeleteAction();
 
         void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
 

@@ -16,6 +16,8 @@ namespace Raster {
 
         void RenderKeyframes();
 
+        void AbstractRenderDetails();
+
         void Load(Json t_data);
 
         Json AbstractSerialize();

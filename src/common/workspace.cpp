@@ -4,6 +4,7 @@
 namespace Raster {
 
     std::vector<NodeCategory> Workspace::s_categories = {
+        NodeCategory::Attributes,
         NodeCategory::Resources,
         NodeCategory::Utilities,
         NodeCategory::Other
@@ -21,7 +22,8 @@ namespace Raster {
 
     std::unordered_map<std::type_index, uint32_t> Workspace::s_typeColors = {
         {ATTRIBUTE_TYPE(std::string), RASTER_COLOR32(204, 0, 103, 255)},
-        {ATTRIBUTE_TYPE(Texture), RASTER_COLOR32(0, 102, 255, 255)}
+        {ATTRIBUTE_TYPE(Texture), RASTER_COLOR32(0, 102, 255, 255)},
+        {ATTRIBUTE_TYPE(float), RASTER_COLOR32(66, 135, 245, 255)}
     };
 
     void Workspace::Initialize() {
@@ -72,6 +74,28 @@ namespace Raster {
         }
         if (result.empty()) return std::nullopt;
         return result;
+    }
+
+    std::optional<Composition*> Workspace::GetCompositionByNodeID(int t_nodeID) {
+        if (!s_project.has_value()) return std::nullopt;
+        auto& project = s_project.value();
+        for (auto& composition : project.compositions) {
+            for (auto& node : composition.nodes) {
+                if (node->nodeID == t_nodeID) return &composition;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Composition*> Workspace::GetCompositionByAttributeID(int t_attributeID) {
+        if (!s_project.has_value()) return std::nullopt;
+        auto& project = s_project.value();
+        for (auto& composition : project.compositions) {
+            for (auto& attribute : composition.attributes) {
+                if (attribute->id == t_attributeID) return &composition;
+            }
+        }
+        return std::nullopt;
     }
 
     void Workspace::UpdatePinCache(AbstractPinMap& t_pinMap) {
@@ -293,6 +317,13 @@ namespace Raster {
                     }
                 }
             }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AbstractAttribute> Workspace::GetAttributeByName(Composition* t_composition, std::string t_name) {
+        for (auto& attribute : t_composition->attributes) {
+            if (attribute->name == t_name) return attribute;
         }
         return std::nullopt;
     }

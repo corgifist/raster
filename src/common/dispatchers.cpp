@@ -15,7 +15,8 @@ namespace Raster {
 
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers = {
         {ATTRIBUTE_TYPE(std::string), PreviewDispatchers::DispatchStringValue},
-        {ATTRIBUTE_TYPE(Texture), PreviewDispatchers::DispatchTextureValue}
+        {ATTRIBUTE_TYPE(Texture), PreviewDispatchers::DispatchTextureValue},
+        {ATTRIBUTE_TYPE(float), PreviewDispatchers::DispatchFloatValue}
     };
 
     void Dispatchers::DispatchProperty(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {

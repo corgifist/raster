@@ -13,6 +13,8 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include <float.h>
+#include <cstring>
 
 //---- Define assertion handler. Defaults to calling assert().
 // If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
@@ -123,9 +125,9 @@
 //#define IMGUI_DEBUG_PARANOID
 
 //---- Tip: You can add extra functions within the ImGui:: namespace from anywhere (e.g. your own sources/header files)
-/*
 namespace ImGui
 {
-    void MyFunction(const char* name, MyMatrix44* mtx);
+        void	PlotVar(const char* label, float value, float scale_min = FLT_MAX, float scale_max = FLT_MAX, size_t buffer_size = 120);
+
+        void	PlotVarFlushOldEntries();
 }
-*/

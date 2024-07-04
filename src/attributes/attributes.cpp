@@ -1,5 +1,6 @@
 #include "attributes/attributes.h"
 #include "float_attribute.h"
+#include "common/randomizer.h"
 
 namespace Raster {
     std::vector<AttributeDescription> Attributes::s_attributes;
@@ -34,6 +35,19 @@ namespace Raster {
                 attributeCandidate.value()->packageName = t_data["PackageName"];
                 return attributeCandidate;
             }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AbstractAttribute> Attributes::CopyAttribute(AbstractAttribute t_base) {
+        auto copiedAttributeCandidate = Attributes::InstantiateSerializedAttribute(t_base->Serialize());
+        if (copiedAttributeCandidate.has_value()) {
+            auto& attribute = copiedAttributeCandidate.value();
+            attribute->id = Randomizer::GetRandomInteger();
+            for (auto& keyframe : attribute->keyframes) {
+                keyframe.id = Randomizer::GetRandomInteger();
+            }
+            return attribute;
         }
         return std::nullopt;
     }
