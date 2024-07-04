@@ -13,6 +13,7 @@ namespace Raster {
 
     enum class NodeCategory {
         Resources,
+        Attributes,
         Utilities,
         Other
     };

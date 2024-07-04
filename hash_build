@@ -30,7 +30,8 @@ build_modules = [
     
 
     [debug_print, node, [raster_common]],
-    [load_texture_by_path, node, [raster_common, raster_gpu]]
+    [load_texture_by_path, node, [raster_common, raster_gpu]],
+    [get_attribute_value, node, [raster_common]]
 ]
 
 scenario build_master {

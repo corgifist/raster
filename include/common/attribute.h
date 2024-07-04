@@ -28,9 +28,13 @@ namespace Raster {
         void RenderLegend(Composition* t_composition);
         virtual void Load(Json t_data) = 0;
 
+        virtual void AbstractRenderDetails() {};
+
         void SortKeyframes();
 
         Json Serialize();
+
+        static void ProcessKeyframeShortcuts();
 
         protected:
 
@@ -48,6 +52,9 @@ namespace Raster {
         void Initialize();
 
         Composition* composition;
+
+        private:
+        static std::vector<int> m_deletedKeyframes;
     };
 
     using AbstractAttribute = std::shared_ptr<AttributeBase>;

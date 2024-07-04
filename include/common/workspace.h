@@ -31,6 +31,8 @@ namespace Raster {
 
         static std::optional<Composition*> GetCompositionByID(int t_id);
         static std::optional<std::vector<Composition*>> GetSelectedCompositions();
+        static std::optional<Composition*> GetCompositionByNodeID(int t_nodeID);
+        static std::optional<Composition*> GetCompositionByAttributeID(int t_attributeID);
 
         static std::optional<AbstractNode> AddNode(std::string t_nodeName);
         static std::optional<AbstractNode> InstantiateNode(std::string t_nodeName);
@@ -51,6 +53,7 @@ namespace Raster {
         static void UpdatePinByID(GenericPin pin, int pinID);
 
         static std::optional<AbstractAttribute> GetAttributeByKeyframeID(int t_keyframeID);
+        static std::optional<AbstractAttribute> GetAttributeByName(Composition* t_composition, std::string t_name);
         static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
 
         template<class T>
