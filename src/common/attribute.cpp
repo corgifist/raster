@@ -107,11 +107,20 @@ namespace Raster {
             ImGui::SameLine();
             ImGui::Text("%s %s", ICON_FA_LINK, name.c_str()); 
             ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("RIGHT_CLICK_FOR_CONTEXT_MENU").c_str());
+            
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD, &name, sizeof(name));
+                ImGui::Text("%s %s", ICON_FA_STOPWATCH, name.c_str());
+                AbstractRenderDetails();
+                ImGui::EndDragDropSource();
+            }
+            
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
                 ImGui::OpenPopup(FormatString("##attribute%i", id).c_str());
             }
             if (ImGui::BeginPopup(FormatString("##attribute%i", id).c_str())) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, name.c_str()).c_str());
+                RenderPopup();
                 if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
                     ImGui::InputText("##attributeName", &name);
                     ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("ATTRIBUTE_NAME").c_str());
@@ -315,7 +324,12 @@ namespace Raster {
                     }
                 }
                 if (!oneKeyframeTouched) {
-                    s_selectedKeyframes.clear();
+                    for (auto& keyframe : keyframes) {
+                        auto keyframeIterator = std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), keyframe.id);
+                        if (keyframeIterator != s_selectedKeyframes.end()) {
+                            s_selectedKeyframes.erase(keyframeIterator);
+                        }
+                    }
                 }
             } else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
                 for (auto& keyframeID : s_selectedKeyframes) {
@@ -336,6 +350,10 @@ namespace Raster {
         DrawRect(keyframeBounds, keyframeColor);
 
         PopClipRect();
+    }
+
+    void AttributeBase::RenderPopup() {
+        AbstractRenderPopup();
     }
 
     std::vector<int> AttributeBase::m_deletedKeyframes;

@@ -64,7 +64,7 @@ namespace Raster {
     std::string GetAttributeValue::AbstractHeader() {
         std::string base = "Get Attribute Value";
         auto attributeNameCandidate = GetAttribute<std::string>("AttributeName");
-        if (!attributeNameCandidate.value().empty()) {
+        if (attributeNameCandidate.has_value() && !attributeNameCandidate.value().empty()) {
             return base + " (" + attributeNameCandidate.value() + ")";
         }
         return base;

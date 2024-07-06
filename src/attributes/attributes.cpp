@@ -1,5 +1,6 @@
 #include "attributes/attributes.h"
 #include "float_attribute.h"
+#include "vec4_attribute.h"
 #include "common/randomizer.h"
 
 namespace Raster {
@@ -7,6 +8,10 @@ namespace Raster {
 
     static AbstractAttribute SpawnFloatAttribute() {
         return (AbstractAttribute) std::make_unique<FloatAttribute>();
+    }
+
+    static AbstractAttribute SpawnVec4Attribute() {
+        return (AbstractAttribute) std::make_unique<Vec4Attribute>();
     }
 
     std::optional<AttributeDescription> Attributes::GetAttributeDescriptionByPackageName(std::string t_packageName) {
@@ -57,6 +62,12 @@ namespace Raster {
             .packageName = RASTER_PACKAGED_PACKAGE "float_attribute",
             .prettyName = ICON_FA_DIVIDE " Float",
             .spawnProcedure = SpawnFloatAttribute
+        });
+
+        s_attributes.push_back(AttributeDescription{
+            .packageName = RASTER_PACKAGED_PACKAGE "vec4_attribute",
+            .prettyName = ICON_FA_EXPAND " Vector4",
+            .spawnProcedure = SpawnVec4Attribute
         });
 
         std::cout << "attributes initialization finished" << std::endl;

@@ -27,7 +27,17 @@ namespace Raster {
                             }
                         }
                     }
-                    
+                
+                    auto& selectedCompositions = Workspace::s_selectedCompositions;
+                    if (!selectedCompositions.empty()) {
+                        auto compositionCandidate = Workspace::GetCompositionByID(selectedCompositions[0]);
+                        if (compositionCandidate.has_value()) {
+                            auto& composition = compositionCandidate.value();
+                            ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str());
+                            ImGui::SameLine(0, 8.0f);
+                        }
+                    }
+
                     ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
                     int attributesCount = 0;
                     int selectedAttributeIndex = 0;
@@ -58,7 +68,7 @@ namespace Raster {
 
                             if (dispatcherTarget.has_value()) {
                                 auto& value = dispatcherTarget.value();
-                                ImGui::Text("%s %s", ICON_FA_INFO, value.type().name());
+                                ImGui::Text("%s %s", ICON_FA_INFO, Workspace::GetTypeName(value).c_str());
                             }
                         }
                     }

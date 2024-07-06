@@ -15,6 +15,10 @@ namespace Raster {
         }
     }
 
+    void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
+        this->m_attributes[t_attribute] = t_value;
+    }
+
     void NodeBase::Initialize() {
         this->enabled = true;
         this->bypassed = false;

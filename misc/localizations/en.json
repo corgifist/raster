@@ -67,5 +67,10 @@
     "DETAILS": "Details",
     "RIGHT_CLICK_FOR_CONTEXT_MENU": "Right Click For Context Menu",
     "COPY_ATTRIBUTE_NAME": "Copy Attribute Name",
-    "ATTRIBUTE_NAME": "Attribute Name"
+    "ATTRIBUTE_NAME": "Attribute Name",
+    "CHARS": "chars",
+    "LINES": "lines",
+    "COLOR": "Color",
+    "VECTOR": "Vector",
+    "INTERPRET_AS": "Interpret as"
 }

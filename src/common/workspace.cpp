@@ -23,7 +23,15 @@ namespace Raster {
     std::unordered_map<std::type_index, uint32_t> Workspace::s_typeColors = {
         {ATTRIBUTE_TYPE(std::string), RASTER_COLOR32(204, 0, 103, 255)},
         {ATTRIBUTE_TYPE(Texture), RASTER_COLOR32(0, 102, 255, 255)},
-        {ATTRIBUTE_TYPE(float), RASTER_COLOR32(66, 135, 245, 255)}
+        {ATTRIBUTE_TYPE(float), RASTER_COLOR32(66, 135, 245, 255)},
+        {ATTRIBUTE_TYPE(glm::vec4), RASTER_COLOR32(242, 183, 22, 255)}
+    };
+
+    std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
+        RASTER_TYPE_NAME(std::string),
+        RASTER_TYPE_NAME(Raster::Texture),
+        RASTER_TYPE_NAME(float),
+        RASTER_TYPE_NAME(glm::vec4)
     };
 
     void Workspace::Initialize() {
@@ -342,5 +350,12 @@ namespace Raster {
             }
         }
         return std::nullopt;
+    }
+
+    std::string Workspace::GetTypeName(std::any& t_value) {
+        if (s_typeNames.find(std::type_index(t_value.type())) != s_typeNames.end()) {
+            return s_typeNames[std::type_index(t_value.type())];
+        }
+        return t_value.type().name();
     }
 }

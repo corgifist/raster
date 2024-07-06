@@ -1,5 +1,6 @@
 #include "node_graph.h"
 #include "font/font.h"
+#include "common/ui_shared.h"
 
 namespace Raster {
 
@@ -22,6 +23,13 @@ namespace Raster {
     static std::vector<CopyAccumulatorBundle> s_copyAccumulator;
 
     static ImVec2 s_mousePos;
+
+    struct NodePositioningTask {
+        int nodeID;
+        ImVec2 position;
+    };
+
+    static std::vector<NodePositioningTask> s_positioningTasks;
 
     std::optional<ImVec4> NodeGraphUI::GetColorByDynamicValue(std::any& value) {
         for (auto& color : Workspace::s_typeColors) {
@@ -268,12 +276,20 @@ namespace Raster {
             ImGui::BeginChild("##nodeGraphContainer", ImGui::GetContentRegionAvail());
             ImGui::PopStyleVar();
             if (ctx) {
-                Nodes::Begin("SimpleEditor");
+                Nodes::Begin("NodeGraph");
+
                     for (auto& target : Workspace::s_targetSelectNodes) {
                         Nodes::SelectNode(target, true);
                     }
                     Workspace::s_targetSelectNodes.clear();
                     s_mousePos = ImGui::GetIO().MousePos - ImGui::GetCursorScreenPos();
+
+                    for (auto& task : s_positioningTasks) {
+                        Nodes::BeginNode(task.nodeID);
+                            Nodes::SetNodePosition(task.nodeID, task.position);
+                        Nodes::EndNode();
+                    }
+                    s_positioningTasks.clear();
 
                     if (s_currentComposition) {
                         for (auto& node : s_currentComposition->nodes) {
@@ -711,6 +727,24 @@ namespace Raster {
                 }
             }
             ImGui::EndChild();
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD)) {
+                    std::string attributeName = *(std::string*) payload->Data;
+                    if (s_currentComposition) {
+                        auto attributeNodeCandidate = Workspace::InstantiateNode("raster_get_attribute_value");
+                        if (attributeNodeCandidate.has_value()) {
+                            auto& attributeNode = attributeNodeCandidate.value();
+                            attributeNode->SetAttributeValue("AttributeName", attributeName);
+                            s_currentComposition->nodes.push_back(attributeNode);
+                            s_positioningTasks.push_back(NodePositioningTask{
+                                .nodeID = attributeNode->nodeID,
+                                .position = s_mousePos
+                            });
+                        }
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
             Nodes::SetCurrentEditor(nullptr);
             ImGui::PopFont();
 
@@ -722,7 +756,7 @@ namespace Raster {
         if (s_outerTooltip.has_value()) {
             if (ImGui::BeginTooltip()) {
                 auto value = s_outerTooltip.value();
-                ImGui::Text("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str(), value.type().name());
+                ImGui::Text("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str(), Workspace::GetTypeName(value).c_str());
                 NodeBase::DispatchValueAttribute(value);
                 ImGui::EndTooltip();
             }

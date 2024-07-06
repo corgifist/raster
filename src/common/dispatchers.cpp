@@ -10,13 +10,15 @@ namespace Raster {
     StringDispatchersCollection Dispatchers::s_stringDispatchers = {
         {ATTRIBUTE_TYPE(std::string), StringDispatchers::DispatchStringValue},
         {ATTRIBUTE_TYPE(float), StringDispatchers::DispatchFloatValue},
-        {ATTRIBUTE_TYPE(Texture), StringDispatchers::DispatchTextureValue}
+        {ATTRIBUTE_TYPE(Texture), StringDispatchers::DispatchTextureValue},
+        {ATTRIBUTE_TYPE(glm::vec4), StringDispatchers::DispatchVector4Value}
     };
 
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers = {
         {ATTRIBUTE_TYPE(std::string), PreviewDispatchers::DispatchStringValue},
         {ATTRIBUTE_TYPE(Texture), PreviewDispatchers::DispatchTextureValue},
-        {ATTRIBUTE_TYPE(float), PreviewDispatchers::DispatchFloatValue}
+        {ATTRIBUTE_TYPE(float), PreviewDispatchers::DispatchFloatValue},
+        {ATTRIBUTE_TYPE(glm::vec4), PreviewDispatchers::DispatchVector4Value}
     };
 
     void Dispatchers::DispatchProperty(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
@@ -36,7 +38,7 @@ namespace Raster {
             }
         }
         if (!dispatchingWasSuccessfull) {
-            ImGui::Text("%s %s: %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_DISPATCHER_FOR_TYPE").c_str(), t_value.type().name());
+            ImGui::Text("%s %s: %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_DISPATCHER_FOR_TYPE").c_str(), Workspace::GetTypeName(t_value).c_str());
         }
     }
 
