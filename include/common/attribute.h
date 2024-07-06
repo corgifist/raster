@@ -30,6 +30,8 @@ namespace Raster {
 
         virtual void AbstractRenderDetails() {};
 
+        void RenderPopup();
+
         void SortKeyframes();
 
         Json Serialize();
@@ -37,6 +39,8 @@ namespace Raster {
         static void ProcessKeyframeShortcuts();
 
         protected:
+
+        virtual void AbstractRenderPopup() {}
 
         virtual std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) = 0;
         virtual std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) = 0;

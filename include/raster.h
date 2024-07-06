@@ -18,6 +18,9 @@
 #include <set>
 #include <cmath>
 
+#include <glm/glm.hpp>
+#include <glm/vec4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "json.hpp"
 
 #define RASTER_PACKAGED_PACKAGE "packaged.raster."

@@ -9,6 +9,7 @@
 #include "composition.h"
 #include "attribute.h"
 
+#define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
 
 namespace Raster {
     struct Workspace {
@@ -23,6 +24,7 @@ namespace Raster {
         static std::vector<int> s_selectedNodes;
 
         static std::unordered_map<int, std::any> s_pinCache;
+        static std::unordered_map<std::type_index, std::string> s_typeNames;
         static std::unordered_map<std::type_index, uint32_t> s_typeColors;
 
         static void Initialize();
@@ -55,6 +57,8 @@ namespace Raster {
         static std::optional<AbstractAttribute> GetAttributeByKeyframeID(int t_keyframeID);
         static std::optional<AbstractAttribute> GetAttributeByName(Composition* t_composition, std::string t_name);
         static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
+
+        static std::string GetTypeName(std::any& t_value);
 
         template<class T>
         static T GetBaseName(T const & path, T const & delims = "/\\") {
