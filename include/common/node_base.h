@@ -73,7 +73,7 @@ namespace Raster {
 
         virtual std::string AbstractHeader() = 0;
 
-        virtual bool AbstractDetailsAvailable() = 0;
+        virtual bool AbstractDetailsAvailable() { return false; };
         virtual void AbstractRenderDetails() {}
 
         virtual Json AbstractSerialize() { return {}; };

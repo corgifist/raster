@@ -23,15 +23,17 @@ build_modules = [
     [common, shared],
     [traverser, shared, [raster_common]],
     [gpu, shared, [glfw, raster_common, raster_ImGui]],
-    [attributes, shared, [raster_common, raster_ImGui]]
-    [ui, shared, [raster_common, raster_ImGui, raster_gpu]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes]],
+    [compositor, shared, [raster_gpu, raster_common]]
+    [attributes, shared, [raster_common, raster_ImGui]],
+    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor]],
     [core, binary, [raster_common, raster_app]],
     
 
     [debug_print, node, [raster_common]],
     [load_texture_by_path, node, [raster_common, raster_gpu]],
-    [get_attribute_value, node, [raster_common]]
+    [get_attribute_value, node, [raster_common]],
+    [make_framebuffer, node, [raster_common, raster_gpu, raster_compositor]]
 ]
 
 scenario build_master {

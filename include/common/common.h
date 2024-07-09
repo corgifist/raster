@@ -46,4 +46,14 @@ namespace Raster {
     static Json ReadJson(std::string path) {
         return Json::parse(std::fstream(path));
     }
+
+    static std::string ReadFile(const std::string& filename) {
+        std::string buffer;
+        std::ifstream in(filename.c_str(), std::ios_base::binary | std::ios_base::ate);
+        in.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
+        buffer.resize(in.tellg());
+        in.seekg(0, std::ios_base::beg);
+        in.read(&buffer[0], buffer.size());
+        return buffer;
+    }
 }

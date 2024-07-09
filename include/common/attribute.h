@@ -16,6 +16,10 @@ namespace Raster {
         AttributeKeyframe(int t_id, float t_timestamp, std::any t_value);
     };
 
+    struct AttributeDragDropPayload {
+        int attributeID;
+    };
+
     struct AttributeBase {
         int id;
         std::string name, packageName;

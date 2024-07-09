@@ -55,6 +55,7 @@ namespace Raster {
         static void UpdatePinByID(GenericPin pin, int pinID);
 
         static std::optional<AbstractAttribute> GetAttributeByKeyframeID(int t_keyframeID);
+        static std::optional<AbstractAttribute> GetAttributeByAttributeID(int t_attributeID);
         static std::optional<AbstractAttribute> GetAttributeByName(Composition* t_composition, std::string t_name);
         static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
 

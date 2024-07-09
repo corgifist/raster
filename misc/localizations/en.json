@@ -72,5 +72,9 @@
     "LINES": "lines",
     "COLOR": "Color",
     "VECTOR": "Vector",
-    "INTERPRET_AS": "Interpret as"
+    "INTERPRET_AS": "Interpret as",
+    "PROJECT_RESOLUTION": "Project Resolution",
+    "ATTACHMENT": "Attachment",
+    "PROJECT_BACKGROUND_COLOR": "Project Background Color",
+    "ATTACHMENTS_COUNT": "Attachments Count"
 }

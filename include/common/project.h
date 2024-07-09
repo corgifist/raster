@@ -7,6 +7,9 @@ namespace Raster {
         std::string name, description;
         float framerate;
         float currentFrame;
+
+        glm::vec2 preferredResolution;
+        glm::vec4 backgroundColor;
         
         std::vector<Composition> compositions;
 
