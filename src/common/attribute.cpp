@@ -109,10 +109,41 @@ namespace Raster {
             ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("RIGHT_CLICK_FOR_CONTEXT_MENU").c_str());
             
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-                ImGui::SetDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD, &name, sizeof(name));
+                AttributeDragDropPayload payload;
+                payload.attributeID = id;
+                ImGui::SetDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD, &payload, sizeof(payload));
                 ImGui::Text("%s %s", ICON_FA_STOPWATCH, name.c_str());
                 AbstractRenderDetails();
                 ImGui::EndDragDropSource();
+            }
+
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD)) {
+                    AttributeDragDropPayload attributePayload = *(AttributeDragDropPayload*) payload->Data;
+                    int fromAttributeID = attributePayload.attributeID;
+                    int toAttributeID = id;
+
+
+                    if (Workspace::s_project.has_value()) {
+                        auto& project = Workspace::s_project.value();
+                        for (auto& composition : project.compositions) {
+                            for (auto& attribute : composition.attributes) {
+                                if (attribute->id == fromAttributeID) {
+                                    AbstractAttribute& fromAttribute = attribute;
+                                    for (auto& anotherAttribute : composition.attributes) {
+                                        if (anotherAttribute->id == toAttributeID) {
+                                            AbstractAttribute& toAttribute = anotherAttribute;
+                                            std::swap(fromAttribute, anotherAttribute);
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                ImGui::EndDragDropTarget();
             }
             
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {

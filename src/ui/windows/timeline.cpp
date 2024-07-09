@@ -628,6 +628,7 @@ namespace Raster {
     }
 
     void TimelineUI::ProcessDeleteAction() {
+        if (!s_anyCompositionWasPressed) return;
         auto selectedCompositionsCopy = Workspace::s_selectedCompositions;
         for (auto& compositionID : selectedCompositionsCopy) {
             auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
@@ -823,11 +824,11 @@ namespace Raster {
         if (MouseHoveringBounds(splitterLogicBounds)) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
             DrawRect(splitterBounds, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
                 splitterDragging = true;   
             }
         }
-        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) &&ImGui::IsWindowFocused() && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             s_splitterState = GetRelativeMousePos().x / ImGui::GetWindowSize().x;
         } else splitterDragging = false;
 

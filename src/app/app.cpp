@@ -8,6 +8,7 @@
 #include "attributes/attributes.h"
 #include "../ImGui/imgui_theme.h"
 #include "common/ui_shared.h"
+#include "compositor/compositor.h"
 
 namespace Nodes = ax::NodeEditor;
 
@@ -166,6 +167,8 @@ namespace Raster {
             GPU::SetWindowTitle(constructedTitle);
 
             GPU::BeginFrame();
+                Compositor::EnsureResolutionConstraints();
+
                 ImGui::DockSpaceOverViewport();
                 for (const auto& window : s_windows) {
                     window->Render();

@@ -24,14 +24,16 @@ namespace Raster {
         {ATTRIBUTE_TYPE(std::string), RASTER_COLOR32(204, 0, 103, 255)},
         {ATTRIBUTE_TYPE(Texture), RASTER_COLOR32(0, 102, 255, 255)},
         {ATTRIBUTE_TYPE(float), RASTER_COLOR32(66, 135, 245, 255)},
-        {ATTRIBUTE_TYPE(glm::vec4), RASTER_COLOR32(242, 183, 22, 255)}
+        {ATTRIBUTE_TYPE(glm::vec4), RASTER_COLOR32(242, 183, 22, 255)},
+        {ATTRIBUTE_TYPE(Raster::Framebuffer), RASTER_COLOR32(52, 235, 171, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
         RASTER_TYPE_NAME(std::string),
         RASTER_TYPE_NAME(Raster::Texture),
         RASTER_TYPE_NAME(float),
-        RASTER_TYPE_NAME(glm::vec4)
+        RASTER_TYPE_NAME(glm::vec4),
+        RASTER_TYPE_NAME(Raster::Framebuffer)
     };
 
     void Workspace::Initialize() {
@@ -323,6 +325,18 @@ namespace Raster {
                             return attribute;
                         }
                     }
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AbstractAttribute> Workspace::GetAttributeByAttributeID(int t_attributeID) {
+        if (s_project.has_value()) {
+            auto& project = s_project.value();
+            for (auto& composition : project.compositions) {
+                for (auto& attribute : composition.attributes) {
+                    if (attribute->id == t_attributeID) return attribute;
                 }
             }
         }

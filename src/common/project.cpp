@@ -7,6 +7,16 @@ namespace Raster {
         this->description = data["Description"];
         this->framerate = data["Framerate"];
         this->currentFrame = data["CurrentFrame"];
+        this->preferredResolution = {
+            (float) data["PreferredResolution"][0],
+            (float) data["PreferredResolution"][1]
+        };
+        this->backgroundColor = {
+            (float) data["BackgroundColor"][0],
+            (float) data["BackgroundColor"][1],
+            (float) data["BackgroundColor"][2],
+            (float) data["BackgroundColor"][3]
+        };
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
         }
@@ -17,6 +27,10 @@ namespace Raster {
         this->description = "Nothing...";
         this->framerate = 60;
         this->currentFrame = 0;
+        this->preferredResolution = {
+            1080, 1080
+        };
+        this->backgroundColor = {0, 0, 0, 1};
     }
 
     uint64_t Project::GetProjectLength() {
@@ -43,6 +57,12 @@ namespace Raster {
         data["Description"] = description;
         data["Framerate"] = framerate;
         data["CurrentFrame"] = currentFrame;
+        data["PreferredResolution"] = {
+            preferredResolution.x, preferredResolution.y
+        };
+        data["BackgroundColor"] = {
+            backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a
+        };
         data["Compositions"] = {};
         for (auto& composition : compositions) {
             data["Compositions"].push_back(composition.Serialize());

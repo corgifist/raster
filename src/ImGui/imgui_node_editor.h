@@ -18,7 +18,7 @@
 # include "imgui.h"
 # include <cstdint> // std::uintXX_t
 # include <utility> // std::move
-
+#include <string>
 
 //------------------------------------------------------------------------------
 # define IMGUI_NODE_EDITOR_VERSION      "0.9.4"
@@ -91,7 +91,7 @@ struct Config
 {
     using CanvasSizeModeAlias = ax::NodeEditor::CanvasSizeMode;
 
-    const char*             SettingsFile;
+    std::string             SettingsFile;
     ConfigSession           BeginSaveSession;
     ConfigSession           EndSaveSession;
     ConfigSaveSettings      SaveSettings;

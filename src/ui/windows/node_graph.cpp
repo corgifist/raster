@@ -528,6 +528,7 @@ namespace Raster {
                         auto& node = nodeCandidate.value();
                         ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
                         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ATTRIBUTES").c_str()).c_str())) {
+                            int id = 0;
                             for (auto& attribute : node->GetAttributesList()) {
                                 bool isAttributeExposed = false;
                                 int attributeIndex = 0;
@@ -548,6 +549,7 @@ namespace Raster {
                                     s_outerTooltip = attributeValue.value();
                                 }
                                 ImGui::SameLine();
+                                ImGui::PushID(id++);
                                 if (ImGui::SmallButton(FormatString("%s %s", isAttributeExposed ? ICON_FA_LINK_SLASH : ICON_FA_LINK, Localization::GetString(isAttributeExposed ? "HIDE" : "EXPOSE").c_str()).c_str())) {
                                     if (!isAttributeExposed) {
                                         node->inputPins.push_back(GenericPin(attribute, PinType::Input));
@@ -555,6 +557,7 @@ namespace Raster {
                                         node->inputPins.erase(node->inputPins.begin() + attributeIndex);
                                     }
                                 }
+                                ImGui::PopID();
                             }
                             ImGui::EndMenu();
                         }
@@ -692,6 +695,10 @@ namespace Raster {
                 }
 
                 Nodes::End();
+                ImDrawList* drawList = ImGui::GetWindowDrawList();
+                if (dimPercentage > 0.05f) {
+                    drawList->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, dimPercentage)));
+                }
             }
             if (s_currentComposition) {
                 ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
@@ -729,7 +736,8 @@ namespace Raster {
             ImGui::EndChild();
             if (ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD)) {
-                    std::string attributeName = *(std::string*) payload->Data;
+                    AttributeDragDropPayload attributePayload = *(AttributeDragDropPayload*) payload->Data;
+                    std::string attributeName = Workspace::GetAttributeByAttributeID(attributePayload.attributeID).value()->name;
                     if (s_currentComposition) {
                         auto attributeNodeCandidate = Workspace::InstantiateNode("raster_get_attribute_value");
                         if (attributeNodeCandidate.has_value()) {
@@ -753,6 +761,7 @@ namespace Raster {
                 drawList->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, dimPercentage)));
             }
 
+
         if (s_outerTooltip.has_value()) {
             if (ImGui::BeginTooltip()) {
                 auto value = s_outerTooltip.value();
@@ -761,6 +770,7 @@ namespace Raster {
                 ImGui::EndTooltip();
             }
         }
+
         ImGui::End();
     }
 }

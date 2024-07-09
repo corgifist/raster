@@ -11,14 +11,16 @@ namespace Raster {
         {ATTRIBUTE_TYPE(std::string), StringDispatchers::DispatchStringValue},
         {ATTRIBUTE_TYPE(float), StringDispatchers::DispatchFloatValue},
         {ATTRIBUTE_TYPE(Texture), StringDispatchers::DispatchTextureValue},
-        {ATTRIBUTE_TYPE(glm::vec4), StringDispatchers::DispatchVector4Value}
+        {ATTRIBUTE_TYPE(glm::vec4), StringDispatchers::DispatchVector4Value},
+        {ATTRIBUTE_TYPE(Framebuffer), StringDispatchers::DispatchFramebufferValue}
     };
 
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers = {
         {ATTRIBUTE_TYPE(std::string), PreviewDispatchers::DispatchStringValue},
         {ATTRIBUTE_TYPE(Texture), PreviewDispatchers::DispatchTextureValue},
         {ATTRIBUTE_TYPE(float), PreviewDispatchers::DispatchFloatValue},
-        {ATTRIBUTE_TYPE(glm::vec4), PreviewDispatchers::DispatchVector4Value}
+        {ATTRIBUTE_TYPE(glm::vec4), PreviewDispatchers::DispatchVector4Value},
+        {ATTRIBUTE_TYPE(Framebuffer), PreviewDispatchers::DispatchFramebufferValue}
     };
 
     void Dispatchers::DispatchProperty(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {

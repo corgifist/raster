@@ -35,4 +35,19 @@ namespace Raster {
             ImGui::ColorPicker4("##colorPreview", glm::value_ptr(vector), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
         ImGui::PopItemWidth();
     }
+
+    void StringDispatchers::DispatchFramebufferValue(std::any& t_attribute) {
+        auto framebuffer = std::any_cast<Framebuffer>(t_attribute);
+        ImGui::Text("%s %s: %i", ICON_FA_IMAGE, Localization::GetString("ATTACHMENTS_COUNT").c_str(), (int) framebuffer.attachments.size());
+        ImGui::Separator();
+        ImGui::Spacing();
+        for (auto& attachment : framebuffer.attachments) {
+            std::any dynamicAttachment = attachment;
+            ImGui::BeginChild(FormatString("##%i", (int) (uint64_t) attachment.handle).c_str(), ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+                DispatchTextureValue(dynamicAttachment);
+            ImGui::EndChild();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
+    }
 };

@@ -89,11 +89,16 @@ namespace Raster {
         ImVec2 fitTextureSize = FitRectInRect(ImGui::GetWindowSize(), ImVec2(texture.width, texture.height));
 
         ImGui::BeginChild("##imageContainer", ImGui::GetContentRegionAvail(), 0, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            static bool maskR = true;
+            static bool maskG = true;
+            static bool maskB = true;
+            static bool maskA = true;
+
             ImGui::SetCursorPos(ImVec2{
                 ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
                 ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
             } + imageOffset);
-            ImGui::Image(texture.handle, fitTextureSize * zoom);
+            ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
             auto footerText = FormatString("%ix%i; %s", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str());
             ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
@@ -103,14 +108,53 @@ namespace Raster {
             });
             ImGui::Text(footerText.c_str());
 
+            ImGui::SetCursorPos({0, 0});
+            static bool colorMaskExpanded = false;
+            if (ImGui::Button(FormatString("%s %s", ICON_FA_DROPLET, colorMaskExpanded ? ICON_FA_ANGLE_DOWN : ICON_FA_ANGLE_RIGHT).c_str())) {
+                colorMaskExpanded = !colorMaskExpanded;
+            }
+            if (colorMaskExpanded) {
+                ImGui::SameLine();
+                ImVec4 reservedButtonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                ImGui::PushStyleColor(ImGuiCol_Button, maskR ? ImVec4(1, 0, 0, 1) : reservedButtonColor * 0.7f);
+                if (ImGui::Button("R")) maskR = !maskR;
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Button, maskG ? ImVec4(0, 1, 0, 1) : reservedButtonColor * 0.7f);
+                if (ImGui::Button("G")) maskG = !maskG;
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Button, maskB ? ImVec4(0, 0, 1, 1) : reservedButtonColor * 0.7f);
+                if (ImGui::Button("B")) maskB = !maskB;
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Button, maskA ? reservedButtonColor : reservedButtonColor * 0.5f);
+                if (ImGui::Button("A")) maskA = !maskA;
+                ImGui::SameLine();
+
+                ImGui::PopStyleColor(4);
+            }
+
             imageDrag.Activate();
             float imageDragDistance;
             if (imageDrag.GetDragDistance(imageDragDistance)) {
                 imageOffset = imageOffset + ImGui::GetIO().MouseDelta;
             } else imageDrag.Deactivate();
-            if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowFocused()) {
+            if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
                 zoom += ImGui::GetIO().MouseWheel * 0.1f;
                 zoom = std::max(zoom, 0.5f);
+            }
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
+                ImGui::OpenPopup("##texturePopup");
+            }
+            if (ImGui::BeginPopup("##texturePopup")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("ATTRIBUTE").c_str()).c_str());
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("REVERT_VIEW").c_str()).c_str())) {
+                    zoom = 1.0f;
+                    imageOffset = ImVec2(0, 0);
+                }
+                ImGui::EndPopup();
             }
         ImGui::EndChild();
     }
@@ -130,7 +174,6 @@ namespace Raster {
         auto vector = std::any_cast<glm::vec4>(t_attribute);
         static bool interpretAsColor = false;
         static float interpreterModeSizeX = 0;
-        float beginCursorX = ImGui::GetCursorPosX();
 
         ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
         ImVec4 reservedButtonColor = buttonColor;
@@ -140,6 +183,7 @@ namespace Raster {
 
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - interpreterModeSizeX / 2.0f);
 
+        float beginCursorX = ImGui::GetCursorPosX();
         ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
         if (ImGui::Button(FormatString("%s %s", interpretAsColor ? ICON_FA_EXPAND : ICON_FA_CHECK, Localization::GetString("VECTOR").c_str()).c_str())) {
             interpretAsColor = false;
@@ -196,6 +240,32 @@ namespace Raster {
             ImGui::PopItemWidth();
         }
         childSize = ImGui::GetWindowSize();
+        ImGui::EndChild();
+    }
+
+    void PreviewDispatchers::DispatchFramebufferValue(std::any& t_attribute) {
+        auto framebuffer = std::any_cast<Framebuffer>(t_attribute);
+
+        static int attachmentIndex = 0;
+        if (attachmentIndex >= framebuffer.attachments.size()) attachmentIndex = framebuffer.attachments.size() - 1;
+        std::any textureTarget = framebuffer.attachments[attachmentIndex];
+
+        DispatchTextureValue(textureTarget);
+
+        static float attachmentChooserSizeX = 0;
+        ImGui::SetCursorPos({
+            ImGui::GetWindowSize().x / 2.0f - attachmentChooserSizeX / 2.0f,
+            0
+        });
+        ImGui::BeginChild("##attachmentContainer", ImVec2(attachmentChooserSizeX, 30));
+        float firstCursorX = ImGui::GetCursorPosX();
+        for (int i = 0; i < framebuffer.attachments.size(); i++) {
+            if (ImGui::Button(FormatString("%s %s %i", ICON_FA_IMAGE, Localization::GetString("ATTACHMENT").c_str(), i).c_str())) {
+                attachmentIndex = i;
+            }
+            ImGui::SameLine();
+        }
+        attachmentChooserSizeX = ImGui::GetCursorPosX() - firstCursorX;
         ImGui::EndChild();
     }
 };

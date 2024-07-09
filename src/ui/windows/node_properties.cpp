@@ -44,12 +44,48 @@ namespace Raster {
                             ImGui::DragInt("##projectFramerate", &signedFramerate, 1, 1);
                             project.framerate = signedFramerate;
 
+                            int signedPreferredResolution[2] = {
+                                project.preferredResolution.x,
+                                project.preferredResolution.y
+                            };
+                            ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str());
+                            ImGui::SameLine();
+                            ImGui::DragInt2("##preferredResolution", signedPreferredResolution);
+                            project.preferredResolution = {signedPreferredResolution[0], signedPreferredResolution[1]};
+
+                            ImGui::Text("%s %s: ", ICON_FA_DROPLET, Localization::GetString("PROJECT_BACKGROUND_COLOR").c_str());
+                            ImGui::SameLine();
+                            float colorPtr[4] = {
+                                project.backgroundColor.r,
+                                project.backgroundColor.g, 
+                                project.backgroundColor.b,
+                                project.backgroundColor.a
+                            };
+                            ImGui::PushItemWidth(200);
+                                ImGui::ColorPicker4("##colorPreview", colorPtr, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoAlpha);
+                            ImGui::PopItemWidth();
+                            project.backgroundColor = {
+                                colorPtr[0], colorPtr[1], colorPtr[2], colorPtr[3]
+                            };
+
                             if (CenteredButton(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str())) {
                                 isEditingDescription = false;
                             }
                         } else {
                             ImGui::Text("%s", project.description.c_str());
-                            ImGui::Text("%s %s: %i", ICON_FA_VIDEO, Localization::GetString("FRAMERATE").c_str(), project.framerate);
+                            ImGui::Text("%s %s: %i", ICON_FA_VIDEO, Localization::GetString("PROJECT_FRAMERATE").c_str(), (int) project.framerate);
+                            ImGui::Text("%s %s: %ix%i", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str(), (int) project.preferredResolution.x, (int) project.preferredResolution.y);
+                            ImGui::Text("%s %s: ", ICON_FA_DROPLET, Localization::GetString("PROJECT_BACKGROUND_COLOR").c_str());
+                            ImGui::SameLine();
+                            float colorPtr[4] = {
+                                project.backgroundColor.r,
+                                project.backgroundColor.g, 
+                                project.backgroundColor.b,
+                                project.backgroundColor.a
+                            };
+                            ImGui::PushItemWidth(200);
+                                ImGui::ColorPicker4("##colorPreview", colorPtr, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
+                            ImGui::PopItemWidth();
                             ImGui::Text("%s %s: %i", ICON_FA_LAYER_GROUP, Localization::GetString("TOTAL_COMPOSITIONS_COUNT").c_str(), (int) project.compositions.size());
                             if (CenteredButton(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT").c_str()).c_str())) {
                                 isEditingDescription = true;

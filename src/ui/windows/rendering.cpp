@@ -1,5 +1,6 @@
 #include "rendering.h"
 #include "font/font.h"
+#include "compositor/compositor.h"
 
 namespace Raster {
     void RenderingUI::Render() {
@@ -26,6 +27,12 @@ namespace Raster {
                                 selectedAttribute = *std::next(attributes.begin(), 0);
                             }
                         }
+                    } else selectedAttribute = "";
+
+                    if (selectedAttribute.empty()) {
+                        if (Compositor::primaryFramebuffer.has_value()) {
+                            dispatcherTarget = Compositor::primaryFramebuffer.value();
+                        }
                     }
                 
                     auto& selectedCompositions = Workspace::s_selectedCompositions;
@@ -34,11 +41,11 @@ namespace Raster {
                         if (compositionCandidate.has_value()) {
                             auto& composition = compositionCandidate.value();
                             ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str());
+                            ImGui::Separator();
                             ImGui::SameLine(0, 8.0f);
                         }
                     }
 
-                    ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
                     int attributesCount = 0;
                     int selectedAttributeIndex = 0;
                     if (!selectedNodes.empty()) {
@@ -61,6 +68,7 @@ namespace Raster {
                             for (auto& attribute : attributes) {
                                 transformedAttributes.push_back(attribute.c_str());
                             }
+                            ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
                             ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
                             ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
                             ImGui::PopItemWidth();
@@ -68,7 +76,7 @@ namespace Raster {
 
                             if (dispatcherTarget.has_value()) {
                                 auto& value = dispatcherTarget.value();
-                                ImGui::Text("%s %s", ICON_FA_INFO, Workspace::GetTypeName(value).c_str());
+                                ImGui::Text("%s %s", ICON_FA_CIRCLE_INFO, Workspace::GetTypeName(value).c_str());
                             }
                         }
                     }
@@ -119,16 +127,13 @@ namespace Raster {
                         ImGui::PopFont();
 
                         if (dispatcherTarget.has_value()) {
-                            ImGui::PushFont(Font::s_denseFont);
                             std::string infoText = FormatString("%s: %s", Localization::GetString("NO_PREVIEW_DISPATCHER_FOR_TYPE").c_str(), dispatcherTarget.value().type().name());
-                            // std::cout << infoText << std::endl;
                             ImVec2 infoSize = ImGui::CalcTextSize(infoText.c_str());
                             ImGui::SetCursorPos({
                                 ImGui::GetContentRegionAvail().x / 2.0f - infoSize.x / 2.0f,
                                 ImGui::GetContentRegionAvail().y / 2.0f - infoSize.y / 2.0f + warningSize.x / 1.7f / 2
                             });
                             ImGui::Text(infoText.c_str());
-                            ImGui::PopFont();
                         }
                     }
                 ImGui::EndChild();

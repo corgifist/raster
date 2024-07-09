@@ -12,6 +12,9 @@
 #include "ImGui/imgui_impl_opengl3.h"
 #include "ImGui/imgui_impl_glfw.h"
 
+#define HANDLE_TO_GLUINT(x) ((uint32_t) (uint64_t) (x))
+#define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
+
 namespace Raster {
 
     GPUInfo GPU::info{};
@@ -28,6 +31,10 @@ namespace Raster {
     fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
                 type, severity, message );
+    }
+
+    Texture::Texture() {
+        this->handle = nullptr;
     }
 
     void GPU::Initialize() {
@@ -135,6 +142,168 @@ namespace Raster {
         stbi_image_free(image);
 
         return texture;
+    }
+
+    void GPU::DestroyTexture(Texture texture) {
+        GLuint textureHandle = (uint32_t) (uint64_t) texture.handle;
+        glDeleteTextures(1, &textureHandle);
+    }
+
+    void GPU::BindTextureToShader(Shader shader, std::string name, Texture texture, int unit) {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_2D, HANDLE_TO_GLUINT(texture.handle));
+        SetShaderUniform(shader, name, unit);
+    }
+
+    // TODO: return std::optional<Framebuffer> instead of Framebuffer
+    Framebuffer GPU::GenerateFramebuffer(uint32_t width, uint32_t height, std::vector<Texture> attachments) {
+        Framebuffer fbo;
+        GLuint fboHandle;
+        glGenFramebuffers(1, &fboHandle);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
+
+        int attachmentIndex = 0;
+        std::vector<GLuint> attachmentBuffers;
+        for (auto& attachment : attachments) {
+            GLuint textureHandle = (GLuint) (uint64_t) attachment.handle;
+            glBindTexture(GL_TEXTURE_2D, textureHandle);
+            attachmentBuffers.push_back(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachmentIndex++, GL_TEXTURE_2D, textureHandle, 0);
+        }
+
+        glDrawBuffers(attachmentBuffers.size(), attachmentBuffers.data());
+
+        GLuint depthHandle;
+        glGenRenderbuffers(1, &depthHandle);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthHandle);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthHandle);
+
+        fbo.handle = (void*) fboHandle;
+        fbo.depthHandle = (void*) depthHandle;
+        fbo.attachments = attachments;
+        fbo.width = width;
+        fbo.height = height;
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            throw std::runtime_error("cannot instantiate framebuffer");
+        }
+
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return fbo;
+    }
+
+    void GPU::DestroyFramebuffer(Framebuffer fbo) {
+        GLuint fboHandle = (uint32_t) (uint64_t) fbo.handle;
+        GLuint depthHandle = (uint32_t) (uint64_t) fbo.depthHandle;
+        glDeleteRenderbuffers(1, &depthHandle);
+        glDeleteFramebuffers(1, &fboHandle);
+    }
+
+    void GPU::BindFramebuffer(std::optional<Framebuffer> fbo) {
+        if (fbo.has_value()) {
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) (uint64_t) fbo.value().handle);
+            glViewport(0, 0, fbo.value().width, fbo.value().height);
+        } else {
+            int w, h;
+            glfwGetWindowSize((GLFWwindow*) info.display, &w, &h);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, w, h);
+        }
+    }
+
+    Shader GPU::GenerateShader(ShaderType type, std::string name) {
+        GLenum enumType = 0;
+        std::string extension = "";
+        switch (type) {
+            case ShaderType::Vertex: {
+                enumType = GL_VERTEX_SHADER;
+                extension = ".vert";
+                break;
+            }
+            case ShaderType::Fragment: {
+                enumType = GL_FRAGMENT_SHADER;
+                extension = ".frag";
+                break;
+            }
+            case ShaderType::Compute: {
+                enumType = GL_COMPUTE_SHADER;
+                extension = ".compute";
+                break;
+            }
+        }
+        std::string code = ReadFile("shaders/gl/" + name + extension);
+        const char* rawCode = code.c_str();
+        GLuint program = glCreateShaderProgramv(enumType, 1, &rawCode);
+        std::vector<char> log(512);
+        GLsizei length;
+        glGetProgramInfoLog(program, 512, &length, log.data());
+        if (length != 0) {
+            throw std::runtime_error(std::string(log.data()));
+        }
+        return Shader{
+            .type = type,
+            .handle = GLUINT_TO_HANDLE(program)
+        };
+    }
+
+    Pipeline GPU::GeneratePipeline(Shader vertexShader, Shader fragmentShader) {
+        GLuint pipeline;
+        glGenProgramPipelines(1, &pipeline);
+        glBindProgramPipeline(pipeline);
+        glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, HANDLE_TO_GLUINT(vertexShader.handle));
+        glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, HANDLE_TO_GLUINT(fragmentShader.handle));
+
+        Pipeline result;
+        result.vertex = vertexShader;
+        result.fragment = fragmentShader;
+        result.handle = GLUINT_TO_HANDLE(pipeline);
+        return result;
+    }
+
+    int GPU::GetShaderUniformLocation(Shader shader, std::string name) {
+        static std::unordered_map<void*, std::unordered_map<std::string, int>> shaderRegistry;
+        if (shaderRegistry.find(shader.handle) == shaderRegistry.end()) {
+            shaderRegistry[shader.handle] = {};
+        }
+        auto& uniformsMap = shaderRegistry[shader.handle];
+        if (uniformsMap.find(name) != uniformsMap.end()) {
+            return uniformsMap[name];
+        }
+        uniformsMap[name] = glGetUniformLocation(HANDLE_TO_GLUINT(shader.handle), name.c_str());
+        return uniformsMap[name];
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, int i) {
+        glProgramUniform1i(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), i);
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec4 vec) {
+        glProgramUniform4f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), vec.x, vec.y, vec.z, vec.w);
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec2 vec) {
+        glProgramUniform2f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), vec.x, vec.y);
+    }
+
+    void GPU::BindPipeline(Pipeline pipeline) {
+        glUseProgram(0);
+        glBindProgramPipeline(HANDLE_TO_GLUINT(pipeline.handle));
+    }
+
+    void GPU::ClearFramebuffer(float r, float g, float b, float a) {
+        glClearColor(r, g, b, a);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    void GPU::DrawArrays(int count) {
+        glDrawArrays(GL_TRIANGLES, 0, count);
     }
 
     void GPU::Terminate() {

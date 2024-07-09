@@ -100,8 +100,8 @@ namespace Raster {
     }
 
     void Vec4Attribute::AbstractRenderPopup() {
-        if (ImGui::BeginMenu(ICON_FA_QUESTION " Interpret as")) {
-            ImGui::SeparatorText(ICON_FA_QUESTION " Interpret as");
+        if (ImGui::BeginMenu(ICON_FA_CIRCLE_QUESTION " Interpret as")) {
+            ImGui::SeparatorText(ICON_FA_CIRCLE_QUESTION " Interpret as");
             if (ImGui::MenuItem(ICON_FA_EXPAND " Vector")) {
                 interpretAsColor = false;
             }
@@ -110,6 +110,15 @@ namespace Raster {
             }
             ImGui::EndMenu();
         }
+
+        if (interpretAsColor && ImGui::MenuItem(ICON_FA_DROPLET " Set Alpha Channel to 255")) {
+            for (auto& keyframe : keyframes) {
+                auto vector = std::any_cast<glm::vec4>(keyframe.value);
+                vector.a = 1.0f;
+                keyframe.value = vector;
+            }
+        }
+        ImGui::Separator();
     }
 
     Json Vec4Attribute::AbstractSerialize() {
