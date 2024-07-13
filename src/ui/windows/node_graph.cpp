@@ -9,6 +9,11 @@ namespace Raster {
         ImVec2 relativeNodeOffset;
     };
 
+    struct DeferredAttributeExposure {
+        AbstractNode node;
+        std::string attribute;
+    };
+
 
     static ImVec2 s_headerSize, s_originalCursor;
     static float s_maxInputPinX, s_maxOutputPinX;
@@ -205,6 +210,10 @@ namespace Raster {
         s_outerTooltip = std::nullopt;
         Workspace::s_selectedNodes.clear();
 
+        static bool exposeAllPins = false;
+        int uniqueID = 0;
+        std::unordered_map<int, DeferredAttributeExposure> exposures;
+
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
         ImGui::PushFont(Font::s_denseFont);
             static std::unordered_map<int, Nodes::EditorContext*> compositionContexts;
@@ -295,9 +304,12 @@ namespace Raster {
                         for (auto& node : s_currentComposition->nodes) {
                             s_currentNode = node;
                             float maxInputXCandidate = 0;
-                            for (auto& pin : node->inputPins) {
+                            std::vector<std::string> attributesList;
+                            auto set = node->GetAttributesList();
+                            attributesList = std::vector<std::string>(set.begin(), set.end());
+                            for (auto& pin : attributesList) {
                                 ImGui::SetWindowFontScale(s_pinTextScale);
-                                    auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+                                    auto attributeSize = ImGui::CalcTextSize(pin.c_str());
                                 ImGui::SetWindowFontScale(1.0f);
                                 if (attributeSize.x > maxInputXCandidate) {
                                     maxInputXCandidate = attributeSize.x;
@@ -373,9 +385,33 @@ namespace Raster {
 
                                 ImGui::SetCursorPosX(originalCursor.x);
 
+
                                 // Pins Rendering
-                                for (auto& pin : node->inputPins) {
-                                    RenderInputPin(pin);
+                                if (!exposeAllPins) {
+                                    for (auto& pin : node->inputPins) {
+                                        RenderInputPin(pin);
+                                    }
+                                } else if (exposeAllPins) {
+                                    std::vector<std::string> excludedAttributes;
+                                    for (auto& pin : node->inputPins) {
+                                        RenderInputPin(pin);
+                                        excludedAttributes.push_back(pin.linkedAttribute);
+                                    }
+                                    for (auto& attribute : node->GetAttributesList()) {
+                                        if (std::find(excludedAttributes.begin(), excludedAttributes.end(), attribute) != excludedAttributes.end()) continue;
+                                        GenericPin placeholderPin;
+                                        placeholderPin.type = PinType::Input;
+                                        placeholderPin.linkedAttribute = attribute;
+                                        placeholderPin.pinID = uniqueID++;
+                                        placeholderPin.linkID = uniqueID++;
+                                            
+                                        DeferredAttributeExposure exposure;
+                                        exposure.attribute = attribute;
+                                        exposure.node = node;
+                                        exposures[placeholderPin.pinID] = exposure;
+
+                                        RenderInputPin(placeholderPin);
+                                    }
                                 }
 
 
@@ -395,7 +431,7 @@ namespace Raster {
                                 ImGui::SetWindowFontScale(1.0f);
                             Nodes::EndNode();
 
-                            if (node->bypassed || !node->enabled) {
+                            if (node->bypassed || !node->enabled || node->executionsPerFrame == 0) {
                                 auto& style = Nodes::GetStyle();
                                 ImDrawList* drawList = ImGui::GetWindowDrawList();
                                 ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
@@ -438,6 +474,7 @@ namespace Raster {
                         if (Nodes::BeginCreate()) {
                             Nodes::PinId startPinID, endPinID;
                             if (Nodes::QueryNewLink(&startPinID, &endPinID)) {
+                                exposeAllPins = true;
                                 int rawStartPinID = (int) startPinID.Get();
                                 int rawEndPinID = (int) endPinID.Get();
                                 auto startNode = Workspace::GetNodeByPinID(rawStartPinID);
@@ -445,37 +482,62 @@ namespace Raster {
                                 
                                 auto startPinContainer = Workspace::GetPinByPinID(rawStartPinID);
                                 auto endPinContainer = Workspace::GetPinByPinID(rawEndPinID);
-                                if (startNode.has_value() && endNode.has_value() && startPinContainer.has_value() && endPinContainer.has_value()) {
-                                    auto startPin = startPinContainer.value();
-                                    auto endPin = endPinContainer.value();
-
-                                    if (startPin.type == PinType::Input) {
-                                        std::swap(startPin, endPin);
-                                        std::swap(startPinContainer, endPinContainer);
-                                        std::swap(startPinID, endPinID);
-                                        std::swap(rawStartPinID, rawEndPinID);
-                                    }
-
-                                    if (endPin.pinID == startPin.pinID) {
-                                        Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                                    } else if (endPin.type == startPin.type) {
-                                        ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
-                                        Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                                    } else {
+                                bool exposureTriggered = exposures.find(rawEndPinID) != exposures.end();
+                                if ((startNode.has_value() && endNode.has_value() && startPinContainer.has_value() && endPinContainer.has_value()) || exposureTriggered) {
+                                    if (exposureTriggered) {
                                         if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
-                                            if (startPin.flow) {
-                                                startPin.connectedPinID = endPin.pinID;
-                                            } else {
-                                                endPin.connectedPinID = startPin.pinID;
+                                                if (exposures.find(rawEndPinID) != exposures.end()) {
+                                                    auto& exposure = exposures[rawEndPinID];
+                                                    auto freshEndNode = exposure.node;
+                                                    freshEndNode->AddInputPin(exposure.attribute);
+                                                    auto addedPinCandidate = freshEndNode->GetAttributePin(exposure.attribute);
+                                                    if (addedPinCandidate.has_value()) {
+                                                        auto& addedPin = addedPinCandidate.value();
+                                                        addedPin.connectedPinID = rawStartPinID;
+                                                        Workspace::UpdatePinByID(addedPin, addedPin.pinID);
+                                                    }
+                                                }
                                             }
-                                        }
-                                    }
+                                        } else {
+                                            auto startPin = startPinContainer.value();
+                                            auto endPin = endPinContainer.value();
 
-                                    Workspace::UpdatePinByID(startPin, startPin.pinID);
-                                    Workspace::UpdatePinByID(endPin, endPin.pinID);
+
+                                            if (startPin.type == PinType::Input) {
+                                                std::swap(startPin, endPin);
+                                                std::swap(startPinContainer, endPinContainer);
+                                                std::swap(startPinID, endPinID);
+                                                std::swap(rawStartPinID, rawEndPinID);
+                                            }
+
+                                            if (endPin.pinID == startPin.pinID) {
+                                                Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+                                            } else if (endPin.type == startPin.type) {
+                                                ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
+                                                Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+                                            } else {
+                                                if (Nodes::AcceptNewItem(ImColor(128, 255, 128), 4.0f)) {
+                                                    if (startPin.flow) {
+                                                        startPin.connectedPinID = endPin.pinID;
+                                                    } else {
+                                                        endPin.connectedPinID = startPin.pinID;
+                                                        std::cout << endPin.connectedPinID << std::endl;
+                                                        if (exposures.find(endPin.pinID) != exposures.end()) {
+                                                            auto& exposure = exposures[endPin.pinID];
+                                                            auto freshEndNode = Workspace::GetNodeByPinID(endPin.pinID).value();
+                                                            freshEndNode->AddInputPin(exposures[endPin.connectedPinID].attribute);
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            Workspace::UpdatePinByID(startPin, startPin.pinID);
+                                            Workspace::UpdatePinByID(endPin, endPin.pinID);
+                                    }
                                 }
                             }
-                        }
+                            exposeAllPins = true;
+                        } else exposeAllPins = false;
                         Nodes::EndCreate();
 
                         if (Nodes::BeginDelete()) {
@@ -527,6 +589,7 @@ namespace Raster {
                     if (nodeCandidate.has_value()) {
                         auto& node = nodeCandidate.value();
                         ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
+                        ImGui::Text("%s %s: %i", ICON_FA_GEARS, Localization::GetString("EXECUTIONS_PER_FRAME").c_str(), node->executionsPerFrame);
                         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ATTRIBUTES").c_str()).c_str())) {
                             int id = 0;
                             for (auto& attribute : node->GetAttributesList()) {
@@ -552,7 +615,7 @@ namespace Raster {
                                 ImGui::PushID(id++);
                                 if (ImGui::SmallButton(FormatString("%s %s", isAttributeExposed ? ICON_FA_LINK_SLASH : ICON_FA_LINK, Localization::GetString(isAttributeExposed ? "HIDE" : "EXPOSE").c_str()).c_str())) {
                                     if (!isAttributeExposed) {
-                                        node->inputPins.push_back(GenericPin(attribute, PinType::Input));
+                                        node->AddInputPin(attribute);
                                     } else {
                                         node->inputPins.erase(node->inputPins.begin() + attributeIndex);
                                     }
@@ -605,6 +668,9 @@ namespace Raster {
                     }
                     ImGui::PopFont();
                     ImGui::EndPopup();
+                }
+                if (ImGui::Shortcut(ImGuiKey_Tab)) {
+                    openSearchPopup = true;
                 }
                 if (openSearchPopup) {
                     ImGui::OpenPopup("##createNewNodeSearch");

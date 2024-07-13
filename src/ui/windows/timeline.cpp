@@ -2,6 +2,7 @@
 #include "font/font.h"
 #include "attributes/attributes.h"
 #include "common/ui_shared.h"
+#include "compositor/compositor.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -29,6 +30,11 @@ namespace Raster {
         ImGui::GetWindowDrawList()->ChannelsSetCurrent(static_cast<int>(channel));
     }
 
+    static glm::vec2 FitRectInRect(glm::vec2 dst, glm::vec2 src) {
+        float scale = std::min(dst.x / src.x, dst.y / src.y);
+        return glm::vec2{src.x * scale, src.y * scale};
+    }
+
     static float s_splitterState = 0.3f;
     static DragStructure s_dragStructure;
 
@@ -51,6 +57,8 @@ namespace Raster {
     static DragStructure s_timelineDrag;
 
     static std::unordered_map<int, float> s_legendOffsets;
+
+    static ImVec2 s_rootWindowSize;
 
     static std::vector<Composition> s_copyCompositions;
 
@@ -143,6 +151,7 @@ namespace Raster {
 
         UIShared::s_timelinePixelsPerFrame = s_pixelsPerFrame;
         ImGui::Begin(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
+            s_rootWindowSize = ImGui::GetWindowSize();
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
                 s_pixelsPerFrame += 1;
             }
@@ -387,6 +396,27 @@ namespace Raster {
             dragColor.w = 1.0f;
             DrawRect(forwardBoundsDrag, dragColor);
             DrawRect(backwardBoundsDrag, dragColor);
+
+            auto& bundles = Compositor::s_bundles;
+            if (bundles.find(t_id) != bundles.end()) {
+                auto& bundle = bundles[t_id];
+                if (bundle.primaryFramebuffer.handle) {
+                    auto& framebuffer = bundle.primaryFramebuffer;
+                    glm::vec2 previewSize = {LAYER_HEIGHT * ((float) framebuffer.width / (float) framebuffer.height), LAYER_HEIGHT};
+                    glm::vec2 rectSize = FitRectInRect(previewSize, glm::vec2{(float) framebuffer.width, (float) framebuffer.height});
+                    float legendWidth = s_splitterState * s_rootWindowSize.x;
+                    ImVec2 upperLeft = ImGui::GetCursorScreenPos() + buttonCursor;
+                    ImVec2 bottomRight = upperLeft;
+                    bottomRight += ImVec2{rectSize.x, rectSize.y};
+                    upperLeft.x += dragSize.x;
+                    bottomRight.x += dragSize.x;
+                    upperLeft.x = glm::max(upperLeft.x, legendWidth);
+                    bottomRight.x = glm::max(bottomRight.x, legendWidth + rectSize.x);
+                    bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
+                    ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle
+                    , upperLeft, bottomRight);
+                }
+            }
 
             if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
                 s_forwardBoundsDrag.Activate();
@@ -694,7 +724,7 @@ namespace Raster {
         }
 
         float timelineDragDistance;
-        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             project.currentFrame = GetRelativeMousePos().x / s_pixelsPerFrame;
         } else s_timelineDrag.Deactivate();
     }
@@ -828,7 +858,7 @@ namespace Raster {
                 splitterDragging = true;   
             }
         }
-        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             s_splitterState = GetRelativeMousePos().x / ImGui::GetWindowSize().x;
         } else splitterDragging = false;
 

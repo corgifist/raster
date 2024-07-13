@@ -37,6 +37,10 @@ namespace Raster {
         this->handle = nullptr;
     }
 
+    Framebuffer::Framebuffer() {
+        this->handle = nullptr;
+    }
+
     void GPU::Initialize() {
         if (!glfwInit()) {
             throw std::runtime_error("cannot initialize glfw!");
@@ -67,6 +71,9 @@ namespace Raster {
 
         glEnable              ( GL_DEBUG_OUTPUT );
         glDebugMessageCallback( MessageCallback, 0 );
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
         glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
             glViewport(0, 0, width, height);

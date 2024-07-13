@@ -8,8 +8,22 @@ namespace Raster {
             auto& project = Workspace::s_project.value();
             for (auto& composition : project.compositions) {
                 for (auto& node : composition.nodes) {
-                    if (node->flowInputPin.value_or(GenericPin()).connectedPinID < 0) {
-                        accumulator = node->Execute(accumulator);
+                    node->executionsPerFrame = 0;
+                }
+                if (!IsInBounds(project.currentFrame, composition.beginFrame, composition.endFrame)) continue;
+                for (auto& node : composition.nodes) {
+                    if (node->flowInputPin.has_value()) {
+                        auto& flowInputPin = node->flowInputPin.value();
+                        bool anyPinConnected = false;
+                        for (auto& nodeCandidate : composition.nodes) {
+                            if (nodeCandidate->flowOutputPin.has_value() && nodeCandidate->flowOutputPin.value().connectedPinID == flowInputPin.pinID) {
+                                anyPinConnected = true;
+                                break;
+                            }
+                        }
+                        if (!anyPinConnected) {
+                            accumulator = node->Execute(accumulator);
+                        }
                     }
                 }
             }

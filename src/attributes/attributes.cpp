@@ -14,6 +14,12 @@ namespace Raster {
         return (AbstractAttribute) std::make_unique<Vec4Attribute>();
     }
 
+    static AbstractAttribute SpawnColor4Attribute() {
+        auto attribute = SpawnVec4Attribute();
+        attribute->keyframes[0].value = glm::vec4(0, 0, 0, 1.0f);
+        return attribute;
+    }
+
     std::optional<AttributeDescription> Attributes::GetAttributeDescriptionByPackageName(std::string t_packageName) {
         for (auto& entry : s_attributes) {
             if (entry.packageName == t_packageName) return entry;
@@ -68,6 +74,12 @@ namespace Raster {
             .packageName = RASTER_PACKAGED_PACKAGE "vec4_attribute",
             .prettyName = ICON_FA_EXPAND " Vector4",
             .spawnProcedure = SpawnVec4Attribute
+        });
+        
+        s_attributes.push_back(AttributeDescription{
+            .packageName = RASTER_PACKAGED_PACKAGE "color4_attribute",
+            .prettyName = ICON_FA_DROPLET " Color4",
+            .spawnProcedure = SpawnColor4Attribute
         });
 
         std::cout << "attributes initialization finished" << std::endl;

@@ -22,6 +22,7 @@ namespace Raster {
     void NodeBase::Initialize() {
         this->enabled = true;
         this->bypassed = false;
+        this->executionsPerFrame = 0;
     }
 
     AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator) {
@@ -40,6 +41,7 @@ namespace Raster {
             return {};
         }
         Workspace::UpdatePinCache(t_accumulator);
+        executionsPerFrame++;
         auto pinMap = AbstractExecute(t_accumulator);
         Workspace::UpdatePinCache(pinMap);
         auto outputPin = flowOutputPin.value_or(GenericPin());
@@ -47,6 +49,7 @@ namespace Raster {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value() && connectedNode.value()->enabled) {
                 auto newPinMap = connectedNode.value()->Execute(pinMap);
+                connectedNode.value()->executionsPerFrame++;
                 Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
@@ -233,10 +236,16 @@ namespace Raster {
     }
 
     void NodeBase::AddInputPin(std::string t_attribute) {
+        for (auto& pin : inputPins) {
+            if (pin.linkedAttribute == t_attribute) return;
+        }
         this->inputPins.push_back(GenericPin(t_attribute, PinType::Input));
     }
 
     void NodeBase::AddOutputPin(std::string t_attribute) {
+        for (auto& pin : outputPins) {
+            if (pin.linkedAttribute == t_attribute) return;
+        }
         this->outputPins.push_back(GenericPin(t_attribute, PinType::Output));
     }
 
@@ -245,4 +254,5 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::any);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Texture);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(glm::vec4);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(Framebuffer);
 };

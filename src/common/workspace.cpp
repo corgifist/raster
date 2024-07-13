@@ -5,6 +5,7 @@ namespace Raster {
 
     std::vector<NodeCategory> Workspace::s_categories = {
         NodeCategory::Attributes,
+        NodeCategory::Rendering,
         NodeCategory::Resources,
         NodeCategory::Utilities,
         NodeCategory::Other
@@ -145,7 +146,7 @@ namespace Raster {
         if (nodeImplementation.has_value()) {
             auto nodeInstance = InstantiateNode(nodeImplementation.value().libraryName);
             if (nodeInstance.has_value()) {
-                auto node = nodeInstance.value();
+                auto& node = nodeInstance.value();
                 node->nodeID = data["NodeID"];
                 node->libraryName = nodeImplementation.value().libraryName;
                 node->enabled = data["Enabled"];
@@ -161,7 +162,6 @@ namespace Raster {
                 for (auto& pin : data["InputPins"]) {
                     node->inputPins.push_back(GenericPin(pin));
                 }
-                // output pins are not being instantiated
 
                 return node;
             }

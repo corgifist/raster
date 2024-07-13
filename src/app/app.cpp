@@ -34,8 +34,6 @@ namespace Raster {
         Workspace::s_project.value().compositions.push_back(newComposition);
         Workspace::s_selectedCompositions = {newComposition.id};
 
-        Workspace::AddNode("raster_debug_print");
-        Workspace::AddNode("raster_debug_print");
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -73,6 +71,7 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
         Attributes::Initialize();
+        Compositor::Initialize();
 
         auto& style = ImGui::GetStyle();
         style.CurveTessellationTol = 0.01f;
@@ -177,6 +176,7 @@ namespace Raster {
                 ImGui::ShowDemoWindow();
 
                 Traverser::TraverseAll();
+                GPU::BindFramebuffer(std::nullopt);
             GPU::EndFrame();
         }
     }

@@ -4,6 +4,33 @@ namespace Raster {
     std::optional<Framebuffer> Compositor::primaryFramebuffer;
     float Compositor::previewResolutionScale = 1.0f;
 
+    std::unordered_map<int, RenderableBundle> Compositor::s_bundles;
+    std::vector<CompositorTarget> Compositor::s_targets;
+    Pipeline Compositor::s_pipeline;
+
+    void Compositor::Initialize() {
+        s_pipeline = GPU::GeneratePipeline(
+            GPU::GenerateShader(ShaderType::Vertex, "compositor/shader"),
+            GPU::GenerateShader(ShaderType::Fragment, "compositor/shader")
+        );
+    }
+
+    void Compositor::PerformComposition() {
+        if (primaryFramebuffer.has_value()) {
+            auto& framebuffer = primaryFramebuffer.value();
+            GPU::BindFramebuffer(framebuffer);
+            GPU::BindPipeline(s_pipeline);
+            for (auto& target : s_targets) {
+                GPU::BindTextureToShader(s_pipeline.fragment, "uColor", target.colorAttachment, 0);
+                GPU::BindTextureToShader(s_pipeline.fragment, "uUV", target.uvAttachment, 1);
+                GPU::SetShaderUniform(s_pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
+                std::cout << "target rendering" << std::endl;
+                GPU::DrawArrays(3);
+            }
+            s_targets.clear();
+        }
+    }
+
     void Compositor::ResizePrimaryFramebuffer(glm::vec2 t_resolution) {
         if (primaryFramebuffer.has_value()) {
             auto& framebuffer = primaryFramebuffer.value();
