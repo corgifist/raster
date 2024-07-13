@@ -49,6 +49,8 @@ namespace Raster {
         std::vector<Texture> attachments;
         void* handle;
         void* depthHandle;
+
+        Framebuffer();
     };
 
     struct Shader {

@@ -56,4 +56,9 @@ namespace Raster {
         in.read(&buffer[0], buffer.size());
         return buffer;
     }
+
+    template <typename T>
+    static bool IsInBounds(const T& value, const T& low, const T& high) {
+        return !(value < low) && (value < high);
+    }
 }

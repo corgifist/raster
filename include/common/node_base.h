@@ -15,6 +15,7 @@ namespace Raster {
         Resources,
         Attributes,
         Utilities,
+        Rendering,
         Other
     };
 
@@ -35,6 +36,7 @@ namespace Raster {
         static void DispatchValueAttribute(std::any& t_attribute);
 
         int nodeID;
+        int executionsPerFrame;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
         std::vector<GenericPin> inputPins, outputPins;
         std::string libraryName;
@@ -51,6 +53,9 @@ namespace Raster {
 
         virtual std::optional<std::string> Footer() = 0;
         virtual std::string Icon() = 0;
+
+        void AddOutputPin(std::string t_attribute);
+        void AddInputPin(std::string t_attribute);
 
         virtual void AbstractLoadSerialized(Json data) {};
         virtual void AbstractRenderProperties() {};
@@ -79,8 +84,6 @@ namespace Raster {
         virtual Json AbstractSerialize() { return {}; };
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
-        void AddOutputPin(std::string t_attribute);
-        void AddInputPin(std::string t_attribute);
 
         void Initialize();
 

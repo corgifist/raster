@@ -76,5 +76,6 @@
     "PROJECT_RESOLUTION": "Project Resolution",
     "ATTACHMENT": "Attachment",
     "PROJECT_BACKGROUND_COLOR": "Project Background Color",
-    "ATTACHMENTS_COUNT": "Attachments Count"
+    "ATTACHMENTS_COUNT": "Attachments Count",
+    "EXECUTIONS_PER_FRAME": "Executions Per Frame"
 }
