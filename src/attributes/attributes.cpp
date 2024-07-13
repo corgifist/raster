@@ -7,16 +7,17 @@ namespace Raster {
     std::vector<AttributeDescription> Attributes::s_attributes;
 
     static AbstractAttribute SpawnFloatAttribute() {
-        return (AbstractAttribute) std::make_unique<FloatAttribute>();
+        return (AbstractAttribute) std::make_shared<FloatAttribute>();
     }
 
     static AbstractAttribute SpawnVec4Attribute() {
-        return (AbstractAttribute) std::make_unique<Vec4Attribute>();
+        return (AbstractAttribute) std::make_shared<Vec4Attribute>();
     }
 
     static AbstractAttribute SpawnColor4Attribute() {
         auto attribute = SpawnVec4Attribute();
         attribute->keyframes[0].value = glm::vec4(0, 0, 0, 1.0f);
+        std::dynamic_pointer_cast<Vec4Attribute>(attribute)->interpretAsColor = true;
         return attribute;
     }
 

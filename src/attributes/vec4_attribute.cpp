@@ -102,10 +102,10 @@ namespace Raster {
     void Vec4Attribute::AbstractRenderPopup() {
         if (ImGui::BeginMenu(ICON_FA_CIRCLE_QUESTION " Interpret as")) {
             ImGui::SeparatorText(ICON_FA_CIRCLE_QUESTION " Interpret as");
-            if (ImGui::MenuItem(ICON_FA_EXPAND " Vector")) {
+            if (ImGui::MenuItem(FormatString("%s %s Vector", !interpretAsColor ? ICON_FA_CHECK : "", ICON_FA_EXPAND).c_str())) {
                 interpretAsColor = false;
             }
-            if (ImGui::MenuItem(ICON_FA_DROPLET " Color")) {
+            if (ImGui::MenuItem(FormatString("%s %s Color", interpretAsColor ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
                 interpretAsColor = true;
             }
             ImGui::EndMenu();
