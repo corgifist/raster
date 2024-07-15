@@ -93,6 +93,7 @@ namespace Raster {
     void GPU::BeginFrame() {
         glfwPollEvents();
 
+        GPU::BindFramebuffer(std::nullopt);
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -126,7 +127,7 @@ namespace Raster {
         texture.width = width;
         texture.height = height;
         texture.precision = precision;
-        texture.handle = (void*) textureHandle;
+        texture.handle = GLUINT_TO_HANDLE(textureHandle);
         return texture;
     }
 
@@ -188,8 +189,8 @@ namespace Raster {
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthHandle);
 
-        fbo.handle = (void*) fboHandle;
-        fbo.depthHandle = (void*) depthHandle;
+        fbo.handle = GLUINT_TO_HANDLE(fboHandle);
+        fbo.depthHandle = GLUINT_TO_HANDLE(depthHandle);
         fbo.attachments = attachments;
         fbo.width = width;
         fbo.height = height;
@@ -248,9 +249,9 @@ namespace Raster {
         std::string code = ReadFile("shaders/gl/" + name + extension);
         const char* rawCode = code.c_str();
         GLuint program = glCreateShaderProgramv(enumType, 1, &rawCode);
-        std::vector<char> log(512);
+        std::vector<char> log(1024);
         GLsizei length;
-        glGetProgramInfoLog(program, 512, &length, log.data());
+        glGetProgramInfoLog(program, 1024, &length, log.data());
         if (length != 0) {
             throw std::runtime_error(std::string(log.data()));
         }
@@ -299,6 +300,10 @@ namespace Raster {
         glProgramUniform2f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), vec.x, vec.y);
     }
 
+    void GPU::SetShaderUniform(Shader shader, std::string name, float f) {
+        glProgramUniform1f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), f);
+    }
+
     void GPU::BindPipeline(Pipeline pipeline) {
         glUseProgram(0);
         glBindProgramPipeline(HANDLE_TO_GLUINT(pipeline.handle));
@@ -307,6 +312,18 @@ namespace Raster {
     void GPU::ClearFramebuffer(float r, float g, float b, float a) {
         glClearColor(r, g, b, a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    void GPU::BlitFramebuffer(Framebuffer base, Texture texture) {
+        static Pipeline blitPipeline = GPU::GeneratePipeline(
+            GPU::GenerateShader(ShaderType::Vertex, "blit/shader"),
+            GPU::GenerateShader(ShaderType::Fragment, "blit/shader")
+        );
+        GPU::BindPipeline(blitPipeline);
+        GPU::BindFramebuffer(base);
+        GPU::SetShaderUniform(blitPipeline.fragment, "uResolution", {base.width, base.height});
+        GPU::BindTextureToShader(blitPipeline.fragment, "uTexture", texture, 0);
+        GPU::DrawArrays(3);
     }
 
     void GPU::DrawArrays(int count) {
@@ -324,6 +341,10 @@ namespace Raster {
 
     void GPU::SetWindowTitle(std::string title) {
         glfwSetWindowTitle((GLFWwindow*) info.display, title.c_str());
+    }
+
+    std::string GPU::GetShadersPath() {
+        return "shaders/gl/";
     }
 
     void* GPU::GetImGuiContext() {

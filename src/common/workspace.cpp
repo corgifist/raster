@@ -160,6 +160,21 @@ namespace Raster {
                 }
 
                 for (auto& pin : data["InputPins"]) {
+                    bool continueLoop = false;
+                    for (auto& inputPin : node->inputPins) {
+                        if (inputPin.linkedAttribute == pin["LinkedAttribute"]) {
+                            continueLoop = true;
+                            break;
+                        }
+                    }
+                    if (continueLoop) {
+                        int pinIndex = 0;
+                        for (auto& inputPin : node->inputPins) {
+                            if (inputPin.linkedAttribute == pin["LinkedAttribute"]) break;
+                            pinIndex++;
+                        }
+                        node->inputPins.erase(node->inputPins.begin() + pinIndex);
+                    }
                     node->inputPins.push_back(GenericPin(pin));
                 }
 
@@ -194,10 +209,10 @@ namespace Raster {
     }
 
     std::optional<AbstractNode> Workspace::GetNodeByNodeID(int nodeID) {
-        auto compositionsCandidate = GetSelectedCompositions();
-        if (!compositionsCandidate.has_value()) return std::nullopt;
-        for (auto& composition : compositionsCandidate.value()) {
-            for (auto& node : composition->nodes) {
+        if (!s_project.has_value()) return std::nullopt;
+        auto& compositions = s_project.value().compositions;
+        for (auto& composition : compositions) {
+            for (auto& node : composition.nodes) {
                 if (node->nodeID == nodeID) return node;
             }
         }
@@ -205,11 +220,10 @@ namespace Raster {
     }
 
     std::optional<AbstractNode> Workspace::GetNodeByPinID(int pinID) {
-        auto compositionsCandidate = GetSelectedCompositions();
-        if (!compositionsCandidate.has_value()) return std::nullopt;
-        auto compositions = compositionsCandidate.value();
+        if (!s_project.has_value()) return std::nullopt;
+        auto& compositions = s_project.value().compositions;
         for (auto& composition : compositions) {
-            for (auto& node : composition->nodes) {
+            for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
                     if (node->flowInputPin.value().pinID == pinID) {
                         return std::optional{node};
@@ -232,11 +246,10 @@ namespace Raster {
     }
 
     std::optional<GenericPin> Workspace::GetPinByLinkID(int linkID) {
-        auto compositionsCandidate = GetSelectedCompositions();
-        if (!compositionsCandidate.has_value()) return std::nullopt;
-        auto compositions = compositionsCandidate.value();
+        if (!s_project.has_value()) return std::nullopt;
+        auto& compositions = s_project.value().compositions;
         for (auto& composition : compositions) {
-            for (auto& node : composition->nodes) {
+            for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
                     if (node->flowInputPin.value().linkID == linkID) {
                         return node->flowInputPin.value();
@@ -259,11 +272,10 @@ namespace Raster {
     }
 
     std::optional<GenericPin> Workspace::GetPinByPinID(int pinID) {
-        auto compositionsCandidate = GetSelectedCompositions();
-        if (!compositionsCandidate.has_value()) return std::nullopt;
-        auto compositions = compositionsCandidate.value();
+        if (!s_project.has_value()) return std::nullopt;
+        auto& compositions = s_project.value().compositions;
         for (auto& composition : compositions) {
-            for (auto& node : composition->nodes) {
+            for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
                     if (node->flowInputPin.value().pinID == pinID) {
                         return node->flowInputPin;
@@ -286,11 +298,10 @@ namespace Raster {
     }
 
     void Workspace::UpdatePinByID(GenericPin pin, int pinID) {
-        auto compositionsCandidate = GetSelectedCompositions();
-        if (!compositionsCandidate.has_value()) return;
-        auto compositions = compositionsCandidate.value();
+        if (!s_project.has_value()) return;
+        auto& compositions = s_project.value().compositions;
         for (auto& composition : compositions) {
-            for (auto& node : composition->nodes) {
+            for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
                     if (node->flowInputPin.value().pinID == pinID) {
                         node->flowInputPin = pin;

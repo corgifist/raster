@@ -9,7 +9,6 @@ namespace Raster {
 
     GetAttributeValue::GetAttributeValue() {
         NodeBase::Initialize();
-        NodeBase::GenerateFlowPins();
         this->m_attributes["AttributeName"] = std::string("");
 
         AddOutputPin("Value");
@@ -32,15 +31,10 @@ namespace Raster {
         if (attributeNameCandidate.has_value()) {
             std::string attributeName = attributeNameCandidate.value();
             auto parentComposition = Workspace::GetCompositionByNodeID(nodeID).value();
-            auto attributeCandidate = Workspace::GetAttributeByName(
+            return Workspace::GetAttributeByName(
                 parentComposition,
                 attributeName
             );
-            if (attributeCandidate.has_value()) {
-                auto& attribute = attributeCandidate.value();
-                auto& project = Workspace::s_project.value();
-                return attribute;
-            }
         }
         return std::nullopt;
     }

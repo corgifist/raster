@@ -166,7 +166,13 @@ namespace Raster {
             GPU::SetWindowTitle(constructedTitle);
 
             GPU::BeginFrame();
+                GPU::BindFramebuffer(std::nullopt);
                 Compositor::EnsureResolutionConstraints();
+                if (Workspace::s_project.has_value()) {
+                    auto& project = Workspace::s_project.value();
+                    project.currentFrame = std::max(project.currentFrame, 0.0f);
+                }
+                Traverser::TraverseAll();
 
                 ImGui::DockSpaceOverViewport();
                 for (const auto& window : s_windows) {
@@ -175,7 +181,7 @@ namespace Raster {
 
                 ImGui::ShowDemoWindow();
 
-                Traverser::TraverseAll();
+                Compositor::PerformComposition();
                 GPU::BindFramebuffer(std::nullopt);
             GPU::EndFrame();
         }

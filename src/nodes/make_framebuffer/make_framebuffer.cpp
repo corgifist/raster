@@ -11,7 +11,6 @@ namespace Raster {
 
     MakeFramebuffer::MakeFramebuffer() {
         NodeBase::Initialize();
-        NodeBase::GenerateFlowPins();
 
         AddOutputPin("Value");
 
@@ -32,7 +31,6 @@ namespace Raster {
         auto backgroundColorCandidate = GetAttribute<glm::vec4>("BackgroundColor");
         if (backgroundColorCandidate.has_value()) {
             auto& backgroundColor = backgroundColorCandidate.value();
-
             auto requiredResolution = Compositor::GetRequiredResolution();
             if (!m_internalFramebuffer.has_value() || m_internalFramebuffer.value().width != (int) requiredResolution.x || m_internalFramebuffer.value().height != (int) requiredResolution.y) {
                 if (m_internalFramebuffer.has_value()) {
@@ -49,6 +47,7 @@ namespace Raster {
                 auto backgroundTextureCandidate = GetAttribute<Texture>("BackgroundTexture");
                 auto& framebuffer = m_internalFramebuffer.value();
                 GPU::BindFramebuffer(framebuffer);
+                std::cout << backgroundColor.r << " " << backgroundColor.g << " " << backgroundColor.b << std::endl;
                 GPU::ClearFramebuffer(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
                 if (backgroundTextureCandidate.has_value() && backgroundTextureCandidate.value().handle) {
                     auto& pipeline = s_pipeline.value();
@@ -59,7 +58,6 @@ namespace Raster {
                     GPU::BindTextureToShader(pipeline.fragment, "uTexture", texture, 0);
                     GPU::DrawArrays(3);
                 }
-                GPU::BindFramebuffer(std::nullopt);
                 TryAppendAbstractPinMap(result, "Value", framebuffer);
             }
         }

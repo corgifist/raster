@@ -49,7 +49,6 @@ namespace Raster {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value() && connectedNode.value()->enabled) {
                 auto newPinMap = connectedNode.value()->Execute(pinMap);
-                connectedNode.value()->executionsPerFrame++;
                 Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
@@ -96,20 +95,18 @@ namespace Raster {
 
     std::optional<std::any> NodeBase::GetDynamicAttribute(std::string t_attribute) {
         if (!enabled || bypassed) return std::nullopt;
-        auto attributePin = GenericPin();
-        for (auto& pin : inputPins) {
-            if (pin.linkedAttribute == t_attribute) {
-                attributePin = pin;
-                break;
-            }
-        }
+        auto attributePinCandidate = GetAttributePin(t_attribute);
+        auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
         if (this->m_accumulator.find(attributePin.connectedPinID) != this->m_accumulator.end()) {
             auto dynamicAttribute = this->m_accumulator.at(attributePin.connectedPinID);
             return dynamicAttribute;
         }
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value() && targetNode.value()->enabled) {
-            auto dynamicAttribute = targetNode.value()->AbstractExecute()[attributePin.connectedPinID];
+            auto pinMap = targetNode.value()->AbstractExecute();
+            Workspace::UpdatePinCache(pinMap);
+            auto dynamicAttribute = pinMap[attributePin.connectedPinID];
+            targetNode.value()->executionsPerFrame++;
             return dynamicAttribute;
         }
 

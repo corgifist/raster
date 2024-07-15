@@ -9,6 +9,9 @@ namespace Raster {
         this->endFrame = 60;
         this->name = "New Composition";
         this->description = "Empty Composition";
+        this->blendMode = "";
+        this->opacity = 1.0f;
+        this->opacityAttributeID = -1;
     }
 
     Composition::Composition(Json data) {
@@ -17,6 +20,9 @@ namespace Raster {
         this->endFrame = data["EndFrame"];
         this->name = data["Name"];
         this->description = data["Description"];
+        this->blendMode = data["BlendMode"];
+        this->opacity = data["Opacity"];
+        this->opacityAttributeID = data["OpacityAttributeID"];
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -30,7 +36,25 @@ namespace Raster {
                 attributes.push_back(attributeCandidate.value());
             }
         }
-        
+    }
+
+    float Composition::GetOpacity(bool* attributeOpacityUsed, bool* correctOpacityTypeUsed) {
+        auto& project = Workspace::s_project.value();
+        if (opacityAttributeID > 0) {
+            for (auto& attribute : attributes) {
+                if (attribute->id == opacityAttributeID) {
+                    std::any opacityCandidate = attribute->Get(project.currentFrame - beginFrame, this);
+                    if (attributeOpacityUsed) *attributeOpacityUsed = true;
+                    if (opacityCandidate.type() == typeid(float)) {
+                        if (correctOpacityTypeUsed) *correctOpacityTypeUsed = true;
+                        return std::any_cast<float>(opacityCandidate);
+                    } else {
+                        if (correctOpacityTypeUsed) *correctOpacityTypeUsed = false;
+                    }
+                }
+            }
+        }
+        return opacity;
     }
 
     Json Composition::Serialize() {
@@ -40,6 +64,9 @@ namespace Raster {
         data["EndFrame"] = endFrame;
         data["Name"] = name;
         data["Description"] = description;
+        data["BlendMode"] = blendMode;
+        data["Opacity"] = opacity;
+        data["OpacityAttributeID"] = opacityAttributeID;
         data["Nodes"] = {};
         for (auto& node : nodes) {
             data["Nodes"].push_back(node->Serialize());

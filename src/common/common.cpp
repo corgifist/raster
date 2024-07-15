@@ -3,10 +3,12 @@
 namespace Raster {
     std::random_device Randomizer::s_random_device;
     std::mt19937 Randomizer::s_random(Randomizer::s_random_device());
-    std::uniform_int_distribution<std::mt19937::result_type> Randomizer::s_distribution(1, INT32_MAX - 50);
+    std::uniform_int_distribution<std::mt19937::result_type> Randomizer::s_distribution(1, UINT_FAST32_MAX - 2);
 
     int Randomizer::GetRandomInteger() {
-        return std::abs(int(s_distribution(s_random)));
+        int value = std::abs((int) s_distribution(s_random));
+        std::cout << value << std::endl;
+        return value;
     }
 
     GenericPin::GenericPin(std::string t_linkedAttribute, PinType t_type, bool t_flow) {

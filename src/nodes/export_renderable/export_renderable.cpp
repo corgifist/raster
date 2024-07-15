@@ -34,7 +34,8 @@ namespace Raster {
             auto& targets = Compositor::s_targets;
             targets.push_back(CompositorTarget{
                 .colorAttachment = renderable.attachments[0],
-                .uvAttachment = renderable.attachments[1]
+                .uvAttachment = renderable.attachments[1],
+                .owner = composition
             });
 
             this->lastExportedType = std::type_index(typeid(Framebuffer));

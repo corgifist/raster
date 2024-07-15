@@ -105,8 +105,14 @@ namespace Raster {
             bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
             bool shouldAddKeyframe = buttonPressed;
             ImGui::SameLine();
-            ImGui::Text("%s %s", ICON_FA_LINK, name.c_str()); 
-            ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("RIGHT_CLICK_FOR_CONTEXT_MENU").c_str());
+            ImGui::Text("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
+            if (ImGui::BeginItemTooltip()) {
+                if (t_composition->opacityAttributeID == id) {
+                    ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
+                }
+                ImGui::Text("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("RIGHT_CLICK_FOR_CONTEXT_MENU").c_str());
+                ImGui::EndTooltip();
+            }
             
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 AttributeDragDropPayload payload;
@@ -151,18 +157,27 @@ namespace Raster {
             }
             if (ImGui::BeginPopup(FormatString("##attribute%i", id).c_str())) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, name.c_str()).c_str());
+                if (t_composition->opacityAttributeID == id) {
+                    ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
+                }
                 RenderPopup();
                 if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
                     ImGui::InputText("##attributeName", &name);
                     ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("ATTRIBUTE_NAME").c_str());
                     ImGui::EndMenu();
                 }
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_NAME").c_str()).c_str())) {
-                    ImGui::SetClipboardText(name.c_str());
+                if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
+                    t_composition->opacityAttributeID = id;                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
+                    auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
+                    parentComposition->attributes.push_back(Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value());
+                }
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
                     auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
                     parentComposition->attributes.push_back(Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value());
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_NAME").c_str()).c_str())) {
+                    ImGui::SetClipboardText(name.c_str());
                 }
                 ImGui::EndPopup();
             }
@@ -200,6 +215,16 @@ namespace Raster {
             for (int i = 1; i < keyframes.size() - step - 1; ++i) {
                 if (keyframes.at(i).timestamp > keyframes.at(i + 1).timestamp ) {
                     std::swap(keyframes.at(i), keyframes.at(i + 1));
+                }
+            }
+        }
+
+        for (int i = 0; i < keyframes.size(); i++) {
+            AttributeKeyframe& stamp = keyframes.at(i);
+            for (int j = i + 1; j < keyframes.size(); j++) {
+                if (int(stamp.timestamp) ==
+                    int(keyframes.at(j).timestamp)) {
+                    stamp.timestamp = int(keyframes.at(j).timestamp) + 1;
                 }
             }
         }

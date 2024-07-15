@@ -45,8 +45,8 @@ namespace Raster {
                             project.framerate = signedFramerate;
 
                             int signedPreferredResolution[2] = {
-                                project.preferredResolution.x,
-                                project.preferredResolution.y
+                                (int) project.preferredResolution.x,
+                                (int) project.preferredResolution.y
                             };
                             ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str());
                             ImGui::SameLine();
@@ -120,7 +120,7 @@ namespace Raster {
                             ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("CTRL_CLICK_TO_CLOSE").c_str());
                         
                             int signedValues[] = {
-                                composition->beginFrame, composition->endFrame
+                                (int) composition->beginFrame, (int) composition->endFrame
                             };
                             ImGui::Text("%s %s", ICON_FA_STOPWATCH, Localization::GetString("COMPOSITION_TIMING").c_str());
                             ImGui::SameLine();

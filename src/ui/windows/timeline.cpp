@@ -3,6 +3,7 @@
 #include "attributes/attributes.h"
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
+#include "compositor/blending.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -298,6 +299,7 @@ namespace Raster {
             RenderTicks();
 
             float layerAccumulator = 0;
+            s_anyLayerDragged = false;
             for (int i = project.compositions.size(); i --> 0;) {
                 auto& composition = project.compositions[i];
                 ImGui::SetCursorPosY(backgroundBounds.size.y + layerAccumulator);
@@ -365,7 +367,6 @@ namespace Raster {
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
             auto& io = ImGui::GetIO();
-            s_anyLayerDragged = s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive;
 
             if (compositionPressed && !io.KeyCtrl && std::abs(io.MouseDelta.x) < 0.1f) {
                 Workspace::s_selectedCompositions = {composition->id};
@@ -499,6 +500,8 @@ namespace Raster {
                 } else s_layerDrag.Deactivate();
             }
 
+            s_anyLayerDragged = s_anyLayerDragged || s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive;
+
             if (compositionHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 ImGui::OpenPopup(FormatString("##compositionPopup%i", composition->id).c_str());
             }
@@ -566,7 +569,117 @@ namespace Raster {
             RenderNewAttributePopup(composition);
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str()).c_str());
+            static std::string blendFilter = "";
+            bool attributeOpacityUsed;
+            bool correctOpacityTypeUsed;
+            float opacity = composition->GetOpacity(&attributeOpacityUsed, &correctOpacityTypeUsed);
+            std::string attributeSelectorText = ICON_FA_LINK;
+            if (attributeOpacityUsed) {
+                if (correctOpacityTypeUsed) attributeSelectorText = ICON_FA_CHECK " " ICON_FA_LINK;
+                else attributeSelectorText = ICON_FA_TRIANGLE_EXCLAMATION " " ICON_FA_LINK;
+            }
+            static float searchBarWidth = 30;
+            static ImVec2 fullWindowSize = ImGui::GetWindowSize();
+            ImGui::BeginChild("##opacityContainer", ImVec2(fullWindowSize.x, 0), ImGuiChildFlags_AutoResizeY);
+            if (ImGui::Button(attributeSelectorText.c_str())) {
+                ImGui::OpenPopup("##opacityAttributeChooser");
+            } 
+            if (attributeOpacityUsed && !correctOpacityTypeUsed) {
+                ImGui::SetItemTooltip("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BAD_OPACITY_ATTRIBUTE").c_str());
+            } else {
+                ImGui::SetItemTooltip("%s %s", ICON_FA_LINK, Localization::GetString("OPACITY_ATTRIBUTE").c_str());
+            }
+            if (ImGui::BeginPopup("##opacityAttributeChooser")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("OPACITY_ATTRIBUTE").c_str()).c_str());
+                static std::string attributeFilter = "";
+                ImGui::InputText("##attributeSearchFilter", &attributeFilter);
+                ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
+                    composition->opacityAttributeID = -1;
+                }
+                for (auto& attribute : composition->attributes) {
+                    if (!attributeFilter.empty() && attribute->name.find(attributeFilter) == std::string::npos) continue;
+                    ImGui::PushID(attribute->id);
+                        if (ImGui::MenuItem(FormatString("%s%s %s", composition->opacityAttributeID == attribute->id ? ICON_FA_CHECK " " : "", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
+                            composition->opacityAttributeID = attribute->id;
+                        } 
+                    ImGui::PopID();
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+            ImGui::SliderFloat("##compositionOpacity", &opacity, 0, 1);
+            ImGui::PopItemWidth();
+            if (!attributeOpacityUsed) composition->opacity = opacity;
+            ImGui::EndChild();
+            ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("COMPOSITION_OPACITY").c_str());
+            ImGui::InputText("##blendFilter", &blendFilter);
+            ImGui::SameLine(0, 0);
+            searchBarWidth = ImGui::GetCursorPosX();
+            ImGui::NewLine();
+            ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
+            ImGui::BeginChild("##blendCandidates", ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY);
+                auto& blending = Compositor::s_blending;
+                if (ImGui::MenuItem(FormatString("%s %s Normal", composition->blendMode.empty() ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
+                    composition->blendMode = "";
+                }
+                for (auto& mode : blending.modes) {
+                    auto& project = Workspace::s_project.value();
+                    if (!blendFilter.empty() && mode.name.find(blendFilter) == std::string::npos) continue;
+                    if (ImGui::MenuItem(FormatString("%s %s %s", composition->blendMode == mode.codename ? ICON_FA_CHECK : "", Font::GetIcon(mode.icon).c_str(), mode.name.c_str()).c_str())) {
+                        composition->blendMode = mode.codename;
+                    }
+                    if (ImGui::BeginItemTooltip()) {
+                        auto& bundles = Compositor::s_bundles;
+                        if (!IsInBounds(project.currentFrame, composition->beginFrame, composition->endFrame) || bundles.find(composition->id) == bundles.end()) {
+                            ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
+                        } else {
+                            auto& bundle = bundles[composition->id];
+                            auto& primaryFramebuffer = Compositor::primaryFramebuffer.value();
+                            auto requiredResolution = Compositor::GetRequiredResolution();
+                            static Framebuffer previewFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
+                            if (previewFramebuffer.width != requiredResolution.x || previewFramebuffer.height != requiredResolution.y) {
+                                for (auto& attachment : previewFramebuffer.attachments) {
+                                    GPU::DestroyTexture(attachment);
+                                }
+                                GPU::DestroyFramebuffer(previewFramebuffer);
+                                previewFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
+                            }
+                            GPU::BindFramebuffer(previewFramebuffer);
+                            GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
+                            int compositionIndex = 0;
+                            for (auto& candidate : project.compositions) {
+                                if (candidate.id == composition->id) break;
+                                compositionIndex++;
+                            }
+                            std::vector<int> allowedCompositions;
+                            for (int i = 0; i < compositionIndex; i++) {
+                                allowedCompositions.push_back(project.compositions[i].id);
+                            }
+                            GPU::BindFramebuffer(primaryFramebuffer);
+                            GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
+                            if (!allowedCompositions.empty()) Compositor::PerformComposition(allowedCompositions);
+                            auto& blending = Compositor::s_blending;
+                            blending.PerformBlending(mode, primaryFramebuffer.attachments[0], bundle.primaryFramebuffer.attachments[0], composition->opacity);
+                            GPU::BlitFramebuffer(previewFramebuffer, blending.framebufferCandidate.value().attachments[0]);
+
+                            ImGui::Text("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());
+                            auto previewSize = FitRectInRect({128, 128}, {previewFramebuffer.width, previewFramebuffer.height});
+                            ImGui::Image(previewFramebuffer.attachments[0].handle, {previewSize.x, previewSize.y});
+
+                        }
+                        ImGui::EndTooltip();
+                    }
+                }
+                fullWindowSize = ImGui::GetWindowSize();
+            ImGui::EndChild();
+            ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str());
             ImGui::InputText("##compositionName", &composition->name);
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME").c_str());
             ImGui::InputTextMultiline("##compositionDescription", &composition->description);

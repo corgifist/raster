@@ -8,7 +8,6 @@ namespace Raster {
 
     LoadTextureByPath::LoadTextureByPath() {
         NodeBase::Initialize();
-        NodeBase::GenerateFlowPins();
 
         AddOutputPin("Texture");
 

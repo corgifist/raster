@@ -32,7 +32,6 @@ namespace Raster {
                     if (selectedAttribute.empty()) {
                         if (Compositor::primaryFramebuffer.has_value()) {
                             dispatcherTarget = Compositor::primaryFramebuffer.value();
-                            Compositor::PerformComposition();
                         }
                     }
                 
