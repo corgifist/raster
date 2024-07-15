@@ -167,10 +167,7 @@ namespace Raster {
                     ImGui::EndMenu();
                 }
                 if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
-                    t_composition->opacityAttributeID = id;                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
-                    auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
-                    parentComposition->attributes.push_back(Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value());
-                }
+                    t_composition->opacityAttributeID = id;
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
                     auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
