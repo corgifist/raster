@@ -12,9 +12,14 @@ namespace Raster {
         std::vector<AbstractNode> nodes;
         std::vector<AbstractAttribute> attributes;
         float beginFrame, endFrame;
+        std::string blendMode;
+        float opacity;
+        int opacityAttributeID;
 
         Composition();
         Composition(Json data);
+
+        float GetOpacity(bool* attributeOpacityUsed = nullptr, bool* correctOpacityTypeUsed = nullptr);
 
         Json Serialize();
     };

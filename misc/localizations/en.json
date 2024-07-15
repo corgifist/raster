@@ -77,5 +77,13 @@
     "ATTACHMENT": "Attachment",
     "PROJECT_BACKGROUND_COLOR": "Project Background Color",
     "ATTACHMENTS_COUNT": "Attachments Count",
-    "EXECUTIONS_PER_FRAME": "Executions Per Frame"
+    "EXECUTIONS_PER_FRAME": "Executions Per Frame",
+    "BLENDING": "Blending",
+    "COMPOSITION_OPACITY": "Composition Opacity",
+    "BLENDING_PREVIEW_IS_UNAVAILABLE": "Blending Preview is Unavailable",
+    "BAD_OPACITY_ATTRIBUTE": "Opacity Attribute Must Return Float",
+    "OPACITY_ATTRIBUTE": "Opacity Attribute",
+    "NO_ATTRIBUTE": "No Attribute",
+    "USED_AS_OPACITY_ATTRIBUTE": "Used as Opacity Attribute",
+    "USE_AS_OPACITY_ATTRIBUTE": "Use as Opacity Attribute"
 }

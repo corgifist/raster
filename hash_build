@@ -3,6 +3,8 @@ executable_name = "raster"
 
 object_add_compile_options(fPIC)
 object_add_compile_options(g) # include debug symbols
+object_add_compile_options("O0")
+object_add_compile_options(Werror)
 object_set_include_path("include/")
 
 load_module("misc/scripts/raster_module.py")

@@ -1,0 +1,55 @@
+{
+    "BlendingModes": [
+        {
+            "Name": "Add",
+            "CodeName": "blend_add",
+            "Formula": "min(base+blend,vec3(1.0)) * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_PLUS"
+        },
+        {
+            "Name": "Average",
+            "CodeName": "blend_average",
+            "Formula": "(base+blend)/2.0 * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_SIGNAL"
+        },
+        {
+            "Name": "Color Burn",
+            "CodeName": "blend_color_burn",
+            "Formula": "(vec3(blendColorBurn(base.x,blend.x),blendColorBurn(base.y,blend.y),blendColorBurn(base.z,blend.z)) * opacity + base * (1.0 - opacity))",
+            "Functions": "blending/color_burn",
+            "Icon": "ICON_FA_FIRE_FLAME_CURVED"
+        },
+        {
+            "Name": "Color Dodge",
+            "CodeName": "blend_color_dodge",
+            "Formula": "blendColorDodge(base, blend, opacity)",
+            "Functions": "blending/color_dodge",
+            "Icon": "ICON_FA_DROPLET"
+        },
+        {
+            "Name": "Darken",
+            "CodeName": "blend_darken",
+            "Formula": "blendDarken(base, blend, opacity)",
+            "Functions": "blending/darken",
+            "Icon": "ICON_FA_MOON"
+        },
+        {
+            "Name": "Difference",
+            "CodeName": "blend_difference",
+            "Formula": "abs(base-blend) * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_MINUS"
+        },
+        {
+            "Name": "Excluson",
+            "CodeName": "blend_exclusion",
+            "Formula": "(base+blend-2.0*base*blend) * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_EXCLAMATION"
+        },
+        {
+            "Name": "Multiply",
+            "CodeName": "blend_multiply",
+            "Formula": "base * blend * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_XMARK"
+        }
+    ]
+}

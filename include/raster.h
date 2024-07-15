@@ -17,6 +17,8 @@
 #include <typeindex>
 #include <set>
 #include <cmath>
+#include <codecvt>
+#include <locale>
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>

@@ -91,11 +91,16 @@ namespace Raster {
         static void SetShaderUniform(Shader shader, std::string name, int i);
         static void SetShaderUniform(Shader shader, std::string name, glm::vec4 vec);
         static void SetShaderUniform(Shader shader, std::string name, glm::vec2 vec);
+        static void SetShaderUniform(Shader shader, std::string name, float f);
 
         static void DrawArrays(int count);
         
         static void BindFramebuffer(std::optional<Framebuffer> fbo);
         static void ClearFramebuffer(float r, float g, float b, float a);
+        static void BlitFramebuffer(Framebuffer target, Texture texture);
+
+        // e.g. "shaders/api/"
+        static std::string GetShadersPath();
 
         static void Terminate();
 

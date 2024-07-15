@@ -12,9 +12,12 @@ uniform vec2 uResolution;
 uniform sampler2D uColor;
 uniform sampler2D uUV;
 
+uniform float uOpacity;
+
 void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
-    gColor = texture2D(uColor, uv);
-    gUV = texture2D(uUV, uv);
+    gColor = texture(uColor, uv);
+    gUV = texture(uUV, uv);
+    gColor.a *= uOpacity;
     if (gColor.a == 0.0) discard;
 }

@@ -4,6 +4,8 @@
 #include "common/common.h"
 #include "gpu/gpu.h"
 #include "common/workspace.h"
+#include "common/composition.h"
+#include "compositor/blending.h"
 
 namespace Raster {
 
@@ -14,6 +16,7 @@ namespace Raster {
 
     struct CompositorTarget {
         Texture colorAttachment, uvAttachment;
+        Composition* owner;
     };
 
     struct Compositor {
@@ -21,6 +24,7 @@ namespace Raster {
         static float previewResolutionScale;
         static std::unordered_map<int, RenderableBundle> s_bundles;
         static std::vector<CompositorTarget> s_targets;
+        static Blending s_blending;
         static Pipeline s_pipeline;
 
         static void Initialize();
@@ -31,7 +35,7 @@ namespace Raster {
 
         static void EnsureResolutionConstraints();
 
-        static void PerformComposition();
+        static void PerformComposition(std::vector<int> t_allowedCompositions = {});
 
         static glm::vec2 GetRequiredResolution();
     };

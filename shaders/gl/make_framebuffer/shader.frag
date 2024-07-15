@@ -13,6 +13,6 @@ uniform vec2 uResolution;
 uniform sampler2D uTexture;
 
 void main() {
-    gColor = texture2D(uTexture, gl_FragCoord.xy / uResolution) * uColor;
+    gColor = texture(uTexture, gl_FragCoord.xy / uResolution) * uColor;
     gUV = vec4(gl_FragCoord.xy / uResolution, 0.0, 1.0);
 }
