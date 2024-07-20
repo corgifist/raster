@@ -17,6 +17,7 @@ namespace Raster {
             (float) data["BackgroundColor"][2],
             (float) data["BackgroundColor"][3]
         };
+        this->customData = data["CustomData"];
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
         }
@@ -33,21 +34,28 @@ namespace Raster {
         this->backgroundColor = {0, 0, 0, 1};
     }
 
-    uint64_t Project::GetProjectLength() {
-        uint64_t candidate = UINT64_MAX;
+    float Project::GetProjectLength() {
+        float candidate = FLT_MAX;
         for (auto& composition : compositions) {
             if (composition.endFrame < candidate) {
                 candidate = composition.endFrame;
             }
         }
-        return candidate == UINT64_MAX ? 0 : candidate;
+        return candidate == FLT_MAX ? 0 : candidate;
     }
 
-    std::string Project::FormatFrameToTime(uint64_t frame) {
+    std::string Project::FormatFrameToTime(float frame) {
+        frame = std::floor(frame);
+        framerate = std::floor(framerate);
         auto transformedFrame = frame / framerate;
         float minutes = std::floor(transformedFrame / 60);
         float seconds = std::floor(remainder(transformedFrame, 60.0f));
         return FormatString("%02i:%02i", (int) minutes, (int) seconds);
+    }
+
+    glm::mat4 Project::GetProjectionMatrix() {
+        float aspect = preferredResolution.x / preferredResolution.y;
+        return glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
     }
 
     Json Project::Serialize() {
@@ -63,6 +71,7 @@ namespace Raster {
         data["BackgroundColor"] = {
             backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a
         };
+        data["CustomData"] = customData;
         data["Compositions"] = {};
         for (auto& composition : compositions) {
             data["Compositions"].push_back(composition.Serialize());

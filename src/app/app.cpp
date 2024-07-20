@@ -171,6 +171,7 @@ namespace Raster {
                 if (Workspace::s_project.has_value()) {
                     auto& project = Workspace::s_project.value();
                     project.currentFrame = std::max(project.currentFrame, 0.0f);
+                    project.currentFrame = std::min(project.currentFrame, project.GetProjectLength());
                 }
                 Traverser::TraverseAll();
 

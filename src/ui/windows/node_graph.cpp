@@ -185,6 +185,7 @@ namespace Raster {
                 bundle.node = Workspace::CopyAbstractNode(nodeCandidate.value()).value();
                 bundle.relativeNodeOffset = minNodePosition - Nodes::GetNodePosition(nodeCandidate.value()->nodeID);
                 s_copyAccumulator.push_back(bundle);
+                std::cout << "copying node" << std::endl;
             }
         }
     }
@@ -192,6 +193,7 @@ namespace Raster {
     void NodeGraphUI::ProcessPasteAction() {
         for (auto& accumulatedNode : s_copyAccumulator) {
             s_currentComposition->nodes.push_back(accumulatedNode.node);
+            std::cout << "pushing nodes" << std::endl;
             Nodes::BeginNode(accumulatedNode.node->nodeID);
                 Nodes::SetNodePosition(accumulatedNode.node->nodeID, s_mousePos + accumulatedNode.relativeNodeOffset);
             Nodes::EndNode();
@@ -285,6 +287,9 @@ namespace Raster {
             ImGui::BeginChild("##nodeGraphContainer", ImGui::GetContentRegionAvail());
             ImGui::PopStyleVar();
             if (ctx) {
+                bool openSearchPopup = false;
+                static bool drawLastLine = false;
+                static Nodes::PinId connectedLastLinePin;
                 Nodes::Begin("NodeGraph");
 
                     for (auto& target : Workspace::s_targetSelectNodes) {
@@ -538,6 +543,12 @@ namespace Raster {
                             }
                             exposeAllPins = true;
                         } else exposeAllPins = false;
+
+                        if (Nodes::QueryNewNode(&connectedLastLinePin)) {
+                            if (Nodes::AcceptNewItem()) {
+                                openSearchPopup = true;
+                            }
+                        }
                         Nodes::EndCreate();
 
                         if (Nodes::BeginDelete()) {
@@ -579,8 +590,10 @@ namespace Raster {
                             ImGui::OpenPopup("##nodeContextMenu");
                         }
                         Nodes::Resume();
+
                     }
 
+                if (drawLastLine) Nodes::DrawLastLine();
                 Nodes::Suspend();
 
                 if (ImGui::BeginPopup("##nodeContextMenu")) {
@@ -659,9 +672,10 @@ namespace Raster {
                     dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
                 }
                 bool popupVisible = true;
-                bool openSearchPopup = false;
+                static std::optional<ImVec2> nodeSearchMousePos;
                 if (ImGui::BeginPopup("##createNewNode")) {
                     ImGui::PushFont(Font::s_normalFont);
+                    if (!nodeSearchMousePos.has_value()) nodeSearchMousePos = s_mousePos;
                     ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str()).c_str());
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
                         openSearchPopup = true;
@@ -669,13 +683,18 @@ namespace Raster {
                     ImGui::PopFont();
                     ImGui::EndPopup();
                 }
+                bool ignoreLastLine = false;
                 if (ImGui::Shortcut(ImGuiKey_Tab)) {
                     openSearchPopup = true;
+                    ignoreLastLine = true;
                 }
                 if (openSearchPopup) {
                     ImGui::OpenPopup("##createNewNodeSearch");
+                    drawLastLine = true;
                 }
                 if (ImGui::BeginPopup("##createNewNodeSearch", ImGuiWindowFlags_AlwaysAutoResize)) {
+                    if (ignoreLastLine) drawLastLine = false;
+                    if (!nodeSearchMousePos.has_value()) nodeSearchMousePos = s_mousePos;
                     ImGui::PushFont(Font::s_normalFont);
                     static std::string searchFilter = "";
                     ImGui::InputText("##searchFilter", &searchFilter);
@@ -710,8 +729,31 @@ namespace Raster {
                             if (targetNode.has_value()) {
                                 auto node = targetNode.value();
                                 Nodes::BeginNode(node->nodeID);
-                                    Nodes::SetNodePosition(node->nodeID, s_mousePos);
+                                    Nodes::SetNodePosition(node->nodeID, nodeSearchMousePos.value());
                                 Nodes::EndNode();
+                                nodeSearchMousePos = std::nullopt;
+                                if (drawLastLine) {
+                                    auto lastLinePinCandidate = Workspace::GetPinByPinID((int) connectedLastLinePin.Get());
+                                    if (lastLinePinCandidate.has_value()) {
+                                        auto& lastLinePin = lastLinePinCandidate.value();
+                                        auto lastLineNode = Workspace::GetNodeByPinID(lastLinePin.pinID).value();
+                                        auto nodeAttributes = node->GetAttributesList();
+                                        if (lastLinePin.type == PinType::Output) {
+                                            if (!nodeAttributes.empty()) {
+                                                node->AddInputPin(*nodeAttributes.begin());
+                                                auto nodeInputPin = node->GetAttributePin(*nodeAttributes.begin()).value();
+                                                nodeInputPin.connectedPinID = lastLinePin.pinID;
+                                                Workspace::UpdatePinByID(nodeInputPin, nodeInputPin.pinID);
+                                                Workspace::UpdatePinByID(lastLinePin, lastLinePin.pinID);
+                                            }
+                                        } else {
+                                            if (!lastLineNode->inputPins.empty() && !node->outputPins.empty()) {
+                                                auto& nodeInputPin = node->inputPins[0];
+                                                lastLineNode->inputPins[0].connectedPinID = node->outputPins[0].pinID;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             ImGui::CloseCurrentPopup();
                         }
@@ -730,6 +772,9 @@ namespace Raster {
                 } else if (!ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
                     dimming = false;
                     popupVisible = false;
+                    drawLastLine = false;
+                } else {
+                    drawLastLine = false;
                 }
                 if (!popupVisible && !ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
                     dimPercentage -= ImGui::GetIO().DeltaTime * 2.5;
@@ -832,7 +877,7 @@ namespace Raster {
             if (ImGui::BeginTooltip()) {
                 auto value = s_outerTooltip.value();
                 ImGui::Text("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str(), Workspace::GetTypeName(value).c_str());
-                NodeBase::DispatchValueAttribute(value);
+                Dispatchers::DispatchString(value);
                 ImGui::EndTooltip();
             }
         }

@@ -427,6 +427,7 @@ IMGUI_NODE_EDITOR_API bool PinHadAnyLinks(PinId pinId);
 IMGUI_NODE_EDITOR_API ImVec2 GetScreenSize();
 IMGUI_NODE_EDITOR_API ImVec2 ScreenToCanvas(const ImVec2& pos);
 IMGUI_NODE_EDITOR_API ImVec2 CanvasToScreen(const ImVec2& pos);
+IMGUI_NODE_EDITOR_API void DrawLastLine();
 
 IMGUI_NODE_EDITOR_API int GetNodeCount();                                // Returns number of submitted nodes since Begin() call
 IMGUI_NODE_EDITOR_API int GetOrderedNodeIds(NodeId* nodes, int size);    // Fills an array with node id's in order they're drawn; up to 'size` elements are set. Returns actual size of filled id's.

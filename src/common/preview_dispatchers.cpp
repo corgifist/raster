@@ -3,6 +3,8 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
 #include "gpu/gpu.h"
+#include "common/overlay_dispatchers.h"
+#include "common/transform2d.h"
 
 namespace Raster {
 
@@ -84,6 +86,7 @@ namespace Raster {
         static DragStructure imageDrag;
         static ImVec2 imageOffset;
         static float zoom = 1.0f;
+        bool imageDragAllowed = true;
 
         Texture texture = std::any_cast<Texture>(t_attribute);
         ImVec2 fitTextureSize = FitRectInRect(ImGui::GetWindowSize(), ImVec2(texture.width, texture.height));
@@ -99,6 +102,25 @@ namespace Raster {
                 ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
             } + imageOffset);
             ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
+
+            ImGui::SetCursorPos(ImVec2{
+                ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+            } + imageOffset);
+            if (!Workspace::s_selectedAttributes.empty()) {
+                for (auto& attributeID : Workspace::s_selectedAttributes) {
+                    auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
+                    auto compositionCandidate = Workspace::GetCompositionByAttributeID(attributeID);
+                    if (attributeCandidate.has_value() && compositionCandidate.has_value()) {
+                        auto& attribute = attributeCandidate.value();
+                        auto& composition = compositionCandidate.value();
+                        auto& project = Workspace::s_project.value();
+                        auto value = attribute->Get(project.currentFrame - composition->beginFrame, composition);
+                        ImVec2 zoomedSize = fitTextureSize * zoom;
+                        imageDragAllowed = Dispatchers::DispatchOverlay(value, composition, attribute->id, zoom, {zoomedSize.x, zoomedSize.y});
+                    }
+                }
+            }
 
             auto footerText = FormatString("%ix%i; %s", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str());
             ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
@@ -137,7 +159,7 @@ namespace Raster {
 
             imageDrag.Activate();
             float imageDragDistance;
-            if (imageDrag.GetDragDistance(imageDragDistance)) {
+            if (imageDrag.GetDragDistance(imageDragDistance) && imageDragAllowed) {
                 imageOffset = imageOffset + ImGui::GetIO().MouseDelta;
             } else imageDrag.Deactivate();
             if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
@@ -168,6 +190,12 @@ namespace Raster {
         });
         float value = std::any_cast<float>(t_attribute);
         ImGui::PlotVar("", value);
+        ImGui::SetItemTooltip("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("INACCURATE_RESULTS_WITH_LARGE_NUMBERS").c_str());
+    }
+
+    void PreviewDispatchers::DispatchIntValue(std::any& t_attribute) {
+        std::any placeholder = (float) std::any_cast<int>(t_attribute);
+        DispatchFloatValue(placeholder);
     }
 
     void PreviewDispatchers::DispatchVector4Value(std::any& t_attribute) {
@@ -260,9 +288,14 @@ namespace Raster {
         ImGui::BeginChild("##attachmentContainer", ImVec2(attachmentChooserSizeX, 30));
         float firstCursorX = ImGui::GetCursorPosX();
         for (int i = 0; i < framebuffer.attachments.size(); i++) {
+            auto buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+            buttonColor = attachmentIndex == i ? buttonColor * 1.1f : buttonColor * 0.8f;
+            buttonColor.w = 1.0f;
+            ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
             if (ImGui::Button(FormatString("%s %s %i", ICON_FA_IMAGE, Localization::GetString("ATTACHMENT").c_str(), i).c_str())) {
                 attachmentIndex = i;
             }
+            ImGui::PopStyleColor();
             ImGui::SameLine();
         }
         attachmentChooserSizeX = ImGui::GetCursorPosX() - firstCursorX;

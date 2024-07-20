@@ -10,6 +10,7 @@ namespace Raster {
     GetAttributeValue::GetAttributeValue() {
         NodeBase::Initialize();
         this->m_attributes["AttributeName"] = std::string("");
+        this->m_attributes["AttributeID"] = 0;
 
         AddOutputPin("Value");
     }
@@ -27,6 +28,14 @@ namespace Raster {
     }
 
     std::optional<AbstractAttribute> GetAttributeValue::GetCompositionAttribute() {
+        auto attributeIDCandidate = GetAttribute<int>("AttributeID");
+        if (attributeIDCandidate.has_value()) {
+            auto& attributeID = attributeIDCandidate.value();
+            auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
+            if (attributeCandidate.has_value()) {
+                return attributeCandidate.value();
+            }
+        }
         auto attributeNameCandidate = GetAttribute<std::string>("AttributeName");
         if (attributeNameCandidate.has_value()) {
             std::string attributeName = attributeNameCandidate.value();
@@ -40,7 +49,9 @@ namespace Raster {
     }
 
     void GetAttributeValue::AbstractRenderProperties() {
+        ImGui::Text(ICON_FA_CIRCLE_INFO " You Can Access Attribute by It's Name or It's ID");
         RenderAttributeProperty("AttributeName");
+        RenderAttributeProperty("AttributeID");
     }
 
     bool GetAttributeValue::AbstractDetailsAvailable() {
@@ -65,7 +76,7 @@ namespace Raster {
     }
 
     std::string GetAttributeValue::Icon() {
-        return ICON_FA_STOPWATCH;
+        return ICON_FA_LINK;
     }
 
     std::optional<std::string> GetAttributeValue::Footer() {

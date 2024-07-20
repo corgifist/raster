@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "common/transform2d.h"
 #include "gpu/gpu.h"
 #include "app/app.h"
 #include "font/font.h"
@@ -6,15 +7,6 @@
 #include "../ImGui/imgui_stdlib.h"
 
 namespace Raster {
-
-    void NodeBase::DispatchValueAttribute(std::any& t_attribute) {
-        for (auto& dispatcher : Dispatchers::s_stringDispatchers) {
-            if (std::type_index(t_attribute.type()) == dispatcher.first) {
-                dispatcher.second(t_attribute);
-            } 
-        }
-    }
-
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
         this->m_attributes[t_attribute] = t_value;
     }
@@ -178,6 +170,13 @@ namespace Raster {
                 bool dispatcherWasFound = false;
                 for (auto& dispatcher : Dispatchers::s_propertyDispatchers) {
                     if (std::type_index(dynamicCandidate.type()) == dispatcher.first) {
+                        if (isAttributeExposed) {
+                            float originalCursorX = ImGui::GetCursorPosX();
+                            ImGui::SetCursorPosX(originalCursorX - ImGui::CalcTextSize(ICON_FA_LINK).x - 5);
+                            ImGui::Text("%s ", ICON_FA_LINK);
+                            ImGui::SameLine();
+                            ImGui::SetCursorPosX(originalCursorX);
+                        }
                         dispatcherWasFound = true;
                         dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
                         m_attributes[t_attribute] = dynamicCandidate;
@@ -248,8 +247,10 @@ namespace Raster {
 
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(float);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(int);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::any);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Texture);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(glm::vec4);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Framebuffer);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(Transform2D);
 };

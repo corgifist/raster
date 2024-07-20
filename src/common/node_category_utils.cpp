@@ -5,7 +5,7 @@ namespace Raster {
         switch (t_category) {
             case NodeCategory::Resources: return ICON_FA_FOLDER;
             case NodeCategory::Utilities: return ICON_FA_GEARS;
-            case NodeCategory::Attributes: return ICON_FA_STOPWATCH;
+            case NodeCategory::Attributes: return ICON_FA_LINK;
             case NodeCategory::Rendering: return ICON_FA_IMAGE;
             case NodeCategory::Other: return ICON_FA_SHAPES;
         }

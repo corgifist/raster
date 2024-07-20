@@ -21,8 +21,8 @@ namespace Raster {
         void RenderTicks();
 
         void RenderComposition(int t_id);
-        void RenderCompositionPopup(Composition* composition);
-        void RenderNewAttributePopup(Composition* t_composition);
+        void RenderCompositionPopup(Composition* composition, ImGuiID t_parentTreeID = 0);
+        void RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID = 0);
 
         void RenderCompositionsEditor();
         void RenderLegend();

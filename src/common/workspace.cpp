@@ -19,6 +19,8 @@ namespace Raster {
     std::unordered_map<int, std::any> Workspace::s_pinCache;
 
     std::vector<int> Workspace::s_selectedNodes;
+    std::vector<int> Workspace::s_selectedAttributes;
+
     std::vector<int> Workspace::s_targetSelectNodes;
 
     std::unordered_map<std::type_index, uint32_t> Workspace::s_typeColors = {

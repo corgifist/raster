@@ -1,6 +1,7 @@
 #include "rendering.h"
 #include "font/font.h"
 #include "compositor/compositor.h"
+#include "common/transform2d.h"
 
 namespace Raster {
     void RenderingUI::Render() {
@@ -8,9 +9,12 @@ namespace Raster {
             if (Workspace::s_project.has_value()) {
                 auto& project = Workspace::s_project.value();
                 auto& selectedNodes = Workspace::s_selectedNodes;
+                auto selectedCompositionsCandidate = Workspace::GetSelectedCompositions();
 
-                static std::string selectedAttribute = "";
+                static std::string selectedPin = "";
                 static std::optional<std::any> dispatcherTarget;
+                static int selectedAttributeID = -1;
+                bool mustDispatchOverlay = false;
                 if (ImGui::BeginMenuBar()) {
                     if (!selectedNodes.empty()) {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes.at(0));
@@ -21,17 +25,19 @@ namespace Raster {
                                 attributes.insert(pin.linkedAttribute);
                             }
                             if (attributes.empty()) {
-                                selectedAttribute = "";
+                                selectedPin = "";
                             }
-                            if (!attributes.empty() && attributes.find(selectedAttribute) == attributes.end()) {
-                                selectedAttribute = *std::next(attributes.begin(), 0);
+                            if (!attributes.empty() && attributes.find(selectedPin) == attributes.end()) {
+                                selectedPin = *std::next(attributes.begin(), 0);
                             }
                         }
-                    } else selectedAttribute = "";
+                    } else selectedPin = "";
 
-                    if (selectedAttribute.empty()) {
+                    if (selectedPin.empty()) {
                         if (Compositor::primaryFramebuffer.has_value()) {
                             dispatcherTarget = Compositor::primaryFramebuffer.value();
+                            
+                            mustDispatchOverlay = true;
                         }
                     }
                 
@@ -59,7 +65,7 @@ namespace Raster {
                             attributesCount = attributes.size();
                             int attributeSearchIndex = 0;
                             for (auto& attribute : attributes) {
-                                if (attribute == selectedAttribute) break;
+                                if (attribute == selectedPin) break;
                                 attributeSearchIndex++;
                             }
                             selectedAttributeIndex = attributeSearchIndex;
@@ -72,7 +78,7 @@ namespace Raster {
                             ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
                             ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
                             ImGui::PopItemWidth();
-                            selectedAttribute = transformedAttributes[selectedAttributeIndex];
+                            selectedPin = transformedAttributes[selectedAttributeIndex];
 
                             if (dispatcherTarget.has_value()) {
                                 auto& value = dispatcherTarget.value();
@@ -90,7 +96,7 @@ namespace Raster {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes.at(0));
                         if (nodeCandidate.has_value()) {
                             auto& node = nodeCandidate.value();
-                            auto pinCandidate = node->GetAttributePin(selectedAttribute);
+                            auto pinCandidate = node->GetAttributePin(selectedPin);
                             if (pinCandidate.has_value()) {
                                 auto& pin = pinCandidate.value();
                                 if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
@@ -100,7 +106,7 @@ namespace Raster {
                                     dispatcherTarget = Workspace::s_pinCache[pin.pinID];
                                 }
                             } else {
-                                dispatcherTarget = node->GetDynamicAttribute(selectedAttribute);
+                                dispatcherTarget = node->GetDynamicAttribute(selectedPin);
                             }
                         }
                     }

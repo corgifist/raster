@@ -1,6 +1,7 @@
 #include "attributes/attributes.h"
 #include "float_attribute.h"
 #include "vec4_attribute.h"
+#include "transform2d_attribute.h"
 #include "common/randomizer.h"
 
 namespace Raster {
@@ -12,6 +13,10 @@ namespace Raster {
 
     static AbstractAttribute SpawnVec4Attribute() {
         return (AbstractAttribute) std::make_shared<Vec4Attribute>();
+    }
+
+    static AbstractAttribute SpawnTransform2DAttribute() {
+        return (AbstractAttribute) std::make_shared<Transform2DAttribute>();
     }
 
     static AbstractAttribute SpawnColor4Attribute() {
@@ -81,6 +86,12 @@ namespace Raster {
             .packageName = RASTER_PACKAGED_PACKAGE "color4_attribute",
             .prettyName = ICON_FA_DROPLET " Color4",
             .spawnProcedure = SpawnColor4Attribute
+        });
+
+        s_attributes.push_back(AttributeDescription{
+            .packageName = RASTER_PACKAGED_PACKAGE "transform2d_attribute",
+            .prettyName = ICON_FA_UP_DOWN_LEFT_RIGHT " Transform2D",
+            .spawnProcedure = SpawnTransform2DAttribute
         });
 
         std::cout << "attributes initialization finished" << std::endl;

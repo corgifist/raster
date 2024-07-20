@@ -4,6 +4,7 @@
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
 #include "compositor/blending.h"
+#include "common/transform2d.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -42,6 +43,11 @@ namespace Raster {
     static std::vector<float> s_layerSeparators;
 
     static std::unordered_map<int, float> s_attributeYCursors;
+    static std::unordered_map<int, bool> s_attributesExpanded;
+    static std::unordered_map<int, ImGuiID> s_compositionTrees;
+    static std::unordered_map<int, float> s_compositionTreeScrolls;
+
+    static float s_targetLegendScroll = -1;
 
     static float s_pixelsPerFrame = 4;
 
@@ -58,6 +64,7 @@ namespace Raster {
     static DragStructure s_timelineDrag;
 
     static std::unordered_map<int, float> s_legendOffsets;
+    static ImGuiID s_legendTargetOpenTree = 0;
 
     static ImVec2 s_rootWindowSize;
 
@@ -370,6 +377,13 @@ namespace Raster {
 
             if (compositionPressed && !io.KeyCtrl && std::abs(io.MouseDelta.x) < 0.1f) {
                 Workspace::s_selectedCompositions = {composition->id};
+                if (!composition->attributes.empty()) {
+                    for (auto& attribute : composition->attributes) {
+                        if (attribute->Get(project.currentFrame - composition->beginFrame, composition).type() == typeid(Transform2D)) {
+                            Workspace::s_selectedAttributes = {attribute->id};
+                        }
+                    }
+                }
             }
 
             if (ImGui::GetIO().KeyCtrl && compositionHovered && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
@@ -529,7 +543,9 @@ namespace Raster {
             for (auto& attribute : composition->attributes) {
                 ImGui::SetCursorPosY(s_attributeYCursors[attribute->id]);
                 PopStyleVars();
-                attribute->RenderKeyframes();
+                if (s_attributesExpanded.find(t_id) != s_attributesExpanded.end() && s_attributesExpanded[t_id]) {
+                    attribute->RenderKeyframes();
+                }
                 PushStyleVars();
             }
 
@@ -562,19 +578,24 @@ namespace Raster {
         }
     }
 
-    void TimelineUI::RenderCompositionPopup(Composition* composition) {
+    void TimelineUI::RenderCompositionPopup(Composition* t_composition, ImGuiID t_parentTreeID) {
         auto& selectedCompositions = Workspace::s_selectedCompositions;
-        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str());
+        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, t_composition->name.c_str()).c_str());
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str())) {
-            RenderNewAttributePopup(composition);
+            RenderNewAttributePopup(t_composition, t_parentTreeID);
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str()).c_str())) {
+        std::string blendingPreviewText = "";
+        auto modeCandidate = Compositor::s_blending.GetModeByCodeName(t_composition->blendMode);
+        if (modeCandidate.has_value()) {
+            blendingPreviewText = "(" + modeCandidate.value().name + ")";
+        }
+        if (ImGui::BeginMenu(FormatString("%s %s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str(), blendingPreviewText.c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str()).c_str());
             static std::string blendFilter = "";
             bool attributeOpacityUsed;
             bool correctOpacityTypeUsed;
-            float opacity = composition->GetOpacity(&attributeOpacityUsed, &correctOpacityTypeUsed);
+            float opacity = t_composition->GetOpacity(&attributeOpacityUsed, &correctOpacityTypeUsed);
             std::string attributeSelectorText = ICON_FA_LINK;
             if (attributeOpacityUsed) {
                 if (correctOpacityTypeUsed) attributeSelectorText = ICON_FA_CHECK " " ICON_FA_LINK;
@@ -597,23 +618,23 @@ namespace Raster {
                 ImGui::InputText("##attributeSearchFilter", &attributeFilter);
                 ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
-                    composition->opacityAttributeID = -1;
+                    t_composition->opacityAttributeID = -1;
                 }
-                for (auto& attribute : composition->attributes) {
+                for (auto& attribute : t_composition->attributes) {
                     if (!attributeFilter.empty() && attribute->name.find(attributeFilter) == std::string::npos) continue;
                     ImGui::PushID(attribute->id);
-                        if (ImGui::MenuItem(FormatString("%s%s %s", composition->opacityAttributeID == attribute->id ? ICON_FA_CHECK " " : "", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
-                            composition->opacityAttributeID = attribute->id;
+                        if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == attribute->id ? ICON_FA_CHECK " " : "", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
+                            t_composition->opacityAttributeID = attribute->id;
                         } 
                     ImGui::PopID();
                 }
                 ImGui::EndPopup();
             }
-            ImGui::SameLine();
+            ImGui::SameLine(0, 2.0f);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SliderFloat("##compositionOpacity", &opacity, 0, 1);
             ImGui::PopItemWidth();
-            if (!attributeOpacityUsed) composition->opacity = opacity;
+            if (!attributeOpacityUsed) t_composition->opacity = opacity;
             ImGui::EndChild();
             ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("COMPOSITION_OPACITY").c_str());
             ImGui::InputText("##blendFilter", &blendFilter);
@@ -623,21 +644,21 @@ namespace Raster {
             ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
             ImGui::BeginChild("##blendCandidates", ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY);
                 auto& blending = Compositor::s_blending;
-                if (ImGui::MenuItem(FormatString("%s %s Normal", composition->blendMode.empty() ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
-                    composition->blendMode = "";
+                if (ImGui::MenuItem(FormatString("%s %s Normal", t_composition->blendMode.empty() ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
+                    t_composition->blendMode = "";
                 }
                 for (auto& mode : blending.modes) {
                     auto& project = Workspace::s_project.value();
                     if (!blendFilter.empty() && mode.name.find(blendFilter) == std::string::npos) continue;
-                    if (ImGui::MenuItem(FormatString("%s %s %s", composition->blendMode == mode.codename ? ICON_FA_CHECK : "", Font::GetIcon(mode.icon).c_str(), mode.name.c_str()).c_str())) {
-                        composition->blendMode = mode.codename;
+                    if (ImGui::MenuItem(FormatString("%s %s %s", t_composition->blendMode == mode.codename ? ICON_FA_CHECK : "", Font::GetIcon(mode.icon).c_str(), mode.name.c_str()).c_str())) {
+                        t_composition->blendMode = mode.codename;
                     }
                     if (ImGui::BeginItemTooltip()) {
                         auto& bundles = Compositor::s_bundles;
-                        if (!IsInBounds(project.currentFrame, composition->beginFrame, composition->endFrame) || bundles.find(composition->id) == bundles.end()) {
+                        if (!IsInBounds(project.currentFrame, t_composition->beginFrame, t_composition->endFrame) || bundles.find(t_composition->id) == bundles.end()) {
                             ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
                         } else {
-                            auto& bundle = bundles[composition->id];
+                            auto& bundle = bundles[t_composition->id];
                             auto& primaryFramebuffer = Compositor::primaryFramebuffer.value();
                             auto requiredResolution = Compositor::GetRequiredResolution();
                             static Framebuffer previewFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
@@ -652,7 +673,7 @@ namespace Raster {
                             GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
                             int compositionIndex = 0;
                             for (auto& candidate : project.compositions) {
-                                if (candidate.id == composition->id) break;
+                                if (candidate.id == t_composition->id) break;
                                 compositionIndex++;
                             }
                             std::vector<int> allowedCompositions;
@@ -663,11 +684,12 @@ namespace Raster {
                             GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
                             if (!allowedCompositions.empty()) Compositor::PerformComposition(allowedCompositions);
                             auto& blending = Compositor::s_blending;
-                            blending.PerformBlending(mode, primaryFramebuffer.attachments[0], bundle.primaryFramebuffer.attachments[0], composition->opacity);
+                            blending.PerformBlending(mode, primaryFramebuffer.attachments[0], bundle.primaryFramebuffer.attachments[0], t_composition->opacity);
                             GPU::BlitFramebuffer(previewFramebuffer, blending.framebufferCandidate.value().attachments[0]);
 
                             ImGui::Text("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());
                             auto previewSize = FitRectInRect({128, 128}, {previewFramebuffer.width, previewFramebuffer.height});
+                            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - previewSize.x / 2.0f);
                             ImGui::Image(previewFramebuffer.attachments[0].handle, {previewSize.x, previewSize.y});
 
                         }
@@ -680,14 +702,14 @@ namespace Raster {
         }
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str());
-            ImGui::InputText("##compositionName", &composition->name);
+            ImGui::InputText("##compositionName", &t_composition->name);
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME").c_str());
-            ImGui::InputTextMultiline("##compositionDescription", &composition->description);
+            ImGui::InputTextMultiline("##compositionDescription", &t_composition->description);
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_DESCRIPTION").c_str());
             ImGui::EndMenu();
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("SELECT_COMPOSITION").c_str()).c_str())) {
-            AppendSelectedCompositions(composition);
+            AppendSelectedCompositions(t_composition);
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Delete")) {
             auto selectedCompositionsCopy = selectedCompositions;
@@ -794,13 +816,23 @@ namespace Raster {
         }
     }
 
-    void TimelineUI::RenderNewAttributePopup(Composition* t_composition) {
+    void TimelineUI::RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID) {
         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
         for (auto& entry : Attributes::s_attributes) {
             if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
                 auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
                 if (attributeCandidate.has_value()) {
                     t_composition->attributes.push_back(attributeCandidate.value());
+                    if (!t_parentTreeID && s_compositionTrees.find(t_composition->id) != s_compositionTrees.end()) {
+                        t_parentTreeID = s_compositionTrees[t_composition->id];
+                    }
+                    if (t_parentTreeID) {
+                        s_legendTargetOpenTree = t_parentTreeID;
+                        Workspace::s_selectedAttributes = {attributeCandidate.value()->id};
+                        if (s_compositionTreeScrolls.find(t_composition->id) != s_compositionTreeScrolls.end()) {
+                            s_targetLegendScroll = s_compositionTreeScrolls[t_composition->id];
+                        }
+                    }
                 }
             }
         }
@@ -844,6 +876,9 @@ namespace Raster {
 
     void TimelineUI::RenderLegend() {
         ImGui::BeginChild("##timelineLegend", ImVec2(ImGui::GetWindowSize().x * s_splitterState, ImGui::GetContentRegionAvail().y));
+            if (s_targetLegendScroll > 0) {
+                s_timelineScrollY = s_targetLegendScroll;
+            }
             ImGui::SetScrollY(s_timelineScrollY);
             RenderTicksBar();
             RectBounds backgroundBounds = RectBounds(
@@ -890,18 +925,22 @@ namespace Raster {
                 }
                 ImGui::SameLine();
                 auto selectedIterator = std::find(Workspace::s_selectedCompositions.begin(), Workspace::s_selectedCompositions.end(), composition.id);
-                bool compositionTreeExpanded = ImGui::TreeNode(FormatString("%s%s", selectedIterator != Workspace::s_selectedCompositions.end() ? ICON_FA_ARROW_POINTER " " : "", compositionName.c_str()).c_str());
+                s_compositionTreeScrolls[composition.id] = ImGui::GetScrollY();
+                bool compositionTreeExpanded = ImGui::TreeNode(FormatString("%s%s###%i%s", selectedIterator != Workspace::s_selectedCompositions.end() ? ICON_FA_ARROW_POINTER " " : "", compositionName.c_str(), composition.id, composition.name.c_str()).c_str());
+                auto treeNodeID = ImGui::GetItemID();
+                bool wasExpanded = false;
+                s_compositionTrees[composition.id] = treeNodeID;
+                s_attributesExpanded[composition.id] = compositionTreeExpanded;
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     ImGui::OpenPopup(FormatString("##accessibilityPopup%i", composition.id).c_str());
                 }
                 if (ImGui::BeginPopup(FormatString("##accessibilityPopup%i", composition.id).c_str())) {
-                    RenderCompositionPopup(&composition);
+                    RenderCompositionPopup(&composition, treeNodeID);
                     ImGui::EndPopup();
                 }
-                auto treeNodeID = ImGui::GetItemID();
                 ImGui::SetCursorPos(baseCursor);
                 ImGui::SetNextItemAllowOverlap();
-                if (ImGui::InvisibleButton("##accessibilityButton", ImVec2(ImGui::GetWindowSize().x, LAYER_HEIGHT))) {
+                if (ImGui::InvisibleButton("##accessibilityButton", ImVec2(ImGui::GetWindowSize().x, LAYER_HEIGHT)) && !wasExpanded) {
                     ImGui::TreeNodeSetOpen(treeNodeID, !compositionTreeExpanded);
                 }
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -943,6 +982,10 @@ namespace Raster {
                 layerAccumulator += LAYER_HEIGHT + s_legendOffsets[composition.id];
             }
 
+            if (s_legendTargetOpenTree) {
+                ImGui::TreeNodeSetOpen(s_legendTargetOpenTree, true);
+                s_legendTargetOpenTree = 0;
+            }
         ImGui::EndChild();
 
         if (targetCompositionDelete) {

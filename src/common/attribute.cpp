@@ -9,6 +9,9 @@
 #include "common/dispatchers.h"
 
 namespace Raster {
+
+    static std::vector<int> s_deletedAttributes;
+
     static void DrawRect(RectBounds bounds, ImVec4 color) {
         ImGui::GetWindowDrawList()->AddRectFilled(
             bounds.UL, bounds.BR, ImGui::ColorConvertFloat4ToU32(color));
@@ -57,7 +60,7 @@ namespace Raster {
     }
 
     std::any AttributeBase::Get(float t_frame, Composition* t_composition) {
-        this->composition = composition;
+        this->composition = t_composition;
         SortKeyframes();
         auto& project = Workspace::s_project.value();
 
@@ -105,7 +108,35 @@ namespace Raster {
             bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
             bool shouldAddKeyframe = buttonPressed;
             ImGui::SameLine();
-            ImGui::Text("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
+            static std::unordered_map<int, bool> s_attributeTextHovered;
+            static std::unordered_map<int, bool> s_attributeTextClicked;
+            if (s_attributeTextHovered.find(id) == s_attributeTextHovered.end()) {
+                s_attributeTextHovered[id] = false;
+                s_attributeTextClicked[id] = false;
+            }
+            auto& selectedAttributes = Workspace::s_selectedAttributes;
+
+            bool& attributeTextHovered = s_attributeTextHovered[id];
+            bool& attributeTextClicked = s_attributeTextClicked[id];
+            attributeTextHovered = attributeTextHovered || std::find(selectedAttributes.begin(), selectedAttributes.end(), id) != selectedAttributes.end();
+
+            ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+            if (attributeTextHovered) textColor = textColor * 0.9f;
+            if (attributeTextClicked) textColor = textColor * 0.9f;
+            ImGui::PushStyleColor(ImGuiCol_Text, textColor);
+                ImGui::Text("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
+            ImGui::PopStyleColor();
+
+            attributeTextHovered = ImGui::IsItemHovered();
+            attributeTextClicked = ImGui::IsItemClicked();
+            if (attributeTextClicked) {
+                Workspace::s_selectedAttributes = {id};
+            } else if (attributeTextClicked && ImGui::GetIO().KeyCtrl) {
+                if (std::find(selectedAttributes.begin(), selectedAttributes.end(), id) == selectedAttributes.end()) {
+                    selectedAttributes.push_back(id);
+                }
+            }
+
             if (ImGui::BeginItemTooltip()) {
                 if (t_composition->opacityAttributeID == id) {
                     ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
@@ -156,7 +187,7 @@ namespace Raster {
                 ImGui::OpenPopup(FormatString("##attribute%i", id).c_str());
             }
             if (ImGui::BeginPopup(FormatString("##attribute%i", id).c_str())) {
-                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, name.c_str()).c_str());
+                ImGui::SeparatorText(FormatString("%s%s %s (%i)", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_STOPWATCH, name.c_str(), id).c_str());
                 if (t_composition->opacityAttributeID == id) {
                     ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
                 }
@@ -172,6 +203,9 @@ namespace Raster {
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
                     auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
                     parentComposition->attributes.push_back(Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value());
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_ATTRIBUTE").c_str()).c_str())) {
+                    s_deletedAttributes.push_back(id);
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_NAME").c_str()).c_str())) {
                     ImGui::SetClipboardText(name.c_str());
@@ -263,13 +297,13 @@ namespace Raster {
         float keyframeHeight = UIShared::s_timelineAttributeHeights[composition->id];
         float keyframeWidth = 6;
         RectBounds keyframeBounds(
-            ImVec2((composition->beginFrame + t_keyframe.timestamp) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
+            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
         keyframeWidth *= 1.5f;
         RectBounds keyframeLogicBounds(
-            ImVec2((composition->beginFrame + t_keyframe.timestamp) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
+            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
@@ -414,6 +448,7 @@ namespace Raster {
     void AttributeBase::ProcessKeyframeShortcuts() {
         if (ImGui::Shortcut(ImGuiKey_Delete)) {
             m_deletedKeyframes = s_selectedKeyframes;
+            s_selectedKeyframes.clear();
         }
         auto deletedKeyframes = m_deletedKeyframes;
         m_deletedKeyframes.clear();
@@ -428,6 +463,23 @@ namespace Raster {
                         keyframeIndex++;
                     }
                     attribute->keyframes.erase(attribute->keyframes.begin() + keyframeIndex);
+                }
+            }
+        }
+        
+        auto deletedAttributes = s_deletedAttributes;
+        s_deletedAttributes.clear();
+        if (!deletedAttributes.empty()) {
+            for (auto& id : deletedAttributes) {
+                auto compositionCandidate = Workspace::GetCompositionByAttributeID(id);
+                if (compositionCandidate.has_value()) {
+                    auto& composition = compositionCandidate.value();
+                    int attributeIndex = 0;
+                    for (auto& attribute : composition->attributes) {
+                        if (attribute->id == id) break;
+                        attributeIndex++;
+                    }
+                    composition->attributes.erase(composition->attributes.begin() + attributeIndex);
                 }
             }
         }

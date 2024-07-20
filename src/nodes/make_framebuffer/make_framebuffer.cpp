@@ -66,6 +66,7 @@ namespace Raster {
     }
 
     void MakeFramebuffer::AbstractRenderProperties() {
+        RenderAttributeProperty("BackgroundColor");
     }
 
     bool MakeFramebuffer::AbstractDetailsAvailable() {

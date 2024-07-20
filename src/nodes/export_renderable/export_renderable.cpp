@@ -54,9 +54,7 @@ namespace Raster {
     }
 
     std::string ExportRenderable::AbstractHeader() {
-        return "Export " + std::string(lastExportedType.value_or(
-            std::type_index(typeid(std::nullopt))
-            )  == std::type_index(typeid(Framebuffer)) ? "Framebuffer" : "???") + " To Compositor";
+        return "Export To Compositor";
     }
 
     std::string ExportRenderable::Icon() {

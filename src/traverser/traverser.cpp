@@ -10,7 +10,7 @@ namespace Raster {
                 for (auto& node : composition.nodes) {
                     node->executionsPerFrame = 0;
                 }
-                if (!IsInBounds(project.currentFrame, composition.beginFrame, composition.endFrame)) continue;
+                if (!IsInBounds(std::floor(project.currentFrame), std::floor(composition.beginFrame), std::floor(composition.endFrame))) continue;
                 for (auto& node : composition.nodes) {
                     if (node->flowInputPin.has_value()) {
                         auto& flowInputPin = node->flowInputPin.value();
