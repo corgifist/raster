@@ -13,11 +13,15 @@ namespace Raster {
         
         std::vector<Composition> compositions;
 
+        Json customData;
+
         Project();
         Project(Json data);
 
-        uint64_t GetProjectLength();
-        std::string FormatFrameToTime(uint64_t frame);
+        float GetProjectLength();
+        std::string FormatFrameToTime(float frame);
+
+        glm::mat4 GetProjectionMatrix();
 
         Json Serialize();
     };

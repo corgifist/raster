@@ -19,9 +19,10 @@ namespace Raster {
         static Configuration s_configuration;
 
         static std::vector<int> s_selectedCompositions;
+        static std::vector<int> s_selectedNodes;
+        static std::vector<int> s_selectedAttributes;
 
         static std::vector<int> s_targetSelectNodes;
-        static std::vector<int> s_selectedNodes;
 
         static std::unordered_map<int, std::any> s_pinCache;
         static std::unordered_map<std::type_index, std::string> s_typeNames;

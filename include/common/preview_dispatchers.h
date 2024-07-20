@@ -9,5 +9,6 @@ namespace Raster {
         static void DispatchFloatValue(std::any& t_attribute);
         static void DispatchVector4Value(std::any& t_attribute);
         static void DispatchFramebufferValue(std::any& t_attribute);
+        static void DispatchIntValue(std::any& t_attribute);
     };
 };

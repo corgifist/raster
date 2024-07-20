@@ -33,8 +33,6 @@ namespace Raster {
     };
 
     struct NodeBase {
-        static void DispatchValueAttribute(std::any& t_attribute);
-
         int nodeID;
         int executionsPerFrame;
         std::optional<GenericPin> flowInputPin, flowOutputPin;

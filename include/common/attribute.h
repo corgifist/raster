@@ -42,6 +42,10 @@ namespace Raster {
 
         static void ProcessKeyframeShortcuts();
 
+        bool KeyframeExists(float t_timestamp);
+        std::optional<AttributeKeyframe*> GetKeyframeByTimestamp(float t_timestamp);
+        std::optional<int> GetKeyframeIndexByTimestamp(float t_timestamp);
+
         protected:
 
         virtual void AbstractRenderPopup() {}
@@ -50,10 +54,6 @@ namespace Raster {
         virtual std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) = 0;
 
         void RenderKeyframe(AttributeKeyframe t_keyframe);
-
-        bool KeyframeExists(float t_timestamp);
-        std::optional<AttributeKeyframe*> GetKeyframeByTimestamp(float t_timestamp);
-        std::optional<int> GetKeyframeIndexByTimestamp(float t_timestamp);
 
         virtual Json AbstractSerialize() = 0;
 

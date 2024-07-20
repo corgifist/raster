@@ -85,5 +85,11 @@
     "OPACITY_ATTRIBUTE": "Opacity Attribute",
     "NO_ATTRIBUTE": "No Attribute",
     "USED_AS_OPACITY_ATTRIBUTE": "Used as Opacity Attribute",
-    "USE_AS_OPACITY_ATTRIBUTE": "Use as Opacity Attribute"
+    "USE_AS_OPACITY_ATTRIBUTE": "Use as Opacity Attribute",
+    "INSERT_ATTRIBUTE_ID": "Insert Attribute ID",
+    "INSERT_EXTERNAL_ATTRIBUTE_ID": "Insert External Attribute ID",
+    "MORE_ATTRIBUTES": "More Attributes",
+    "DELETE_ATTRIBUTE": "Delete Attribute",
+    "INACCURATE_RESULTS_WITH_LARGE_NUMBERS": "Plotting Results may be Inaccurate With Very Large Numbers",
+    "VECTOR_INTERPRETATION_MODE": "Vector Interpretation Mode"
 }

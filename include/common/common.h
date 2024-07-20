@@ -8,6 +8,7 @@
 #include "attribute_dispatchers.h"
 #include "string_dispatchers.h"
 #include "preview_dispatchers.h"
+#include "overlay_dispatchers.h"
 #include "composition.h"
 #include "configuration.h"
 #include "dispatchers.h"
@@ -76,5 +77,19 @@ namespace Raster {
             pos += replace.length();
         }
         return subject;
+    }
+
+    static glm::vec2 ScreenToNDC(glm::vec2 point, glm::vec2 screen) {
+        return {
+            (point.x / screen.x) * 2 - 1,
+            1 - (point.y / screen.y) * 2
+        };
+    }
+
+    static glm::vec2 NDCToScreen(glm::vec2 point, glm::vec2 screen) {
+        return {
+            (point.x + 1) / 2 * screen.x,
+            (1 - point.y) / 2 * screen.y
+        };
     }
 }

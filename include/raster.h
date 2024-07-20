@@ -26,3 +26,7 @@
 #include "json.hpp"
 
 #define RASTER_PACKAGED_PACKAGE "packaged.raster."
+
+#define print(expr) std::cout << expr << std::endl
+
+#define DUMP_VAR(var) print(#var << " = " << (var))

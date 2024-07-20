@@ -4,6 +4,7 @@
 
 namespace Raster {
     struct NodeBase;
+    struct Composition;
 
     using Json = nlohmann::json;
     using AbstractPinMap = std::unordered_map<int, std::any>;
@@ -16,4 +17,7 @@ namespace Raster {
 
     using PreviewDispatcherFunction = StringDispatcherFunction;
     using PreviewDispatchersCollection = StringDispatchersCollection;
+
+    using OverlayDispatcherFunction = std::function<bool(std::any&, Composition*, int, float, glm::vec2)>;
+    using OverlayDispatchersCollection = std::unordered_map<std::type_index, OverlayDispatcherFunction>;
 };
