@@ -12,5 +12,6 @@ namespace Raster {
         static void DispatchVector4Value(std::any& t_attribute);
         static void DispatchFramebufferValue(std::any& t_attribute);
         static void DispatchIntValue(std::any& t_attribute);
+        static void DispatchSamplerSettingsValue(std::any& t_attribute);
     };
 };

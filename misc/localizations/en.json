@@ -91,5 +91,9 @@
     "MORE_ATTRIBUTES": "More Attributes",
     "DELETE_ATTRIBUTE": "Delete Attribute",
     "INACCURATE_RESULTS_WITH_LARGE_NUMBERS": "Plotting Results may be Inaccurate With Very Large Numbers",
-    "VECTOR_INTERPRETATION_MODE": "Vector Interpretation Mode"
+    "VECTOR_INTERPRETATION_MODE": "Vector Interpretation Mode",
+    "NO_ATTRIBUTES_SELECTED": "No Attributes Selected",
+    "ATTRIBUTES_SELECTED": "Attributes Selected",
+    "FILTERING_MODE": "Filtering Mode",
+    "WRAPPING_MODE": "Wrapping Mode"
 }

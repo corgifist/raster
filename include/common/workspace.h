@@ -8,6 +8,7 @@
 #include "configuration.h"
 #include "composition.h"
 #include "attribute.h"
+#include "sampler_settings.h"
 
 #define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
 

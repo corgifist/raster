@@ -6,7 +6,6 @@ namespace Raster {
     struct NodeBase;
     struct Composition;
 
-    using Json = nlohmann::json;
     using AbstractPinMap = std::unordered_map<int, std::any>;
 
     using PropertyDispatcherFunction = std::function<void(NodeBase*, std::string, std::any&, bool)>;

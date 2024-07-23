@@ -30,3 +30,67 @@
 #define print(expr) std::cout << expr << std::endl
 
 #define DUMP_VAR(var) print(#var << " = " << (var))
+
+namespace Raster {
+
+    using Json = nlohmann::json;
+    
+    template<typename ... Args>
+    static std::string FormatString( const std::string& format, Args ... args ) {
+        int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
+        if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
+        auto size = static_cast<size_t>( size_s );
+        std::unique_ptr<char[]> buf( new char[ size ] );
+        std::snprintf( buf.get(), size, format.c_str(), args ... );
+        return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+    }
+
+    static Json ReadJson(std::string path) {
+        return Json::parse(std::fstream(path));
+    }
+
+    static std::string ReadFile(const std::string& filename) {
+        std::string buffer;
+        std::ifstream in(filename.c_str(), std::ios_base::binary | std::ios_base::ate);
+        in.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
+        buffer.resize(in.tellg());
+        in.seekg(0, std::ios_base::beg);
+        in.read(&buffer[0], buffer.size());
+        return buffer;
+    }
+
+    template <typename T>
+    static bool IsInBounds(const T& value, const T& low, const T& high) {
+        return !(value < low) && (value < high);
+    }
+
+    static void WriteFile(std::string path, std::string content) {
+        std::ofstream file(path, std::ios_base::binary);
+        file.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
+        file << content;
+    }
+
+    static std::string ReplaceString(std::string subject, const std::string& search,
+                            const std::string& replace) {
+        size_t pos = 0;
+        while ((pos = subject.find(search, pos)) != std::string::npos) {
+            subject.replace(pos, search.length(), replace);
+            pos += replace.length();
+        }
+        return subject;
+    }
+
+    static glm::vec2 ScreenToNDC(glm::vec2 point, glm::vec2 screen) {
+        return {
+            (point.x / screen.x) * 2 - 1,
+            1 - (point.y / screen.y) * 2
+        };
+    }
+
+    static glm::vec2 NDCToScreen(glm::vec2 point, glm::vec2 screen) {
+        return {
+            (point.x + 1) / 2 * screen.x,
+            (1 - point.y) / 2 * screen.y
+        };
+    }
+}

@@ -55,6 +55,8 @@ namespace Raster {
         void AddOutputPin(std::string t_attribute);
         void AddInputPin(std::string t_attribute);
 
+        void ClearAttributesCache();
+
         virtual void AbstractLoadSerialized(Json data) {};
         virtual void AbstractRenderProperties() {};
 

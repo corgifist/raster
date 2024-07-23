@@ -5,6 +5,8 @@
 
 namespace Raster {
     struct OverlayDispatchers {
+        static std::string s_attributeName;
+
         static bool DispatchTransform2DValue(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize);
     };
 };
