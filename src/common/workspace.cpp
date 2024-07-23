@@ -1,5 +1,6 @@
 #include "common/common.h"
 #include "gpu/gpu.h"
+#include "common/transform2d.h"
 
 namespace Raster {
 
@@ -28,15 +29,19 @@ namespace Raster {
         {ATTRIBUTE_TYPE(Texture), RASTER_COLOR32(0, 102, 255, 255)},
         {ATTRIBUTE_TYPE(float), RASTER_COLOR32(66, 135, 245, 255)},
         {ATTRIBUTE_TYPE(glm::vec4), RASTER_COLOR32(242, 183, 22, 255)},
-        {ATTRIBUTE_TYPE(Raster::Framebuffer), RASTER_COLOR32(52, 235, 171, 255)}
+        {ATTRIBUTE_TYPE(Raster::Framebuffer), RASTER_COLOR32(52, 235, 171, 255)},
+        {ATTRIBUTE_TYPE(Transform2D), RASTER_COLOR32(120, 66, 245, 255)},
+        {ATTRIBUTE_TYPE(SamplerSettings), RASTER_COLOR32(124, 186, 53, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
         RASTER_TYPE_NAME(std::string),
-        RASTER_TYPE_NAME(Raster::Texture),
+        RASTER_TYPE_NAME(Texture),
         RASTER_TYPE_NAME(float),
         RASTER_TYPE_NAME(glm::vec4),
-        RASTER_TYPE_NAME(Raster::Framebuffer)
+        RASTER_TYPE_NAME(Framebuffer),
+        RASTER_TYPE_NAME(Transform2D),
+        RASTER_TYPE_NAME(SamplerSettings)
     };
 
     void Workspace::Initialize() {
@@ -178,6 +183,25 @@ namespace Raster {
                         node->inputPins.erase(node->inputPins.begin() + pinIndex);
                     }
                     node->inputPins.push_back(GenericPin(pin));
+                }
+
+                for (auto& pin : data["OutputPins"]) {
+                    bool continueLoop = false; 
+                    for (auto& outputPin : node->outputPins) {
+                        if (outputPin.linkedAttribute == pin["LinkedAttribute"]) {
+                            continueLoop = true;
+                            break;
+                        }
+                    }
+                    if (continueLoop) {
+                        int pinIndex = 0;
+                        for (auto& outputPin : node->outputPins) {
+                            if (outputPin.linkedAttribute == pin["LinkedAttribute"]) break;
+                            pinIndex++;
+                        }
+                        node->outputPins.erase(node->outputPins.begin() + pinIndex);
+                    }
+                    node->outputPins.push_back(GenericPin(pin));
                 }
 
                 return node;

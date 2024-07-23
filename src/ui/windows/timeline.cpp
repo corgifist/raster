@@ -869,7 +869,7 @@ namespace Raster {
         }
 
         float timelineDragDistance;
-        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && ImGui::IsWindowFocused() && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             project.currentFrame = GetRelativeMousePos().x / s_pixelsPerFrame;
         } else s_timelineDrag.Deactivate();
     }
@@ -1014,7 +1014,7 @@ namespace Raster {
                 splitterDragging = true;   
             }
         }
-        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused() && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             s_splitterState = GetRelativeMousePos().x / ImGui::GetWindowSize().x;
         } else splitterDragging = false;
 

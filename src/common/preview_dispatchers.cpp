@@ -103,10 +103,6 @@ namespace Raster {
             } + imageOffset);
             ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
-            ImGui::SetCursorPos(ImVec2{
-                ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
-                ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
-            } + imageOffset);
             if (!Workspace::s_selectedAttributes.empty()) {
                 for (auto& attributeID : Workspace::s_selectedAttributes) {
                     auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
@@ -117,7 +113,13 @@ namespace Raster {
                         auto& project = Workspace::s_project.value();
                         auto value = attribute->Get(project.currentFrame - composition->beginFrame, composition);
                         ImVec2 zoomedSize = fitTextureSize * zoom;
-                        imageDragAllowed = Dispatchers::DispatchOverlay(value, composition, attribute->id, zoom, {zoomedSize.x, zoomedSize.y});
+                        ImGui::SetCursorPos(ImVec2{
+                            ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                            ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                        } + imageOffset);
+                        if (!Dispatchers::DispatchOverlay(value, composition, attribute->id, zoom, {zoomedSize.x, zoomedSize.y})) {
+                            imageDragAllowed = false;
+                        }
                     }
                 }
             }

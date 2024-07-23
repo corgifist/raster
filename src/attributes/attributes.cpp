@@ -50,6 +50,7 @@ namespace Raster {
                 attributeCandidate.value()->id = t_data["ID"];
                 attributeCandidate.value()->Load(t_data["Data"]);
                 attributeCandidate.value()->packageName = t_data["PackageName"];
+                attributeCandidate.value()->name = t_data["Name"];
                 return attributeCandidate;
             }
         }
@@ -61,6 +62,7 @@ namespace Raster {
         if (copiedAttributeCandidate.has_value()) {
             auto& attribute = copiedAttributeCandidate.value();
             attribute->id = Randomizer::GetRandomInteger();
+            attribute->name += " (Copy)";
             for (auto& keyframe : attribute->keyframes) {
                 keyframe.id = Randomizer::GetRandomInteger();
             }

@@ -129,7 +129,7 @@ namespace Raster {
 
             attributeTextHovered = ImGui::IsItemHovered();
             attributeTextClicked = ImGui::IsItemClicked();
-            if (attributeTextClicked) {
+            if (attributeTextClicked && !ImGui::GetIO().KeyCtrl) {
                 Workspace::s_selectedAttributes = {id};
             } else if (attributeTextClicked && ImGui::GetIO().KeyCtrl) {
                 if (std::find(selectedAttributes.begin(), selectedAttributes.end(), id) == selectedAttributes.end()) {
@@ -220,7 +220,9 @@ namespace Raster {
             ImGui::PopItemWidth();
         ImGui::PopID();
 
-        if (shouldAddKeyframe && !KeyframeExists(currentFrame)) {
+        if (shouldAddKeyframe && keyframes.size() == 1 && !buttonPressed) {
+            keyframes[0].value = currentValue;
+        } else if (shouldAddKeyframe && !KeyframeExists(currentFrame)) {
             keyframes.push_back(
                 AttributeKeyframe(
                     currentFrame,

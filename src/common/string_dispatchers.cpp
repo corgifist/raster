@@ -54,4 +54,10 @@ namespace Raster {
             ImGui::Spacing();
         }
     }
+
+    void StringDispatchers::DispatchSamplerSettingsValue(std::any& t_attribute) {
+        auto samplerSettings = std::any_cast<SamplerSettings>(t_attribute);
+        ImGui::Text("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("FILTERING_MODE").c_str(), GPU::TextureFilteringModeToString(samplerSettings.filteringMode).c_str());
+        ImGui::Text("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("WRAPPING_MODE").c_str(), GPU::TextureWrappingModeToString(samplerSettings.wrappingMode).c_str());
+    }
 };

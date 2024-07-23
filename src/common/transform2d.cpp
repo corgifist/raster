@@ -2,7 +2,8 @@
 
 namespace Raster {
     Transform2D::Transform2D() {
-        this->position = this->size = this->anchor = glm::vec2(0, 0);
+        this->position = this->anchor = glm::vec2(0);
+        this->size = glm::vec2(1);
         this->angle = 0.0f;
     }
 
@@ -21,11 +22,17 @@ namespace Raster {
 
     glm::mat4 Transform2D::GetTransformationMatrix() {
         glm::mat4 transform = glm::identity<glm::mat4>();
-        transform = glm::translate(transform, glm::vec3(anchor, 0.0f));
+        /* transform = glm::translate(transform, glm::vec3(anchor, 0.0f));
         transform = glm::rotate(transform, glm::radians(angle), glm::vec3(0, 0, 1));
         transform = glm::translate(transform, glm::vec3(-anchor, 0.0f));
         transform = glm::scale(transform, glm::vec3(size, 1.0f));
+        transform = glm::translate(transform, glm::vec3(position, 0.0f)); */
+
         transform = glm::translate(transform, glm::vec3(position, 0.0f));
+        transform = glm::translate(transform, glm::vec3(anchor, 0.0f));
+        transform = glm::rotate(transform, glm::radians(angle), glm::vec3(0, 0, 1));
+        transform = glm::translate(transform, glm::vec3(-anchor, 0.0f));
+        transform = glm::scale(transform, glm::vec3(size, 1.0f));   
         return transform;
     }
 

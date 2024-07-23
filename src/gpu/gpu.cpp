@@ -33,11 +33,49 @@ namespace Raster {
                 type, severity, message );
     }
 
+    static GLenum InterpretTextureWrappingAxis(TextureWrappingAxis t_axis) {
+        switch (t_axis) {
+            case TextureWrappingAxis::S: return GL_TEXTURE_WRAP_S;
+            default: return GL_TEXTURE_WRAP_T;
+        }
+    }
+
+    static GLint InterpretTextureWrappingMode(TextureWrappingMode t_mode) {
+        switch (t_mode) {
+            case TextureWrappingMode::Repeat: return GL_REPEAT;
+            case TextureWrappingMode::MirroredRepeat: return GL_MIRRORED_REPEAT;
+            case TextureWrappingMode::ClampToEdge: return GL_CLAMP_TO_EDGE;
+            default: return GL_CLAMP_TO_BORDER;
+        }
+    }
+
+    static GLenum InterpretTextureFilteringOperation(TextureFilteringOperation t_operation) {
+        switch (t_operation) {
+            case TextureFilteringOperation::Magnify: return GL_TEXTURE_MAG_FILTER;
+            default: return GL_TEXTURE_MIN_FILTER;
+        }
+    }
+
+    static GLint InterpretTextureFilteringMode(TextureFilteringMode t_mode) {
+        switch (t_mode) {
+            case TextureFilteringMode::Linear: return GL_LINEAR;
+            default: return GL_NEAREST;
+        }
+    }
+
     Texture::Texture() {
         this->handle = nullptr;
     }
 
     Framebuffer::Framebuffer() {
+        this->handle = nullptr;
+    }
+
+    Sampler::Sampler(uint64_t handle) {
+        this->handle = (void*) handle;
+    }
+
+    Sampler::Sampler() {
         this->handle = nullptr;
     }
 
@@ -146,6 +184,7 @@ namespace Raster {
 
         auto texture = GenerateTexture(width, height);
         UpdateTexture(texture, 0, 0, width, height, image);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
         stbi_image_free(image);
 
@@ -304,6 +343,10 @@ namespace Raster {
         glProgramUniform1f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), f);
     }
 
+    void GPU::SetShaderUniform(Shader shader, std::string name, glm::mat4 mat) {
+        glProgramUniformMatrix4fv(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
+    }
+
     void GPU::BindPipeline(Pipeline pipeline) {
         glUseProgram(0);
         glBindProgramPipeline(HANDLE_TO_GLUINT(pipeline.handle));
@@ -314,16 +357,86 @@ namespace Raster {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void GPU::BlitFramebuffer(Framebuffer base, Texture texture) {
-        static Pipeline blitPipeline = GPU::GeneratePipeline(
-            GPU::GenerateShader(ShaderType::Vertex, "blit/shader"),
-            GPU::GenerateShader(ShaderType::Fragment, "blit/shader")
-        );
-        GPU::BindPipeline(blitPipeline);
-        GPU::BindFramebuffer(base);
-        GPU::SetShaderUniform(blitPipeline.fragment, "uResolution", {base.width, base.height});
-        GPU::BindTextureToShader(blitPipeline.fragment, "uTexture", texture, 0);
-        GPU::DrawArrays(3);
+    void GPU::BlitFramebuffer(Framebuffer base, Texture texture, int attachment) {
+        glCopyImageSubData(HANDLE_TO_GLUINT(texture.handle), GL_TEXTURE_2D, 0, 0, 0, 0,
+                           HANDLE_TO_GLUINT(base.attachments[attachment].handle), GL_TEXTURE_2D, 0, 0, 0, 0, base.width, base.height, 1);
+    }
+
+    Sampler GPU::GenerateSampler() {
+        GLuint sampler;
+        glGenSamplers(1, &sampler);
+
+        Sampler result;
+        result.handle = GLUINT_TO_HANDLE(sampler);
+
+        SetSamplerTextureFilteringMode(result, TextureFilteringOperation::Minify, TextureFilteringMode::Linear);
+        SetSamplerTextureFilteringMode(result, TextureFilteringOperation::Minify, TextureFilteringMode::Linear);
+
+        SetSamplerTextureWrappingMode(result, TextureWrappingAxis::S, TextureWrappingMode::Repeat);
+        SetSamplerTextureWrappingMode(result, TextureWrappingAxis::T, TextureWrappingMode::Repeat);
+
+        return result;
+    }
+
+    void GPU::BindSampler(std::optional<Sampler> sampler, int unit) {
+        glBindSampler(unit, HANDLE_TO_GLUINT((sampler.value_or(0)).handle));
+    }
+
+    void GPU::SetSamplerTextureFilteringMode(Sampler& sampler, TextureFilteringOperation operation, TextureFilteringMode mode) {
+        glSamplerParameteri(HANDLE_TO_GLUINT(sampler.handle), InterpretTextureFilteringOperation(operation), InterpretTextureFilteringMode(mode));
+
+        if (operation == TextureFilteringOperation::Magnify) {
+            sampler.magnifyMode = mode;
+        } else {
+            sampler.minifyMode = mode;
+        }
+    }
+
+    void GPU::SetSamplerTextureWrappingMode(Sampler& sampler, TextureWrappingAxis axis, TextureWrappingMode mode) {
+        glSamplerParameteri(HANDLE_TO_GLUINT(sampler.handle), InterpretTextureWrappingAxis(axis), InterpretTextureWrappingMode(mode));
+
+        if (axis == TextureWrappingAxis::S) {
+            sampler.sMode = mode;
+        } else {
+            sampler.tMode = mode;
+        }
+    }
+
+    void GPU::DestroySampler(Sampler& sampler) {
+        GLuint handle = HANDLE_TO_GLUINT(sampler.handle);
+        glDeleteSamplers(1, &handle);
+        sampler = Sampler();
+    }
+
+    std::string GPU::TextureFilteringOperationToString(TextureFilteringOperation operation) {
+        switch (operation) {
+            case TextureFilteringOperation::Magnify: return "Magnify";
+            default: return "Minify";
+        }
+    }
+
+    std::string GPU::TextureWrappingAxisToString(TextureWrappingAxis axis) {
+        switch (axis) {
+            case TextureWrappingAxis::S: return "S";
+            default: return "T";
+        }
+    }
+
+
+    std::string GPU::TextureFilteringModeToString(TextureFilteringMode mode) {
+        switch (mode) {
+            case TextureFilteringMode::Linear: return "Linear";
+            default: return "Nearest";
+        }
+    }
+
+    std::string GPU::TextureWrappingModeToString(TextureWrappingMode mode) {
+        switch (mode) {
+            case TextureWrappingMode::ClampToBorder: return "ClampToBorder";
+            case TextureWrappingMode::ClampToEdge: return "ClampToEdge";
+            case TextureWrappingMode::MirroredRepeat: return "MirroredRepeat";
+            default: return "Repeat";
+        }
     }
 
     void GPU::DrawArrays(int count) {

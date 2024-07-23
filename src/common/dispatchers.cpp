@@ -8,7 +8,9 @@ namespace Raster {
         {ATTRIBUTE_TYPE(std::string), AttributeDispatchers::DispatchStringAttribute},
         {ATTRIBUTE_TYPE(float), AttributeDispatchers::DispatchFloatAttribute},
         {ATTRIBUTE_TYPE(int), AttributeDispatchers::DispatchIntAttribute},
-        {ATTRIBUTE_TYPE(glm::vec4), AttributeDispatchers::DispatchVec4Attribute}
+        {ATTRIBUTE_TYPE(glm::vec4), AttributeDispatchers::DispatchVec4Attribute},
+        {ATTRIBUTE_TYPE(Transform2D), AttributeDispatchers::DispatchTransform2DAttribute},
+        {ATTRIBUTE_TYPE(SamplerSettings), AttributeDispatchers::DispatchSamplerSettingsAttribute}
     };
 
     StringDispatchersCollection Dispatchers::s_stringDispatchers = {
@@ -17,7 +19,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(int), StringDispatchers::DispatchIntValue},
         {ATTRIBUTE_TYPE(Texture), StringDispatchers::DispatchTextureValue},
         {ATTRIBUTE_TYPE(glm::vec4), StringDispatchers::DispatchVector4Value},
-        {ATTRIBUTE_TYPE(Framebuffer), StringDispatchers::DispatchFramebufferValue}
+        {ATTRIBUTE_TYPE(Framebuffer), StringDispatchers::DispatchFramebufferValue},
+        {ATTRIBUTE_TYPE(SamplerSettings), StringDispatchers::DispatchSamplerSettingsValue}
     };
 
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers = {

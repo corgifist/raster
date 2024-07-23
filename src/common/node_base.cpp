@@ -19,7 +19,6 @@ namespace Raster {
 
     AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator) {
         this->m_accumulator = t_accumulator;
-        this->m_attributesCache = {};
         if (!enabled) return {};
         if (bypassed) {
             auto outputPin = flowOutputPin.value();
@@ -91,6 +90,7 @@ namespace Raster {
         auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
         if (this->m_accumulator.find(attributePin.connectedPinID) != this->m_accumulator.end()) {
             auto dynamicAttribute = this->m_accumulator.at(attributePin.connectedPinID);
+            m_attributesCache[t_attribute] = dynamicAttribute;
             return dynamicAttribute;
         }
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
@@ -99,6 +99,7 @@ namespace Raster {
             Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
             targetNode.value()->executionsPerFrame++;
+            m_attributesCache[t_attribute] = dynamicAttribute;
             return dynamicAttribute;
         }
 
@@ -126,14 +127,19 @@ namespace Raster {
         static std::any placeholder = nullptr;
         std::any& dynamicCandidate = placeholder;
         bool candidateWasFound = false;
+        bool usingCachedAttribute = false;
         if (m_attributesCache.find(t_attribute) != m_attributesCache.end()) {
             dynamicCandidate = m_attributesCache[t_attribute];
+            std::cout << "m_attributesCache candidate" << std::endl;
             candidateWasFound = true;
+            usingCachedAttribute = true;
         }
         if (m_attributes.find(t_attribute) != m_attributes.end() && !candidateWasFound) {
             dynamicCandidate = m_attributes[t_attribute];
+            std::cout << "m_attributes candidate" << std::endl;
             candidateWasFound = true;
         }
+        std::cout << std::to_string(usingCachedAttribute) << std::endl;
         bool isAttributeExposed = false;
         if (candidateWasFound) {
             for (auto& pin : inputPins) {
@@ -179,7 +185,7 @@ namespace Raster {
                         }
                         dispatcherWasFound = true;
                         dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
-                        m_attributes[t_attribute] = dynamicCandidate;
+                        if (!usingCachedAttribute) m_attributes[t_attribute] = dynamicCandidate;
                     } 
                 }
                 if (!dispatcherWasFound) {
@@ -196,6 +202,11 @@ namespace Raster {
 
     bool NodeBase::DetailsAvailable() {
         return AbstractDetailsAvailable();
+    }
+
+    void NodeBase::ClearAttributesCache() {
+        this->m_attributesCache.clear();
+        this->m_accumulator.clear();
     }
 
     std::set<std::string> NodeBase::GetAttributesList() {
@@ -253,4 +264,5 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(glm::vec4);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Framebuffer);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Transform2D);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(SamplerSettings);
 };

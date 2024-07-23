@@ -164,8 +164,11 @@ namespace Raster {
         ImGui::SetWindowFontScale(1.0f);
     }
 
+    static std::unordered_map<int, int> s_idReplacements;
+
     void NodeGraphUI::ProcessCopyAction() {
         s_copyAccumulator.clear();
+        s_idReplacements.clear();
 
         ImVec2 minNodePosition = ImVec2(FLT_MAX, FLT_MAX);
         for (auto& selectedNode : Workspace::s_selectedNodes) {
@@ -177,23 +180,73 @@ namespace Raster {
                 minNodePosition.y = nodePos.y;
             }
         }
-
+        auto& idReplacements = s_idReplacements;
         for (auto& selectedNode : Workspace::s_selectedNodes) {
             auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNode);
             if (nodeCandidate.has_value()) {
                 CopyAccumulatorBundle bundle;
-                bundle.node = Workspace::CopyAbstractNode(nodeCandidate.value()).value();
-                bundle.relativeNodeOffset = minNodePosition - Nodes::GetNodePosition(nodeCandidate.value()->nodeID);
-                s_copyAccumulator.push_back(bundle);
-                std::cout << "copying node" << std::endl;
+                auto& sourceNode = nodeCandidate.value();
+                auto copiedNodeCandidate = Workspace::InstantiateSerializedNode(sourceNode->Serialize());
+                if (nodeCandidate.has_value()) {
+                    auto& node = copiedNodeCandidate.value();
+
+                    int originalID = node->nodeID;
+                    node->nodeID = Randomizer::GetRandomInteger();
+                    idReplacements[originalID] = node->nodeID;
+
+                    if (node->flowInputPin.has_value()) {
+                        UpdateCopyPin(node->flowInputPin.value(), idReplacements);
+                    }
+                    if (node->flowOutputPin.has_value()) {
+                        UpdateCopyPin(node->flowOutputPin.value(), idReplacements);
+                    }
+                    for (auto& inputPin : node->inputPins) {
+                        UpdateCopyPin(inputPin, idReplacements);
+                    }
+                    for (auto& outputPin : node->outputPins) {
+                        UpdateCopyPin(outputPin, idReplacements);
+                    }
+
+                    bundle.node = node;
+                    bundle.relativeNodeOffset = Nodes::GetNodePosition(nodeCandidate.value()->nodeID) - minNodePosition;
+                    s_copyAccumulator.push_back(bundle);
+                }
             }
+        }
+
+        for (auto& bundle : s_copyAccumulator) {
+            auto& node = bundle.node;
+            if (node->flowInputPin.has_value()) {
+                ReplaceCopyPin(node->flowInputPin.value(), idReplacements);
+            }
+            if (node->flowOutputPin.has_value()) {
+                ReplaceCopyPin(node->flowOutputPin.value(), idReplacements);
+            }
+            for (auto& inputPin : node->inputPins) {
+                ReplaceCopyPin(inputPin, idReplacements);
+            }
+            for (auto& outputPin : node->outputPins) {
+                ReplaceCopyPin(outputPin, idReplacements);
+            }
+        }
+    }
+
+    void NodeGraphUI::UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements) {
+        int originalID = pin.pinID;
+        pin.pinID = Randomizer::GetRandomInteger();
+        pin.linkID = Randomizer::GetRandomInteger();
+        idReplacements[originalID] = pin.pinID;
+    }
+
+    void NodeGraphUI::ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements) {
+        if (idReplacements.find(pin.connectedPinID) != idReplacements.end()) {
+            pin.connectedPinID = idReplacements[pin.connectedPinID];
         }
     }
 
     void NodeGraphUI::ProcessPasteAction() {
         for (auto& accumulatedNode : s_copyAccumulator) {
             s_currentComposition->nodes.push_back(accumulatedNode.node);
-            std::cout << "pushing nodes" << std::endl;
             Nodes::BeginNode(accumulatedNode.node->nodeID);
                 Nodes::SetNodePosition(accumulatedNode.node->nodeID, s_mousePos + accumulatedNode.relativeNodeOffset);
             Nodes::EndNode();
@@ -206,11 +259,11 @@ namespace Raster {
                 first = false;
             }
         }
+        s_copyAccumulator.clear();
     }
 
     void NodeGraphUI::Render() {
         s_outerTooltip = std::nullopt;
-        Workspace::s_selectedNodes.clear();
 
         static bool exposeAllPins = false;
         int uniqueID = 0;
@@ -526,7 +579,6 @@ namespace Raster {
                                                         startPin.connectedPinID = endPin.pinID;
                                                     } else {
                                                         endPin.connectedPinID = startPin.pinID;
-                                                        std::cout << endPin.connectedPinID << std::endl;
                                                         if (exposures.find(endPin.pinID) != exposures.end()) {
                                                             auto& exposure = exposures[endPin.pinID];
                                                             auto freshEndNode = Workspace::GetNodeByPinID(endPin.pinID).value();
@@ -784,6 +836,7 @@ namespace Raster {
                     }
                 }
                 Nodes::Resume();
+                Workspace::s_selectedNodes.clear();
 
                 std::vector<Nodes::NodeId> temporarySelectedNodes(Nodes::GetSelectedObjectCount());
                 Nodes::GetSelectedNodes(temporarySelectedNodes.data(), Nodes::GetSelectedObjectCount());
@@ -827,7 +880,6 @@ namespace Raster {
                     ImGui::SetCursorPosX(ImGui::GetCursorStartPos().x + 5);
                     ImGui::Text("%s", s_currentComposition->description.c_str());
                     if (isDescriptionHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                        std::cout << "clicked" << std::endl;
                         ImGui::OpenPopup("##compositionDescriptionEditor");
                         isEditingDescription = true;
                     }

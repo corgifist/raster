@@ -9,6 +9,7 @@ namespace Raster {
             for (auto& composition : project.compositions) {
                 for (auto& node : composition.nodes) {
                     node->executionsPerFrame = 0;
+                    node->ClearAttributesCache();
                 }
                 if (!IsInBounds(std::floor(project.currentFrame), std::floor(composition.beginFrame), std::floor(composition.endFrame))) continue;
                 for (auto& node : composition.nodes) {
