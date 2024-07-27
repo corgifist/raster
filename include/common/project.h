@@ -21,7 +21,7 @@ namespace Raster {
         float GetProjectLength();
         std::string FormatFrameToTime(float frame);
 
-        glm::mat4 GetProjectionMatrix();
+        glm::mat4 GetProjectionMatrix(bool inverted = false);
 
         Json Serialize();
     };

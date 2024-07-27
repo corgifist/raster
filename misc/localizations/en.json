@@ -95,5 +95,16 @@
     "NO_ATTRIBUTES_SELECTED": "No Attributes Selected",
     "ATTRIBUTES_SELECTED": "Attributes Selected",
     "FILTERING_MODE": "Filtering Mode",
-    "WRAPPING_MODE": "Wrapping Mode"
+    "WRAPPING_MODE": "Wrapping Mode",
+    "EDIT_VALUE": "Edit Value",
+    "NO_PARENT": "No Parent",
+    "SELECT_PARENT_ATTRIBUTE": "Select Parent Attribute",
+    "REMOVE_PARENT_ATTRIBUTE": "Remove Parent Attribute",
+    "SET_AS_PARENT_ATTRIBUTE": "Set as Parent Attribute",
+    "SEARCH_BY_NAME_OR_ATTRIBUTE_ID": "Search by Name or Attribute ID",
+    "COPY_ATTRIBUTES_DATA": "Copy Attribute's Data",
+    "ID": "ID",
+    "NAME": "Name",
+    "SELECT_EXTERNAL_PARENT_ATTRIBUTE": "Select External Parent Attribute",
+    "SAMPLER_CONSTANTS": "Sampler Constants"
 }

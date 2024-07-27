@@ -10,5 +10,8 @@ namespace Raster {
         TextureFilteringMode filteringMode;
 
         SamplerSettings();
+        SamplerSettings(Json t_data);
+
+        Json Serialize();
     };
 };

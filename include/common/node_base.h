@@ -16,6 +16,7 @@ namespace Raster {
         Attributes,
         Utilities,
         Rendering,
+        SamplerConstants,
         Other
     };
 

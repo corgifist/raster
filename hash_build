@@ -29,21 +29,35 @@ build_modules = [
     [attributes, shared, [raster_common, raster_ImGui]],
     [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor]],
     [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor]],
+    [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app]],
     
 
     [debug_print, node, [raster_common]],
     [load_texture_by_path, node, [raster_common, raster_gpu]],
     [get_attribute_value, node, [raster_common]],
-    [make_framebuffer, node, [raster_common, raster_gpu, raster_compositor]],
+    ["make/make_framebuffer", node, [raster_common, raster_gpu, raster_compositor]],
+    ["make/make_sampler_settings", node, [raster_common]]
     [export_renderable, node, [raster_common, raster_gpu, raster_compositor]],
-    [layer2d, node, [raster_common, raster_gpu, raster_compositor]]
+    [layer2d, node, [raster_common, raster_gpu, raster_compositor]],
+    ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
+    ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],
+    ["sampler_constants/repeat_wrapping", node, [raster_common, raster_sampler_constants_base]],
+    ["sampler_constants/mirrored_repeat_wrapping", node, [raster_common, raster_sampler_constants_base]],
+    ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base]],
+    ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base]],
+    [get_time, node, [raster_common]]
 ]
 
 scenario build_master {
     info("Building Raster (master)")
 
     write_build_number()
+
+    if not(path_exists("nodes/")) {
+        info("creating nodes/ because one doesn't exist")
+        mkdir("nodes")
+    }
 
     for_each($build_modules, target_build_module, execute_dispatch_module_safe)
 }
@@ -85,11 +99,14 @@ scenario dispatch_module_builder {
     if eq($target_module_type, shared) {
         target_executable_name = cat($shared_lib_prefix, cat($target_module_name, $shared_lib_ext))
     }
+    if eq($is_node, true) {
+        target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
+    }
 
     link_executable($objects, $target_executable_name, $deps, $target_module_type)
 
     if eq($is_node, true) {
-        mv($target_executable_name, cat("nodes/", $target_executable_name))
+        mv($target_executable_name, cat("nodes/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
     }
 }
 
@@ -99,6 +116,7 @@ scenario execute_dispatch_error {
 }
 
 scenario clean {
+    if path_exists("nodes/") { rmdir("nodes") }
     object_clean()
 }
 

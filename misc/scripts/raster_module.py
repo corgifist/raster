@@ -1,4 +1,7 @@
 from hash_build_env import *
+import os
+import hashlib
+import shutil
 
 def list_nth(array, index):
     return array[int(index)]
@@ -36,6 +39,12 @@ def write_build_number():
         incremented_number = int(bn_second_parts[2]) + 1
         bn_file.write("#pragma once\n#define BUILD_NUMBER " + str(incremented_number))
 
+def hash_(s):
+    return hashlib.md5(s.encode("utf-8")).hexdigest()
+
+def string_replace(string, subject, replacement):
+    return string.replace(subject, replacement)
+
 
 functions["greater"] = greater
 functions["less"] = less
@@ -43,3 +52,6 @@ functions["list_len"] = list_len
 functions["list_nth"] = list_nth
 functions["try_scenario"] = try_scenario
 functions["write_build_number"] = write_build_number
+functions["hash"] = hash_
+functions["string_replace"] = string_replace
+functions["rmdir"] = shutil.rmtree

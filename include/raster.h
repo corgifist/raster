@@ -25,7 +25,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "json.hpp"
 
-#define RASTER_PACKAGED_PACKAGE "packaged.raster."
+#define RASTER_PACKAGED "packaged.raster."
 
 #define print(expr) std::cout << expr << std::endl
 
@@ -92,5 +92,21 @@ namespace Raster {
             (point.x + 1) / 2 * screen.x,
             (1 - point.y) / 2 * screen.y
         };
+    }
+
+    template <typename T>
+    std::basic_string<T> LowerCase(const std::basic_string<T>& s) {
+        std::basic_string<T> s2 = s;
+        std::transform(s2.begin(), s2.end(), s2.begin(),
+            [](const T v){ return static_cast<T>(std::tolower(v)); });
+        return s2;
+    }
+
+    template <typename T>
+    std::basic_string<T> UpperCase(const std::basic_string<T>& s) {
+        std::basic_string<T> s2 = s;
+        std::transform(s2.begin(), s2.end(), s2.begin(),
+            [](const T v){ return static_cast<T>(std::toupper(v)); });
+        return s2;
     }
 }

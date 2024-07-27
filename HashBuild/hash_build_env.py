@@ -7,6 +7,9 @@ import platform
 import glob
 import pathlib
 from hash_build_common import warning, info, fatal
+from multiprocessing import Pool
+import random
+import time
 
 
 scenarios = {}
@@ -24,6 +27,9 @@ def cat(a, b):
 
 def cats(a, b):
     return str(a) + str(b)
+
+
+object_compile_processes = {}
 
 def object_compile(source, arch, args=[], library_path="."):
     machine_bit = f'-m{arch}'
@@ -54,17 +60,39 @@ def object_compile(source, arch, args=[], library_path="."):
                 std_cxx_override_exists = 'std_cxx' in var_env
                 std_c_override_exists = 'std_c' in var_env
                 compile_command = f"{'g++' if extension == 'cpp' else 'gcc'} -L {library_path} {'-I' + include_path if include_path != None else ''} -c {file} {machine_bit} -o {output_file} {' '.join(compile_definitions)} {('-std=c++' + var_env['std_cxx'] if std_cxx_override_exists else '') if extension == 'cpp' else ''} {('-std=c' + var_env['std_c'] if std_c_override_exists else '') if extension == 'c' else ''}{' ' + ' '.join(compile_options) if len(compile_options) != 0 else ''} {' '.join(args)}"
-                # info(compile_command)
                 info(f"[{progress}/{len(source)}] compiling {file} ({output_file})")
-                compilation_process = subprocess.run(list(filter(lambda x: x != '', compile_command.split(" "))), stdout=sys.stdout, stderr=sys.stderr)
-                if (compilation_process.returncode != 0):
-                    hash_file.close()
-                    os.remove(f"hash_build_files/{name_hash}.hash")
-                    fatal(f"compiler returned non-zero code while compiling {file}")
-                    exit(1)
+                erasing_targets = []
+                if len(object_compile_processes) >= os.cpu_count():
+                    target_process_to_wait = random.choice(list(object_compile_processes.items()))
+                    while target_process_to_wait[1].poll() == None:
+                        time.sleep(0.2)
+                    del object_compile_processes[target_process_to_wait[0]]
+
+                for k_source_file, v_process in object_compile_processes.items():
+                    poll_result = v_process.poll()
+                    if poll_result != None:
+                        if poll_result != 0:
+                            os.remove(f"hash_build_files/{hash_string(k_source_file)}.hash")
+                            os.remove(f"hash_build_files/{name_hash}")
+                            fatal(f"compiler returned non-zero code while compiling {k_source_file}")
+                            exit(1)
+                        erasing_targets.append(k_source_file)
+
+                for target in erasing_targets:
+                    if target in object_compile_processes:
+                        del object_compile_processes[target]
+
+                object_compile_processes[file] = subprocess.Popen(list(filter(lambda x: x != '', compile_command.split(" "))), stdout=sys.stdout, stderr=sys.stderr)
     
+    for k_source_file, v_process in object_compile_processes.items():
+        while v_process.poll() == None:
+            time.sleep(0.2)
+
+    object_compile_processes.clear()
+
     info("object compilation finished successfully")
     return result_objects
+
 
 def object_clean():
     shutil.rmtree("hash_build_files")
