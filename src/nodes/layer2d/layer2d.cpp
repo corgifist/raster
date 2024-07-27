@@ -16,6 +16,7 @@ namespace Raster {
 
         this->m_attributes["Color"] = glm::vec4(1, 1, 1, 1);
         this->m_attributes["Transform"] = Transform2D();
+        this->m_attributes["UVTransform"] = Transform2D();
         this->m_attributes["Base"] = Framebuffer();
         this->m_attributes["Texture"] = Texture();
         this->m_attributes["SamplerSettings"] = SamplerSettings();
@@ -44,20 +45,20 @@ namespace Raster {
         auto colorCandidate = GetAttribute<glm::vec4>("Color");
         auto textureCandidate = GetAttribute<Texture>("Texture");
         auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings");
+        auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform");
         if (s_pipeline.has_value() && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
-            auto transform = transformCandidate.value();
+            auto& transform = transformCandidate.value();
             auto& color = colorCandidate.value();
             auto& texture = textureCandidate.value();
             auto& samplerSettings = samplerSettingsCandidate.value();
+            auto& uvTransform = uvTransformCandidate.value();
 
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
 
-            transform.position.y *= -1;
-            transform.angle *= -1;
-            transform.anchor.y *= -1;
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", project.GetProjectionMatrix() * transform.GetTransformationMatrix());
+            GPU::SetShaderUniform(pipeline.vertex, "uUVMatrix", uvTransform.GetTransformationMatrix());
             GPU::SetShaderUniform(pipeline.fragment, "uColor", color);
             GPU::SetShaderUniform(pipeline.fragment, "uTextureAvailable", texture.handle ? 1 : 0);
             if (texture.handle) {
@@ -86,6 +87,7 @@ namespace Raster {
 
     void Layer2D::AbstractRenderProperties() {
         RenderAttributeProperty("Transform");
+        RenderAttributeProperty("UVTransform");
         RenderAttributeProperty("Color");
         RenderAttributeProperty("SamplerSettings");
     }
@@ -115,7 +117,7 @@ extern "C" {
     Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "Layer2D",
-            .packageName = RASTER_PACKAGED_PACKAGE "layer2d",
+            .packageName = RASTER_PACKAGED "layer2d",
             .category = Raster::NodeCategory::Rendering
         };
     }
