@@ -73,25 +73,25 @@ namespace Raster {
 
     void Attributes::Initialize() {
         s_attributes.push_back(AttributeDescription{
-            .packageName = RASTER_PACKAGED_PACKAGE "float_attribute",
+            .packageName = RASTER_PACKAGED "float_attribute",
             .prettyName = ICON_FA_DIVIDE " Float",
             .spawnProcedure = SpawnFloatAttribute
         });
 
         s_attributes.push_back(AttributeDescription{
-            .packageName = RASTER_PACKAGED_PACKAGE "vec4_attribute",
+            .packageName = RASTER_PACKAGED "vec4_attribute",
             .prettyName = ICON_FA_EXPAND " Vector4",
             .spawnProcedure = SpawnVec4Attribute
         });
         
         s_attributes.push_back(AttributeDescription{
-            .packageName = RASTER_PACKAGED_PACKAGE "color4_attribute",
+            .packageName = RASTER_PACKAGED "color4_attribute",
             .prettyName = ICON_FA_DROPLET " Color4",
             .spawnProcedure = SpawnColor4Attribute
         });
 
         s_attributes.push_back(AttributeDescription{
-            .packageName = RASTER_PACKAGED_PACKAGE "transform2d_attribute",
+            .packageName = RASTER_PACKAGED "transform2d_attribute",
             .prettyName = ICON_FA_UP_DOWN_LEFT_RIGHT " Transform2D",
             .spawnProcedure = SpawnTransform2DAttribute
         });

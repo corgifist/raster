@@ -53,9 +53,9 @@ namespace Raster {
         return FormatString("%02i:%02i", (int) minutes, (int) seconds);
     }
 
-    glm::mat4 Project::GetProjectionMatrix() {
+    glm::mat4 Project::GetProjectionMatrix(bool invert) {
         float aspect = preferredResolution.x / preferredResolution.y;
-        return glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
+        return glm::ortho(-aspect, aspect, 1.0f * (invert ? -1 : 1), -1.0f * (invert ? -1 : 1), -1.0f, 1.0f);
     }
 
     Json Project::Serialize() {

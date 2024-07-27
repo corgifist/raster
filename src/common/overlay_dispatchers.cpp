@@ -5,6 +5,7 @@
 
 #define DRAG_CIRCLE_RADIUS 8
 #define ANCHOR_CIRCLE_RADIUS 6
+#define ANCHOR_LOGIC_RADIUS 32
 
 namespace Raster {
 
@@ -63,7 +64,7 @@ namespace Raster {
 
         std::vector<glm::vec2> transformedPoints;
         for (auto& point : rectPoints) {
-            glm::vec4 transformedPoint = project.GetProjectionMatrix() * transform.GetTransformationMatrix() * glm::vec4(point, 0, 1);
+            glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(point, 0, 1);
             transformedPoints.push_back(
                 {transformedPoint.x, transformedPoint.y}
             );
@@ -103,7 +104,7 @@ namespace Raster {
             ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 2);
         }
 
-        auto resizeXDragNDC4 = project.GetProjectionMatrix() * transform.GetTransformationMatrix() * glm::vec4(1, 0, 0, 1);
+        auto resizeXDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(1, 0, 0, 1);
         auto resizeXDragNDC = glm::vec2(resizeXDragNDC4.x, resizeXDragNDC4.y);
         auto screenXDrag = NDCToScreen(resizeXDragNDC, t_regionSize);
         ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenXDrag.x, screenXDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
@@ -156,7 +157,7 @@ namespace Raster {
             ImGui::SetTooltip(ICON_FA_LEFT_RIGHT " Increase/Decrease Width");
         }
 
-        auto resizeYDragNDC4 = project.GetProjectionMatrix() * transform.GetTransformationMatrix() * glm::vec4(0, 1, 0, 1);
+        auto resizeYDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(0, 1, 0, 1);
         auto resizeYDragNDC = glm::vec2(resizeYDragNDC4.x, resizeYDragNDC4.y);
         auto screenYDrag = NDCToScreen(resizeYDragNDC, t_regionSize);
         ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenYDrag.x, screenYDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
@@ -194,7 +195,7 @@ namespace Raster {
             yDragActive = false;
         }
 
-        auto resizeYSecondaryDragNDC4 = project.GetProjectionMatrix() * transform.GetTransformationMatrix() * glm::vec4(0, -1, 0, 1);
+        auto resizeYSecondaryDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(0, -1, 0, 1);
         auto resizeYSecondaryDragNDC = glm::vec2(resizeYSecondaryDragNDC4.x, resizeYSecondaryDragNDC4.y);
         auto screenYSecondaryDrag = NDCToScreen(resizeYSecondaryDragNDC, t_regionSize);
         ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenYSecondaryDrag.x, screenYSecondaryDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
@@ -232,7 +233,7 @@ namespace Raster {
             ySecondaryDragActive = false;
         }
 
-        auto resizeXSecondaryDragNDC4 = project.GetProjectionMatrix() * transform.GetTransformationMatrix() * glm::vec4(-1, 0, 0, 1);
+        auto resizeXSecondaryDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(-1, 0, 0, 1);
         auto resizeXSecondaryDragNDC = glm::vec2(resizeXSecondaryDragNDC4.x, resizeXSecondaryDragNDC4.y);
         auto screenXSecondaryDrag = NDCToScreen(resizeXSecondaryDragNDC, t_regionSize);
         ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenXSecondaryDrag.x, screenXSecondaryDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
@@ -274,15 +275,16 @@ namespace Raster {
         glm::mat4 anchorTransformMatrix = glm::identity<glm::mat4>();
         anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.position, 0));
         anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.anchor, 0));
+        anchorTransformMatrix = transform.parentMatrix * anchorTransformMatrix;
 
-        glm::vec4 anchorPointNDC4 = project.GetProjectionMatrix() * anchorTransformMatrix * glm::vec4(0, 0, 0, 1);
+        glm::vec4 anchorPointNDC4 = project.GetProjectionMatrix(true) * anchorTransformMatrix * glm::vec4(0, 0, 0, 1);
         glm::vec2 anchorPointScreen = glm::vec2(anchorPointNDC4.x, anchorPointNDC4.y);
         anchorPointScreen = NDCToScreen(anchorPointScreen, t_regionSize);
         
-        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{anchorPointScreen.x, anchorPointScreen.y} - ImVec2(ANCHOR_CIRCLE_RADIUS * 0.5f * t_zoom, ANCHOR_CIRCLE_RADIUS * 0.5f * t_zoom), 8 * t_zoom, ImGui::GetColorU32(outlineColor));
+        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{anchorPointScreen.x, anchorPointScreen.y}, ANCHOR_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
         RectBounds anchorPointBounds(
-            ImVec2{anchorPointScreen.x, anchorPointScreen.y} - ImVec2(32 * t_zoom, 32 * t_zoom),
-            ImVec2(32 * t_zoom, 32 * t_zoom)
+            ImVec2{anchorPointScreen.x, anchorPointScreen.y} - ImVec2(ANCHOR_LOGIC_RADIUS * t_zoom, ANCHOR_LOGIC_RADIUS * t_zoom),
+            ImVec2(ANCHOR_LOGIC_RADIUS * t_zoom, ANCHOR_LOGIC_RADIUS * t_zoom)
         );
         if ((MouseHoveringBounds(anchorPointBounds) || anchorDragging)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !yDragActive && !positionDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive) {
             ImGui::SetTooltip("%s Move Anchor Point", ICON_FA_ANCHOR);
@@ -297,7 +299,7 @@ namespace Raster {
         }
 
         glm::vec4 centerPointNDC4(0, 0, 0, 1);
-        centerPointNDC4 = project.GetProjectionMatrix() * transform.GetTransformationMatrix() * centerPointNDC4;
+        centerPointNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * centerPointNDC4;
         glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
         centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
         glm::vec2 transformScreenSize(transform.size.x * t_regionSize.x, transform.size.y * t_regionSize.y);
@@ -383,11 +385,11 @@ namespace Raster {
                 auto& composition = project.compositions[i];
                 bool exitLoop = false;
                 for (auto& attribute : composition.attributes) {
-                    if (attribute->packageName != RASTER_PACKAGED_PACKAGE "transform2d_attribute") continue;
+                    if (attribute->packageName != RASTER_PACKAGED "transform2d_attribute") continue;
                     auto value = attribute->Get(project.currentFrame - composition.beginFrame, &composition);
                     auto hitTransform = std::any_cast<Transform2D>(value);
                     glm::vec4 centerPointNDC4(0, 0, 0, 1);
-                    centerPointNDC4 = project.GetProjectionMatrix() * hitTransform.GetTransformationMatrix() * centerPointNDC4;
+                    centerPointNDC4 = project.GetProjectionMatrix(true) * hitTransform.GetTransformationMatrix() * centerPointNDC4;
                     glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
                     centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
                     glm::vec2 transformScreenSize(hitTransform.size.x * t_regionSize.x, hitTransform.size.y * t_regionSize.y);

@@ -42,10 +42,20 @@ namespace Raster {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ATTRIBUTE_ID").c_str()).c_str());
             auto parentComposition = Workspace::GetCompositionByNodeID(t_owner->nodeID).value();
             static std::string attributeFilter = "";
-            ImGui::InputText("##attributeFilter", &attributeFilter);
-            ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
+            ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
+            bool mustShowByID = false;
             for (auto& attribute : parentComposition->attributes) {
-                if (!attributeFilter.empty() && attribute->name.find(attributeFilter) == std::string::npos) continue;
+                if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
+                    mustShowByID = true;
+                    break;
+                }
+            }
+            for (auto& attribute : parentComposition->attributes) {
+                if (!mustShowByID) {
+                    if (!attributeFilter.empty() && LowerCase(ReplaceString(attribute->name, " ", "")).find(LowerCase(ReplaceString(attributeFilter, " ", ""))) == std::string::npos) continue;
+                } else {
+                    if (!attributeFilter.empty() && std::to_string(attribute->id) != ReplaceString(attributeFilter, " ", "")) continue;
+                }
                 ImGui::PushID(attribute->id);
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
                     i = attribute->id;
@@ -71,7 +81,13 @@ namespace Raster {
             for (auto& composition : project.compositions) {
                 if (composition.attributes.empty()) continue;
                 bool skip = !attributeFilter.empty();
+                bool mustShowByID = false;
                 for (auto& attribute : composition.attributes) {
+                    if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
+                        mustShowByID = true;
+                        skip = false;
+                        break;
+                    }
                     if (!attributeFilter.empty() && attribute->name.find(attributeFilter) != std::string::npos) {
                         skip = false;
                         break;
@@ -81,8 +97,14 @@ namespace Raster {
                 ImGui::PushID(composition.id);
                 if (ImGui::TreeNode(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str()).c_str())) {
                     for (auto& attribute : composition.attributes) {
+                        if (mustShowByID && ReplaceString(attributeFilter, " ", "") != std::to_string(attribute->id)) continue;
+                        if (!mustShowByID && LowerCase(attribute->name).find(ReplaceString(LowerCase(attributeFilter), " ", "")) == std::string::npos) continue;
                         ImGui::PushID(attribute->id);
-                        if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_GLOBE, ICON_FA_LINK, attribute->name.c_str()).c_str())) {
+                        std::string attributeIcon = ICON_FA_GLOBE " " ICON_FA_LINK;
+                        if (Workspace::GetCompositionByNodeID(t_owner->nodeID).value()->id == composition.id) {
+                            attributeIcon = ICON_FA_LINK;
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", attributeIcon.c_str(), attribute->name.c_str()).c_str())) {
                             i = attribute->id;
                         }
                         ImGui::PopID();
@@ -259,5 +281,13 @@ namespace Raster {
         samplerSettings.filteringMode = filteringModes[selectedFilteringMode];
 
         t_value = samplerSettings;
+    }
+
+    void AttributeDispatchers::DispatchBoolAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+        bool value = std::any_cast<bool>(t_value);
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+        ImGui::Checkbox(FormatString("##%s", t_attribute.c_str()).c_str(), &value);
+        t_value = value;
     }
 };

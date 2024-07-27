@@ -10,7 +10,13 @@
 
 namespace Raster {
 
+    struct AttributeDuplicateBundle {
+        Composition* targetComposition;
+        AbstractAttribute attribute;
+    };
+
     static std::vector<int> s_deletedAttributes;
+    static std::vector<AttributeDuplicateBundle> s_duplicatedAttributes;
 
     static void DrawRect(RectBounds bounds, ImVec4 color) {
         ImGui::GetWindowDrawList()->AddRectFilled(
@@ -77,11 +83,11 @@ namespace Raster {
         }
 
         if (targetKeyframeIndex == -1) {
-            return keyframes.back().value;
+            return AbstractInterpolate(keyframes.back().value, keyframes.back().value, 0.0f, 0.0f, composition);
         }
 
         if (targetKeyframeIndex == 0) {
-            return keyframes.front().value;
+            return AbstractInterpolate(keyframes.front().value, keyframes.front().value, 0.0f, 0.0f, composition);
         }
 
         float keyframeTimestamp = keyframes.at(targetKeyframeIndex).timestamp;
@@ -104,6 +110,7 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         float currentFrame = project.currentFrame - t_composition->beginFrame;
         auto currentValue = Get(currentFrame, t_composition);
+        bool openRenamePopup = false;
         ImGui::PushID(id);
             bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
             bool shouldAddKeyframe = buttonPressed;
@@ -126,6 +133,11 @@ namespace Raster {
             ImGui::PushStyleColor(ImGuiCol_Text, textColor);
                 ImGui::Text("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
             ImGui::PopStyleColor();
+
+            std::string renamePopupID = FormatString("##renameAttribute%i", id);
+            if (ImGui::IsItemHovered() && ImGui::IsWindowFocused() && ImGui::GetIO().MouseDoubleClicked[ImGuiMouseButton_Left]) {
+                openRenamePopup = true;
+            }
 
             attributeTextHovered = ImGui::IsItemHovered();
             attributeTextClicked = ImGui::IsItemClicked();
@@ -159,7 +171,6 @@ namespace Raster {
                     AttributeDragDropPayload attributePayload = *(AttributeDragDropPayload*) payload->Data;
                     int fromAttributeID = attributePayload.attributeID;
                     int toAttributeID = id;
-
 
                     if (Workspace::s_project.has_value()) {
                         auto& project = Workspace::s_project.value();
@@ -202,13 +213,22 @@ namespace Raster {
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
                     auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
-                    parentComposition->attributes.push_back(Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value());
+                    s_duplicatedAttributes.push_back(AttributeDuplicateBundle{
+                        .targetComposition = parentComposition,
+                        .attribute = Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value()
+                    });
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_ATTRIBUTE").c_str()).c_str())) {
                     s_deletedAttributes.push_back(id);
                 }
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_NAME").c_str()).c_str())) {
-                    ImGui::SetClipboardText(name.c_str());
+                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTES_DATA").c_str()).c_str())) {
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("ID").c_str()).c_str())) {
+                        ImGui::SetClipboardText(std::to_string(id).c_str());
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("NAME").c_str()).c_str())) {
+                        ImGui::SetClipboardText(name.c_str());
+                    }
+                    ImGui::EndMenu();
                 }
                 ImGui::EndPopup();
             }
@@ -219,6 +239,14 @@ namespace Raster {
                 shouldAddKeyframe = shouldAddKeyframe || isItemEdited;
             ImGui::PopItemWidth();
         ImGui::PopID();
+
+        if (openRenamePopup) ImGui::OpenPopup(renamePopupID.c_str());
+
+        static bool renameFieldFocused = false;
+        if (ImGui::BeginPopup(renamePopupID.c_str())) {
+            ImGui::InputTextWithHint("##renameField", FormatString("%s %s", ICON_FA_FONT, Localization::GetString("ATTRIBUTE_NAME").c_str()).c_str(), &name);
+            ImGui::EndPopup();
+        } else renameFieldFocused = false;
 
         if (shouldAddKeyframe && keyframes.size() == 1 && !buttonPressed) {
             keyframes[0].value = currentValue;
@@ -484,6 +512,12 @@ namespace Raster {
                     composition->attributes.erase(composition->attributes.begin() + attributeIndex);
                 }
             }
+        }
+
+        auto duplicatedAttributes = s_duplicatedAttributes;
+        s_duplicatedAttributes.clear();
+        for (auto& bundle : duplicatedAttributes) {
+            bundle.targetComposition->attributes.push_back(bundle.attribute);
         }
     }
 };

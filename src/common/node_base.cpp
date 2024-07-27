@@ -130,16 +130,13 @@ namespace Raster {
         bool usingCachedAttribute = false;
         if (m_attributesCache.find(t_attribute) != m_attributesCache.end()) {
             dynamicCandidate = m_attributesCache[t_attribute];
-            std::cout << "m_attributesCache candidate" << std::endl;
             candidateWasFound = true;
             usingCachedAttribute = true;
         }
         if (m_attributes.find(t_attribute) != m_attributes.end() && !candidateWasFound) {
             dynamicCandidate = m_attributes[t_attribute];
-            std::cout << "m_attributes candidate" << std::endl;
             candidateWasFound = true;
         }
-        std::cout << std::to_string(usingCachedAttribute) << std::endl;
         bool isAttributeExposed = false;
         if (candidateWasFound) {
             for (auto& pin : inputPins) {
@@ -265,4 +262,5 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Framebuffer);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Transform2D);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(SamplerSettings);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(bool);
 };

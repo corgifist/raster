@@ -9,6 +9,7 @@ namespace Raster {
         NodeCategory::Rendering,
         NodeCategory::Resources,
         NodeCategory::Utilities,
+        NodeCategory::SamplerConstants,
         NodeCategory::Other
     };
 
@@ -408,5 +409,10 @@ namespace Raster {
             return s_typeNames[std::type_index(t_value.type())];
         }
         return t_value.type().name();
+    }
+
+
+    Project& Workspace::GetProject() {
+        return s_project.value();
     }
 }

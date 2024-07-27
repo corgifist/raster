@@ -2,6 +2,9 @@
 #include "gpu/gpu.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
+#include "../ImGui/imgui_drag.h"
+#include "common/overlay_dispatchers.h"
+#include "common/transform2d.h"
 
 namespace Raster {
 
@@ -59,5 +62,32 @@ namespace Raster {
         auto samplerSettings = std::any_cast<SamplerSettings>(t_attribute);
         ImGui::Text("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("FILTERING_MODE").c_str(), GPU::TextureFilteringModeToString(samplerSettings.filteringMode).c_str());
         ImGui::Text("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("WRAPPING_MODE").c_str(), GPU::TextureWrappingModeToString(samplerSettings.wrappingMode).c_str());
+    }
+
+    void StringDispatchers::DispatchTransform2DValue(std::any& t_attribute) {
+        auto transform = std::any_cast<Transform2D>(t_attribute);
+        std::any transformCopy = transform;
+        auto preferredResolution = Workspace::GetProject().preferredResolution;
+        ImVec2 fitSize = FitRectInRect(ImVec2{128, ImGui::GetWindowSize().y}, ImVec2{preferredResolution.x, preferredResolution.y});
+        ImGui::BeginChild("##transformInfoContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+            ImGui::Text("%s Position: %0.2f; %0.2f", ICON_FA_UP_DOWN_LEFT_RIGHT, transform.position.x, transform.position.y);
+            ImGui::Text("%s Size: %0.2f; %0.2f", ICON_FA_SCALE_BALANCED, transform.size.x, transform.size.y);
+            ImGui::Text("%s Anchor: %0.2f; %0.2f", ICON_FA_ANCHOR, transform.anchor.x, transform.anchor.y);
+            ImGui::Text("%s Angle: %0.2f", ICON_FA_ROTATE, transform.angle);
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("##transformPreviewContainer", fitSize);
+            RectBounds backgroundBounds(
+                ImVec2(0, 0), 
+                fitSize
+            );
+            ImGui::GetWindowDrawList()->AddRectFilled(backgroundBounds.UL, backgroundBounds.BR, ImGui::GetColorU32(ImVec4(0, 0, 0, 1)));
+            OverlayDispatchers::DispatchTransform2DValue(transformCopy, nullptr, -1, 1.0f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
+        ImGui::EndChild();
+    }
+
+    void StringDispatchers::DispatchBoolValue(std::any& t_attribute) {
+        bool value = std::any_cast<bool>(t_attribute);
+        ImGui::Text("%s %s", ICON_FA_CIRCLE_INFO, value ? "true" : "false");
     }
 };

@@ -10,7 +10,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(int), AttributeDispatchers::DispatchIntAttribute},
         {ATTRIBUTE_TYPE(glm::vec4), AttributeDispatchers::DispatchVec4Attribute},
         {ATTRIBUTE_TYPE(Transform2D), AttributeDispatchers::DispatchTransform2DAttribute},
-        {ATTRIBUTE_TYPE(SamplerSettings), AttributeDispatchers::DispatchSamplerSettingsAttribute}
+        {ATTRIBUTE_TYPE(SamplerSettings), AttributeDispatchers::DispatchSamplerSettingsAttribute},
+        {ATTRIBUTE_TYPE(bool), AttributeDispatchers::DispatchBoolAttribute}
     };
 
     StringDispatchersCollection Dispatchers::s_stringDispatchers = {
@@ -20,7 +21,9 @@ namespace Raster {
         {ATTRIBUTE_TYPE(Texture), StringDispatchers::DispatchTextureValue},
         {ATTRIBUTE_TYPE(glm::vec4), StringDispatchers::DispatchVector4Value},
         {ATTRIBUTE_TYPE(Framebuffer), StringDispatchers::DispatchFramebufferValue},
-        {ATTRIBUTE_TYPE(SamplerSettings), StringDispatchers::DispatchSamplerSettingsValue}
+        {ATTRIBUTE_TYPE(SamplerSettings), StringDispatchers::DispatchSamplerSettingsValue},
+        {ATTRIBUTE_TYPE(Transform2D), StringDispatchers::DispatchTransform2DValue},
+        {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue}
     };
 
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers = {
@@ -29,7 +32,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(float), PreviewDispatchers::DispatchFloatValue},
         {ATTRIBUTE_TYPE(int), PreviewDispatchers::DispatchIntValue},
         {ATTRIBUTE_TYPE(glm::vec4), PreviewDispatchers::DispatchVector4Value},
-        {ATTRIBUTE_TYPE(Framebuffer), PreviewDispatchers::DispatchFramebufferValue}
+        {ATTRIBUTE_TYPE(Framebuffer), PreviewDispatchers::DispatchFramebufferValue}, 
+        {ATTRIBUTE_TYPE(bool), PreviewDispatchers::DispatchBoolValue}
     };
 
     OverlayDispatchersCollection Dispatchers::s_overlayDispatchers = {

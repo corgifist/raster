@@ -7,9 +7,13 @@
 #include "common/workspace.h"
 #include "common/transform2d.h"
 #include "../ImGui/imgui.h"
+#include "../ImGui/imgui_stdlib.h"
+
+#define TRANSFORM2D_PARENT_PAYLOAD "TRANSFORM2D_PARENT_PAYLOAD"
 
 namespace Raster {
     struct Transform2DAttribute : public AttributeBase {
+    public:
         Transform2DAttribute();
 
         std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition);
@@ -22,5 +26,7 @@ namespace Raster {
         void Load(Json t_data);
 
         Json AbstractSerialize();
+    private:
+        int m_parentAttributeID;
     };
 };

@@ -1,4 +1,5 @@
 #include "transform2d_attribute.h"
+#include "common/workspace.h"
 
 namespace Raster {
     Transform2DAttribute::Transform2DAttribute() {
@@ -9,13 +10,14 @@ namespace Raster {
         Transform2D transform;
         transform.size = {1, 1};
 
-
         keyframes.push_back(
             AttributeKeyframe(
                 0,
                 transform
             )
         );
+
+        this->m_parentAttributeID = -1;
     }
 
     std::any Transform2DAttribute::AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) {
@@ -28,6 +30,19 @@ namespace Raster {
         result.size = glm::mix(a.size, b.size, t);
         result.anchor = glm::mix(a.anchor, b.anchor, t);
         result.angle = glm::mix(a.angle, b.angle, t);
+
+        auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
+        if (parentAttributeCandidate.has_value()) {
+            auto& project = Workspace::GetProject();
+            auto& parentAttribute = parentAttributeCandidate.value();
+            auto parentComposition = Workspace::GetCompositionByAttributeID(parentAttribute->id).value();
+            auto dynamicValue = parentAttribute->Get(project.currentFrame - parentComposition->beginFrame, parentComposition);
+            if (dynamicValue.type() == typeid(Transform2D)) {
+                auto transform = std::any_cast<Transform2D>(dynamicValue);
+                std::cout << "correcting transform" << std::endl;
+                result.parentMatrix = transform.GetTransformationMatrix();
+            }
+        }
 
         return result;
     }
@@ -54,8 +69,127 @@ namespace Raster {
     std::any Transform2DAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
         auto& project = Workspace::s_project.value();
         Transform2D transform = std::any_cast<Transform2D>(t_originalValue);
-        if (ImGui::Button(ICON_FA_UP_DOWN_LEFT_RIGHT " Edit Value", ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
+        auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
+        std::string buttonText = FormatString("%s %s | %s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("EDIT_VALUE").c_str(), ICON_FA_SITEMAP, parentAttributeCandidate.has_value() ? parentAttributeCandidate.value()->name.c_str() : Localization::GetString("NO_PARENT").c_str());
+        if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
             ImGui::OpenPopup(FormatString("##%iattribute", id).c_str());
+        }
+        ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("RIGHT_CLICK_FOR_CONTEXT_MENU").c_str());
+
+        std::string popupID = FormatString("##transform2DParentAttribute%i", id);
+
+        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            ImGui::OpenPopup(popupID.c_str());
+        }
+
+        bool openMoreAttributesPopup = false;
+        if (ImGui::BeginPopup(popupID.c_str())) {
+            std::string buttonText = FormatString("%s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, name.c_str());
+            if (parentAttributeCandidate.has_value()) {
+                buttonText += FormatString(" | %s %s", ICON_FA_SITEMAP, parentAttributeCandidate.value()->name.c_str());
+            }
+            ImGui::SeparatorText(buttonText.c_str());
+            if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_PARENT_ATTRIBUTE").c_str()).c_str())) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_PARENT_ATTRIBUTE").c_str()).c_str());
+                static std::string attributeFilter = "";
+                ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
+                auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
+                bool oneCandidateWasDisplayed = false;
+                bool mustShowByID = false;
+                for (auto& attribute : parentComposition->attributes) {
+                    if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
+                        mustShowByID = true;
+                        break;
+                    }
+                }
+                for (auto& attribute : parentComposition->attributes) {
+                    if (!mustShowByID) {
+                        if (!attributeFilter.empty() && LowerCase(ReplaceString(attribute->name, " ", "")).find(LowerCase(ReplaceString(attributeFilter, " ", ""))) == std::string::npos) continue;
+                        if (attribute->id == id) continue;
+                    } else {
+                        if (!attributeFilter.empty() && std::to_string(attribute->id) != ReplaceString(attributeFilter, " ", "")) continue;
+                    }
+                    ImGui::PushID(attribute->id);
+                    if (ImGui::MenuItem(FormatString("%s%s %s", m_parentAttributeID == attribute->id ? ICON_FA_CHECK " " : "", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
+                        m_parentAttributeID = attribute->id;
+                    }
+                    oneCandidateWasDisplayed = true;
+                    ImGui::PopID();
+                }
+                if (!oneCandidateWasDisplayed) {
+                    ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
+                    ImGui::Text("%s", Localization::GetString("NOTHING_TO_SHOW").c_str());
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_GLOBE, ICON_FA_LINK, Localization::GetString("MORE_ATTRIBUTES").c_str()).c_str())) {
+                    openMoreAttributesPopup = true;
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("REMOVE_PARENT_ATTRIBUTE").c_str()).c_str())) {
+                m_parentAttributeID = -1;
+            }
+            ImGui::EndPopup();
+        }
+
+        if (openMoreAttributesPopup) {
+            ImGui::OpenPopup(FormatString("%imoreAttributes", id).c_str());
+        }
+        if (ImGui::BeginPopup(FormatString("%imoreAttributes", id).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s %s", ICON_FA_GLOBE, ICON_FA_LINK, Localization::GetString("SELECT_EXTERNAL_PARENT_ATTRIBUTE").c_str()).c_str());
+            static std::string attributeFilter = "";
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
+            ImGui::PopItemWidth();
+
+            auto& project = Workspace::s_project.value();
+            for (auto& composition : project.compositions) {
+                if (composition.attributes.empty()) continue;
+                bool skip = !attributeFilter.empty();
+                bool mustShowByID = false;
+                for (auto& attribute : composition.attributes) {
+                    if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
+                        mustShowByID = true;
+                        skip = false;
+                        break;
+                    }
+                    if (!attributeFilter.empty() && attribute->name.find(attributeFilter) != std::string::npos) {
+                        skip = false;
+                        break;
+                    }
+                }
+                if (skip) continue;
+                ImGui::PushID(composition.id);
+                if (ImGui::TreeNode(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str()).c_str())) {
+                    for (auto& attribute : composition.attributes) {
+                        if (mustShowByID && ReplaceString(attributeFilter, " ", "") != std::to_string(attribute->id)) continue;
+                        ImGui::PushID(attribute->id);
+                        std::string attributeIcon = ICON_FA_GLOBE " " ICON_FA_LINK;
+                        if (Workspace::GetCompositionByAttributeID(id).value()->id == composition.id) {
+                            attributeIcon = ICON_FA_LINK;
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", attributeIcon.c_str(), attribute->name.c_str()).c_str())) {
+                            m_parentAttributeID = attribute->id;
+                        }
+                        ImGui::PopID();
+                    }
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(TRANSFORM2D_PARENT_PAYLOAD)) {
+                m_parentAttributeID = *((int*) payload->Data);
+            }
+            ImGui::EndDragDropTarget();
+        }
+        if (ImGui::BeginDragDropSource()) {
+            ImGui::SetDragDropPayload(TRANSFORM2D_PARENT_PAYLOAD, &id, sizeof(id));
+            ImGui::Text("%s %s: %s", ICON_FA_SITEMAP, Localization::GetString("SET_AS_PARENT_ATTRIBUTE").c_str(), name.c_str());
+            ImGui::EndDragDropSource();
         }
         if (ImGui::BeginPopup(FormatString("##%iattribute", id).c_str())) {
             if (!project.customData.contains("Transform2DAttributeData")) {

@@ -303,4 +303,14 @@ namespace Raster {
         attachmentChooserSizeX = ImGui::GetCursorPosX() - firstCursorX;
         ImGui::EndChild();
     }
+
+    void PreviewDispatchers::DispatchBoolValue(std::any& t_attribute) {
+        bool value = std::any_cast<bool>(t_attribute);
+        const char* text = value ? "true" : "false";
+        ImGui::SetCursorPos({
+            ImGui::GetWindowPos().x / 2.0f - ImGui::CalcTextSize(text).x / 2.0f,
+            ImGui::GetWindowPos().y / 2.0f - ImGui::CalcTextSize(text).y / 2.0f
+        });
+        ImGui::Text(text);
+    }
 };
