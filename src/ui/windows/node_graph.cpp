@@ -287,7 +287,10 @@ namespace Raster {
             }
 
             if (!ctx && s_currentComposition) {
-                std::string compositionPath = FormatString("%i.json", s_currentComposition->id);
+                if (!std::filesystem::exists("editors/")) {
+                    std::filesystem::create_directory("editors");
+                }
+                std::string compositionPath = FormatString("editors/%i.json", s_currentComposition->id);
                 Nodes::Config cfg;
                 cfg.EnableSmoothZoom = true;
                 cfg.SettingsFile = compositionPath.c_str();
@@ -755,10 +758,10 @@ namespace Raster {
                     ImGui::NewLine();
                     ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str());
                     static float tabBarHeight = 0;
-                    NodeCategory targetCategory = NodeCategory::Other;
+                    NodeCategory targetCategory = 0;
                     ImGui::BeginChild("##tabChild", ImVec2(searchBarWidth, tabBarHeight));
                         if (ImGui::BeginTabBar("##searchCategories")) {
-                            for (auto& category : Workspace::s_categories) {
+                            for (auto& category : NodeCategoryUtils::s_categoriesOrder) {
                                 if (ImGui::BeginTabItem(NodeCategoryUtils::ToString(category).c_str())) {
                                     targetCategory = category;
                                     ImGui::EndTabItem();
@@ -900,12 +903,11 @@ namespace Raster {
             if (ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD)) {
                     AttributeDragDropPayload attributePayload = *(AttributeDragDropPayload*) payload->Data;
-                    std::string attributeName = Workspace::GetAttributeByAttributeID(attributePayload.attributeID).value()->name;
                     if (s_currentComposition) {
-                        auto attributeNodeCandidate = Workspace::InstantiateNode("raster_get_attribute_value");
+                        auto attributeNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value");
                         if (attributeNodeCandidate.has_value()) {
                             auto& attributeNode = attributeNodeCandidate.value();
-                            attributeNode->SetAttributeValue("AttributeName", attributeName);
+                            attributeNode->SetAttributeValue("AttributeID", attributePayload.attributeID);
                             s_currentComposition->nodes.push_back(attributeNode);
                             s_positioningTasks.push_back(NodePositioningTask{
                                 .nodeID = attributeNode->nodeID,

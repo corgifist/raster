@@ -9,8 +9,7 @@
 #include "../ImGui/imgui_theme.h"
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
-
-namespace Nodes = ax::NodeEditor;
+#include "node_category/node_category.h"
 
 namespace Raster {
 
@@ -27,6 +26,8 @@ namespace Raster {
         } catch (std::exception ex) {
             Localization::Load(ReadJson("misc/localizations/en.json"));
         }
+
+        DefaultNodeCategories::Initialize();
 
         Workspace::Initialize();
         Workspace::s_project = Project();
@@ -69,7 +70,6 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
         Attributes::Initialize();
         Compositor::Initialize();
 

@@ -4,15 +4,6 @@
 
 namespace Raster {
 
-    std::vector<NodeCategory> Workspace::s_categories = {
-        NodeCategory::Attributes,
-        NodeCategory::Rendering,
-        NodeCategory::Resources,
-        NodeCategory::Utilities,
-        NodeCategory::SamplerConstants,
-        NodeCategory::Other
-    };
-
     std::optional<Project> Workspace::s_project;
     std::vector<int> Workspace::s_selectedCompositions;
     std::vector<NodeImplementation> Workspace::s_nodeImplementations;
@@ -58,6 +49,11 @@ namespace Raster {
             implementation.libraryName = transformedPath;
             implementation.description = Libraries::GetFunction<NodeDescription()>(transformedPath, "GetDescription")();
             implementation.spawn = Libraries::GetFunction<AbstractNode()>(transformedPath, "SpawnNode");
+            try {
+                Libraries::GetFunction<void()>(transformedPath, "OnStartup")();
+            } catch (internalDylib::exception ex) {
+                // skip
+            }
             s_nodeImplementations.push_back(implementation);
             std::cout << "Loading node '" << transformedPath << "'" << std::endl;
         }
@@ -141,6 +137,10 @@ namespace Raster {
                 nodeImplementation = impl;
                 break;
             }
+            if (impl.description.packageName == t_nodeName) {
+                nodeImplementation = impl;
+                break;
+            }
         }
         if (nodeImplementation.has_value()) {
             return PopulateNode(t_nodeName, nodeImplementation.value().spawn());
@@ -214,6 +214,9 @@ namespace Raster {
     std::optional<NodeImplementation> Workspace::GetNodeImplementationByLibraryName(std::string t_libraryName) {
         for (auto& impl : s_nodeImplementations) {
             if (impl.libraryName == t_libraryName) {
+                return impl;
+            }
+            if (impl.description.packageName == t_libraryName) {
                 return impl;
             }
         }
