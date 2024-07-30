@@ -58,7 +58,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Debug Print",
             .packageName = "packaged.raster.debug_node",
-            .category = Raster::NodeCategory::Other
+            .category = Raster::DefaultNodeCategories::s_other
         };
     }
 }

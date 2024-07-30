@@ -6,11 +6,15 @@ extern "C" {
         return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureFilteringMode::Nearest));
     }
 
+    void OnStartup() {
+        Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"));
+    }
+
     Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "Nearest Sampler Filtering",
             .packageName = RASTER_PACKAGED "nearest_sampler_filtering_constant",
-            .category = Raster::NodeCategory::SamplerConstants
+            .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
         };
     }
 }

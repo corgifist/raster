@@ -93,7 +93,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Get Attribute Value",
             .packageName = RASTER_PACKAGED "get_attribute_value",
-            .category = Raster::NodeCategory::Attributes
+            .category = Raster::DefaultNodeCategories::s_attributes
         };
     }
 }

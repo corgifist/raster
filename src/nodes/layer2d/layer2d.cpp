@@ -20,6 +20,7 @@ namespace Raster {
         this->m_attributes["Base"] = Framebuffer();
         this->m_attributes["Texture"] = Texture();
         this->m_attributes["SamplerSettings"] = SamplerSettings();
+        this->m_attributes["MaintainUVRange"] = true;
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -46,19 +47,34 @@ namespace Raster {
         auto textureCandidate = GetAttribute<Texture>("Texture");
         auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings");
         auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform");
-        if (s_pipeline.has_value() && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value()) {
+        auto maintainUVRangeCandidate = GetAttribute<bool>("MaintainUVRange");
+        if (s_pipeline.has_value() && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && maintainUVRangeCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& transform = transformCandidate.value();
             auto& color = colorCandidate.value();
             auto& texture = textureCandidate.value();
             auto& samplerSettings = samplerSettingsCandidate.value();
-            auto& uvTransform = uvTransformCandidate.value();
+            auto uvTransform = uvTransformCandidate.value();
+            auto& maintainUVRange = maintainUVRangeCandidate.value();
+            uvTransform.size = 1.0f / uvTransform.size;
+
+            uvTransform.anchor.x *= -1;
+            uvTransform.anchor *= 0.5f;
+
+            uvTransform.position.x *= -1;
+            uvTransform.position *= 0.5f;
 
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
 
+
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", project.GetProjectionMatrix() * transform.GetTransformationMatrix());
-            GPU::SetShaderUniform(pipeline.vertex, "uUVMatrix", uvTransform.GetTransformationMatrix());
+
+            GPU::SetShaderUniform(pipeline.fragment, "uMaintainUVRange", maintainUVRange);
+            GPU::SetShaderUniform(pipeline.fragment, "uUVPosition", uvTransform.position);
+            GPU::SetShaderUniform(pipeline.fragment, "uUVSize", uvTransform.size);
+            GPU::SetShaderUniform(pipeline.fragment, "uUVAngle", glm::radians(uvTransform.angle));
+            GPU::SetShaderUniform(pipeline.fragment, "uUVAnchor", uvTransform.anchor);
             GPU::SetShaderUniform(pipeline.fragment, "uColor", color);
             GPU::SetShaderUniform(pipeline.fragment, "uTextureAvailable", texture.handle ? 1 : 0);
             if (texture.handle) {
@@ -72,7 +88,6 @@ namespace Raster {
 
                     GPU::SetSamplerTextureWrappingMode(m_sampler, TextureWrappingAxis::S, samplerSettings.wrappingMode);
                     GPU::SetSamplerTextureWrappingMode(m_sampler, TextureWrappingAxis::T, samplerSettings.wrappingMode);
-                    std::cout << "updating sampler" << std::endl;
                 }
             }
             GPU::DrawArrays(6);
@@ -89,6 +104,7 @@ namespace Raster {
         RenderAttributeProperty("Transform");
         RenderAttributeProperty("UVTransform");
         RenderAttributeProperty("Color");
+        RenderAttributeProperty("MaintainUVRange");
         RenderAttributeProperty("SamplerSettings");
     }
 
@@ -118,7 +134,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Layer2D",
             .packageName = RASTER_PACKAGED "layer2d",
-            .category = Raster::NodeCategory::Rendering
+            .category = Raster::DefaultNodeCategories::s_rendering
         };
     }
 }

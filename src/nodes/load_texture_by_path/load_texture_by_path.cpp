@@ -72,7 +72,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Load Texture By Path",
             .packageName = "packaged.raster.load_texture_by_path",
-            .category = Raster::NodeCategory::Resources
+            .category =Raster::DefaultNodeCategories::s_resources
         };
     }
 }

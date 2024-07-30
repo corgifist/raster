@@ -75,7 +75,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Export Renderable",
             .packageName = RASTER_PACKAGED "export_renderable",
-            .category = Raster::NodeCategory::Rendering
+            .category = Raster::DefaultNodeCategories::s_rendering
         };
     }
 }

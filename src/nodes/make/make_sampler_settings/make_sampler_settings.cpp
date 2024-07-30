@@ -75,7 +75,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Make Sampler Settings",
             .packageName = RASTER_PACKAGED "make_sampler_settings",
-            .category = Raster::NodeCategory::Utilities
+            .category = Raster::DefaultNodeCategories::s_utilities
         };
     }
 }

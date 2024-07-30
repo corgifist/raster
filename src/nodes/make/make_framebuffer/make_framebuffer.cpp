@@ -94,7 +94,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Make Framebuffer",
             .packageName = RASTER_PACKAGED "make_framebuffer",
-            .category = Raster::NodeCategory::Utilities
+            .category = Raster::DefaultNodeCategories::s_utilities
         };
     }
 }

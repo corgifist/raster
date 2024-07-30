@@ -54,7 +54,7 @@ extern "C" {
         return Raster::NodeDescription{
             .prettyName = "Get Time",
             .packageName = RASTER_PACKAGED "get_time",
-            .category = Raster::NodeCategory::Utilities
+            .category = Raster::DefaultNodeCategories::s_utilities
         };
     }
 }
