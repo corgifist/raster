@@ -4,20 +4,12 @@
 #include "dylib.hpp"
 #include "font/IconsFontAwesome5.h"
 #include "typedefs.h"
+#include "node_category/node_category.h"
 
 namespace Raster {
 
     enum class PinType {
         Input, Output
-    };
-
-    enum class NodeCategory {
-        Resources,
-        Attributes,
-        Utilities,
-        Rendering,
-        SamplerConstants,
-        Other
     };
 
     struct GenericPin {
@@ -103,11 +95,6 @@ namespace Raster {
         std::string prettyName;
         std::string packageName;
         NodeCategory category;
-    };
-
-    struct NodeCategoryUtils {
-        static std::string ToIcon(NodeCategory t_category);
-        static std::string ToString(NodeCategory t_category);
     };
 
     struct NodeImplementation {

@@ -65,7 +65,7 @@ def object_compile(source, arch, args=[], library_path="."):
                 if len(object_compile_processes) >= os.cpu_count():
                     target_process_to_wait = random.choice(list(object_compile_processes.items()))
                     while target_process_to_wait[1].poll() == None:
-                        time.sleep(0.2)
+                        pass
                     del object_compile_processes[target_process_to_wait[0]]
 
                 for k_source_file, v_process in object_compile_processes.items():
@@ -86,8 +86,7 @@ def object_compile(source, arch, args=[], library_path="."):
     
     for k_source_file, v_process in object_compile_processes.items():
         while v_process.poll() == None:
-            time.sleep(0.2)
-
+            pass
     object_compile_processes.clear()
 
     info("object compilation finished successfully")

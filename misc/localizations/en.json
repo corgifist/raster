@@ -106,5 +106,7 @@
     "ID": "ID",
     "NAME": "Name",
     "SELECT_EXTERNAL_PARENT_ATTRIBUTE": "Select External Parent Attribute",
-    "SAMPLER_CONSTANTS": "Sampler Constants"
+    "SAMPLER_CONSTANTS": "Sampler Constants",
+    "NO_SINE_PREVIEW": "No Sine Preview Available",
+    "MATH": "Math"
 }

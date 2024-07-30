@@ -40,10 +40,24 @@
             "Icon": "ICON_FA_MINUS"
         },
         {
-            "Name": "Excluson",
+            "Name": "Exclusion",
             "CodeName": "blend_exclusion",
             "Formula": "(base+blend-2.0*base*blend) * opacity + base * (1.0 - opacity)",
             "Icon": "ICON_FA_EXCLAMATION"
+        },
+        {
+            "Name": "Glow",
+            "CodeName": "blend_glow",
+            "Formula": "blendGlow(base, blend, opacity)",
+            "Icon": "ICON_FA_SPLOTCH",
+            "Functions": "blending/glow"
+        },
+        {
+            "Name": "Hard Light",
+            "CodeName": "Hard Light",
+            "Formula": "blendHardLight(base, blend, opacity)",
+            "Functions": "blending/hard_light",
+            "Icon": "ICON_FA_LIGHTBULB"
         },
         {
             "Name": "Multiply",

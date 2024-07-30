@@ -14,7 +14,6 @@
 
 namespace Raster {
     struct Workspace {
-        static std::vector<NodeCategory> s_categories;
         static std::optional<Project> s_project;
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;

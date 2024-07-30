@@ -23,30 +23,33 @@ build_modules = [
     [ImGui, shared, [freetype]],
     [font, shared],
     [common, shared],
+    [node_category, shared, [raster_common]],
+    [dynamic_math, shared, [raster_common]],
     [traverser, shared, [raster_common]],
     [gpu, shared, [glfw, raster_common, raster_ImGui]],
     [compositor, shared, [raster_gpu, raster_common]]
     [attributes, shared, [raster_common, raster_ImGui]],
-    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor]],
+    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor, raster_node_category]],
     [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app]],
     
 
-    [debug_print, node, [raster_common]],
-    [load_texture_by_path, node, [raster_common, raster_gpu]],
-    [get_attribute_value, node, [raster_common]],
-    ["make/make_framebuffer", node, [raster_common, raster_gpu, raster_compositor]],
-    ["make/make_sampler_settings", node, [raster_common]]
-    [export_renderable, node, [raster_common, raster_gpu, raster_compositor]],
-    [layer2d, node, [raster_common, raster_gpu, raster_compositor]],
-    ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/repeat_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/mirrored_repeat_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    [get_time, node, [raster_common]]
+    [debug_print, node, [raster_common, raster_node_category]],
+    [load_texture_by_path, node, [raster_common, raster_gpu, raster_node_category]],
+    [get_attribute_value, node, [raster_common, raster_node_category]],
+    ["make/make_framebuffer", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+    ["make/make_sampler_settings", node, [raster_common, raster_node_category]]
+    [export_renderable, node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+    [layer2d, node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+    ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+    ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+    ["sampler_constants/repeat_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+    ["sampler_constants/mirrored_repeat_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+    ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+    ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+    [get_time, node, [raster_common, raster_node_category]],
+    ["math/sine", node, [raster_common, raster_dynamic_math]]
 ]
 
 scenario build_master {

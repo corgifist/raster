@@ -49,6 +49,47 @@ vec3 blendDarken(vec3 base, vec3 blend, float opacity) {
 }
 
 
+float blendReflectGlow(float base, float blend) {
+	return (blend==1.0)?blend:min(base*base/(1.0-blend),1.0);
+}
+
+vec3 blendReflectGlow(vec3 base, vec3 blend) {
+	return vec3(blendReflectGlow(base.x,blend.x),blendReflectGlow(base.y,blend.y),blendReflectGlow(base.z,blend.z));
+}
+
+vec3 blendReflectGlow(vec3 base, vec3 blend, float opacity) {
+	return (blendReflectGlow(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendGlow(vec3 base, vec3 blend) {
+	return blendReflectGlow(blend,base);
+}
+
+vec3 blendGlow(vec3 base, vec3 blend, float opacity) {
+	return (blendGlow(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendOverlayHardLight(float base, float blend) {
+	return base<0.5?(2.0*base*blend):(1.0-2.0*(1.0-base)*(1.0-blend));
+}
+
+vec3 blendOverlayHardLight(vec3 base, vec3 blend) {
+	return vec3(blendOverlayHardLight(base.x,blend.x),blendOverlayHardLight(base.y,blend.y),blendOverlayHardLight(base.z,blend.z));
+}
+
+vec3 blendOverlayHardLight(vec3 base, vec3 blend, float opacity) {
+	return (blendOverlayHardLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendHardLight(vec3 base, vec3 blend) {
+	return blendOverlayHardLight(blend,base);
+}
+
+vec3 blendHardLight(vec3 base, vec3 blend, float opacity) {
+	return (blendHardLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+
 vec3 blendMaster(vec3 base, vec3 blend, float opacity) {
     
 	if (uBlendMode == 0) return (min(base+blend,vec3(1.0)) * opacity + base * (1.0 - opacity));
@@ -58,7 +99,9 @@ vec3 blendMaster(vec3 base, vec3 blend, float opacity) {
 	if (uBlendMode == 4) return (blendDarken(base, blend, opacity));
 	if (uBlendMode == 5) return (abs(base-blend) * opacity + base * (1.0 - opacity));
 	if (uBlendMode == 6) return ((base+blend-2.0*base*blend) * opacity + base * (1.0 - opacity));
-	if (uBlendMode == 7) return (base * blend * opacity + base * (1.0 - opacity));
+	if (uBlendMode == 7) return (blendGlow(base, blend, opacity));
+	if (uBlendMode == 8) return (blendHardLight(base, blend, opacity));
+	if (uBlendMode == 9) return (base * blend * opacity + base * (1.0 - opacity));
 
     return mix(base, blend, opacity);
 }
