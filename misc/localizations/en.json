@@ -108,5 +108,10 @@
     "SELECT_EXTERNAL_PARENT_ATTRIBUTE": "Select External Parent Attribute",
     "SAMPLER_CONSTANTS": "Sampler Constants",
     "NO_SINE_PREVIEW": "No Sine Preview Available",
+<<<<<<< HEAD
     "MATH": "Math"
+=======
+    "MATH": "Math",
+    "NO_ABS_PREVIEW": "No Abs Preview Available"
+>>>>>>> 60e4df6 (Testing Git Commits)
 }
