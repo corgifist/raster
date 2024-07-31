@@ -1,0 +1,9 @@
+libraster_*.so
+raster
+output.png
+test.json
+shader_cache/
+editors/
+.vscode/
+build.sh
+hash_build_files/
