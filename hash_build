@@ -35,6 +35,7 @@ build_modules = [
     [core, binary, [raster_common, raster_app]],
     
 
+<<<<<<< HEAD
     [debug_print, node, [raster_common, raster_node_category]],
     [load_texture_by_path, node, [raster_common, raster_gpu, raster_node_category]],
     [get_attribute_value, node, [raster_common, raster_node_category]],
@@ -42,14 +43,36 @@ build_modules = [
     ["make/make_sampler_settings", node, [raster_common, raster_node_category]]
     [export_renderable, node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     [layer2d, node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+=======
+    ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category]],
+
+    ["attributes/get_attribute_value", node, [raster_common, raster_node_category]],
+
+    ["utilities/make/make_framebuffer", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+    ["utilities/make/make_sampler_settings", node, [raster_common, raster_node_category]]
+    ["utilities/get_time", node, [raster_common, raster_node_category]],
+
+
+    ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+    ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+
+>>>>>>> 60e4df6 (Testing Git Commits)
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/repeat_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/mirrored_repeat_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
+<<<<<<< HEAD
     [get_time, node, [raster_common, raster_node_category]],
     ["math/sine", node, [raster_common, raster_dynamic_math]]
+=======
+
+    ["math/sine", node, [raster_common, raster_dynamic_math]],
+    ["math/abs", node, [raster_common, raster_dynamic_math]],
+
+    ["other/debug_print", node, [raster_common, raster_node_category]],
+>>>>>>> 60e4df6 (Testing Git Commits)
 ]
 
 scenario build_master {
@@ -106,6 +129,12 @@ scenario dispatch_module_builder {
         target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
     }
 
+<<<<<<< HEAD
+=======
+    if eq($target_executable_name, core) {
+        target_executable_name = raster
+    }
+>>>>>>> 60e4df6 (Testing Git Commits)
     link_executable($objects, $target_executable_name, $deps, $target_module_type)
 
     if eq($is_node, true) {
