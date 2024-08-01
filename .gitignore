@@ -7,3 +7,5 @@ editors/
 .vscode/
 build.sh
 hash_build_files/
+raster
+HashBuild/__pycache__/*

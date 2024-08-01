@@ -114,6 +114,9 @@ scenario dispatch_module_builder {
         target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
     }
 
+    if eq($target_module_name, core) {
+        target_executable_name = raster
+    }
     link_executable($objects, $target_executable_name, $deps, $target_module_type)
 
     if eq($is_node, true) {
