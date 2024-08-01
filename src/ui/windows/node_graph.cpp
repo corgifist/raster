@@ -17,6 +17,7 @@ namespace Raster {
 
     static ImVec2 s_headerSize, s_originalCursor;
     static float s_maxInputPinX, s_maxOutputPinX;
+    static float s_maxRuntimeInputPinX;
 
     static float s_pinTextScale = 0.7f;
 
@@ -102,6 +103,9 @@ namespace Raster {
         ImGui::SetWindowFontScale(s_pinTextScale);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.5f);
             ImGui::Text(pin.linkedAttribute.c_str());
+            ImGui::SameLine();
+            s_maxRuntimeInputPinX = ImGui::GetCursorPosX() - s_originalCursor.x;
+            ImGui::NewLine();
         ImGui::SetWindowFontScale(1.0f);
     }
 
@@ -113,7 +117,7 @@ namespace Raster {
             cachedValue = Workspace::s_pinCache[pin.pinID];
         }
 
-        float maximumOffset = s_maxInputPinX + s_maxOutputPinX;
+        float maximumOffset = s_maxRuntimeInputPinX + s_maxOutputPinX;
         maximumOffset = std::max(maximumOffset, s_headerSize.x);
 
         float iconCursorX = maximumOffset - 20 + s_maxInputPinX;
@@ -124,7 +128,6 @@ namespace Raster {
 
             Nodes::PinPivotAlignment({1.44f, 0.51f});
 
-            ImGui::SetCursorPosX(s_originalCursor.x + iconCursorX);
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
             for (auto& node : s_currentComposition->nodes) {
@@ -338,6 +341,8 @@ namespace Raster {
                 ImGui::EndTabBar();
             }
 
+            static std::unordered_map<int, ImVec2> s_previousNodeSizes;
+
             static Nodes::NodeId contextNodeID;
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::BeginChild("##nodeGraphContainer", ImGui::GetContentRegionAvail());
@@ -390,10 +395,14 @@ namespace Raster {
                             s_maxOutputPinX = maxOutputXCandidate;
 
                             Nodes::BeginNode(node->nodeID);
+                                s_maxRuntimeInputPinX = 0;
                                 s_originalCursor = ImGui::GetCursorScreenPos();
                                 ImVec2 originalCursor = ImGui::GetCursorScreenPos();
                                 std::string header = node->Icon() + (node->Icon().empty() ? "" : " ") + node->Header();
                                 s_headerSize = ImGui::CalcTextSize(header.c_str());
+                                if (s_maxInputPinX + s_maxOutputPinX > s_headerSize.x) {
+                                    s_headerSize.x = s_maxInputPinX + s_maxOutputPinX;
+                                }
                                 if (node->Footer().has_value()) {
                                     auto footer = node->Footer().value();
                                     ImGui::SetWindowFontScale(0.8f);
@@ -491,6 +500,15 @@ namespace Raster {
                                 }
                                 ImGui::SetWindowFontScale(1.0f);
                             Nodes::EndNode();
+
+                            if (s_previousNodeSizes.find(node->nodeID) != s_previousNodeSizes.end()) {
+                                auto& previousSize = s_previousNodeSizes[node->nodeID];
+                                auto currentSize = Nodes::GetNodeSize(node->nodeID);
+                                if (currentSize != previousSize) {
+                                    Nodes::SetNodePosition(node->nodeID, Nodes::GetNodePosition(node->nodeID) + (previousSize - currentSize));
+                                }
+                            }
+                            s_previousNodeSizes[node->nodeID] = Nodes::GetNodeSize(node->nodeID);
 
                             if (node->bypassed || !node->enabled || node->executionsPerFrame == 0) {
                                 auto& style = Nodes::GetStyle();

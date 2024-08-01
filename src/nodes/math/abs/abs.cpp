@@ -25,7 +25,6 @@ namespace Raster {
 
     void Abs::AbstractRenderProperties() {
         RenderAttributeProperty("Input");
-        RenderAttributeProperty("MultiplyBy");
     }
 
     bool Abs::AbstractDetailsAvailable() {
@@ -61,7 +60,7 @@ namespace Raster {
     }
 
     std::string Abs::AbstractHeader() {
-        return "Sine";
+        return "Abs";
     }
 
     std::string Abs::Icon() {
