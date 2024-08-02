@@ -25,7 +25,12 @@ namespace Raster {
         Json Serialize();
     };
 
+    struct Dispatchers;
+
     struct NodeBase {
+
+        friend struct Dispatchers;
+
         int nodeID;
         int executionsPerFrame;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
@@ -47,6 +52,8 @@ namespace Raster {
 
         void AddOutputPin(std::string t_attribute);
         void AddInputPin(std::string t_attribute);
+
+        void RenderAttributeProperty(std::string t_attribute);
 
         void ClearAttributesCache();
 
@@ -79,8 +86,6 @@ namespace Raster {
         void GenerateFlowPins();
 
         void Initialize();
-
-        void RenderAttributeProperty(std::string t_attribute);
 
         private:
         std::unordered_map<std::string, std::any> m_attributesCache;

@@ -3,7 +3,8 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
 #include "../ImGui/imgui_drag.h"
-#include "common/overlay_dispatchers.h"
+#include "overlay_dispatchers.h"
+#include "string_dispatchers.h"
 #include "common/transform2d.h"
 
 namespace Raster {

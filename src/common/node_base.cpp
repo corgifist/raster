@@ -5,6 +5,7 @@
 #include "font/font.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
@@ -45,6 +46,76 @@ namespace Raster {
             }
         }
         return pinMap;
+    }
+
+    void NodeBase::RenderAttributeProperty(std::string t_attribute) {
+        static std::any placeholder = nullptr;
+        std::any& dynamicCandidate = placeholder;
+        bool candidateWasFound = false;
+        bool usingCachedAttribute = false;
+        if (m_attributesCache.find(t_attribute) != m_attributesCache.end()) {
+            dynamicCandidate = m_attributesCache[t_attribute];
+            candidateWasFound = true;
+            usingCachedAttribute = true;
+        }
+        if (m_attributes.find(t_attribute) != m_attributes.end() && !candidateWasFound) {
+            dynamicCandidate = m_attributes[t_attribute];
+            candidateWasFound = true;
+        }
+        bool isAttributeExposed = false;
+        if (candidateWasFound) {
+            for (auto& pin : inputPins) {
+                if (pin.linkedAttribute == t_attribute) {
+                    isAttributeExposed = true;
+                }
+            }
+            std::string exposeButtonTest = 
+                !isAttributeExposed ? FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE").c_str()) :
+                                     FormatString("%s %s", ICON_FA_LINK_SLASH, Localization::GetString("HIDE").c_str());
+            ImGui::PushFont(Font::s_denseFont);
+                ImGui::SetWindowFontScale(1.2f);
+                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+                ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Button) * ImVec4(isAttributeExposed ? 1.2f : 1.0f));
+            if (ImGui::Button(exposeButtonTest.c_str())) {
+                if (isAttributeExposed) {
+                    int attributeIndex = 0;
+                    for (auto& pin : inputPins) {
+                        if (pin.linkedAttribute == t_attribute) {
+                            break;
+                        }
+                        attributeIndex++;
+                    }
+                    inputPins.erase(inputPins.begin() + attributeIndex);
+                } else {
+                    AddInputPin(t_attribute);
+                }
+            }
+            ImGui::PopStyleColor();
+            if (attributeTreeExpanded) {
+                bool dispatcherWasFound = false;
+                for (auto& dispatcher : Dispatchers::s_propertyDispatchers) {
+                    if (std::type_index(dynamicCandidate.type()) == dispatcher.first) {
+                        if (isAttributeExposed) {
+                            float originalCursorX = ImGui::GetCursorPosX();
+                            ImGui::SetCursorPosX(originalCursorX - ImGui::CalcTextSize(ICON_FA_LINK).x - 5);
+                            ImGui::Text("%s ", ICON_FA_LINK);
+                            ImGui::SameLine();
+                            ImGui::SetCursorPosX(originalCursorX);
+                        }
+                        dispatcherWasFound = true;
+                        dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
+                        if (!usingCachedAttribute) m_attributes[t_attribute] = dynamicCandidate;
+                    } 
+                }
+                if (!dispatcherWasFound) {
+                    ImGui::Text("%s %s '%s'", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_DISPATCHER_WAS_FOUND").c_str(), dynamicCandidate.type().name());
+                }
+                ImGui::TreePop();
+            }
+        }
     }
 
     std::string NodeBase::Header() {
@@ -121,76 +192,6 @@ namespace Raster {
             }
         }
         return std::nullopt;
-    }
-
-    void NodeBase::RenderAttributeProperty(std::string t_attribute) {
-        static std::any placeholder = nullptr;
-        std::any& dynamicCandidate = placeholder;
-        bool candidateWasFound = false;
-        bool usingCachedAttribute = false;
-        if (m_attributesCache.find(t_attribute) != m_attributesCache.end()) {
-            dynamicCandidate = m_attributesCache[t_attribute];
-            candidateWasFound = true;
-            usingCachedAttribute = true;
-        }
-        if (m_attributes.find(t_attribute) != m_attributes.end() && !candidateWasFound) {
-            dynamicCandidate = m_attributes[t_attribute];
-            candidateWasFound = true;
-        }
-        bool isAttributeExposed = false;
-        if (candidateWasFound) {
-            for (auto& pin : inputPins) {
-                if (pin.linkedAttribute == t_attribute) {
-                    isAttributeExposed = true;
-                }
-            }
-            std::string exposeButtonTest = 
-                !isAttributeExposed ? FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE").c_str()) :
-                                     FormatString("%s %s", ICON_FA_LINK_SLASH, Localization::GetString("HIDE").c_str());
-            ImGui::PushFont(Font::s_denseFont);
-                ImGui::SetWindowFontScale(1.2f);
-                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-                ImGui::SetWindowFontScale(1.0f);
-            ImGui::PopFont();
-            ImGui::SameLine();
-            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Button) * ImVec4(isAttributeExposed ? 1.2f : 1.0f));
-            if (ImGui::Button(exposeButtonTest.c_str())) {
-                if (isAttributeExposed) {
-                    int attributeIndex = 0;
-                    for (auto& pin : inputPins) {
-                        if (pin.linkedAttribute == t_attribute) {
-                            break;
-                        }
-                        attributeIndex++;
-                    }
-                    inputPins.erase(inputPins.begin() + attributeIndex);
-                } else {
-                    AddInputPin(t_attribute);
-                }
-            }
-            ImGui::PopStyleColor();
-            if (attributeTreeExpanded) {
-                bool dispatcherWasFound = false;
-                for (auto& dispatcher : Dispatchers::s_propertyDispatchers) {
-                    if (std::type_index(dynamicCandidate.type()) == dispatcher.first) {
-                        if (isAttributeExposed) {
-                            float originalCursorX = ImGui::GetCursorPosX();
-                            ImGui::SetCursorPosX(originalCursorX - ImGui::CalcTextSize(ICON_FA_LINK).x - 5);
-                            ImGui::Text("%s ", ICON_FA_LINK);
-                            ImGui::SameLine();
-                            ImGui::SetCursorPosX(originalCursorX);
-                        }
-                        dispatcherWasFound = true;
-                        dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
-                        if (!usingCachedAttribute) m_attributes[t_attribute] = dynamicCandidate;
-                    } 
-                }
-                if (!dispatcherWasFound) {
-                    ImGui::Text("%s %s '%s'", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_DISPATCHER_WAS_FOUND").c_str(), dynamicCandidate.type().name());
-                }
-                ImGui::TreePop();
-            }
-        }
     }
 
     void NodeBase::RenderDetails() {

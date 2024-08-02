@@ -5,13 +5,8 @@
 #include "typedefs.h"
 #include "font/IconsFontAwesome5.h"
 
-#include "attribute_dispatchers.h"
-#include "string_dispatchers.h"
-#include "preview_dispatchers.h"
-#include "overlay_dispatchers.h"
 #include "composition.h"
 #include "configuration.h"
-#include "dispatchers.h"
 #include "libraries.h"
 #include "localization.h"
 #include "node_base.h"
@@ -27,10 +22,3 @@
     std::type_index(typeid(T))
 
 #define RASTER_COLOR32(R,G,B,A)    (((uint32_t)(A)<<24) | ((uint32_t)(B)<<16) | ((uint32_t)(G)<<8) | ((uint32_t)(R)<<0))
-
-
-namespace Raster {
-
-    struct NodeBase;
-
-}

@@ -3,7 +3,7 @@
 #include "raster.h"
 #include "dylib.hpp"
 #include "font/IconsFontAwesome5.h"
-#include "node_base.h"
+#include "common/node_base.h"
 
 namespace Raster {
     struct AttributeDispatchers {

@@ -10,6 +10,7 @@
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
 #include "node_category/node_category.h"
+#include "dispatchers_installer/dispatchers_installer.h"
 
 namespace Raster {
 
@@ -70,6 +71,7 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        DispatchersInstaller::Initialize();
         Attributes::Initialize();
         Compositor::Initialize();
 

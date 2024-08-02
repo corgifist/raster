@@ -23,6 +23,7 @@ build_modules = [
     [ImGui, shared, [freetype]],
     [font, shared],
     [common, shared],
+    [dispatchers_installer, shared, [raster_common]],
     [node_category, shared, [raster_common]],
     [dynamic_math, shared, [raster_common]],
     [traverser, shared, [raster_common]],
@@ -30,7 +31,7 @@ build_modules = [
     [compositor, shared, [raster_gpu, raster_common]]
     [attributes, shared, [raster_common, raster_ImGui]],
     [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor, raster_node_category]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor, raster_node_category, raster_dispatchers_installer]],
     [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app]],
     
@@ -106,6 +107,10 @@ scenario dispatch_module_builder {
         deps = cat($deps, list_nth($target_build_module, 2))
     }
 
+    if eq($is_node, true) {
+        deps = cat($deps, [raster_dispatchers])
+    }
+
     target_executable_name = $target_module_name
     if eq($target_module_type, shared) {
         target_executable_name = cat($shared_lib_prefix, cat($target_module_name, $shared_lib_ext))
@@ -127,6 +132,7 @@ scenario dispatch_module_builder {
 scenario execute_dispatch_error {
     fatal(cat(cat("Fatal error while trying to build Raster! (no dispatcher for ", list_nth($target_build_module, 0)), " module)"))
     fatal($dispatch_exception_msg)
+    exit(1)
 }
 
 scenario clean {

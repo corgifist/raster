@@ -5,7 +5,7 @@
 #include "dylib.hpp"
 #include "font/IconsFontAwesome5.h"
 
-#include "typedefs.h"
+#include "common/typedefs.h"
 
 namespace Raster {
 
@@ -14,9 +14,6 @@ namespace Raster {
         static StringDispatchersCollection s_stringDispatchers;
         static PreviewDispatchersCollection s_previewDispatchers;
         static OverlayDispatchersCollection s_overlayDispatchers;
-        
-        static int s_overlayAttributeTarget;
-        static Composition* s_overlayCompositionTarget;
 
         static void DispatchProperty(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed);
         static void DispatchString(std::any& t_attribute);

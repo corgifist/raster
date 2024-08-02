@@ -2,6 +2,7 @@
 #include "font/font.h"
 #include "compositor/compositor.h"
 #include "common/transform2d.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
     void RenderingUI::Render() {

@@ -1,6 +1,7 @@
 #include "node_graph.h"
 #include "font/font.h"
 #include "common/ui_shared.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
 

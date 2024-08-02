@@ -1,6 +1,6 @@
 #pragma once
 #include "raster.h"
-#include "typedefs.h"
+#include "common/typedefs.h"
 
 namespace Raster {
     struct PreviewDispatchers {
