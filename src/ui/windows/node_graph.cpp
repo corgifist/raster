@@ -791,6 +791,7 @@ namespace Raster {
                     ImGui::PushFont(Font::s_normalFont);
                     static std::string searchFilter = "";
                     if (!nodeSearchFocused) {
+                        searchFilter = "";
                         ImGui::SetKeyboardFocusHere(0);
                         nodeSearchFocused = true;
                     }
@@ -819,6 +820,10 @@ namespace Raster {
                     for (auto& node : Workspace::s_nodeImplementations) {
                         if (node.description.category != targetCategory && targetCategory > 0) continue;
                         if (!searchFilter.empty() && LowerCase(node.description.prettyName).find(LowerCase(searchFilter)) == std::string::npos) continue;
+                        bool overrideNodeImplementationSelected = false;
+                        if (!hasCandidates && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                            overrideNodeImplementationSelected = true;
+                        }
                         hasCandidates = true;
                         bool nodeImplementationSelected = ImGui::MenuItem(FormatString("%s %s",
                                 NodeCategoryUtils::ToIcon(node.description.category).c_str(), 
@@ -831,7 +836,7 @@ namespace Raster {
                                 ImGui::EndTooltip();
                             }
                         }
-                        if (nodeImplementationSelected) {
+                        if (nodeImplementationSelected || overrideNodeImplementationSelected) {
                             auto targetNode = Workspace::AddNode(node.libraryName);
                             if (targetNode.has_value()) {
                                 auto node = targetNode.value();
