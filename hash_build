@@ -40,9 +40,10 @@ build_modules = [
     ["attributes/get_attribute_value", node, [raster_common, raster_node_category]],
 
     ["utilities/make/make_framebuffer", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
-    ["utilities/make/make_sampler_settings", node, [raster_common, raster_node_category]]
+    ["utilities/make/make_sampler_settings", node, [raster_common, raster_node_category]],
+    ["utilities/make/make_transform2d", node, [raster_common]],
     ["utilities/get_time", node, [raster_common, raster_node_category]],
-
+    ["utilities/transport_value", node, [raster_common, raster_node_category]],
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
@@ -57,6 +58,7 @@ build_modules = [
 
     ["math/sine", node, [raster_common, raster_dynamic_math]],
     ["math/abs", node, [raster_common, raster_dynamic_math]],
+    ["math/multiply", node, [raster_common, raster_dynamic_math]],
 
     ["other/debug_print", node, [raster_common, raster_node_category]]
 ]
@@ -105,10 +107,6 @@ scenario dispatch_module_builder {
 
     if greater(list_len($target_build_module), 2) {
         deps = cat($deps, list_nth($target_build_module, 2))
-    }
-
-    if eq($is_node, true) {
-        deps = cat($deps, [raster_dispatchers])
     }
 
     target_executable_name = $target_module_name

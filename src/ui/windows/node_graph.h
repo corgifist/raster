@@ -6,6 +6,7 @@
 #include "utils/widgets.h"
 
 #include "../../ImGui/imgui.h"
+#include "../../ImGui/imgui_internal.h"
 #include "../../ImGui/imgui_stdlib.h"
 #include "../../ImGui/imgui_node_editor.h"
 

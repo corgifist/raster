@@ -154,6 +154,7 @@ namespace Raster {
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
         s_windows.push_back(UIFactory::SpawnRenderingUI());
         s_windows.push_back(UIFactory::SpawnTimelineUI());
+        s_windows.push_back(UIFactory::SpawnAssetManagerUI());
     }
 
     void App::RenderLoop() {
@@ -169,6 +170,7 @@ namespace Raster {
 
             GPU::BeginFrame();
                 GPU::BindFramebuffer(std::nullopt);
+                Compositor::s_bundles.clear();
                 Compositor::EnsureResolutionConstraints();
                 if (Workspace::s_project.has_value()) {
                     auto& project = Workspace::s_project.value();
@@ -191,6 +193,9 @@ namespace Raster {
     }
 
     void App::Terminate() {
+        if (Workspace::s_project.has_value()) {
+            Workspace::GetProject().compositions.clear();
+        }
         GPU::Terminate();
     }
 }

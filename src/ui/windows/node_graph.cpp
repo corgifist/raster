@@ -342,8 +342,6 @@ namespace Raster {
                 ImGui::EndTabBar();
             }
 
-            static std::unordered_map<int, ImVec2> s_previousNodeSizes;
-
             static Nodes::NodeId contextNodeID;
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::BeginChild("##nodeGraphContainer", ImGui::GetContentRegionAvail());
@@ -458,11 +456,11 @@ namespace Raster {
 
 
                                 // Pins Rendering
-                                if (!exposeAllPins) {
+                                if (!exposeAllPins && !drawLastLine) {
                                     for (auto& pin : node->inputPins) {
                                         RenderInputPin(pin);
                                     }
-                                } else if (exposeAllPins) {
+                                } else if (exposeAllPins || drawLastLine) {
                                     std::vector<std::string> excludedAttributes;
                                     for (auto& pin : node->inputPins) {
                                         RenderInputPin(pin);
@@ -501,15 +499,6 @@ namespace Raster {
                                 }
                                 ImGui::SetWindowFontScale(1.0f);
                             Nodes::EndNode();
-
-                            if (s_previousNodeSizes.find(node->nodeID) != s_previousNodeSizes.end()) {
-                                auto& previousSize = s_previousNodeSizes[node->nodeID];
-                                auto currentSize = Nodes::GetNodeSize(node->nodeID);
-                                if (currentSize != previousSize) {
-                                    Nodes::SetNodePosition(node->nodeID, Nodes::GetNodePosition(node->nodeID) + (previousSize - currentSize));
-                                }
-                            }
-                            s_previousNodeSizes[node->nodeID] = Nodes::GetNodeSize(node->nodeID);
 
                             if (node->bypassed || !node->enabled || node->executionsPerFrame == 0) {
                                 auto& style = Nodes::GetStyle();
@@ -754,6 +743,34 @@ namespace Raster {
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
                         openSearchPopup = true;
                     }
+                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str())) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
+                        for (auto& entry : Attributes::s_attributes) {
+                            if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
+                                auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
+                                if (attributeCandidate.has_value()) {
+                                    s_currentComposition->attributes.push_back(attributeCandidate.value());
+                                    Workspace::s_selectedAttributes = {attributeCandidate.value()->id};
+                                    auto attributeNode = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value").value();
+                                    attributeNode->SetAttributeValue("AttributeID", s_currentComposition->attributes.back()->id);
+                                    s_currentComposition->nodes.push_back(attributeNode);
+                                    Nodes::BeginNode(attributeNode->nodeID);
+                                    Nodes::EndNode();
+                                    Nodes::SetNodePosition(attributeNode->nodeID, s_mousePos);
+                                    Nodes::SelectNode(attributeNode->nodeID);
+                                    Nodes::NavigateToSelection();
+                                }
+                            }
+                        }
+                        ImGui::EndMenu();
+                    }
+                    ImGui::Separator();
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("NAVIGATE_TO_SELECTED").c_str()).c_str())) {
+                        Nodes::NavigateToSelection();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("NAVIGATE_TO_FIT").c_str()).c_str())) {
+                        Nodes::NavigateToContent();
+                    }
                     ImGui::PopFont();
                     ImGui::EndPopup();
                 }
@@ -766,45 +783,63 @@ namespace Raster {
                     ImGui::OpenPopup("##createNewNodeSearch");
                     drawLastLine = true;
                 }
-                if (ImGui::BeginPopup("##createNewNodeSearch", ImGuiWindowFlags_AlwaysAutoResize)) {
+                static bool nodeSearchFocused = false;
+                if (ImGui::BeginPopup("##createNewNodeSearch")) {
                     if (ignoreLastLine) drawLastLine = false;
                     if (!nodeSearchMousePos.has_value()) nodeSearchMousePos = s_mousePos;
+                    static ImVec2 popupSize = ImVec2(300, 250);
                     ImGui::PushFont(Font::s_normalFont);
                     static std::string searchFilter = "";
-                    ImGui::InputText("##searchFilter", &searchFilter);
+                    if (!nodeSearchFocused) {
+                        ImGui::SetKeyboardFocusHere(0);
+                        nodeSearchFocused = true;
+                    }
+                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                        ImGui::InputTextWithHint("##searchFilter",FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &searchFilter);
+                    ImGui::PopItemWidth();
                     ImGui::SameLine(0, 0);
                     float searchBarWidth = ImGui::GetCursorPosX();
                     ImGui::NewLine();
-                    ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str());
-                    static float tabBarHeight = 0;
-                    NodeCategory targetCategory = 0;
-                    ImGui::BeginChild("##tabChild", ImVec2(searchBarWidth, tabBarHeight));
-                        if (ImGui::BeginTabBar("##searchCategories")) {
-                            for (auto& category : NodeCategoryUtils::s_categoriesOrder) {
-                                if (ImGui::BeginTabItem(NodeCategoryUtils::ToString(category).c_str())) {
-                                    targetCategory = category;
-                                    ImGui::EndTabItem();
-                                }
-                            }
-                            ImGui::EndTabBar();
+                    ImGui::Separator();
+                    static NodeCategory targetCategory = 0;
+                    ImGui::BeginChild("##tabChild", ImVec2(160, 0), ImGuiChildFlags_AutoResizeY);
+                        if (ImGui::ButtonEx(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ALL_NODES").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                            targetCategory = 0;
                         }
-                        tabBarHeight = ImGui::GetCursorPosY();
+                        for (auto& category : NodeCategoryUtils::s_categoriesOrder) {
+                            if (ImGui::ButtonEx(NodeCategoryUtils::ToString(category).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                                targetCategory = category;
+                            }
+                        }
+                        
                     ImGui::EndChild();
-                    ImGui::BeginChild("##nodeCandidates", ImVec2(searchBarWidth, 200));
+                    ImGui::SameLine();
+                    ImGui::BeginChild("##nodeCandidates", ImVec2(200, 200));
                     bool hasCandidates = false;
                     for (auto& node : Workspace::s_nodeImplementations) {
-                        if (node.description.category != targetCategory) continue;
-                        if (!searchFilter.empty() && node.description.prettyName.find(searchFilter) == std::string::npos) continue;
+                        if (node.description.category != targetCategory && targetCategory > 0) continue;
+                        if (!searchFilter.empty() && LowerCase(node.description.prettyName).find(LowerCase(searchFilter)) == std::string::npos) continue;
                         hasCandidates = true;
-                        if (ImGui::MenuItem(FormatString("%s %s",
+                        bool nodeImplementationSelected = ImGui::MenuItem(FormatString("%s %s",
                                 NodeCategoryUtils::ToIcon(node.description.category).c_str(), 
-                                node.description.prettyName.c_str()).c_str())) {
+                                node.description.prettyName.c_str()).c_str());
+                        if (ImGui::IsItemHovered()) {
+                            if (ImGui::BeginTooltip()) {
+                                ImGui::Text("%s %s: %s", ICON_FA_BOX_OPEN, Localization::GetString("PACKAGE_NAME").c_str(), node.description.packageName.c_str());
+                                ImGui::Text("%s %s: %s", ICON_FA_STAR, Localization::GetString("PRETTY_NODE_NAME").c_str(), node.description.prettyName.c_str());
+                                ImGui::Text("%s %s: %s", ICON_FA_LIST, Localization::GetString("CATEGORY").c_str(), NodeCategoryUtils::ToString(node.description.category).c_str());
+                                ImGui::EndTooltip();
+                            }
+                        }
+                        if (nodeImplementationSelected) {
                             auto targetNode = Workspace::AddNode(node.libraryName);
                             if (targetNode.has_value()) {
                                 auto node = targetNode.value();
                                 Nodes::BeginNode(node->nodeID);
                                     Nodes::SetNodePosition(node->nodeID, nodeSearchMousePos.value());
                                 Nodes::EndNode();
+                                Nodes::SelectNode(node->nodeID, false);
+                                Nodes::NavigateToSelection();
                                 nodeSearchMousePos = std::nullopt;
                                 if (drawLastLine) {
                                     auto lastLinePinCandidate = Workspace::GetPinByPinID((int) connectedLastLinePin.Get());
@@ -838,6 +873,7 @@ namespace Raster {
                     }
                     ImGui::EndChild();
                     ImGui::PopFont();
+                    popupSize = ImGui::GetWindowSize();
                     ImGui::EndPopup();
                     if (dimPercentage < 0) {
                         dimPercentage = 0.0f;
@@ -847,8 +883,10 @@ namespace Raster {
                     dimming = false;
                     popupVisible = false;
                     drawLastLine = false;
+                    nodeSearchFocused = false;
                 } else {
                     drawLastLine = false;
+                    nodeSearchFocused = false;
                 }
                 if (!popupVisible && !ImGui::GetIO().MouseDown[ImGuiMouseButton_Right]) {
                     dimPercentage -= ImGui::GetIO().DeltaTime * 2.5;

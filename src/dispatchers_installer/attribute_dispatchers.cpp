@@ -120,12 +120,18 @@ namespace Raster {
     }
 
     void AttributeDispatchers::DispatchVec4Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
-        static std::unordered_map<std::string, bool> s_interpretAsColor;
-        std::string id = FormatString("##%s%i", t_attribute.c_str(), t_owner->nodeID);
-        if (s_interpretAsColor.find(id) == s_interpretAsColor.end()) {
-            s_interpretAsColor[id] = false;
+        auto& project = Workspace::GetProject();
+        if (!project.customData.contains("Vec4AttributeDispatcherData")) {
+            project.customData["Vec4AttributeDispatcherData"] = {
+                {"Placeholder", false}
+            };
         }
-        bool& interpretAsColor = s_interpretAsColor[id];
+        auto& interpretAsColorDict = project.customData["Vec4AttributeDispatcherData"];
+        std::string id = FormatString("##%s%i", t_attribute.c_str(), t_owner->nodeID);
+        if (!interpretAsColorDict.contains(id)) {
+            interpretAsColorDict[id] = false;
+        }
+        bool interpretAsColor = interpretAsColorDict[id];
 
         glm::vec4 v = std::any_cast<glm::vec4>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
@@ -144,6 +150,43 @@ namespace Raster {
         }
 
         t_value = v;
+
+        interpretAsColorDict[id] = interpretAsColor;
+    }
+
+    void AttributeDispatchers::DispatchVec3Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+        auto& project = Workspace::GetProject();
+        if (!project.customData.contains("Vec3AttributeDispatcherData")) {
+            project.customData["Vec3AttributeDispatcherData"] = {
+                {"Placeholder", false}
+            };
+        }
+        auto& interpretAsColorDict = project.customData["Vec3AttributeDispatcherData"];
+        std::string id = FormatString("##%s%i", t_attribute.c_str(), t_owner->nodeID);
+        if (!interpretAsColorDict.contains(id)) {
+            interpretAsColorDict[id] = false;
+        }
+        bool interpretAsColor = interpretAsColorDict[id];
+
+        auto v = std::any_cast<glm::vec3>(t_value);
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+        if (ImGui::Button(interpretAsColor ? ICON_FA_DROPLET : ICON_FA_EXPAND)) {
+            interpretAsColor = !interpretAsColor;
+        }
+        ImGui::SetItemTooltip("%s %s", interpretAsColor ? ICON_FA_DROPLET : ICON_FA_EXPAND, Localization::GetString("VECTOR_INTERPRETATION_MODE").c_str());
+        ImGui::SameLine();
+        if (!interpretAsColor) {
+            ImGui::DragFloat3(FormatString("##%s", t_attribute.c_str()).c_str(), glm::value_ptr(v));
+        } else {
+            ImGui::PushItemWidth(200);
+                ImGui::ColorPicker3("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
+            ImGui::PopItemWidth();
+        }
+
+        t_value = v;
+
+        interpretAsColorDict[id] = interpretAsColor;
     }
 
     void AttributeDispatchers::DispatchTransform2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {

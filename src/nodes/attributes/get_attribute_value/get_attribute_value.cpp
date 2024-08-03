@@ -49,7 +49,8 @@ namespace Raster {
     }
 
     void GetAttributeValue::AbstractRenderProperties() {
-        ImGui::Text(ICON_FA_CIRCLE_INFO " You Can Access Attribute by It's Name or It's ID");
+        ImGui::Text(ICON_FA_CIRCLE_INFO " You Can Access Attribute by Name or ID");
+        ImGui::Spacing();
         RenderAttributeProperty("AttributeName");
         RenderAttributeProperty("AttributeID");
     }
@@ -68,9 +69,9 @@ namespace Raster {
 
     std::string GetAttributeValue::AbstractHeader() {
         std::string base = "Get Attribute Value";
-        auto attributeNameCandidate = GetAttribute<std::string>("AttributeName");
-        if (attributeNameCandidate.has_value() && !attributeNameCandidate.value().empty()) {
-            return base + " (" + attributeNameCandidate.value() + ")";
+        auto attributeCandidate = GetCompositionAttribute();
+        if (attributeCandidate.has_value()) {
+            return base + " (" + attributeCandidate.value()->name + ")";
         }
         return base;
     }

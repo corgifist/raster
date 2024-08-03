@@ -12,6 +12,7 @@ namespace Raster {
         this->blendMode = "";
         this->opacity = 1.0f;
         this->opacityAttributeID = -1;
+        this->enabled = true;
     }
 
     Composition::Composition(Json data) {
@@ -23,6 +24,7 @@ namespace Raster {
         this->blendMode = data["BlendMode"];
         this->opacity = data["Opacity"];
         this->opacityAttributeID = data["OpacityAttributeID"];
+        this->enabled = data["Enabled"];
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -67,6 +69,7 @@ namespace Raster {
         data["BlendMode"] = blendMode;
         data["Opacity"] = opacity;
         data["OpacityAttributeID"] = opacityAttributeID;
+        data["Enabled"] = enabled;
         data["Nodes"] = {};
         for (auto& node : nodes) {
             data["Nodes"].push_back(node->Serialize());

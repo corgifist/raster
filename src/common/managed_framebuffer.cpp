@@ -5,6 +5,12 @@ namespace Raster {
         this->m_internalFramebuffer = Framebuffer();
     }
 
+    ManagedFramebuffer::~ManagedFramebuffer() {
+        if (m_internalFramebuffer.handle) {
+            DestroyInternalFramebuffer();
+        }
+    }
+
     Framebuffer& ManagedFramebuffer::Get(std::optional<Framebuffer> t_framebuffer) {
         auto requiredResolution = Compositor::GetRequiredResolution();
         if (!m_internalFramebuffer.handle) {

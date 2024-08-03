@@ -17,6 +17,7 @@ namespace Raster {
         std::optional<TextureArchive> archive;
 
         LoadTextureByPath();
+        ~LoadTextureByPath();
         
         void UpdateTextureArchive();
 

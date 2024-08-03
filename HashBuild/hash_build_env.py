@@ -64,8 +64,16 @@ def object_compile(source, arch, args=[], library_path="."):
                 erasing_targets = []
                 if len(object_compile_processes) >= os.cpu_count():
                     target_process_to_wait = random.choice(list(object_compile_processes.items()))
-                    while target_process_to_wait[1].poll() == None:
+                    k_source_file = target_process_to_wait[0]
+                    v_process = target_process_to_wait[1]
+                    poll_result = v_process.poll()
+                    while (poll_result := v_process.poll()) == None:
                         pass
+                    if poll_result != 0:
+                        os.remove(f"hash_build_files/{hash_string(k_source_file)}.hash")
+                        os.remove(f"hash_build_files/{name_hash}")
+                        fatal(f"compiler returned non-zero code while compiling {k_source_file}")
+                        sys.exit(1)
                     del object_compile_processes[target_process_to_wait[0]]
 
                 for k_source_file, v_process in object_compile_processes.items():
@@ -75,7 +83,7 @@ def object_compile(source, arch, args=[], library_path="."):
                             os.remove(f"hash_build_files/{hash_string(k_source_file)}.hash")
                             os.remove(f"hash_build_files/{name_hash}")
                             fatal(f"compiler returned non-zero code while compiling {k_source_file}")
-                            exit(1)
+                            sys.exit(1)
                         erasing_targets.append(k_source_file)
 
                 for target in erasing_targets:
@@ -85,8 +93,12 @@ def object_compile(source, arch, args=[], library_path="."):
                 object_compile_processes[file] = subprocess.Popen(list(filter(lambda x: x != '', compile_command.split(" "))), stdout=sys.stdout, stderr=sys.stderr)
     
     for k_source_file, v_process in object_compile_processes.items():
-        while v_process.poll() == None:
+        poll_result = v_process.poll()
+        while (poll_result := v_process.poll()) == None:
             pass
+        if poll_result != 0:
+            sys.exit(1)
+
     object_compile_processes.clear()
 
     info("object compilation finished successfully")
@@ -140,7 +152,7 @@ def link_executable(objects, out, link_libraries=[], shared='null', basename='im
     link_process = subprocess.run(list(filter(lambda x: x != '', link_command.split(" "))), stdout=sys.stdout, stderr=sys.stderr)
     if link_process.returncode != 0:
         fatal("linker returned non-zero code!")
-        exit(1)
+        sys.exit(1)
     return True
 
 def list_append(list, value):
@@ -202,7 +214,8 @@ functions = {
     "fatal": fatal,
     'not': _not,
     "mv": shutil.move,
-    "load_module": load_module
+    "load_module": load_module,
+    'exit': sys.exit
 }
 
 def arg_wrapper(func, args):
@@ -211,4 +224,4 @@ def arg_wrapper(func, args):
     except Exception as ex:
         fatal(f"fatal error at arg_wrapper: {str(func)}, {str(args)}")
         print(str(ex))
-        exit(1)
+        sys.exit(1)

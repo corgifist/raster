@@ -25,6 +25,7 @@ namespace Raster {
             {ATTRIBUTE_TYPE(int), StringDispatchers::DispatchIntValue},
             {ATTRIBUTE_TYPE(Texture), StringDispatchers::DispatchTextureValue},
             {ATTRIBUTE_TYPE(glm::vec4), StringDispatchers::DispatchVector4Value},
+            {ATTRIBUTE_TYPE(glm::vec3), StringDispatchers::DispatchVector3Value},
             {ATTRIBUTE_TYPE(Framebuffer), StringDispatchers::DispatchFramebufferValue},
             {ATTRIBUTE_TYPE(SamplerSettings), StringDispatchers::DispatchSamplerSettingsValue},
             {ATTRIBUTE_TYPE(Transform2D), StringDispatchers::DispatchTransform2DValue},

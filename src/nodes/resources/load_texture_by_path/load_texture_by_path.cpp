@@ -16,6 +16,13 @@ namespace Raster {
         this->archive = std::nullopt;
     }
 
+    LoadTextureByPath::~LoadTextureByPath() {
+        if (archive.has_value()) {
+            auto& archiveValue = archive.value();
+            GPU::DestroyTexture(archiveValue.texture);
+        }
+    }
+
     AbstractPinMap LoadTextureByPath::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
 

@@ -1492,7 +1492,7 @@ struct EditorContext
 
     ImVec2 AlignPointToGrid(const ImVec2& p) const
     {
-        return ImVec2(AlignPointToGrid(p.x), AlignPointToGrid(p.y));
+        return p;
     }
 
     ImDrawList* GetDrawList() { return m_DrawList; }

@@ -15,6 +15,7 @@ namespace Raster {
         std::string blendMode;
         float opacity;
         int opacityAttributeID;
+        bool enabled;
 
         Composition();
         Composition(Json data);

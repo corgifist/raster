@@ -44,6 +44,14 @@ namespace Raster {
         ImGui::PopItemWidth();
     }
 
+    void StringDispatchers::DispatchVector3Value(std::any& t_attribute) {
+        auto vector = std::any_cast<glm::vec3>(t_attribute);
+        ImGui::Text("%s %s: (%0.2f; %0.2f; %0.2f)", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE").c_str(), vector.x, vector.y, vector.z);
+        ImGui::PushItemWidth(200);
+            ImGui::ColorPicker3("##colorPreview", glm::value_ptr(vector), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
+        ImGui::PopItemWidth();
+    }
+
     void StringDispatchers::DispatchFramebufferValue(std::any& t_attribute) {
         auto framebuffer = std::any_cast<Framebuffer>(t_attribute);
         ImGui::Text("%s %s: %i", ICON_FA_IMAGE, Localization::GetString("ATTACHMENTS_COUNT").c_str(), (int) framebuffer.attachments.size());

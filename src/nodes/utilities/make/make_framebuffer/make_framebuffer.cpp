@@ -24,6 +24,16 @@ namespace Raster {
         }
     }
 
+    MakeFramebuffer::~MakeFramebuffer() {
+        if (m_internalFramebuffer.has_value()) {
+            auto& framebuffer = m_internalFramebuffer.value();
+            for (auto& attachment : framebuffer.attachments) {
+                GPU::DestroyTexture(attachment);
+            }
+            GPU::DestroyFramebuffer(framebuffer);
+        }
+    }
+
     AbstractPinMap MakeFramebuffer::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
 

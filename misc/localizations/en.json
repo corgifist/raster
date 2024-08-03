@@ -109,5 +109,11 @@
     "SAMPLER_CONSTANTS": "Sampler Constants",
     "NO_SINE_PREVIEW": "No Sine Preview Available",
     "MATH": "Math",
-    "NO_ABS_PREVIEW": "No Abs Preview Available"
+    "NO_ABS_PREVIEW": "No Abs Preview Available",
+    "ALL_NODES": "All Nodes",
+    "CREATE_NEW_ATTRIBUTE": "Create New Attribute",
+    "ENABLED_DISABLED": "Enable/Disable",
+    "ASSET_MANAGER": "Asset Manager",
+    "NAVIGATE_TO_SELECTED": "Navigate to Selected",
+    "NAVIGATE_TO_FIT": "Navigate to Fit"
 }

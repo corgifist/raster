@@ -342,13 +342,14 @@ namespace Raster {
                 buttonColor = 1.1f * buttonColor;
                 isCompositionSelected = true;
             }
+            if (!composition->enabled) buttonColor = buttonColor * 0.8f;
             buttonColor.w = 1.0f;
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
             ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, buttonColor * 1.1f);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor * 1.2f);
             ImVec2 buttonCursor = ImGui::GetCursorPos();
-            ImVec2 buttonSize = ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame, LAYER_HEIGHT);
+            ImVec2 buttonSize = ImVec2(std::ceil((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame), LAYER_HEIGHT);
             bool compositionHovered;
             bool compositionPressed = ClampedButton(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str(), buttonSize, 0, compositionHovered);
             if (compositionHovered) {
@@ -607,6 +608,7 @@ namespace Raster {
             if (ImGui::Button(attributeSelectorText.c_str())) {
                 ImGui::OpenPopup("##opacityAttributeChooser");
             } 
+            ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("OPACITY_ATTRIBUTE").c_str());
             if (attributeOpacityUsed && !correctOpacityTypeUsed) {
                 ImGui::SetItemTooltip("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BAD_OPACITY_ATTRIBUTE").c_str());
             } else {
@@ -615,8 +617,7 @@ namespace Raster {
             if (ImGui::BeginPopup("##opacityAttributeChooser")) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("OPACITY_ATTRIBUTE").c_str()).c_str());
                 static std::string attributeFilter = "";
-                ImGui::InputText("##attributeSearchFilter", &attributeFilter);
-                ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
+                ImGui::InputTextWithHint("##attributeSearchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &attributeFilter);
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
                     t_composition->opacityAttributeID = -1;
                 }
@@ -633,15 +634,14 @@ namespace Raster {
             ImGui::SameLine(0, 2.0f);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SliderFloat("##compositionOpacity", &opacity, 0, 1);
+            ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("COMPOSITION_OPACITY").c_str());
             ImGui::PopItemWidth();
             if (!attributeOpacityUsed) t_composition->opacity = opacity;
             ImGui::EndChild();
-            ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("COMPOSITION_OPACITY").c_str());
-            ImGui::InputText("##blendFilter", &blendFilter);
+            ImGui::InputTextWithHint("##blendFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &blendFilter);
             ImGui::SameLine(0, 0);
             searchBarWidth = ImGui::GetCursorPosX();
             ImGui::NewLine();
-            ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
             ImGui::BeginChild("##blendCandidates", ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY);
                 auto& blending = Compositor::s_blending;
                 if (ImGui::MenuItem(FormatString("%s %s Normal", t_composition->blendMode.empty() ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
@@ -711,6 +711,9 @@ namespace Raster {
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("SELECT_COMPOSITION").c_str()).c_str())) {
             AppendSelectedCompositions(t_composition);
         }
+        if (ImGui::MenuItem(FormatString("%s %s", t_composition->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED_DISABLED").c_str()).c_str())) {
+            t_composition->enabled = !t_composition->enabled;
+        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Delete")) {
             auto selectedCompositionsCopy = selectedCompositions;
             for (auto& compositionID : selectedCompositions) {
@@ -720,7 +723,6 @@ namespace Raster {
                 }
             }
         }
-
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+C")) {
             ProcessCopyAction();
         }
@@ -916,6 +918,10 @@ namespace Raster {
                     targetCompositionDelete = &composition;
                 }
                 ImGui::SameLine();
+                if (ImGui::Button(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF)) {
+                    composition.enabled = !composition.enabled;
+                }
+                ImGui::SameLine();
                 if (ImGui::Button(ICON_FA_PLUS)) {
                     ImGui::OpenPopup(FormatString("##createAttribute%i", composition.id).c_str());
                 }
@@ -1023,7 +1029,7 @@ namespace Raster {
 
     float TimelineUI::ProcessLayerScroll() {
         ImGui::SetCursorPos({0, 0});
-        float mouseX = GetRelativeMousePos().x;
+        float mouseX = GetRelativeMousePos().x - ImGui::GetScrollX();
         float eventZone = ImGui::GetWindowSize().x / 10.0f;
         if (mouseX > ImGui::GetWindowSize().x - eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
             ImGui::SetScrollX(ImGui::GetScrollX() + 5);

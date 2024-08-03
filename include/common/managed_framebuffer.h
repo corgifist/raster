@@ -8,7 +8,10 @@ namespace Raster {
     struct ManagedFramebuffer {
     public:
         ManagedFramebuffer();
+        ~ManagedFramebuffer();
+
         Framebuffer& Get(std::optional<Framebuffer> t_framebuffer);
+        void Destroy();
 
     private:
         void EnsureResolutionConstraints();
