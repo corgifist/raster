@@ -189,6 +189,18 @@ namespace Raster {
         interpretAsColorDict[id] = interpretAsColor;
     }
 
+    void AttributeDispatchers::DispatchVec2Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+        auto& project = Workspace::GetProject();
+
+        auto v = std::any_cast<glm::vec2>(t_value);
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+        ImGui::DragFloat2(FormatString("##%s", t_attribute.c_str()).c_str(), glm::value_ptr(v));
+
+        t_value = v;
+
+    }
+
     void AttributeDispatchers::DispatchTransform2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
         auto fitSize = FitRectInRect({ImGui::GetWindowSize().x, 256}, Workspace::s_project.value().preferredResolution);
         ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);

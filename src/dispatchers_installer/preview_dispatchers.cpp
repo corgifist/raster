@@ -129,6 +129,18 @@ namespace Raster {
 
             auto footerText = FormatString("%ix%i; %s (%s); %s %0.3f", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str(), ICON_FA_IMAGE, (float) texture.width / (float) texture.height);
             ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
+            ImGui::SetCursorPos({0, 0});
+            float shadowHeight = 30;
+            int shadowAlpha = 128;
+            RectBounds shadowBounds(
+                ImVec2(0, ImGui::GetWindowSize().y - shadowHeight),
+                ImVec2(ImGui::GetWindowSize().x, shadowHeight)
+            );
+            ImGui::GetWindowDrawList()->AddRectFilledMultiColor(
+                shadowBounds.UL, shadowBounds.BR,
+                IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 0), 
+                IM_COL32(0, 0, 0, shadowAlpha), IM_COL32(0, 0, 0, shadowAlpha)
+            );
             ImGui::SetCursorPos({
                 ImGui::GetWindowSize().x / 2.0f - footerSize.x / 2.0f,
                 ImGui::GetWindowSize().y - footerSize.y
@@ -272,6 +284,98 @@ namespace Raster {
                 ImGui::ColorPicker4("##colorPreview", vectorPtr, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
             ImGui::PopItemWidth();
         }
+        childSize = ImGui::GetWindowSize();
+        ImGui::EndChild();
+    }
+
+    void PreviewDispatchers::DispatchVector3Value(std::any& t_attribute) {
+        auto vector = std::any_cast<glm::vec3>(t_attribute);
+        static bool interpretAsColor = false;
+        static float interpreterModeSizeX = 0;
+
+        ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+        ImVec4 reservedButtonColor = buttonColor;
+
+        if (!interpretAsColor) buttonColor = buttonColor * 1.2f;
+        buttonColor.w = 1.0f;
+
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - interpreterModeSizeX / 2.0f);
+
+        float beginCursorX = ImGui::GetCursorPosX();
+        ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+        if (ImGui::Button(FormatString("%s %s", interpretAsColor ? ICON_FA_EXPAND : ICON_FA_CHECK, Localization::GetString("VECTOR").c_str()).c_str())) {
+            interpretAsColor = false;
+        }
+        buttonColor = reservedButtonColor;
+
+        ImGui::SameLine();
+
+        if (interpretAsColor) buttonColor = buttonColor * 1.2f;
+        buttonColor.w = 1.0f;
+        ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+        if (ImGui::Button(FormatString("%s %s", interpretAsColor ? ICON_FA_CHECK : ICON_FA_DROPLET, Localization::GetString("COLOR").c_str()).c_str())) {
+            interpretAsColor = true;
+        }
+        buttonColor = reservedButtonColor;
+
+        ImGui::PopStyleColor(2);
+        ImGui::SameLine();
+
+
+        interpreterModeSizeX = ImGui::GetCursorPosX() - beginCursorX;
+
+        ImGui::NewLine();
+
+        static ImVec2 childSize = ImVec2(100, 100);
+        ImGui::SetCursorPos(ImVec2{
+            ImGui::GetWindowSize().x / 2.0f - childSize.x / 2.0f,
+            ImGui::GetWindowSize().y / 2.0f - childSize.y / 2.0f
+        });
+
+        ImGui::BeginChild("##vector3Container", ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+        if (!interpretAsColor) {
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1, 0, 0, 1));
+            ImGui::PlotVar(FormatString("%s %s", ICON_FA_STOPWATCH, "(x)").c_str(), vector.x);
+
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0, 1, 0, 1));
+            ImGui::PlotVar(FormatString("%s %s", ICON_FA_STOPWATCH, "(y)").c_str(), vector.y);
+
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0, 0, 1, 1));
+            ImGui::PlotVar(FormatString("%s %s", ICON_FA_STOPWATCH, "(z)").c_str(), vector.z);\
+
+            ImGui::PopStyleColor(2);
+        } else {
+            float vectorPtr[4] = {
+                vector.x,
+                vector.y,
+                vector.z
+            };
+            ImGui::PushItemWidth(200);
+                ImGui::ColorPicker3("##colorPreview", vectorPtr, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
+            ImGui::PopItemWidth();
+        }
+        childSize = ImGui::GetWindowSize();
+        ImGui::EndChild();
+    }
+
+    void PreviewDispatchers::DispatchVector2Value(std::any& t_attribute) {
+        auto vector = std::any_cast<glm::vec2>(t_attribute);
+
+        static ImVec2 childSize = ImVec2(100, 100);
+        ImGui::SetCursorPos(ImVec2{
+            ImGui::GetWindowSize().x / 2.0f - childSize.x / 2.0f,
+            ImGui::GetWindowSize().y / 2.0f - childSize.y / 2.0f
+        });
+
+        ImGui::BeginChild("##vector2Container", ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1, 0, 0, 1));
+        ImGui::PlotVar(FormatString("%s %s", ICON_FA_STOPWATCH, "(x)").c_str(), vector.x);
+
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0, 1, 0, 1));
+        ImGui::PlotVar(FormatString("%s %s", ICON_FA_STOPWATCH, "(y)").c_str(), vector.y);
+
+        ImGui::PopStyleColor(2);
         childSize = ImGui::GetWindowSize();
         ImGui::EndChild();
     }

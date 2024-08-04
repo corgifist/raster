@@ -40,6 +40,11 @@ namespace Raster {
     }
 
     void MakeTransform2D::AbstractRenderProperties() {
+        RenderAttributeProperty("Position");
+        RenderAttributeProperty("Size");
+        RenderAttributeProperty("Anchor");
+        RenderAttributeProperty("Angle");
+        RenderAttributeProperty("ParentTransform");
     }
 
     bool MakeTransform2D::AbstractDetailsAvailable() {

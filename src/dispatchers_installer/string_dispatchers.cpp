@@ -53,6 +53,11 @@ namespace Raster {
         ImGui::PopItemWidth();
     }
 
+    void StringDispatchers::DispatchVector2Value(std::any& t_attribute) {
+        auto vector = std::any_cast<glm::vec2>(t_attribute);
+        ImGui::Text("%s %s: (%0.2f; %0.2f)", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE").c_str(), vector.x, vector.y);
+    }
+
     void StringDispatchers::DispatchFramebufferValue(std::any& t_attribute) {
         auto framebuffer = std::any_cast<Framebuffer>(t_attribute);
         ImGui::Text("%s %s: %i", ICON_FA_IMAGE, Localization::GetString("ATTACHMENTS_COUNT").c_str(), (int) framebuffer.attachments.size());
