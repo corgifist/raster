@@ -5,14 +5,10 @@
 namespace Raster {
 
     std::optional<Project> Workspace::s_project;
-    std::vector<int> Workspace::s_selectedCompositions;
     std::vector<NodeImplementation> Workspace::s_nodeImplementations;
     Configuration Workspace::s_configuration;
 
     std::unordered_map<int, std::any> Workspace::s_pinCache;
-
-    std::vector<int> Workspace::s_selectedNodes;
-    std::vector<int> Workspace::s_selectedAttributes;
 
     std::vector<int> Workspace::s_targetSelectNodes;
 
@@ -85,7 +81,7 @@ namespace Raster {
         if (!s_project.has_value()) return std::nullopt;
         auto& project = s_project.value();
         std::vector<Composition*> result;
-        for (auto& id : s_selectedCompositions) {
+        for (auto& id : project.selectedCompositions) {
             auto compositionCandidate = GetCompositionByID(id);
             if (!compositionCandidate.has_value()) return std::nullopt;
             result.push_back(compositionCandidate.value());

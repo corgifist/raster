@@ -48,6 +48,7 @@ namespace Raster {
 
     struct Texture {
         uint32_t width, height;
+        int channels;
         TexturePrecision precision;
         void* handle;
 
@@ -67,6 +68,36 @@ namespace Raster {
             }
             return Localization::GetString("UNKNOWN_PRECISION");
         };
+
+        std::string GetShortPrecisionInfo() {
+            switch (channels) {
+                case 1: {
+                    if (precision == TexturePrecision::Usual) return "R8";
+                    if (precision == TexturePrecision::Half) return "R16F";
+                    if (precision == TexturePrecision::Full) return "R32F";
+                    break;
+                }
+                case 2: {
+                    if (precision == TexturePrecision::Usual) return "RG8";
+                    if (precision == TexturePrecision::Half) return "RG16F";
+                    if (precision == TexturePrecision::Full) return "RG32F";
+                    break;
+                }
+                case 3: {
+                    if (precision == TexturePrecision::Usual) return "RGB8";
+                    if (precision == TexturePrecision::Half) return "RGB16F";
+                    if (precision == TexturePrecision::Full) return "RGB32F";
+                    break;
+                }
+                case 4: {
+                    if (precision == TexturePrecision::Usual) return "RGBA8";
+                    if (precision == TexturePrecision::Half) return "RGBA16F";
+                    if (precision == TexturePrecision::Full) return "RGBA32F";
+                    break;
+                }
+            }
+            return "?";
+        }
     };
 
     struct Framebuffer {
@@ -97,8 +128,8 @@ namespace Raster {
         static void EndFrame();
 
         static Texture ImportTexture(const char* path);
-        static Texture GenerateTexture(uint32_t width, uint32_t height, TexturePrecision precision = TexturePrecision::Usual);
-        static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, void* pixels);
+        static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual);
+        static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels);
         static void DestroyTexture(Texture texture);
         static void BindTextureToShader(Shader shader, std::string name, Texture texture, int unit);
 

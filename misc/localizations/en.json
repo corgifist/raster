@@ -36,9 +36,9 @@
     "COMPOSITION_DESCRIPTION": "Composition Description",
     "COMPOSITION_TIMING": "Composition Timing",
     "COMPOSITION_NAME": "Composition Name",
-    "FULL_PRECISION": "High Precision (RGBA32F)",
-    "HALF_PRECISION": "Half Precision (RGBA16F)",
-    "USUAL_PRECISION": "Usual Precision (RGBA8U)",
+    "FULL_PRECISION": "High Precision",
+    "HALF_PRECISION": "Half Precision",
+    "USUAL_PRECISION": "Usual Precision",
     "COPY": "Copy",
     "PASTE": "Paste",
     "DUPLICATE": "Duplicate",
@@ -115,5 +115,7 @@
     "ENABLED_DISABLED": "Enable/Disable",
     "ASSET_MANAGER": "Asset Manager",
     "NAVIGATE_TO_SELECTED": "Navigate to Selected",
-    "NAVIGATE_TO_FIT": "Navigate to Fit"
+    "NAVIGATE_TO_FIT": "Navigate to Fit",
+    "UNKNOWN_PRECISION": "Unknown Precision",
+    "ASPECT_RATIO": "Aspect Ratio"
 }

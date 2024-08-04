@@ -12,6 +12,8 @@
 #include "ImGui/imgui_impl_opengl3.h"
 #include "ImGui/imgui_impl_glfw.h"
 
+#include "image/image.h"
+
 #define HANDLE_TO_GLUINT(x) ((uint32_t) (uint64_t) (x))
 #define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
 
@@ -62,6 +64,47 @@ namespace Raster {
             case TextureFilteringMode::Linear: return GL_LINEAR;
             default: return GL_NEAREST;
         }
+    }
+
+    static GLint InterpretTextureInfo(int channels, TexturePrecision precision) {
+        auto format = GL_RGBA8;
+        switch (channels) {
+            case 1: {
+                if (precision == TexturePrecision::Usual) format = GL_R8;
+                if (precision == TexturePrecision::Half) format = GL_R16F;
+                if (precision == TexturePrecision::Full) format = GL_R32F;
+                break;
+            }
+            case 2: {
+                if (precision == TexturePrecision::Usual) format = GL_RG8;
+                if (precision == TexturePrecision::Half) format = GL_RG16F;
+                if (precision == TexturePrecision::Full) format = GL_RG32F;
+                break;
+            }
+            case 3: {
+                if (precision == TexturePrecision::Usual) format = GL_RGB8;
+                if (precision == TexturePrecision::Half) format = GL_RGB16F;
+                if (precision == TexturePrecision::Full) format = GL_RGB32F;
+                break;
+            }
+            case 4: {
+                if (precision == TexturePrecision::Usual) format = GL_RGBA8;
+                if (precision == TexturePrecision::Half) format = GL_RGBA16F;
+                if (precision == TexturePrecision::Full) format = GL_RGBA32F;
+                break;
+            }
+        }
+        return format;
+    }
+
+    static GLint InterpretTextureChannels(int channels) {
+        switch (channels) {
+            case 1: return GL_RED;
+            case 2: return GL_RG;
+            case 3: return GL_RGB;
+            case 4: return GL_RGBA;
+        }
+        return GL_RGB;
     }
 
     static unsigned int RSHash(const std::string& str)
@@ -127,6 +170,7 @@ namespace Raster {
         glEnable              ( GL_DEBUG_OUTPUT );
         glDebugMessageCallback( MessageCallback, 0 );
 
+        glEnable(GL_DITHER);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
@@ -163,14 +207,12 @@ namespace Raster {
         glfwSwapBuffers((GLFWwindow*) info.display);
     }
 
-    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, TexturePrecision precision) {
+    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision) {
         GLuint textureHandle;
         glGenTextures(1, &textureHandle);
         glBindTexture(GL_TEXTURE_2D, textureHandle);
         
-        auto format = GL_RGBA8;
-        if (precision == TexturePrecision::Full) format = GL_RGBA32F;
-        if (precision == TexturePrecision::Half) format = GL_RGBA16F;
+        auto format = InterpretTextureInfo(channels, precision);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
@@ -182,30 +224,41 @@ namespace Raster {
         texture.width = width;
         texture.height = height;
         texture.precision = precision;
+        texture.channels = channels;
         texture.handle = GLUINT_TO_HANDLE(textureHandle);
         return texture;
     }
 
-    void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, void* pixels) {
-        glBindTexture(GL_TEXTURE_2D, (uint32_t) uint64_t(texture.handle));
+    void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels) {
+        glBindTexture(GL_TEXTURE_2D, HANDLE_TO_GLUINT(texture.handle));
 
         auto format = GL_UNSIGNED_BYTE;
         if (texture.precision == TexturePrecision::Full) format = GL_FLOAT;
         if (texture.precision == TexturePrecision::Half) format = GL_HALF_FLOAT;
-        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, format, pixels);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, InterpretTextureChannels(channels), format, pixels);
     }
 
     Texture GPU::ImportTexture(const char* path) {
-        int width, height;
-        stbi_uc* image = stbi_load(path, &width, &height, nullptr, 4);
+        auto imageCandidate = ImageLoader::Load(path);
 
-        auto texture = GenerateTexture(width, height);
-        UpdateTexture(texture, 0, 0, width, height, image);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        if (imageCandidate.has_value()) {
+            auto& image = imageCandidate.value();
+            auto precision = TexturePrecision::Usual;
+            if (image.precision == ImagePrecision::Half) {
+                precision = TexturePrecision::Half;
+            } else if (image.precision == ImagePrecision::Full) {
+                precision = TexturePrecision::Full;
+            }
 
-        stbi_image_free(image);
+            auto texture = GenerateTexture(image.width, image.height, image.channels, precision);
 
-        return texture;
+            UpdateTexture(texture, 0, 0, texture.width, texture.height, texture.channels, image.data.data());
+            glGenerateMipmap(GL_TEXTURE_2D);
+            
+            return texture;
+        } 
+
+        return Texture();
     }
 
     void GPU::DestroyTexture(Texture texture) {

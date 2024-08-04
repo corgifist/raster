@@ -20,12 +20,13 @@ namespace Raster {
 
     void StringDispatchers::DispatchTextureValue(std::any& t_attribute) {
         auto texture = std::any_cast<Texture>(t_attribute);
-        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - 64);
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height)).x / 2.0f);
         ImGui::Image(texture.handle, FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height)));
         
-        auto footerText = FormatString("%ix%i; %s", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str());
+        auto footerText = FormatString("%ix%i; %s (%s)", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str());
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);
-        ImGui::Text(footerText.c_str());
+        ImGui::Text("%s", footerText.c_str());
+        ImGui::Text("%s %s: %0.3f", ICON_FA_IMAGE, Localization::GetString("ASPECT_RATIO").c_str(), (float) texture.width / (float) texture.height);
     }
 
     void StringDispatchers::DispatchFloatValue(std::any& t_attribute) {

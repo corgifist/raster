@@ -27,7 +27,8 @@ build_modules = [
     [node_category, shared, [raster_common]],
     [dynamic_math, shared, [raster_common]],
     [traverser, shared, [raster_common]],
-    [gpu, shared, [glfw, raster_common, raster_ImGui]],
+    [image, shared, [raster_common, OpenImageIO]],
+    [gpu, shared, [glfw, raster_common, raster_ImGui, raster_image]],
     [compositor, shared, [raster_gpu, raster_common]]
     [attributes, shared, [raster_common, raster_ImGui]],
     [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category]],

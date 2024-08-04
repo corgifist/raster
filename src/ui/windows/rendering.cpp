@@ -9,7 +9,7 @@ namespace Raster {
         ImGui::Begin(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("RENDERING").c_str()).c_str(), nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse);
             if (Workspace::s_project.has_value()) {
                 auto& project = Workspace::s_project.value();
-                auto& selectedNodes = Workspace::s_selectedNodes;
+                auto& selectedNodes = project.selectedNodes;
                 auto selectedCompositionsCandidate = Workspace::GetSelectedCompositions();
 
                 static std::string selectedPin = "";
@@ -42,7 +42,7 @@ namespace Raster {
                         }
                     }
                 
-                    auto& selectedCompositions = Workspace::s_selectedCompositions;
+                    auto& selectedCompositions = project.selectedCompositions;
                     if (!selectedCompositions.empty()) {
                         auto compositionCandidate = Workspace::GetCompositionByID(selectedCompositions[0]);
                         if (compositionCandidate.has_value()) {

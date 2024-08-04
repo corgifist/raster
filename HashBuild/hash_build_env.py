@@ -62,6 +62,7 @@ def object_compile(source, arch, args=[], library_path="."):
                 compile_command = f"{'g++' if extension == 'cpp' else 'gcc'} -L {library_path} {'-I' + include_path if include_path != None else ''} -c {file} {machine_bit} -o {output_file} {' '.join(compile_definitions)} {('-std=c++' + var_env['std_cxx'] if std_cxx_override_exists else '') if extension == 'cpp' else ''} {('-std=c' + var_env['std_c'] if std_c_override_exists else '') if extension == 'c' else ''}{' ' + ' '.join(compile_options) if len(compile_options) != 0 else ''} {' '.join(args)}"
                 info(f"[{progress}/{len(source)}] compiling {file} ({output_file})")
                 erasing_targets = []
+                must_exit = False
                 if len(object_compile_processes) >= os.cpu_count():
                     target_process_to_wait = random.choice(list(object_compile_processes.items()))
                     k_source_file = target_process_to_wait[0]
@@ -71,9 +72,8 @@ def object_compile(source, arch, args=[], library_path="."):
                         pass
                     if poll_result != 0:
                         os.remove(f"hash_build_files/{hash_string(k_source_file)}.hash")
-                        os.remove(f"hash_build_files/{name_hash}")
                         fatal(f"compiler returned non-zero code while compiling {k_source_file}")
-                        sys.exit(1)
+                        must_exit = True
                     del object_compile_processes[target_process_to_wait[0]]
 
                 for k_source_file, v_process in object_compile_processes.items():
@@ -81,10 +81,12 @@ def object_compile(source, arch, args=[], library_path="."):
                     if poll_result != None:
                         if poll_result != 0:
                             os.remove(f"hash_build_files/{hash_string(k_source_file)}.hash")
-                            os.remove(f"hash_build_files/{name_hash}")
                             fatal(f"compiler returned non-zero code while compiling {k_source_file}")
-                            sys.exit(1)
+                            must_exit = True
                         erasing_targets.append(k_source_file)
+
+                if must_exit:
+                    sys.exit(1)
 
                 for target in erasing_targets:
                     if target in object_compile_processes:

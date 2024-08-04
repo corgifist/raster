@@ -34,7 +34,7 @@ namespace Raster {
         Workspace::s_project = Project();
         Composition newComposition;
         Workspace::s_project.value().compositions.push_back(newComposition);
-        Workspace::s_selectedCompositions = {newComposition.id};
+        Workspace::s_project.value().selectedCompositions = {newComposition.id};
 
 
         ImGuiIO& io = ImGui::GetIO();

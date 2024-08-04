@@ -121,7 +121,7 @@ namespace Raster {
                 s_attributeTextHovered[id] = false;
                 s_attributeTextClicked[id] = false;
             }
-            auto& selectedAttributes = Workspace::s_selectedAttributes;
+            auto& selectedAttributes = project.selectedAttributes;
 
             bool& attributeTextHovered = s_attributeTextHovered[id];
             bool& attributeTextClicked = s_attributeTextClicked[id];
@@ -142,7 +142,7 @@ namespace Raster {
             attributeTextHovered = ImGui::IsItemHovered();
             attributeTextClicked = ImGui::IsItemClicked();
             if (attributeTextClicked && !ImGui::GetIO().KeyCtrl) {
-                Workspace::s_selectedAttributes = {id};
+                project.selectedAttributes = {id};
             } else if (attributeTextClicked && ImGui::GetIO().KeyCtrl) {
                 if (std::find(selectedAttributes.begin(), selectedAttributes.end(), id) == selectedAttributes.end()) {
                     selectedAttributes.push_back(id);

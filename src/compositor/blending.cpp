@@ -92,7 +92,7 @@ namespace Raster {
             }
 
             framebufferCandidate = GPU::GenerateFramebuffer(texture.width, texture.height, {
-                GPU::GenerateTexture(texture.width, texture.height)
+                GPU::GenerateTexture(texture.width, texture.height, 4)
             });
         }
     }

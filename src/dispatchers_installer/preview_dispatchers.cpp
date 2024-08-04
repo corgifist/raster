@@ -105,8 +105,9 @@ namespace Raster {
             } + imageOffset);
             ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
-            if (!Workspace::s_selectedAttributes.empty()) {
-                for (auto& attributeID : Workspace::s_selectedAttributes) {
+            auto& project = Workspace::GetProject();
+            if (!project.selectedAttributes.empty()) {
+                for (auto& attributeID : project.selectedAttributes) {
                     auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
                     auto compositionCandidate = Workspace::GetCompositionByAttributeID(attributeID);
                     if (attributeCandidate.has_value() && compositionCandidate.has_value()) {
@@ -126,7 +127,7 @@ namespace Raster {
                 }
             }
 
-            auto footerText = FormatString("%ix%i; %s", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str());
+            auto footerText = FormatString("%ix%i; %s (%s); %s %0.3f", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str(), ICON_FA_IMAGE, (float) texture.width / (float) texture.height);
             ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
             ImGui::SetCursorPos({
                 ImGui::GetWindowSize().x / 2.0f - footerSize.x / 2.0f,

@@ -1,6 +1,5 @@
 libraster_*.so
 raster
-output.png
 test.json
 shader_cache/
 editors/
@@ -8,4 +7,5 @@ editors/
 build.sh
 hash_build_files/
 raster
-HashBuild/__pycache__/*
+internal/
+HashBuild/__pycache__/

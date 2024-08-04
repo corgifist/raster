@@ -13,6 +13,10 @@ namespace Raster {
         
         std::vector<Composition> compositions;
 
+        std::vector<int> selectedCompositions;
+        std::vector<int> selectedNodes;
+        std::vector<int> selectedAttributes;
+
         Json customData;
 
         Project();

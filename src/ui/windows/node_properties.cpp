@@ -143,14 +143,15 @@ namespace Raster {
                     }
                 ImGui::PopID();
             }
-            std::string attributesTreeText = Workspace::s_selectedAttributes.empty() ? Localization::GetString("NO_ATTRIBUTES_SELECTED") : std::to_string(Workspace::s_selectedAttributes.size()) + " " + Localization::GetString("ATTRIBUTES_SELECTED");
+            auto& project = Workspace::GetProject();
+            std::string attributesTreeText = project.selectedAttributes.empty() ? Localization::GetString("NO_ATTRIBUTES_SELECTED") : std::to_string(project.selectedAttributes.size()) + " " + Localization::GetString("ATTRIBUTES_SELECTED");
             ImGui::PushFont(Font::s_denseFont);
             ImGui::SetWindowFontScale(1.5f);
                 bool attributesTreeExpanded = ImGui::TreeNode(FormatString("%s %s###_attributesTree", ICON_FA_LINK, attributesTreeText.c_str()).c_str());
             ImGui::SetWindowFontScale(1.0f);
             ImGui::PopFont();
             if (attributesTreeExpanded) {
-                for (auto& attributeID : Workspace::s_selectedAttributes) {
+                for (auto& attributeID : project.selectedAttributes) {
                     auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
                     if (attributeCandidate.has_value()) {
                         auto& attribute = attributeCandidate.value();
@@ -160,7 +161,7 @@ namespace Raster {
                 ImGui::TreePop();
             }
             ImGui::Separator();
-            for (auto& nodeID : Workspace::s_selectedNodes) {
+            for (auto& nodeID : project.selectedNodes) {
                 auto maybeNode = Workspace::GetNodeByNodeID(nodeID);
                 if (maybeNode.has_value()) {
                     auto& node = maybeNode.value();

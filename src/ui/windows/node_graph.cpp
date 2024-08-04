@@ -31,6 +31,8 @@ namespace Raster {
 
     static ImVec2 s_mousePos;
 
+    static bool s_mustNavigateToSelection = false;
+
     struct NodePositioningTask {
         int nodeID;
         ImVec2 position;
@@ -175,7 +177,7 @@ namespace Raster {
         s_idReplacements.clear();
 
         ImVec2 minNodePosition = ImVec2(FLT_MAX, FLT_MAX);
-        for (auto& selectedNode : Workspace::s_selectedNodes) {
+        for (auto& selectedNode : Workspace::GetProject().selectedNodes) {
             auto nodePos = Nodes::GetNodePosition(selectedNode);
             if (nodePos.x < minNodePosition.x) {
                 minNodePosition.x = nodePos.x;
@@ -185,7 +187,7 @@ namespace Raster {
             }
         }
         auto& idReplacements = s_idReplacements;
-        for (auto& selectedNode : Workspace::s_selectedNodes) {
+        for (auto& selectedNode : Workspace::GetProject().selectedNodes) {
             auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNode);
             if (nodeCandidate.has_value()) {
                 CopyAccumulatorBundle bundle;
@@ -278,6 +280,7 @@ namespace Raster {
             static std::unordered_map<int, Nodes::EditorContext*> compositionContexts;
             Nodes::EditorContext* ctx = nullptr;
             
+            auto& project = Workspace::GetProject();
             auto compositionsCandidate = Workspace::GetSelectedCompositions();
             if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
             if (compositionsCandidate.has_value()) {
@@ -329,7 +332,7 @@ namespace Raster {
             }
 
             if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable)) {
-                for (auto& compositionID : Workspace::s_selectedCompositions) {
+                for (auto& compositionID : project.selectedCompositions) {
                     auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
                     if (compositionCandidate.has_value()) {
                         auto& composition = compositionCandidate.value();
@@ -350,6 +353,7 @@ namespace Raster {
                 bool openSearchPopup = false;
                 static bool drawLastLine = false;
                 static Nodes::PinId connectedLastLinePin;
+                bool previousMustNavigateToSelection = s_mustNavigateToSelection;
                 Nodes::Begin("NodeGraph");
 
                     for (auto& target : Workspace::s_targetSelectNodes) {
@@ -740,7 +744,7 @@ namespace Raster {
                     ImGui::PushFont(Font::s_normalFont);
                     if (!nodeSearchMousePos.has_value()) nodeSearchMousePos = s_mousePos;
                     ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str()).c_str());
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str())) {
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str(), "Tab")) {
                         openSearchPopup = true;
                     }
                     if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str())) {
@@ -750,15 +754,14 @@ namespace Raster {
                                 auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
                                 if (attributeCandidate.has_value()) {
                                     s_currentComposition->attributes.push_back(attributeCandidate.value());
-                                    Workspace::s_selectedAttributes = {attributeCandidate.value()->id};
+                                    project.selectedAttributes = {attributeCandidate.value()->id};
                                     auto attributeNode = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value").value();
                                     attributeNode->SetAttributeValue("AttributeID", s_currentComposition->attributes.back()->id);
                                     s_currentComposition->nodes.push_back(attributeNode);
                                     Nodes::BeginNode(attributeNode->nodeID);
                                     Nodes::EndNode();
-                                    Nodes::SetNodePosition(attributeNode->nodeID, s_mousePos);
                                     Nodes::SelectNode(attributeNode->nodeID);
-                                    Nodes::NavigateToSelection();
+                                    s_mustNavigateToSelection = true;
                                 }
                             }
                         }
@@ -804,19 +807,51 @@ namespace Raster {
                     ImGui::Separator();
                     static NodeCategory targetCategory = 0;
                     ImGui::BeginChild("##tabChild", ImVec2(160, 0), ImGuiChildFlags_AutoResizeY);
+                        int allCategoryTotalNodes = 0;
+                        for (auto& node : Workspace::s_nodeImplementations) {
+                            if (!searchFilter.empty() && LowerCase(node.description.prettyName).find(LowerCase(searchFilter)) == std::string::npos) continue;
+                            allCategoryTotalNodes++;
+                        }
+                        ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                        if (targetCategory == 0 && allCategoryTotalNodes > 0) {
+                            buttonColor = buttonColor * 1.3f;
+                        }
+                        ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+                        if (allCategoryTotalNodes == 0) ImGui::BeginDisabled();
                         if (ImGui::ButtonEx(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ALL_NODES").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
                             targetCategory = 0;
                         }
+                        if (allCategoryTotalNodes == 0) ImGui::EndDisabled();
+                        ImGui::PopStyleColor();
                         for (auto& category : NodeCategoryUtils::s_categoriesOrder) {
-                            if (ImGui::ButtonEx(NodeCategoryUtils::ToString(category).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                            int categoryTotalNodes = 0;
+                            for (auto& node : Workspace::s_nodeImplementations) {
+                                if (node.description.category != category) continue;
+                                if (!searchFilter.empty() && LowerCase(node.description.prettyName).find(LowerCase(searchFilter)) == std::string::npos) continue;
+                                categoryTotalNodes++;
+                            }
+                            ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                            if (targetCategory == category && categoryTotalNodes != 0 && targetCategory != 0) {
+                                buttonColor = buttonColor * 1.3f;
+                            }
+                            ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+                            if (categoryTotalNodes == 0) ImGui::BeginDisabled();
+                            if (ImGui::ButtonEx(FormatString("%s (%i)", NodeCategoryUtils::ToString(category).c_str(), categoryTotalNodes).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
                                 targetCategory = category;
                             }
+                            if (categoryTotalNodes == 0) ImGui::EndDisabled();
+                            ImGui::PopStyleColor();
                         }
                         
                     ImGui::EndChild();
                     ImGui::SameLine();
                     ImGui::BeginChild("##nodeCandidates", ImVec2(200, 200));
                     bool hasCandidates = false;
+                    std::string categoryText = NodeCategoryUtils::ToString(targetCategory);
+                    if (targetCategory == 0) {
+                        categoryText = FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ALL_NODES").c_str());
+                    }
+                    ImGui::SeparatorText(categoryText.c_str());
                     for (auto& node : Workspace::s_nodeImplementations) {
                         if (node.description.category != targetCategory && targetCategory > 0) continue;
                         if (!searchFilter.empty() && LowerCase(node.description.prettyName).find(LowerCase(searchFilter)) == std::string::npos) continue;
@@ -844,7 +879,7 @@ namespace Raster {
                                     Nodes::SetNodePosition(node->nodeID, nodeSearchMousePos.value());
                                 Nodes::EndNode();
                                 Nodes::SelectNode(node->nodeID, false);
-                                Nodes::NavigateToSelection();
+                                s_mustNavigateToSelection = true;
                                 nodeSearchMousePos = std::nullopt;
                                 if (drawLastLine) {
                                     auto lastLinePinCandidate = Workspace::GetPinByPinID((int) connectedLastLinePin.Get());
@@ -901,13 +936,13 @@ namespace Raster {
                     }
                 }
                 Nodes::Resume();
-                Workspace::s_selectedNodes.clear();
+                project.selectedNodes.clear();
 
                 std::vector<Nodes::NodeId> temporarySelectedNodes(Nodes::GetSelectedObjectCount());
                 Nodes::GetSelectedNodes(temporarySelectedNodes.data(), Nodes::GetSelectedObjectCount());
 
                 for (auto& nodeID : temporarySelectedNodes) {
-                    Workspace::s_selectedNodes.push_back((int) nodeID.Get());
+                    project.selectedNodes.push_back((int) nodeID.Get());
                 }
 
                 if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_C)) {
@@ -921,6 +956,11 @@ namespace Raster {
                 if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_D)) {
                     ProcessCopyAction();
                     ProcessPasteAction();
+                }
+
+                if (s_mustNavigateToSelection && previousMustNavigateToSelection) {
+                    Nodes::NavigateToSelection();
+                    s_mustNavigateToSelection = false;
                 }
 
                 Nodes::End();

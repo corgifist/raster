@@ -79,8 +79,8 @@ namespace Raster {
 
     Framebuffer Compositor::GenerateCompatibleFramebuffer(glm::vec2 t_resolution) {
         return GPU::GenerateFramebuffer(t_resolution.x, t_resolution.y, std::vector<Texture>{
-            GPU::GenerateTexture(t_resolution.x, t_resolution.y, TexturePrecision::Usual),
-            GPU::GenerateTexture(t_resolution.x, t_resolution.y, TexturePrecision::Usual)
+            GPU::GenerateTexture(t_resolution.x, t_resolution.y, 4, TexturePrecision::Usual),
+            GPU::GenerateTexture(t_resolution.x, t_resolution.y, 4, TexturePrecision::Usual)
         });
     }
 

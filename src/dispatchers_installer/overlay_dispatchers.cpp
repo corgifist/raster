@@ -380,7 +380,7 @@ namespace Raster {
             ImGui::SetCursorPos(reservedCursor);
         }
 
-        if (!Workspace::s_selectedAttributes.empty() && t_attributeID == Workspace::s_selectedAttributes.back()) {
+        if (!project.selectedAttributes.empty() && t_attributeID == project.selectedAttributes.back()) {
             for (int i = project.compositions.size(); i --> 0;) {
                 auto& composition = project.compositions[i];
                 bool exitLoop = false;
@@ -400,9 +400,9 @@ namespace Raster {
                     );
                     if (MouseHoveringBounds(hitBounds) && ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left] && ImGui::IsWindowFocused() && !positionDragAlreadyActive && ImGui::GetIO().MouseDelta == ImVec2(0, 0)) {
                         if (!ImGui::GetIO().KeyCtrl) {
-                            Workspace::s_selectedAttributes = {attribute->id};
+                            project.selectedAttributes = {attribute->id};
                         } else {
-                            auto& selectedAttributes = Workspace::s_selectedAttributes;
+                            auto& selectedAttributes = project.selectedAttributes;
                             auto attributeIterator = std::find(selectedAttributes.begin(), selectedAttributes.end(), attribute->id);
                             if (attributeIterator == selectedAttributes.end()) {
                                 selectedAttributes.push_back(attribute->id);

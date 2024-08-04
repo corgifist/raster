@@ -17,6 +17,9 @@ namespace Raster {
             (float) data["BackgroundColor"][2],
             (float) data["BackgroundColor"][3]
         };
+        this->selectedCompositions = data["SelectedCompositions"].get<std::vector<int>>();
+        this->selectedAttributes = data["SelectedAttributes"].get<std::vector<int>>();
+        this->selectedNodes = data["SelectedNodes"].get<std::vector<int>>();
         this->customData = data["CustomData"];
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
@@ -71,6 +74,9 @@ namespace Raster {
         data["BackgroundColor"] = {
             backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a
         };
+        data["SelectedCompositions"] = selectedCompositions;
+        data["SelectedNodes"] = selectedNodes;
+        data["SelectedAttributes"] = selectedAttributes;
         data["CustomData"] = customData;
         data["Compositions"] = {};
         for (auto& composition : compositions) {

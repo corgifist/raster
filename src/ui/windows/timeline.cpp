@@ -139,9 +139,11 @@ namespace Raster {
             labelCursor.x = ImGui::GetScrollX() + ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x;
         }
 
+        ImGui::PushClipRect(bb.Min, bb.Max, true);
         ImGui::SetCursorPos(labelCursor);
         ImGui::Text("%s", label);
         ImGui::SetCursorPos(reservedCursor);
+        ImGui::PopClipRect();
 
         // Automatically close popups
         //if (pressed && !(flags & ImGuiButtonFlags_DontClosePopups) && (window->Flags & ImGuiWindowFlags_Popup))
@@ -317,13 +319,24 @@ namespace Raster {
                 }
                 layerAccumulator += LAYER_HEIGHT + legendOffset;
             }
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && Workspace::s_selectedCompositions.size() > 1 && !s_anyCompositionWasPressed) {
-                Workspace::s_selectedCompositions = {Workspace::s_selectedCompositions[0]};
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && project.selectedCompositions.size() > 1 && !s_anyCompositionWasPressed) {
+                project.selectedCompositions = {project.selectedCompositions[0]};
                 std::cout << "overriding compositions" << std::endl;
             }
             
             RenderTimelinePopup();
 
+            ImGui::SetCursorPos({0, 0});
+            RectBounds shadowGradientBounds(
+                ImVec2(ImGui::GetScrollX(), ImGui::GetScrollY()), 
+                ImVec2(30, ImGui::GetWindowSize().x)
+            );
+            int shadowAlpha = 128;
+            ImGui::GetWindowDrawList()->AddRectFilledMultiColor(
+                shadowGradientBounds.UL, shadowGradientBounds.BR,
+                IM_COL32(0, 0, 0, shadowAlpha), IM_COL32(0, 0, 0, 0),
+                IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, shadowAlpha) 
+            );
             RenderTimelineRuler();
         ImGui::EndChild();
     }
@@ -333,9 +346,9 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         if (compositionCandidate.has_value()) {
             auto& composition = compositionCandidate.value();
-            auto& selectedComposoitions = Workspace::s_selectedCompositions;
+            auto& selectedComposoitions = project.selectedCompositions;
             ImGui::PushID(composition->id);
-            ImGui::SetCursorPosX(composition->beginFrame * s_pixelsPerFrame);
+            ImGui::SetCursorPosX(std::ceil(composition->beginFrame * s_pixelsPerFrame));
             ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_Button));
             bool isCompositionSelected = false;
             if (std::find(selectedComposoitions.begin(), selectedComposoitions.end(), t_id) != selectedComposoitions.end()) {
@@ -375,13 +388,14 @@ namespace Raster {
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
             auto& io = ImGui::GetIO();
+            // auto& project = Workspace::GetProject();
 
             if (compositionPressed && !io.KeyCtrl && std::abs(io.MouseDelta.x) < 0.1f) {
-                Workspace::s_selectedCompositions = {composition->id};
+                project.selectedCompositions = {composition->id};
                 if (!composition->attributes.empty()) {
                     for (auto& attribute : composition->attributes) {
                         if (attribute->Get(project.currentFrame - composition->beginFrame, composition).type() == typeid(Transform2D)) {
-                            Workspace::s_selectedAttributes = {attribute->id};
+                            project.selectedAttributes = {attribute->id};
                         }
                     }
                 }
@@ -429,8 +443,7 @@ namespace Raster {
                     upperLeft.x = glm::max(upperLeft.x, legendWidth);
                     bottomRight.x = glm::max(bottomRight.x, legendWidth + rectSize.x);
                     bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
-                    ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle
-                    , upperLeft, bottomRight);
+                    ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle, upperLeft, bottomRight);
                 }
             }
 
@@ -563,7 +576,7 @@ namespace Raster {
 
     void TimelineUI::DeleteComposition(Composition* composition) {
         auto& project = Workspace::s_project.value();
-        Workspace::s_selectedCompositions = {};
+        project.selectedCompositions = {};
         int targetCompositionIndex = 0;
         for (auto& iterationComposition : project.compositions) {
             if (composition->id == iterationComposition.id) break;
@@ -573,14 +586,16 @@ namespace Raster {
     }
 
     void TimelineUI::AppendSelectedCompositions(Composition* composition) {
-        auto& selectedCompositions = Workspace::s_selectedCompositions;
+        auto& project = Workspace::GetProject();
+        auto& selectedCompositions = project.selectedCompositions;
         if (std::find(selectedCompositions.begin(), selectedCompositions.end(), composition->id) == selectedCompositions.end()) {
             selectedCompositions.push_back(composition->id);
         }
     }
 
     void TimelineUI::RenderCompositionPopup(Composition* t_composition, ImGuiID t_parentTreeID) {
-        auto& selectedCompositions = Workspace::s_selectedCompositions;
+        auto& project = Workspace::GetProject();
+        auto& selectedCompositions = project.selectedCompositions;
         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, t_composition->name.c_str()).c_str());
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str())) {
             RenderNewAttributePopup(t_composition, t_parentTreeID);
@@ -737,7 +752,8 @@ namespace Raster {
 
     void TimelineUI::ProcessCopyAction() {
         std::vector<Composition> copiedCompositions;
-        for (auto& selectedComposition : Workspace::s_selectedCompositions) {
+        auto& project = Workspace::GetProject();
+        for (auto& selectedComposition : project.selectedCompositions) {
             auto compositionCandidate = Workspace::GetCompositionByID(selectedComposition);
             if (compositionCandidate.has_value()) {
                 auto& composition = compositionCandidate.value();
@@ -796,7 +812,8 @@ namespace Raster {
 
     void TimelineUI::ProcessDeleteAction() {
         if (!s_anyCompositionWasPressed) return;
-        auto selectedCompositionsCopy = Workspace::s_selectedCompositions;
+        auto& project = Workspace::GetProject();
+        auto selectedCompositionsCopy = project.selectedCompositions;
         for (auto& compositionID : selectedCompositionsCopy) {
             auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
             if (compositionCandidate.has_value()) {
@@ -820,6 +837,7 @@ namespace Raster {
 
     void TimelineUI::RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID) {
         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
+        auto& project = Workspace::GetProject();
         for (auto& entry : Attributes::s_attributes) {
             if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
                 auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
@@ -830,7 +848,7 @@ namespace Raster {
                     }
                     if (t_parentTreeID) {
                         s_legendTargetOpenTree = t_parentTreeID;
-                        Workspace::s_selectedAttributes = {attributeCandidate.value()->id};
+                        project.selectedAttributes = {attributeCandidate.value()->id};
                         if (s_compositionTreeScrolls.find(t_composition->id) != s_compositionTreeScrolls.end()) {
                             s_targetLegendScroll = s_compositionTreeScrolls[t_composition->id];
                         }
@@ -930,9 +948,9 @@ namespace Raster {
                     ImGui::EndPopup();
                 }
                 ImGui::SameLine();
-                auto selectedIterator = std::find(Workspace::s_selectedCompositions.begin(), Workspace::s_selectedCompositions.end(), composition.id);
+                auto selectedIterator = std::find(project.selectedCompositions.begin(), project.selectedCompositions.end(), composition.id);
                 s_compositionTreeScrolls[composition.id] = ImGui::GetScrollY();
-                bool compositionTreeExpanded = ImGui::TreeNode(FormatString("%s%s###%i%s", selectedIterator != Workspace::s_selectedCompositions.end() ? ICON_FA_ARROW_POINTER " " : "", compositionName.c_str(), composition.id, composition.name.c_str()).c_str());
+                bool compositionTreeExpanded = ImGui::TreeNode(FormatString("%s%s###%i%s", selectedIterator != project.selectedCompositions.end() ? ICON_FA_ARROW_POINTER " " : "", compositionName.c_str(), composition.id, composition.name.c_str()).c_str());
                 auto treeNodeID = ImGui::GetItemID();
                 bool wasExpanded = false;
                 s_compositionTrees[composition.id] = treeNodeID;
@@ -1030,17 +1048,19 @@ namespace Raster {
     float TimelineUI::ProcessLayerScroll() {
         ImGui::SetCursorPos({0, 0});
         float mouseX = GetRelativeMousePos().x - ImGui::GetScrollX();
+        DUMP_VAR(mouseX);
         float eventZone = ImGui::GetWindowSize().x / 10.0f;
+        float mouseDeltaX = ImGui::GetIO().MouseDelta.x;
         if (mouseX > ImGui::GetWindowSize().x - eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            ImGui::SetScrollX(ImGui::GetScrollX() + 5);
-            return 5;
+            ImGui::SetScrollX(ImGui::GetScrollX() + mouseDeltaX);
+            return mouseDeltaX;
         }
 
         if (mouseX < eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            if (ImGui::GetScrollX() - 5 > 0) {
-                ImGui::SetScrollX(ImGui::GetScrollX() - 5);
+            if (ImGui::GetScrollX() + mouseDeltaX > 0) {
+                ImGui::SetScrollX(ImGui::GetScrollX() + mouseDeltaX);
             }
-            return -5;
+            return mouseDeltaX;
         }
 
         return 0;
