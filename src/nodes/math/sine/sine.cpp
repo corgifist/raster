@@ -10,6 +10,9 @@ namespace Raster {
         this->m_attributes["Input"] = 0.0f;
         this->m_attributes["MultiplyBy"] = 1.0f;
 
+        SetupAttribute("Input", 0.0f);
+        SetupAttribute("MultiplyBy", 1.0f);
+
         AddOutputPin("Value");
     }
 

@@ -41,7 +41,12 @@ namespace Raster {
 
     std::any FloatAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
         float fValue = std::any_cast<float>(t_originalValue);
-        ImGui::DragFloat("##dragFloat", &fValue);
+        bool isOpacityAttribute = t_composition->opacityAttributeID == id;
+        if (!isOpacityAttribute) {
+            ImGui::DragFloat("##dragFloat", &fValue);
+        } else {
+            ImGui::SliderFloat("##sliderFloat", &fValue, 0, 1);
+        }
         isItemEdited = ImGui::IsItemEdited();
         return fValue;
     }

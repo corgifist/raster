@@ -66,7 +66,7 @@ namespace Raster {
 
         Json Serialize();
 
-        std::set<std::string> GetAttributesList();
+        std::vector<std::string> GetAttributesList();
 
         std::optional<std::any> GetDynamicAttribute(std::string t_attribute);
 
@@ -85,10 +85,13 @@ namespace Raster {
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
 
+        void SetupAttribute(std::string t_attribute, std::any t_defaultValue);
+
         void Initialize();
 
         private:
         std::unordered_map<std::string, std::any> m_attributesCache;
+        std::vector<std::string> m_attributesOrder;
 
         AbstractPinMap m_accumulator;
     };

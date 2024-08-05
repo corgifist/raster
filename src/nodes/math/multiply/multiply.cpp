@@ -7,8 +7,8 @@ namespace Raster {
     Multiply::Multiply() {
         NodeBase::Initialize();
 
-        this->m_attributes["A"] = 1.0f;
-        this->m_attributes["B"] = 1.0f;
+        SetupAttribute("A", 1.0f);
+        SetupAttribute("B", 1.0f);
 
         AddOutputPin("Value");
     }

@@ -5,11 +5,11 @@ namespace Raster {
     MakeTransform2D::MakeTransform2D() {
         NodeBase::Initialize();
 
-        this->m_attributes["Position"] = glm::vec2(0, 0);
-        this->m_attributes["Size"] = glm::vec2(1, 1);
-        this->m_attributes["Anchor"] = glm::vec2(0, 0);
-        this->m_attributes["Angle"] = 0.0f;
-        this->m_attributes["ParentTransform"] = Transform2D();
+        SetupAttribute("Position", glm::vec2(0, 0));
+        SetupAttribute("Size", glm::vec2(1, 1));
+        SetupAttribute("Anchor", glm::vec2(0, 0));
+        SetupAttribute("Angle", 0.0f);
+        SetupAttribute("ParentTransform", Transform2D());
 
         AddOutputPin("Output");
     }

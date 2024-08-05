@@ -5,7 +5,7 @@ namespace Raster {
     TransportValue::TransportValue() {
         NodeBase::Initialize();
 
-        this->m_attributes["Input"] = std::nullopt;
+        SetupAttribute("Input", std::nullopt);
 
         AddInputPin("Input");
         AddOutputPin("Output");

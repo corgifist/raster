@@ -14,6 +14,9 @@ namespace Raster {
 
         this->m_attributes["TextureFiltering"] = static_cast<int>(TextureFilteringMode::Linear);
         this->m_attributes["TextureWrapping"] = static_cast<int>(TextureWrappingMode::Repeat);
+
+        SetupAttribute("TextureFiltering", static_cast<int>(TextureFilteringMode::Linear));
+        SetupAttribute("TextureWrapping", static_cast<int>(TextureWrappingMode::Repeat));
     }
 
     AbstractPinMap MakeSamplerSettings::AbstractExecute(AbstractPinMap t_accumulator) {

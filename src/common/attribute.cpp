@@ -112,7 +112,7 @@ namespace Raster {
         auto currentValue = Get(currentFrame, t_composition);
         bool openRenamePopup = false;
         ImGui::PushID(id);
-            bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
+            bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) && keyframes.size() != 1 ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
             bool shouldAddKeyframe = buttonPressed;
             ImGui::SameLine();
             static std::unordered_map<int, bool> s_attributeTextHovered;
@@ -263,7 +263,7 @@ namespace Raster {
                 auto* keyframe = keyframeCandidate.value();
                 keyframe->value = currentValue;
             }
-        } else if (shouldAddKeyframe && buttonPressed) {
+        } else if (shouldAddKeyframe && buttonPressed && keyframes.size() != 1) {
             auto indexCandidate = GetKeyframeIndexByTimestamp(currentFrame);
             if (indexCandidate.has_value()) {
                 keyframes.erase(keyframes.begin() + indexCandidate.value());

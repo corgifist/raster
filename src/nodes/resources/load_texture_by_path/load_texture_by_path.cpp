@@ -11,7 +11,7 @@ namespace Raster {
 
         AddOutputPin("Texture");
 
-        m_attributes["Path"] = std::string("");
+        SetupAttribute("Path", std::string(""));
 
         this->archive = std::nullopt;
         this->m_asyncUploadID = 0;

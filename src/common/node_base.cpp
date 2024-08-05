@@ -12,6 +12,11 @@ namespace Raster {
         this->m_attributes[t_attribute] = t_value;
     }
 
+    void NodeBase::SetupAttribute(std::string t_attribute, std::any t_value) {
+        this->m_attributes[t_attribute] = t_value;
+        this->m_attributesOrder.push_back(t_attribute);
+    }
+
     void NodeBase::Initialize() {
         this->enabled = true;
         this->bypassed = false;
@@ -207,12 +212,8 @@ namespace Raster {
         this->m_accumulator.clear();
     }
 
-    std::set<std::string> NodeBase::GetAttributesList() {
-        std::set<std::string> result;
-        for (auto& attribute : m_attributes) {
-            result.insert(attribute.first);
-        }
-        return result;
+    std::vector<std::string> NodeBase::GetAttributesList() {
+        return m_attributesOrder;
     }
 
     void NodeBase::GenerateFlowPins() {

@@ -14,13 +14,13 @@ namespace Raster {
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
 
-        this->m_attributes["Color"] = glm::vec4(1, 1, 1, 1);
-        this->m_attributes["Transform"] = Transform2D();
-        this->m_attributes["UVTransform"] = Transform2D();
-        this->m_attributes["Base"] = Framebuffer();
-        this->m_attributes["Texture"] = Texture();
-        this->m_attributes["SamplerSettings"] = SamplerSettings();
-        this->m_attributes["MaintainUVRange"] = true;
+        SetupAttribute("Base", Framebuffer());
+        SetupAttribute("Color", glm::vec4(1));
+        SetupAttribute("Transform", Transform2D());
+        SetupAttribute("UVTransform", Transform2D());
+        SetupAttribute("Texture", Texture());
+        SetupAttribute("SamplerSettings", SamplerSettings());
+        SetupAttribute("MaintainUVRange", true);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(

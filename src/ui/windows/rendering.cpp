@@ -23,12 +23,12 @@ namespace Raster {
                             auto& node = nodeCandidate.value();
                             auto attributes = node->GetAttributesList();
                             for (auto& pin : node->outputPins) {
-                                attributes.insert(pin.linkedAttribute);
+                                attributes.push_back(pin.linkedAttribute);
                             }
                             if (attributes.empty()) {
                                 selectedPin = "";
                             }
-                            if (!attributes.empty() && attributes.find(selectedPin) == attributes.end()) {
+                            if (!attributes.empty() && std::find(attributes.begin(), attributes.end(), selectedPin) == attributes.end()) {
                                 selectedPin = *std::next(attributes.begin(), 0);
                             }
                         }
@@ -61,7 +61,7 @@ namespace Raster {
                             auto& node = nodeCandidate.value();
                             auto attributes = node->GetAttributesList();
                             for (auto& pin : node->outputPins) {
-                                attributes.insert(pin.linkedAttribute);
+                                attributes.push_back(pin.linkedAttribute);
                             }
                             attributesCount = attributes.size();
                             int attributeSearchIndex = 0;

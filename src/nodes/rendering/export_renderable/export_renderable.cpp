@@ -12,7 +12,7 @@ namespace Raster {
         NodeBase::Initialize();
         NodeBase::GenerateFlowPins();
 
-        this->m_attributes["Renderable"] = Framebuffer();
+        SetupAttribute("Renderable", Framebuffer());
         AddInputPin("Renderable");
     }
 

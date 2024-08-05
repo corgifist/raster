@@ -5,7 +5,7 @@ namespace Raster {
     GetTime::GetTime() {
         NodeBase::Initialize();
 
-        this->m_attributes["RelativeTime"] = false;
+        SetupAttribute("RelativeTime", false);
 
         AddOutputPin("Time");
     }

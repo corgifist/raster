@@ -699,7 +699,7 @@ namespace Raster {
                             GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
                             if (!allowedCompositions.empty()) Compositor::PerformComposition(allowedCompositions);
                             auto& blending = Compositor::s_blending;
-                            blending.PerformBlending(mode, primaryFramebuffer.attachments[0], bundle.primaryFramebuffer.attachments[0], t_composition->opacity);
+                            blending.PerformBlending(mode, primaryFramebuffer.attachments[0], bundle.primaryFramebuffer.attachments[0], t_composition->GetOpacity());
                             GPU::BlitFramebuffer(previewFramebuffer, blending.framebufferCandidate.value().attachments[0]);
 
                             ImGui::Text("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());

@@ -13,8 +13,8 @@ namespace Raster {
 
         AddOutputPin("Value");
 
-        this->m_attributes["BackgroundColor"] = glm::vec4(1, 1, 1, 1);
-        this->m_attributes["BackgroundTexture"] = Texture();
+        SetupAttribute("BackgroundColor", glm::vec4(1));
+        SetupAttribute("BackgroundTexture", Texture());
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(

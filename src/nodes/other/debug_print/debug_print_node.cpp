@@ -10,7 +10,7 @@ namespace Raster {
     DebugPrintNode::DebugPrintNode() {
         NodeBase::Initialize();
         NodeBase::GenerateFlowPins();
-        this->m_attributes["ArbitraryValue"] = std::string("Ummm");
+        SetupAttribute("ArbitraryValue", std::string("EEE"));
 
         AddOutputPin("ExposedOutput");
         AddOutputPin("EEEEE");

@@ -9,8 +9,9 @@ namespace Raster {
 
     GetAttributeValue::GetAttributeValue() {
         NodeBase::Initialize();
-        this->m_attributes["AttributeName"] = std::string("");
-        this->m_attributes["AttributeID"] = 0;
+
+        SetupAttribute("AttributeName", std::string(""));
+        SetupAttribute("AttributeID", 0);
 
         AddOutputPin("Value");
     }

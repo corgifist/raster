@@ -7,7 +7,7 @@ namespace Raster {
     Abs::Abs() {
         NodeBase::Initialize();
 
-        this->m_attributes["Input"] = 0.0f;
+        SetupAttribute("Input", 0.0f);
 
         AddOutputPin("Value");
     }

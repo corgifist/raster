@@ -45,6 +45,7 @@ build_modules = [
     ["utilities/make/make_transform2d", node, [raster_common]],
     ["utilities/get_time", node, [raster_common, raster_node_category]],
     ["utilities/transport_value", node, [raster_common, raster_node_category]],
+    ["utilities/make/make_vec2", node, [raster_common, raster_node_category]],
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
