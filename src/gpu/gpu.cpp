@@ -139,7 +139,10 @@ namespace Raster {
         this->handle = nullptr;
     }
 
+    static std::thread::id s_mainThreadID;
+
     void GPU::Initialize() {
+        s_mainThreadID = std::this_thread::get_id();
         if (!glfwInit()) {
             throw std::runtime_error("cannot initialize glfw!");
         }
@@ -183,6 +186,20 @@ namespace Raster {
 
         std::cout << info.version << std::endl;
         std::cout << info.renderer << std::endl;
+    }
+
+    void GPU::Flush() {
+        glFinish();
+    }
+
+    void GPU::InitializeContext() {
+        if (std::this_thread::get_id() == s_mainThreadID) {
+            throw std::runtime_error("context already initialized!");
+        }
+
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        auto newContext = glfwCreateWindow(8, 8, "Raster Background Context", nullptr, (GLFWwindow*) info.display);
+        glfwMakeContextCurrent(newContext);
     }
 
     bool GPU::MustTerminate() {

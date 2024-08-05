@@ -109,4 +109,7 @@ namespace Raster {
             [](const T v){ return static_cast<T>(std::toupper(v)); });
         return s2;
     }
+
+    template<typename R>
+    bool IsFutureReady(std::future<R> const& f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
 }

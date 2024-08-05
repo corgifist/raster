@@ -14,6 +14,7 @@ namespace Raster {
         m_attributes["Path"] = std::string("");
 
         this->archive = std::nullopt;
+        this->m_asyncUploadID = 0;
     }
 
     LoadTextureByPath::~LoadTextureByPath() {
@@ -41,11 +42,36 @@ namespace Raster {
 
     void LoadTextureByPath::UpdateTextureArchive() {
         std::string path = GetAttribute<std::string>("Path").value_or("");
-        if (std::filesystem::exists(path)) {
-            archive = TextureArchive(
-                GPU::ImportTexture(path.c_str()),
-                path
-            );
+        if (std::filesystem::exists(path) && !std::filesystem::is_directory(path)) {
+            if (!m_loader.IsInitialized()) {
+                m_loader = AsyncImageLoader(path);
+                if (archive.has_value()) {
+                    auto& textureArchive = archive.value();
+                    AsyncUpload::DestroyTexture(textureArchive.texture);
+                }
+                archive = std::nullopt;
+            }
+            if (m_loader.IsReady()) {
+                auto imageCandidate = m_loader.Get();
+                if (imageCandidate.has_value()) {
+                    auto& image = imageCandidate.value();
+                    
+                    TexturePrecision precision = TexturePrecision::Usual;
+                    if (image->precision == ImagePrecision::Half) precision = TexturePrecision::Half;
+                    if (image->precision == ImagePrecision::Full) precision = TexturePrecision::Full;
+
+                    if (!m_asyncUploadID) {
+                        m_asyncUploadID = AsyncUpload::GenerateTextureFromImage(image);
+                        std::cout << "requesting async upload" << std::endl;
+                    }
+                }
+            }
+            if (AsyncUpload::IsUploadReady(m_asyncUploadID)) {
+                auto& info = AsyncUpload::GetUpload(m_asyncUploadID);
+                archive = TextureArchive(info.texture, path);
+                AsyncUpload::DestroyUpload(m_asyncUploadID);
+                m_loader = AsyncImageLoader();
+            }
         }
     }
 
@@ -58,7 +84,11 @@ namespace Raster {
     }
 
     std::string LoadTextureByPath::AbstractHeader() {
-        return FormatString(" Load Texture By Path: %s", GetAttribute<std::string>("Path").value_or("").c_str());
+        std::string base = FormatString("Load Texture By Path: %s", GetAttribute<std::string>("Path").value_or("").c_str());
+        if (m_loader.IsInitialized() && !m_loader.IsReady()) {
+            base = ICON_FA_SPINNER + (" " + base);
+        }
+        return base;
     }
 
     std::optional<std::string> LoadTextureByPath::Footer() {

@@ -11,6 +11,7 @@ namespace Raster {
     };
 
     struct Image {
+    public:
         ImagePrecision precision;
         std::vector<uint8_t> data;
         uint32_t width; uint32_t height;
@@ -20,6 +21,21 @@ namespace Raster {
     };
 
     struct ImageLoader {
+    public:
         static std::optional<Image> Load(std::string t_path);
+    };
+
+    struct AsyncImageLoader {
+    public:
+        AsyncImageLoader();
+        AsyncImageLoader(std::string t_path);
+
+        bool IsReady();
+        bool IsInitialized();
+        std::optional<std::shared_ptr<Image>> Get();
+
+    private:
+        std::future<std::optional<std::shared_ptr<Image>>> m_future;
+        bool m_initialized;
     };
 };

@@ -127,6 +127,10 @@ namespace Raster {
         static void BeginFrame();
         static void EndFrame();
 
+        static void InitializeContext();
+
+        static void Flush();
+
         static Texture ImportTexture(const char* path);
         static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual);
         static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels);

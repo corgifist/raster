@@ -1,5 +1,6 @@
 #include "app/app.h"
 #include "gpu/gpu.h"
+#include "gpu/async_upload.h"
 #include "font/font.h"
 #include "../ImGui/imgui_node_editor.h"
 #include "common/common.h"
@@ -18,6 +19,7 @@ namespace Raster {
 
     void App::Initialize() {
         GPU::Initialize();
+        AsyncUpload::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
 
         Workspace::s_configuration = Configuration(ReadJson("misc/config.json"));
@@ -196,6 +198,7 @@ namespace Raster {
         if (Workspace::s_project.has_value()) {
             Workspace::GetProject().compositions.clear();
         }
+        AsyncUpload::Terminate();
         GPU::Terminate();
     }
 }

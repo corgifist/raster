@@ -2,6 +2,8 @@
 #include "raster.h"
 #include "common/common.h"
 #include "gpu/gpu.h"
+#include "image/image.h"
+#include "gpu/async_upload.h"
 
 namespace Raster {
 
@@ -14,6 +16,7 @@ namespace Raster {
     };
 
     struct LoadTextureByPath : public NodeBase {
+    public:
         std::optional<TextureArchive> archive;
 
         LoadTextureByPath();
@@ -30,5 +33,9 @@ namespace Raster {
         std::string Icon();
         std::string AbstractHeader();
         std::optional<std::string> Footer();
+
+    private:
+        AsyncUploadInfoID m_asyncUploadID;
+        AsyncImageLoader m_loader;
     };
 };

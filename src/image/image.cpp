@@ -41,4 +41,33 @@ namespace Raster {
         input->close();
         return result;
     }
+
+    AsyncImageLoader::AsyncImageLoader() {
+        this->m_initialized = false;
+    }
+
+    AsyncImageLoader::AsyncImageLoader(std::string t_path) {
+        this->m_future = std::async(std::launch::async, [t_path] {
+            auto candidate = ImageLoader::Load(t_path);
+            if (!candidate.has_value()) return std::optional<std::shared_ptr<Image>>(std::nullopt);
+            return std::optional(std::make_shared<Image>(candidate.value()));
+        });
+        this->m_initialized = true;
+    }
+
+    std::optional<std::shared_ptr<Image>> AsyncImageLoader::Get() {
+        return m_future.get();
+    }
+
+    bool AsyncImageLoader::IsReady() {
+        try {
+            return IsFutureReady(m_future);
+        } catch (...) {
+            return false;
+        }
+    }
+
+    bool AsyncImageLoader::IsInitialized() {
+        return m_initialized;
+    }
 };
