@@ -21,10 +21,16 @@ uniform vec2 uUVAnchor;
 
 uniform bool uMaintainUVRange;
 
+SDF_UNIFORMS_PLACEHOLDER
+
 float saturateUV(float a) {
     if (a < -1.0) a = fract(a);
     if (a < 0.0) return 1.0 + a;
     return mod(a, 1.0);
+}
+
+vec2 saturateUV(vec2 a) {
+    return vec2(saturateUV(a.x), saturateUV(a.y));
 }
 
 vec2 rotate(vec2 v, float a) {
@@ -33,6 +39,8 @@ vec2 rotate(vec2 v, float a) {
 	mat2 m = mat2(c, -s, s, c);
 	return m * v;
 }
+
+SDF_DISTANCE_FUNCTIONS_PLACEHOLDER
 
 void main() {
     gColor = uColor;
@@ -49,7 +57,10 @@ void main() {
 
     uv += 0.5;
 
+    vec2 saturatedUV = saturateUV(uv);
+    float d = SDF_DISTANCE_FUNCTION_PLACEHOLDER(saturatedUV - 0.5);
+    if (d > 0.0) gColor *= vec4(0);
 
     if (uTextureAvailable) gColor *= texture(uTexture, uv);
-    gUV = vec4(uMaintainUVRange ? vec2(saturateUV(uv.x), saturateUV(uv.y)) : uv, 0, 1);
+    gUV = vec4(uMaintainUVRange ? saturatedUV : uv, 0, 1);
 }

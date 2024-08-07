@@ -43,7 +43,7 @@ namespace Raster {
         float fValue = std::any_cast<float>(t_originalValue);
         bool isOpacityAttribute = t_composition->opacityAttributeID == id;
         if (!isOpacityAttribute) {
-            ImGui::DragFloat("##dragFloat", &fValue);
+            ImGui::DragFloat("##dragFloat", &fValue, 0.05);
         } else {
             ImGui::SliderFloat("##sliderFloat", &fValue, 0, 1);
         }

@@ -139,6 +139,15 @@ namespace Raster {
         this->handle = nullptr;
     }
 
+    Shader::Shader() {
+        this->handle = nullptr;
+    }
+
+    Shader::Shader(ShaderType type, void* handle) {
+        this->type = type;
+        this->handle = handle;
+    }
+
     static std::thread::id s_mainThreadID;
 
     void GPU::Initialize() {
@@ -416,10 +425,7 @@ namespace Raster {
                     std::cout << "failed to load cached version of " << name << std::endl;
                 } else {
                     std::cout << "successfully loaded cached version of " << name << std::endl;
-                    return Shader{
-                        .type = type,
-                        .handle = GLUINT_TO_HANDLE(loadedProgram)
-                    };
+                    return Shader(type, GLUINT_TO_HANDLE(loadedProgram));
                 }
             }
         }
@@ -461,12 +467,7 @@ namespace Raster {
             std::cout << "saving cached program binary of " << name << std::endl;
         }
 
-
-
-        return Shader{
-            .type = type,
-            .handle = GLUINT_TO_HANDLE(program)
-        };
+        return Shader(type, GLUINT_TO_HANDLE(program));
     }
 
     Pipeline GPU::GeneratePipeline(Shader vertexShader, Shader fragmentShader) {
@@ -481,6 +482,19 @@ namespace Raster {
         result.fragment = fragmentShader;
         result.handle = GLUINT_TO_HANDLE(pipeline);
         return result;
+    }
+
+    void GPU::DestroyShader(Shader shader) {
+        if (!shader.handle) return;
+        glDeleteProgram(HANDLE_TO_GLUINT(shader.handle));
+    }
+
+    void GPU::DestroyPipeline(Pipeline pipeline) {
+        DestroyShader(pipeline.vertex);
+        DestroyShader(pipeline.fragment);
+        DestroyShader(pipeline.compute);
+        GLuint handle = HANDLE_TO_GLUINT(pipeline.handle);
+        glDeleteProgramPipelines(1, &handle);
     }
 
     int GPU::GetShaderUniformLocation(Shader shader, std::string name) {

@@ -244,7 +244,14 @@ namespace Raster {
 
         static bool renameFieldFocused = false;
         if (ImGui::BeginPopup(renamePopupID.c_str())) {
+            if (!renameFieldFocused) {
+                ImGui::SetKeyboardFocusHere(0);
+                renameFieldFocused = true;
+            }
             ImGui::InputTextWithHint("##renameField", FormatString("%s %s", ICON_FA_FONT, Localization::GetString("ATTRIBUTE_NAME").c_str()).c_str(), &name);
+            if (ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                ImGui::CloseCurrentPopup();
+            }
             ImGui::EndPopup();
         } else renameFieldFocused = false;
 

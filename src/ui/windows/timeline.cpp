@@ -530,6 +530,24 @@ namespace Raster {
 
             s_anyLayerDragged = s_anyLayerDragged || s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive;
 
+            if (compositionHovered && ImGui::GetIO().MouseDoubleClicked[ImGuiMouseButton_Left]) {
+                ImGui::OpenPopup(FormatString("##renameComposition%i", t_id).c_str());
+            }
+            static bool renameFieldFocued = false;
+            PopStyleVars();
+            if (ImGui::BeginPopup(FormatString("##renameComposition%i", t_id).c_str())) {
+                if (!renameFieldFocued) {
+                    ImGui::SetKeyboardFocusHere(0);
+                    renameFieldFocued = true;
+                }
+                ImGui::InputTextWithHint("##renameField", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME").c_str()).c_str(), &composition->name);
+                if (ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            } else renameFieldFocued = false;
+            PushStyleVars();
+
             if (compositionHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 ImGui::OpenPopup(FormatString("##compositionPopup%i", composition->id).c_str());
             }
@@ -717,7 +735,7 @@ namespace Raster {
         }
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str());
-            ImGui::InputText("##compositionName", &t_composition->name);
+            ImGui::InputTextWithHint("##compositionName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME")).c_str(), &t_composition->name);
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME").c_str());
             ImGui::InputTextMultiline("##compositionDescription", &t_composition->description);
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_DESCRIPTION").c_str());

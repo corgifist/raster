@@ -8,7 +8,7 @@ namespace Raster {
 
     std::string Localization::GetString(std::string t_key) {
         if (m_map.find(t_key) == m_map.end()) {
-            return "Unknown Key '" + t_key + "'. Patch Your Localization";
+            return t_key;
         }
         return m_map[t_key];
     }

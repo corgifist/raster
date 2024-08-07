@@ -112,6 +112,9 @@ namespace Raster {
     struct Shader {
         ShaderType type;
         void* handle;
+
+        Shader();
+        Shader(ShaderType type, void* handle);
     };
 
     struct Pipeline {
@@ -172,6 +175,9 @@ namespace Raster {
         static std::string TextureFilteringModeToString(TextureFilteringMode mode);
         static std::string TextureWrappingModeToString(TextureWrappingMode mode);
 
+
+        static void DestroyShader(Shader shader);
+        static void DestroyPipeline(Pipeline pipeline);
 
         // e.g. "shaders/api/"
         static std::string GetShadersPath();

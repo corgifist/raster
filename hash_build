@@ -56,11 +56,17 @@ build_modules = [
     ["sampler_constants/mirrored_repeat_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
-    ["math/sine", node, [raster_common, raster_dynamic_math]]
 
+    ["math/sine", node, [raster_common, raster_dynamic_math]],
     ["math/sine", node, [raster_common, raster_dynamic_math]],
     ["math/abs", node, [raster_common, raster_dynamic_math]],
     ["math/multiply", node, [raster_common, raster_dynamic_math]],
+
+    ["sdf_shapes/sdf_circle", node, [raster_common, raster_node_category, raster_gpu]],
+    ["sdf_shapes/sdf_rounded_rect", node, [raster_common, raster_node_category, raster_gpu]],
+    ["sdf_shapes/sdf_rhombus", node, [raster_common, raster_node_category, raster_gpu]],
+    ["sdf_shapes/sdf_heart", node, [raster_common, raster_node_category, raster_gpu]],
+    ["sdf_shapes/sdf_mix", node, [raster_common, raster_node_category, raster_gpu]],
 
     ["other/debug_print", node, [raster_common, raster_node_category]]
 ]
@@ -122,7 +128,7 @@ scenario dispatch_module_builder {
     if eq($target_module_name, core) {
         target_executable_name = raster
     }
-    link_executable($objects, $target_executable_name, $deps, $target_module_type)
+    link_executable($objects, $target_executable_name, $deps, $target_module_type, raster, ".", "./")
 
     if eq($is_node, true) {
         mv($target_executable_name, cat("nodes/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
