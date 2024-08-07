@@ -14,6 +14,14 @@ namespace Raster {
     AbstractPinMap MakeVec2::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
 
+        auto xCandidate = GetAttribute<float>("X");
+        auto yCandidate = GetAttribute<float>("Y");
+        if (xCandidate.has_value() && yCandidate.has_value()) {
+            auto& x = xCandidate.value();
+            auto& y = yCandidate.value();
+            TryAppendAbstractPinMap(result, "Output", glm::vec2(x, y));
+        }
+
         return result;
     }
 

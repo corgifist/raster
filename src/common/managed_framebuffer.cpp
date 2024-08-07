@@ -30,6 +30,12 @@ namespace Raster {
         return m_internalFramebuffer;
     }
 
+    void ManagedFramebuffer::Destroy() {
+        if (m_internalFramebuffer.handle) {
+            DestroyInternalFramebuffer();
+        }
+    }
+
     void ManagedFramebuffer::EnsureResolutionConstraints() {
         auto requiredResolution = Compositor::GetRequiredResolution();
         if (m_internalFramebuffer.handle && (m_internalFramebuffer.width != requiredResolution.x || m_internalFramebuffer.height != requiredResolution.y)) {
