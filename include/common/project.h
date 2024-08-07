@@ -7,6 +7,7 @@ namespace Raster {
         std::string name, description;
         float framerate;
         float currentFrame;
+        float timeTravelOffset;
 
         glm::vec2 preferredResolution;
         glm::vec4 backgroundColor;
@@ -23,6 +24,10 @@ namespace Raster {
         Project(Json data);
 
         float GetProjectLength();
+        float GetCurrentTime();
+
+        void TimeTravel(float t_offset);
+        void ResetTimeTravel();
         std::string FormatFrameToTime(float frame);
 
         glm::mat4 GetProjectionMatrix(bool inverted = false);

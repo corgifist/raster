@@ -765,7 +765,7 @@ namespace Raster {
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str(), "Tab")) {
                         openSearchPopup = true;
                     }
-                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str())) {
+                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str())) {
                         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
                         for (auto& entry : Attributes::s_attributes) {
                             if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {

@@ -84,6 +84,21 @@ namespace Raster {
         });
     }
 
+    void Compositor::EnsureResolutionConstraintsForFramebuffer(Framebuffer& t_fbo) {
+        auto requiredResolution = GetRequiredResolution();
+        if (!t_fbo.handle) {
+            t_fbo = GenerateCompatibleFramebuffer(requiredResolution);
+            return;
+        }
+        if (t_fbo.width != requiredResolution.x || t_fbo.height != requiredResolution.y) {
+            for (auto& attachment : t_fbo.attachments) {
+                GPU::DestroyTexture(attachment);
+            }
+            GPU::DestroyFramebuffer(t_fbo);
+            t_fbo = GenerateCompatibleFramebuffer(requiredResolution);
+        }
+    }
+
     glm::vec2 Compositor::GetRequiredResolution() {
         if (Workspace::s_project.has_value()) {
             auto& project = Workspace::s_project.value();

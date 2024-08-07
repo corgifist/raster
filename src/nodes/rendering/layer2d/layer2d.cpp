@@ -110,12 +110,7 @@ namespace Raster {
     }
 
     void Layer2D::SetShapeUniforms(SDFShape t_shape, Pipeline pipeline) {
-        print("== BEGIN UNIFORMS ==");
         for (auto& uniform : t_shape.uniforms) {
-            DUMP_VAR(uniform.name);
-            if (uniform.value.type() == typeid(float)) {
-                DUMP_VAR(std::any_cast<float>(uniform.value));
-            }
             UNIFORM_CLAUSE(uniform, float);
             UNIFORM_CLAUSE(uniform, int);
             UNIFORM_CLAUSE(uniform, glm::vec2);
@@ -123,7 +118,6 @@ namespace Raster {
             UNIFORM_CLAUSE(uniform, glm::vec4);
             UNIFORM_CLAUSE(uniform, glm::mat4);
         }
-        print("== END UNIFORMS ==");
     }
 
     void Layer2D::AbstractRenderProperties() {

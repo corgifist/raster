@@ -72,7 +72,7 @@ namespace Raster {
 
         int targetKeyframeIndex = -1;
         int keyframesLength = keyframes.size();
-        float renderViewTime = project.currentFrame - composition->beginFrame;
+        float renderViewTime = t_frame;
 
         for (int i = 0; i < keyframesLength; i++) {
             float keyframeTimestamp = keyframes.at(i).timestamp;

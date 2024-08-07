@@ -164,11 +164,11 @@ namespace Raster {
         if (!enabled || bypassed) return std::nullopt;
         auto attributePinCandidate = GetAttributePin(t_attribute);
         auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
-        if (this->m_accumulator.find(attributePin.connectedPinID) != this->m_accumulator.end()) {
+/*         if (this->m_accumulator.find(attributePin.connectedPinID) != this->m_accumulator.end()) {
             auto dynamicAttribute = this->m_accumulator.at(attributePin.connectedPinID);
             m_attributesCache[t_attribute] = dynamicAttribute;
             return dynamicAttribute;
-        }
+        } */
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value() && targetNode.value()->enabled) {
             auto pinMap = targetNode.value()->AbstractExecute();

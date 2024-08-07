@@ -34,6 +34,7 @@ namespace Raster {
         static Framebuffer GenerateCompatibleFramebuffer(glm::vec2 t_resolution);
 
         static void EnsureResolutionConstraints();
+        static void EnsureResolutionConstraintsForFramebuffer(Framebuffer& t_fbo);
 
         static void PerformComposition(std::vector<int> t_allowedCompositions = {});
 

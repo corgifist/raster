@@ -49,6 +49,7 @@ build_modules = [
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
+    ["rendering/echo", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],

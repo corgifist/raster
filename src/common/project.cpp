@@ -21,6 +21,7 @@ namespace Raster {
         this->selectedAttributes = data["SelectedAttributes"].get<std::vector<int>>();
         this->selectedNodes = data["SelectedNodes"].get<std::vector<int>>();
         this->customData = data["CustomData"];
+        this->timeTravelOffset = 0;
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
         }
@@ -35,6 +36,7 @@ namespace Raster {
             1080, 1080
         };
         this->backgroundColor = {0, 0, 0, 1};
+        this->timeTravelOffset = 0;
     }
 
     float Project::GetProjectLength() {
@@ -59,6 +61,18 @@ namespace Raster {
     glm::mat4 Project::GetProjectionMatrix(bool invert) {
         float aspect = preferredResolution.x / preferredResolution.y;
         return glm::ortho(-aspect, aspect, 1.0f * (invert ? -1 : 1), -1.0f * (invert ? -1 : 1), -1.0f, 1.0f);
+    }
+
+    float Project::GetCurrentTime() {
+        return currentFrame + timeTravelOffset;
+    }
+
+    void Project::TimeTravel(float t_offset) {
+        timeTravelOffset += t_offset;
+    }
+
+    void Project::ResetTimeTravel() {
+        timeTravelOffset = 0;
     }
 
     Json Project::Serialize() {

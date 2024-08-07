@@ -16,9 +16,9 @@ namespace Raster {
         if (relativeTimeCandidate.has_value()) {
             bool relativeTime = relativeTimeCandidate.value();
             if (relativeTime) {
-                TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().currentFrame - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame);
+                TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().GetCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame);
             } else {
-                TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().currentFrame);
+                TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().GetCurrentTime());
             }
         }
         return result;

@@ -382,6 +382,7 @@ namespace Raster {
 
     void PreviewDispatchers::DispatchFramebufferValue(std::any& t_attribute) {
         auto framebuffer = std::any_cast<Framebuffer>(t_attribute);
+        if (framebuffer.attachments.empty()) return;
 
         static int attachmentIndex = 0;
         if (attachmentIndex >= framebuffer.attachments.size()) attachmentIndex = framebuffer.attachments.size() - 1;
