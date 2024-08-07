@@ -72,7 +72,7 @@ namespace Raster {
         std::string base = "Get Attribute Value";
         auto attributeCandidate = GetCompositionAttribute();
         if (attributeCandidate.has_value()) {
-            return base + " (" + attributeCandidate.value()->name + ")";
+            return attributeCandidate.value()->name;
         }
         return base;
     }

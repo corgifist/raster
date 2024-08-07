@@ -15,6 +15,12 @@ namespace Raster {
         std::string attribute;
     };
 
+    struct DeferredNodeCreation {
+        int nodeID;
+        ImVec2 position;
+        bool mustBeSelected;
+    };
+
 
     static ImVec2 s_headerSize, s_originalCursor;
     static float s_maxInputPinX, s_maxOutputPinX;
@@ -39,6 +45,7 @@ namespace Raster {
     };
 
     static std::vector<NodePositioningTask> s_positioningTasks;
+    static std::vector<DeferredNodeCreation> s_deferredNodeCreations;
 
     std::optional<ImVec4> NodeGraphUI::GetColorByDynamicValue(std::any& value) {
         for (auto& color : Workspace::s_typeColors) {
@@ -398,6 +405,15 @@ namespace Raster {
                             s_maxOutputPinX = maxOutputXCandidate;
 
                             Nodes::BeginNode(node->nodeID);
+                                for (auto& deferredNodeCreationInfo : s_deferredNodeCreations) {
+                                    if (deferredNodeCreationInfo.nodeID == node->nodeID) {
+                                        Nodes::SetNodePosition(node->nodeID, deferredNodeCreationInfo.position);
+                                        if (deferredNodeCreationInfo.mustBeSelected) {
+                                            Nodes::SelectNode(node->nodeID);
+                                            s_mustNavigateToSelection = true;
+                                        }
+                                    }
+                                }
                                 s_maxRuntimeInputPinX = 0;
                                 s_originalCursor = ImGui::GetCursorScreenPos();
                                 ImVec2 originalCursor = ImGui::GetCursorScreenPos();
@@ -513,6 +529,8 @@ namespace Raster {
                             }
                         }
 
+                        s_deferredNodeCreations.clear();
+
                         for (auto& node : s_currentComposition->nodes) {
                             if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
                                 auto sourcePin = node->flowInputPin.value();
@@ -615,7 +633,7 @@ namespace Raster {
                             if (Nodes::AcceptNewItem()) {
                                 openSearchPopup = true;
                             }
-                        }
+                        } 
                         Nodes::EndCreate();
 
                         if (Nodes::BeginDelete()) {
@@ -758,10 +776,11 @@ namespace Raster {
                                     auto attributeNode = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value").value();
                                     attributeNode->SetAttributeValue("AttributeID", s_currentComposition->attributes.back()->id);
                                     s_currentComposition->nodes.push_back(attributeNode);
-                                    Nodes::BeginNode(attributeNode->nodeID);
-                                    Nodes::EndNode();
-                                    Nodes::SelectNode(attributeNode->nodeID);
-                                    s_mustNavigateToSelection = true;
+                                    s_deferredNodeCreations.push_back(DeferredNodeCreation{
+                                        .nodeID = attributeNode->nodeID,
+                                        .position = s_mousePos,
+                                        .mustBeSelected = true
+                                    });
                                 }
                             }
                         }
@@ -897,11 +916,12 @@ namespace Raster {
                                             }
                                         } else {
                                             if (!lastLineNode->inputPins.empty() && !node->outputPins.empty()) {
-                                                auto& nodeInputPin = node->inputPins[0];
-                                                lastLineNode->inputPins[0].connectedPinID = node->outputPins[0].pinID;
+                                                lastLinePin.connectedPinID = node->outputPins[0].pinID;
+                                                Workspace::UpdatePinByID(lastLinePin, lastLinePin.pinID);
                                             }
                                         }
                                     }
+                                    connectedLastLinePin = 0;
                                 }
                             }
                             ImGui::CloseCurrentPopup();
@@ -1011,9 +1031,10 @@ namespace Raster {
                             auto& attributeNode = attributeNodeCandidate.value();
                             attributeNode->SetAttributeValue("AttributeID", attributePayload.attributeID);
                             s_currentComposition->nodes.push_back(attributeNode);
-                            s_positioningTasks.push_back(NodePositioningTask{
+                            s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = attributeNode->nodeID,
-                                .position = s_mousePos
+                                .position = s_mousePos,
+                                .mustBeSelected = true
                             });
                         }
                     }
