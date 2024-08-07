@@ -62,12 +62,16 @@ build_modules = [
     ["math/sine", node, [raster_common, raster_dynamic_math]],
     ["math/abs", node, [raster_common, raster_dynamic_math]],
     ["math/multiply", node, [raster_common, raster_dynamic_math]],
+    ["math/add", node, [raster_common, raster_dynamic_math]],
+    ["math/subtract", node, [raster_common, raster_dynamic_math]],
+    ["math/divide", node, [raster_common, raster_dynamic_math]],
 
     ["sdf_shapes/sdf_circle", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_rounded_rect", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_rhombus", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_heart", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_mix", node, [raster_common, raster_node_category, raster_gpu]],
+    ["sdf_shapes/sdf_annular", node, [raster_common, raster_node_category, raster_gpu]],
 
     ["other/debug_print", node, [raster_common, raster_node_category]]
 ]
