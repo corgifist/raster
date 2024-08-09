@@ -39,7 +39,6 @@ namespace Raster {
             auto dynamicValue = parentAttribute->Get(project.currentFrame - parentComposition->beginFrame, parentComposition);
             if (dynamicValue.type() == typeid(Transform2D)) {
                 auto transform = std::any_cast<Transform2D>(dynamicValue);
-                std::cout << "correcting transform" << std::endl;
                 result.parentMatrix = transform.GetTransformationMatrix();
             }
         }
@@ -55,6 +54,7 @@ namespace Raster {
 
     void Transform2DAttribute::Load(Json t_data) {
         keyframes.clear();
+        m_linkedSize = t_data["LinkedSize"];
         for (auto& keyframe : t_data["Keyframes"]) {
             keyframes.push_back(
                 AttributeKeyframe(
@@ -71,6 +71,11 @@ namespace Raster {
         Transform2D transform = std::any_cast<Transform2D>(t_originalValue);
         auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
         std::string buttonText = FormatString("%s %s | %s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("EDIT_VALUE").c_str(), ICON_FA_SITEMAP, parentAttributeCandidate.has_value() ? parentAttributeCandidate.value()->name.c_str() : Localization::GetString("NO_PARENT").c_str());
+        if (ImGui::Button(m_linkedSize ? ICON_FA_LINK : ICON_FA_LINK_SLASH)) {
+            m_linkedSize = !m_linkedSize;
+        }
+        ImGui::SetItemTooltip("%s %s", ICON_FA_LINK, "Link Dimensions");
+        ImGui::SameLine(0, 2);
         if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
             ImGui::OpenPopup(FormatString("##%iattribute", id).c_str());
         }
@@ -192,15 +197,7 @@ namespace Raster {
             ImGui::EndDragDropSource();
         }
         if (ImGui::BeginPopup(FormatString("##%iattribute", id).c_str())) {
-            if (!project.customData.contains("Transform2DAttributeData")) {
-                project.customData["Transform2DAttributeData"] = {};
-            }
-            auto& customData = project.customData["Transform2DAttributeData"];
-            auto stringID = std::to_string(id);
-            if (!customData.contains(stringID)) {
-                customData[stringID] = false;
-            }
-            bool linkedSize = customData[stringID];
+            bool& linkedSize = m_linkedSize;
 
             ImGui::SeparatorText(FormatString("%s Edit Value: %s", ICON_FA_UP_DOWN_LEFT_RIGHT, name.c_str()).c_str());
             
@@ -231,7 +228,6 @@ namespace Raster {
                     transform.size.x = transform.size.y;
                 }
             }
-            customData[stringID] = linkedSize;
 
             ImGui::Text("%s Anchor", ICON_FA_ANCHOR);
             ImGui::SameLine();
@@ -258,7 +254,8 @@ namespace Raster {
 
     Json Transform2DAttribute::AbstractSerialize() {
         Json result = {
-            {"Keyframes", {}}
+            {"Keyframes", {}},
+            {"LinkedSize", m_linkedSize}
         };
         for (auto& keyframe : keyframes) {
             result["Keyframes"].push_back({

@@ -192,10 +192,36 @@ namespace Raster {
     void AttributeDispatchers::DispatchVec2Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
         auto& project = Workspace::GetProject();
 
+        if (!project.customData.contains("Vec2AttributeDispatcherData")) {
+            project.customData["Vec4AttributeDispatcherData"] = {
+                {"Placeholder", false}
+            };
+        }
+        auto& linkedSizeDict = project.customData["Vec2AttributeDispatcherData"];
+        std::string id = FormatString("##%s%i", t_attribute.c_str(), t_owner->nodeID);
+        if (!linkedSizeDict.contains(id)) {
+            linkedSizeDict[id] = false;
+        }
+        bool linkedSize = linkedSizeDict[id];
+
         auto v = std::any_cast<glm::vec2>(t_value);
+        auto reservedVector = v;
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
+        if (ImGui::Button(linkedSize ? ICON_FA_LINK : ICON_FA_LINK_SLASH)) {
+            linkedSize = !linkedSize;
+        }
+        ImGui::SameLine();
         ImGui::DragFloat2(FormatString("##%s", t_attribute.c_str()).c_str(), glm::value_ptr(v));
+        if (linkedSize) {
+            if (reservedVector.x != v.x) {
+                v.y = v.x;
+            } else if (reservedVector.y != v.y) {
+                v.x = v.y;
+            }
+        }
+
+        linkedSizeDict[id] = linkedSize;
 
         t_value = v;
 
@@ -308,7 +334,6 @@ namespace Raster {
         ImGui::Combo("##wrappingModes", &selectedWrappingMode, wrappingRawStringModes.data(), wrappingRawStringModes.size());
 
         samplerSettings.wrappingMode = wrappingModes[selectedWrappingMode];
-
 
         static std::vector<TextureFilteringMode> filteringModes = {
             TextureFilteringMode::Linear,

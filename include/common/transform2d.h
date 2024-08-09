@@ -15,6 +15,10 @@ namespace Raster {
 
         glm::mat4 GetTransformationMatrix();
 
+        glm::vec2 DecomposePosition();
+        glm::vec2 DecomposeSize();
+        float DecomposeRotation();
+
         Json Serialize();
     };
 }

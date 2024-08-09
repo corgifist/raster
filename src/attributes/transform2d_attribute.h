@@ -27,6 +27,7 @@ namespace Raster {
 
         Json AbstractSerialize();
     private:
+        bool m_linkedSize;
         int m_parentAttributeID;
     };
 };

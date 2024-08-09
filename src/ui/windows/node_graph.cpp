@@ -282,6 +282,8 @@ namespace Raster {
         int uniqueID = 0;
         std::unordered_map<int, DeferredAttributeExposure> exposures;
 
+        static std::optional<ImVec2> nodeSearchMousePos;
+
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
         ImGui::PushFont(Font::s_denseFont);
             static std::unordered_map<int, Nodes::EditorContext*> compositionContexts;
@@ -318,6 +320,8 @@ namespace Raster {
             static float dimPercentage = -1.0f;
             static float previousDimPercentage;
             static bool dimming = false;
+
+            std::optional<int> openDescriptionRenamePopup;
 
             Nodes::SetCurrentEditor(ctx);
 
@@ -431,7 +435,33 @@ namespace Raster {
                                         s_headerSize.x = footerSize.x;
                                     }
                                 }
-                                ImGui::Text("%s", header.c_str());
+                                static std::unordered_map<int, bool> s_labelHoveredMap;
+                                static std::unordered_map<int, bool> s_labelClickedMap;
+
+                                if (s_labelHoveredMap.find(node->nodeID) == s_labelHoveredMap.end()) {
+                                    s_labelHoveredMap[node->nodeID] = false;
+                                    s_labelClickedMap[node->nodeID] = false;
+                                }
+
+                                bool& labelHovered = s_labelHoveredMap[node->nodeID];
+                                bool& labelClicked = s_labelClickedMap[node->nodeID];
+
+                                float textAlpha = 1.0f;
+
+                                if (labelHovered) textAlpha *= 0.9f;
+                                if (labelClicked) textAlpha *= 0.9f;
+
+                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, textAlpha));
+                                    ImGui::Text("%s", header.c_str());
+                                ImGui::PopStyleColor();
+
+                                if (labelHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                                    openDescriptionRenamePopup = node->nodeID;
+                                }
+
+                                labelHovered = ImGui::IsItemHovered();
+                                labelClicked = ImGui::IsItemClicked();
+                                
                                 if (node->DetailsAvailable()) {
                                     ImGui::SetWindowFontScale(s_pinTextScale);
                                     std::optional<float> detailsCursorX = std::nullopt;
@@ -668,6 +698,20 @@ namespace Raster {
                         Nodes::EndDelete();
 
                         Nodes::Suspend();
+                        for (auto& node : s_currentComposition->nodes) {
+                            std::string popupID = FormatString("##descriptionRename%i", node->nodeID);
+                            if (openDescriptionRenamePopup.value_or(-1) == node->nodeID) {
+                                ImGui::OpenPopup(popupID.c_str());
+                                openDescriptionRenamePopup = std::nullopt;
+                            }
+
+                            if (ImGui::BeginPopup(popupID.c_str())) {
+                                ImGui::SetKeyboardFocusHere(0);
+                                ImGui::InputTextWithHint("##description", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NODE_DESCRIPTION").c_str()).c_str(), &node->overridenHeader);
+                                ImGui::EndPopup();
+                            }
+                        }
+
                         if (Nodes::ShowBackgroundContextMenu()) {
                             ImGui::OpenPopup("##createNewNode");
                         }
@@ -681,6 +725,7 @@ namespace Raster {
                 if (drawLastLine) Nodes::DrawLastLine();
                 Nodes::Suspend();
 
+                static std::optional<float> nodeContextMenuWidth;
                 if (ImGui::BeginPopup("##nodeContextMenu")) {
                     ImGui::PushFont(Font::s_normalFont);
                     auto nodeCandidate = Workspace::GetNodeByNodeID((int) contextNodeID.Get());
@@ -688,7 +733,14 @@ namespace Raster {
                         auto& node = nodeCandidate.value();
                         ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
                         ImGui::Text("%s %s: %i", ICON_FA_GEARS, Localization::GetString("EXECUTIONS_PER_FRAME").c_str(), node->executionsPerFrame);
-                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ATTRIBUTES").c_str()).c_str())) {
+                        if (ImGui::Button(FormatString("%s %s", node->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
+                            node->enabled = !node->enabled;
+                        }
+                        ImGui::SameLine(0, 2);
+                        if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
+                            node->bypassed = !node->bypassed;
+                        }
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("EXPOSE_HIDE_ATTRIBUTES").c_str()).c_str())) {
                             int id = 0;
                             for (auto& attribute : node->GetAttributesList()) {
                                 bool isAttributeExposed = false;
@@ -722,30 +774,34 @@ namespace Raster {
                             }
                             ImGui::EndMenu();
                         }
-                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str()).c_str())) {
-                            ImGui::InputText("##nodeDescription", &node->overridenHeader);
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NODE_DESCRIPTION").c_str()).c_str())) {
+                            ImGui::InputTextWithHint("##nodeDescription", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NODE_DESCRIPTION").c_str()).c_str(), &node->overridenHeader);
                             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str());
                             ImGui::EndMenu();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_NODE").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_NODES").c_str()).c_str(), "Delete")) {
                             Nodes::DeleteNode(node->nodeID);
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_NODES").c_str()).c_str(), "Ctrl+C")) {
                             ProcessCopyAction();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE_SELECTED_NODES").c_str()).c_str(), "Ctrl+V")) {
                             ProcessPasteAction();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_SELECTED_NODES").c_str()).c_str(), "Ctrl+D")) {
                             ProcessCopyAction();
                             ProcessPasteAction();
                         }
+                        ImGui::SameLine();
+                        if (!nodeContextMenuWidth.has_value()) nodeContextMenuWidth = ImGui::GetCursorPosX();
+                        ImGui::NewLine();
                     } else {
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::PopFont();
+
                     ImGui::EndPopup();
-                }
+                } else nodeContextMenuWidth = std::nullopt;
 
 
                 previousDimPercentage = dimPercentage;
@@ -757,7 +813,6 @@ namespace Raster {
                     dimPercentage = std::clamp(dimPercentage, 0.0f, dimB);
                 }
                 bool popupVisible = true;
-                static std::optional<ImVec2> nodeSearchMousePos;
                 if (ImGui::BeginPopup("##createNewNode")) {
                     ImGui::PushFont(Font::s_normalFont);
                     if (!nodeSearchMousePos.has_value()) nodeSearchMousePos = s_mousePos;
@@ -778,7 +833,7 @@ namespace Raster {
                                     s_currentComposition->nodes.push_back(attributeNode);
                                     s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                         .nodeID = attributeNode->nodeID,
-                                        .position = s_mousePos,
+                                        .position = nodeSearchMousePos.value_or(s_mousePos),
                                         .mustBeSelected = true
                                     });
                                 }
@@ -1033,7 +1088,7 @@ namespace Raster {
                             s_currentComposition->nodes.push_back(attributeNode);
                             s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = attributeNode->nodeID,
-                                .position = s_mousePos,
+                                .position = nodeSearchMousePos.value_or(s_mousePos),
                                 .mustBeSelected = true
                             });
                         }

@@ -117,5 +117,11 @@
     "NAVIGATE_TO_SELECTED": "Navigate to Selected",
     "NAVIGATE_TO_FIT": "Navigate to Fit",
     "UNKNOWN_PRECISION": "Unknown Precision",
-    "ASPECT_RATIO": "Aspect Ratio"
+    "ASPECT_RATIO": "Aspect Ratio",
+    "COPY_SELECTED_NODES": "Copy Selected Nodes",
+    "DELETE_SELECTED_NODES": "Delete Selected Nodes",
+    "PASTE_SELECTED_NODES": "Paste Selected Nodes",
+    "DUPLICATE_SELECTED_NODES": "Duplicate Selected Nodes",
+    "EXPOSE_HIDE_ATTRIBUTES": "Expose/Hide Attributes",
+    "NODE_DESCRIPTION": "Node Description"
 }

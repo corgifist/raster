@@ -18,6 +18,7 @@ namespace Raster {
         {ATTRIBUTE_TYPE(float), RASTER_COLOR32(66, 135, 245, 255)},
         {ATTRIBUTE_TYPE(glm::vec4), RASTER_COLOR32(242, 183, 22, 255)},
         {ATTRIBUTE_TYPE(glm::vec3), RASTER_COLOR32(242, 183, 0, 255)},
+        {ATTRIBUTE_TYPE(glm::vec2), RASTER_COLOR32(185, 214, 56, 255)},
         {ATTRIBUTE_TYPE(Raster::Framebuffer), RASTER_COLOR32(52, 235, 171, 255)},
         {ATTRIBUTE_TYPE(Transform2D), RASTER_COLOR32(120, 66, 245, 255)},
         {ATTRIBUTE_TYPE(SamplerSettings), RASTER_COLOR32(124, 186, 53, 255)}
