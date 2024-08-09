@@ -33,7 +33,7 @@ namespace Raster {
             resultTransform.size = size;
             resultTransform.anchor = anchor;
             resultTransform.angle = angle;
-            resultTransform.parentMatrix = parentTransform.GetTransformationMatrix();
+            resultTransform.parentTransform = std::make_shared<Transform2D>(parentTransform);
             TryAppendAbstractPinMap(result, "Output", resultTransform);
         }
         return result;

@@ -275,7 +275,7 @@ namespace Raster {
         glm::mat4 anchorTransformMatrix = glm::identity<glm::mat4>();
         anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.position, 0));
         anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.anchor, 0));
-        anchorTransformMatrix = transform.parentMatrix * anchorTransformMatrix;
+        anchorTransformMatrix = transform.GetParentMatrix() * anchorTransformMatrix;
 
         glm::vec4 anchorPointNDC4 = project.GetProjectionMatrix(true) * anchorTransformMatrix * glm::vec4(0, 0, 0, 1);
         glm::vec2 anchorPointScreen = glm::vec2(anchorPointNDC4.x, anchorPointNDC4.y);

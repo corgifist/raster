@@ -59,7 +59,6 @@ namespace Raster {
                     GPU::DrawArrays(3);
 
                     project.TimeTravel(frameStep);
-                    ClearAttributesCache(); // triggering redraw
                 }
             }
             TryAppendAbstractPinMap(result, "Framebuffer", m_framebuffer);

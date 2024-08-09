@@ -21,5 +21,6 @@ namespace Raster {
         Framebuffer m_framebuffer, m_temporalFramebuffer;
 
         static std::optional<Pipeline> s_pipeline;
+        static std::optional<Sampler> s_sampler;
     };
 };

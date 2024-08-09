@@ -6,7 +6,7 @@ namespace Raster {
         this->size = glm::vec2(1);
         this->angle = 0.0f;
 
-        this->parentMatrix = glm::identity<glm::mat4>();
+        this->parentTransform = nullptr;
     }
 
     Transform2D::Transform2D(Json t_data) {
@@ -30,7 +30,11 @@ namespace Raster {
         transform = glm::rotate(transform, glm::radians(-angle), glm::vec3(0, 0, 1));
         transform = glm::translate(transform, glm::vec3(-anchor, 0.0f));
         transform = glm::scale(transform, glm::vec3(size, 1.0f));   
-        return parentMatrix * transform;
+        return GetParentMatrix() * transform;
+    }
+
+    glm::mat4 Transform2D::GetParentMatrix() {
+        return (parentTransform == nullptr) ? glm::identity<glm::mat4>() : parentTransform->GetTransformationMatrix();
     }
 
     glm::vec2 Transform2D::DecomposePosition() {
@@ -47,11 +51,10 @@ namespace Raster {
     }
 
     float Transform2D::DecomposeRotation() {
-        auto mat = GetTransformationMatrix();
-        mat[0] = glm::normalize(mat[0]);
-        mat[1] = glm::normalize(mat[1]);
-        mat[2] = glm::normalize(mat[2]);
-        return glm::degrees(atan2f(mat[0][1], mat[0][0]));
+        if (parentTransform != nullptr) {
+            return parentTransform->DecomposeRotation() + angle;
+        }
+        return angle;
     }
 
     Json Transform2D::Serialize() {

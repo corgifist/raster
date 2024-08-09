@@ -39,7 +39,7 @@ namespace Raster {
             auto dynamicValue = parentAttribute->Get(project.currentFrame - parentComposition->beginFrame, parentComposition);
             if (dynamicValue.type() == typeid(Transform2D)) {
                 auto transform = std::any_cast<Transform2D>(dynamicValue);
-                result.parentMatrix = transform.GetTransformationMatrix();
+                result.parentTransform = std::make_shared<Transform2D>(transform);
             }
         }
 
