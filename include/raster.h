@@ -91,7 +91,7 @@ namespace Raster {
     }
 
     template <typename T>
-    std::basic_string<T> LowerCase(const std::basic_string<T>& s) {
+    static std::basic_string<T> LowerCase(const std::basic_string<T>& s) {
         std::basic_string<T> s2 = s;
         std::transform(s2.begin(), s2.end(), s2.begin(),
             [](const T v){ return static_cast<T>(std::tolower(v)); });
@@ -99,7 +99,7 @@ namespace Raster {
     }
 
     template <typename T>
-    std::basic_string<T> UpperCase(const std::basic_string<T>& s) {
+    static std::basic_string<T> UpperCase(const std::basic_string<T>& s) {
         std::basic_string<T> s2 = s;
         std::transform(s2.begin(), s2.end(), s2.begin(),
             [](const T v){ return static_cast<T>(std::toupper(v)); });
@@ -107,5 +107,11 @@ namespace Raster {
     }
 
     template<typename R>
-    bool IsFutureReady(std::future<R> const& f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
+    static bool IsFutureReady(std::future<R> const& f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
+    
+    template<class T>
+    static T GetBaseName(T const & path, T const & delims = "/\\") {
+        return path.substr(path.find_last_of(delims) + 1);
+    }
+
 }

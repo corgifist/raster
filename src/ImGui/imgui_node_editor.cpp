@@ -931,6 +931,7 @@ void ed::Link::Draw(ImDrawList* drawList, ImU32 color, float extraThickness) con
         const auto endArrowWidth = isEnd && m_EndPin && m_EndPin->m_ArrowWidth > 0.0f
                 ? m_EndPin->m_ArrowWidth + extraThickness : 0.0f;
 
+
         const auto bezier = ImCubicBezierPoints { curve.m_Points[i], curve.m_Points[i + 1],
                                                   curve.m_Points[i + 2], curve.m_Points[i + 3] };
         ImDrawList_AddBezierWithArrows(drawList, bezier, m_Thickness + extraThickness, startArrowSize,

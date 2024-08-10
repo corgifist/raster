@@ -9,6 +9,7 @@
 #include "../../ImGui/imgui_stdlib.h"
 
 #include "../../ImGui/imgui_drag.h"
+#include "../../ImGui/imgui_stripes.h"
 
 namespace Raster {
     struct TimelineUI : public UI {

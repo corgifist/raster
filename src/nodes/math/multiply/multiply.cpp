@@ -35,7 +35,7 @@ namespace Raster {
     }
 
     bool Multiply::AbstractDetailsAvailable() {
-        return true;
+        return false;
     }
 
     std::string Multiply::AbstractHeader() {

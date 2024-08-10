@@ -5,6 +5,7 @@
 #include "attribute_dispatchers.h"
 #include "overlay_dispatchers.h"
 #include "common/transform2d.h"
+#include "../ImGui/imgui_stripes.h"
 
 namespace Raster {
 
@@ -235,11 +236,7 @@ namespace Raster {
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::BeginChild("##transformContainer", iFitSize, ImGuiChildFlags_Border);
-            RectBounds backgroundBounds(
-                ImVec2(0, 0), 
-                iFitSize
-            );
-            ImGui::GetWindowDrawList()->AddRectFilled(backgroundBounds.UL, backgroundBounds.BR, ImGui::GetColorU32(ImVec4(0, 0, 0, 1)));
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 20, iFitSize);
             OverlayDispatchers::s_attributeName = t_attribute;
             OverlayDispatchers::DispatchTransform2DValue(t_value, Workspace::GetCompositionByNodeID(t_owner->nodeID).value(), t_owner->nodeID, 1.0f, fitSize);
         ImGui::EndChild();

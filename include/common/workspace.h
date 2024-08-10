@@ -9,6 +9,7 @@
 #include "composition.h"
 #include "attribute.h"
 #include "sampler_settings.h"
+#include "easings.h"
 
 #define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
 
@@ -59,10 +60,5 @@ namespace Raster {
         static std::string GetTypeName(std::any& t_value);
 
         static Project& GetProject();
-
-        template<class T>
-        static T GetBaseName(T const & path, T const & delims = "/\\") {
-            return path.substr(path.find_last_of(delims) + 1);
-        }
     };
 };

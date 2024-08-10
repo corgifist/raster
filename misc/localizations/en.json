@@ -123,5 +123,19 @@
     "PASTE_SELECTED_NODES": "Paste Selected Nodes",
     "DUPLICATE_SELECTED_NODES": "Duplicate Selected Nodes",
     "EXPOSE_HIDE_ATTRIBUTES": "Expose/Hide Attributes",
-    "NODE_DESCRIPTION": "Node Description"
+    "NODE_DESCRIPTION": "Node Description",
+    "DELETE_SELECTED_KEYFRAMES": "Delete Selected Keyframes",
+    "DUPLICATE_SELECTED_KEYFRAMES": "Duplicate Selected Keyframes",
+    "KEYFRAME_EASING": "Keyframe Easing",
+    "TOTAL": "Total",
+    "KEYFRAMES": "Keyframes",
+    "NO_EASING": "No Easing",
+    "RESET_POINT_POSITION": "Reset Point Position",
+    "NO_EASING_SELECTED": "No Easing Selected",
+    "NO_EASING_AVAILABLE": "No Easing Available",
+    "NO_KEYFRAME_AVAILABLE": "No Keyframe Available",
+    "NO_ATTRIBUTE_AVAILABLE": "No Attribute Available",
+    "OVERSHOOT": "Enable/Disable Overshoot",
+    "EASING_EDITOR": "Easing Editor",
+    "DOUBLE_CLICK_FOR_EASING_EDITING": "Double Click for Easing Editing"
 }

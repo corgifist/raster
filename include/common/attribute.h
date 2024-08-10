@@ -2,6 +2,7 @@
 
 #include "raster.h"
 #include "typedefs.h"
+#include "easing_base.h"
 
 namespace Raster {
 
@@ -11,9 +12,12 @@ namespace Raster {
         int id;
         float timestamp;
         std::any value;
+        std::optional<AbstractEasing> easing;
 
         AttributeKeyframe(float t_timestamp, std::any t_value);
         AttributeKeyframe(int t_id, float t_timestamp, std::any t_value);
+
+        Json Serialize(Json t_customData);
     };
 
     struct AttributeDragDropPayload {
@@ -30,7 +34,10 @@ namespace Raster {
         std::any Get(float t_frame, Composition* composition);
         virtual void RenderKeyframes() = 0;
         void RenderLegend(Composition* t_composition);
-        virtual void Load(Json t_data) = 0;
+        virtual void Load(Json t_data) {};
+        
+        virtual Json SerializeKeyframeValue(std::any t_value) = 0;
+        virtual std::any LoadKeyframeValue(Json t_value) = 0;
 
         virtual void AbstractRenderDetails() {};
 
@@ -45,6 +52,7 @@ namespace Raster {
         bool KeyframeExists(float t_timestamp);
         std::optional<AttributeKeyframe*> GetKeyframeByTimestamp(float t_timestamp);
         std::optional<int> GetKeyframeIndexByTimestamp(float t_timestamp);
+        std::optional<int> GetKeyframeIndexByID(int t_id);
 
         protected:
 
@@ -53,15 +61,18 @@ namespace Raster {
         virtual std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) = 0;
         virtual std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) = 0;
 
-        void RenderKeyframe(AttributeKeyframe t_keyframe);
+        void RenderKeyframe(AttributeKeyframe& t_keyframe);
 
-        virtual Json AbstractSerialize() = 0;
+        virtual Json AbstractSerialize() { return {}; };
 
         void Initialize();
 
         Composition* composition;
 
         private:
+
+        void RenderKeyframePopup(AttributeKeyframe& t_keyframe);
+
         static std::vector<int> m_deletedKeyframes;
     };
 

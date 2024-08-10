@@ -2,6 +2,7 @@
 #include "font/font.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
+#include "../ImGui/imgui_stripes.h"
 #include "gpu/gpu.h"
 #include "overlay_dispatchers.h"
 #include "preview_dispatchers.h"
@@ -90,6 +91,23 @@ namespace Raster {
         static float zoom = 1.0f;
         bool imageDragAllowed = true;
 
+        static bool mustAnimate = false;
+        static float beginZoom = 0.0f;
+        static float endZoom = 0.0f;
+        static ImVec2 beginImageOffset;
+        static ImVec2 endImageOffset;
+
+        static float animationPercentage = 1.0f;
+
+        if (mustAnimate) {
+            zoom = ImLerp(beginZoom, endZoom, std::clamp(animationPercentage * animationPercentage, 0.0f, 1.0f));
+            imageOffset = ImLerp(beginImageOffset, endImageOffset, std::clamp(animationPercentage * animationPercentage, 0.0f, 1.0f));
+            if (animationPercentage > 1.0f) {
+                mustAnimate = false;
+            }
+        }
+        animationPercentage += ImGui::GetIO().DeltaTime * 4;
+
         Texture texture = std::any_cast<Texture>(t_attribute);
         ImVec2 fitTextureSize = FitRectInRect(ImGui::GetWindowSize(), ImVec2(texture.width, texture.height));
 
@@ -103,6 +121,8 @@ namespace Raster {
                 ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
                 ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
             } + imageOffset);
+
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 194, ImVec2{fitTextureSize.x, fitTextureSize.y} * zoom);
             ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
             auto& project = Workspace::GetProject();
@@ -176,13 +196,20 @@ namespace Raster {
 
             imageDrag.Activate();
             float imageDragDistance;
+
+            static float zoomPower;
+
             if (imageDrag.GetDragDistance(imageDragDistance) && imageDragAllowed) {
                 imageOffset = imageOffset + ImGui::GetIO().MouseDelta;
             } else imageDrag.Deactivate();
             if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
-                zoom += ImGui::GetIO().MouseWheel * 0.1f;
-                zoom = std::max(zoom, 0.5f);
+                zoomPower = ImGui::GetIO().MouseWheel * 0.1f;
             }
+
+            zoom += zoomPower / 2.0f;
+            zoomPower /= 2.0f;
+
+            zoom = std::max(zoom, 0.5f);
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
                 ImGui::OpenPopup("##texturePopup");
@@ -190,8 +217,14 @@ namespace Raster {
             if (ImGui::BeginPopup("##texturePopup")) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("ATTRIBUTE").c_str()).c_str());
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("REVERT_VIEW").c_str()).c_str())) {
-                    zoom = 1.0f;
-                    imageOffset = ImVec2(0, 0);
+                    /* zoom = 1.0f;
+                    imageOffset = ImVec2(0, 0); */
+                    mustAnimate = true;
+                    beginZoom = zoom;
+                    endZoom = 1.0f;
+                    beginImageOffset = imageOffset;
+                    endImageOffset = ImVec2(0, 0);
+                    animationPercentage = 0.0f;
                 }
                 ImGui::EndPopup();
             }

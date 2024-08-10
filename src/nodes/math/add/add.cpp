@@ -35,7 +35,7 @@ namespace Raster {
     }
 
     bool Add::AbstractDetailsAvailable() {
-        return true;
+        return false;
     }
 
     std::string Add::AbstractHeader() {

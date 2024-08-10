@@ -35,7 +35,7 @@ namespace Raster {
     }
 
     bool Subtract::AbstractDetailsAvailable() {
-        return true;
+        return false;
     }
 
     std::string Subtract::AbstractHeader() {

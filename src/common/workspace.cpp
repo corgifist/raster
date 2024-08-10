@@ -55,8 +55,10 @@ namespace Raster {
                 // skip
             }
             s_nodeImplementations.push_back(implementation);
-            std::cout << "Loading node '" << transformedPath << "'" << std::endl;
+            std::cout << "loading node '" << implementation.description.packageName << "'" << std::endl;
         }
+
+        Easings::Initialize();
     }
 
     std::optional<AbstractNode> Workspace::CopyAbstractNode(AbstractNode node) {

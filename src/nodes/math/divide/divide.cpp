@@ -35,7 +35,7 @@ namespace Raster {
     }
 
     bool Divide::AbstractDetailsAvailable() {
-        return true;
+        return false;
     }
 
     std::string Divide::AbstractHeader() {

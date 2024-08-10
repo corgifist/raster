@@ -25,8 +25,6 @@ namespace Raster {
         Json Serialize();
     };
 
-    struct Dispatchers;
-
     struct NodeBase {
 
         friend struct Dispatchers;

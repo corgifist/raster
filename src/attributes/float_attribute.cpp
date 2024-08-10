@@ -26,17 +26,12 @@ namespace Raster {
         }
     }
 
-    void FloatAttribute::Load(Json t_data) {
-        keyframes.clear();
-        for (auto& keyframe : t_data["Keyframes"]) {
-            keyframes.push_back(
-                AttributeKeyframe(
-                    keyframe["ID"],
-                    keyframe["Timestamp"],
-                    keyframe["Value"].get<float>()
-                )
-            );
-        }
+    Json FloatAttribute::SerializeKeyframeValue(std::any t_value) {
+        return std::any_cast<float>(t_value);
+    }  
+
+    std::any FloatAttribute::LoadKeyframeValue(Json t_value) {
+        return t_value.get<float>();
     }
 
     std::any FloatAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
@@ -57,19 +52,5 @@ namespace Raster {
         ImGui::PushID(id);
             ImGui::PlotVar(name.c_str(), std::any_cast<float>(Get(project.currentFrame - parentComposition->beginFrame, parentComposition)));
         ImGui::PopID();
-    }
-
-    Json FloatAttribute::AbstractSerialize() {
-        Json result = {
-            {"Keyframes", {}}
-        };
-        for (auto& keyframe : keyframes) {
-            result["Keyframes"].push_back({
-                {"Timestamp", keyframe.timestamp},
-                {"Value", std::any_cast<float>(keyframe.value)},
-                {"ID", keyframe.id}
-            });
-        }
-        return result;
     }
 }

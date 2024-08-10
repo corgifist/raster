@@ -48,6 +48,17 @@ namespace Raster {
             auto attributeCandidate = InstantiateAttribute(t_data["PackageName"]);
             if (attributeCandidate.has_value()) {
                 attributeCandidate.value()->id = t_data["ID"];
+                for (auto& keyframe : t_data["Keyframes"]) {
+                    auto targetKeyframe = AttributeKeyframe(
+                        keyframe["ID"], keyframe["Timestamp"], attributeCandidate.value()->LoadKeyframeValue(keyframe["Value"])
+                    );
+                    if (keyframe["Easing"] != nullptr) {
+                        targetKeyframe.easing = Easings::InstantiateSerializedEasing(keyframe["Easing"]);
+                    }
+                    attributeCandidate.value()->keyframes.push_back(
+                        targetKeyframe
+                    );
+                }
                 attributeCandidate.value()->Load(t_data["Data"]);
                 attributeCandidate.value()->packageName = t_data["PackageName"];
                 attributeCandidate.value()->name = t_data["Name"];

@@ -20,6 +20,7 @@ namespace Raster {
             t_data["Anchor"][0], t_data["Anchor"][1]
         };
         this->angle = t_data["Angle"];
+        this->parentTransform = nullptr;
     }
 
     glm::mat4 Transform2D::GetTransformationMatrix() {

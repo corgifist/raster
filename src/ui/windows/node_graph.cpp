@@ -708,6 +708,9 @@ namespace Raster {
                             if (ImGui::BeginPopup(popupID.c_str())) {
                                 ImGui::SetKeyboardFocusHere(0);
                                 ImGui::InputTextWithHint("##description", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NODE_DESCRIPTION").c_str()).c_str(), &node->overridenHeader);
+                                if (ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                                    ImGui::CloseCurrentPopup();
+                                }
                                 ImGui::EndPopup();
                             }
                         }
@@ -863,7 +866,7 @@ namespace Raster {
                 static bool nodeSearchFocused = false;
                 if (ImGui::BeginPopup("##createNewNodeSearch")) {
                     if (ignoreLastLine) drawLastLine = false;
-                    if (!nodeSearchMousePos.has_value()) nodeSearchMousePos = s_mousePos;
+                    if (!nodeSearchMousePos.has_value() || ignoreLastLine) nodeSearchMousePos = s_mousePos;
                     static ImVec2 popupSize = ImVec2(300, 250);
                     ImGui::PushFont(Font::s_normalFont);
                     static std::string searchFilter = "";

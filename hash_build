@@ -36,6 +36,9 @@ build_modules = [
     [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app]],
     
+    ["bezier_easing", easing, [raster_common]],
+    ["constant_easing", easing, [raster_common]],
+
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category]],
 
     ["attributes/get_attribute_value", node, [raster_common, raster_node_category]],
@@ -48,6 +51,8 @@ build_modules = [
     ["utilities/make/make_vec2", node, [raster_common, raster_node_category]],
     ["utilities/make/make_vec3", node, [raster_common, raster_node_category]],
     ["utilities/make/make_vec4", node, [raster_common, raster_node_category]],
+    ["utilities/decompose_transform2d", node, [raster_common, raster_node_category]],
+    ["utilities/break/break_transform2d", node, [raster_common, raster_node_category]],
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
@@ -90,6 +95,11 @@ scenario build_master {
         mkdir("nodes")
     }
 
+    if not(path_exists("easings/")) {
+        info("creating easings/ because one doesn't exist")
+        mkdir("easings")
+    }
+
     for_each($build_modules, target_build_module, execute_dispatch_module_safe)
 }
 
@@ -109,14 +119,22 @@ scenario dispatch_module_builder {
     target_module_type = list_nth($target_build_module, 1)
 
     is_node = false
+    is_easing = false
     if eq($target_module_type, node) {
         is_node = true
+        target_module_type = shared
+    }
+    if eq($target_module_type, easing) {
+        is_easing = true
         target_module_type = shared
     }
 
     targets_glob_path = cat("src/", $target_module_name)
     if eq($is_node, true) {
         targets_glob_path = cat("src/nodes/", $target_module_name)
+    }
+    if eq($is_easing, true) {
+        targets_glob_path = cat("src/easings/", $target_module_name)
     }
     targets = glob_files($targets_glob_path, "cpp")
     objects = object_compile($targets, $build_arch)
@@ -134,6 +152,10 @@ scenario dispatch_module_builder {
         target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
     }
 
+    if eq($is_easing, true) {
+        target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
+    }
+
     if eq($target_module_name, core) {
         target_executable_name = raster
     }
@@ -141,6 +163,10 @@ scenario dispatch_module_builder {
 
     if eq($is_node, true) {
         mv($target_executable_name, cat("nodes/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
+    }
+
+    if eq($is_easing, true) {
+        mv($target_executable_name, cat("easings/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
     }
 }
 
@@ -152,6 +178,7 @@ scenario execute_dispatch_error {
 
 scenario clean {
     if path_exists("nodes/") { rmdir("nodes") }
+    if path_exists("easings/") { rmdir("easings") }
     object_clean()
 }
 

@@ -29,23 +29,6 @@ namespace Raster {
         }
     }
 
-    void Vec4Attribute::Load(Json t_data) {
-        keyframes.clear();
-        for (auto& keyframe : t_data["Keyframes"]) {
-            keyframes.push_back(
-                AttributeKeyframe(
-                    keyframe["ID"],
-                    keyframe["Timestamp"],
-                    glm::vec4(
-                        (float) keyframe["Value"][0],
-                        (float) keyframe["Value"][1],
-                        (float) keyframe["Value"][2],
-                        (float) keyframe["Value"][3]
-                    )
-                )
-            );
-        }
-    }
 
     std::any Vec4Attribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
         auto vector = std::any_cast<glm::vec4>(t_originalValue);
@@ -121,18 +104,15 @@ namespace Raster {
         ImGui::Separator();
     }
 
-    Json Vec4Attribute::AbstractSerialize() {
-        Json result = {
-            {"Keyframes", {}}
+    Json Vec4Attribute::SerializeKeyframeValue(std::any t_value) {
+        auto vec = std::any_cast<glm::vec4>(t_value);
+        return {
+            vec[0], vec[1], vec[2], vec[3]
         };
-        for (auto& keyframe : keyframes) {
-            auto vector = std::any_cast<glm::vec4>(keyframe.value);
-            result["Keyframes"].push_back({
-                {"Timestamp", keyframe.timestamp},
-                {"Value", {vector.x, vector.y, vector.z, vector.w}},
-                {"ID", keyframe.id}
-            });
-        }
-        return result;
+    }  
+
+    std::any Vec4Attribute::LoadKeyframeValue(Json t_value) {
+        return glm::vec4(t_value[0], t_value[1], t_value[2], t_value[3]);
     }
+
 }

@@ -3,10 +3,12 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
 #include "../ImGui/imgui_stdlib.h"
+#include "../ImGui/imgui_stripes.h"
 #include "common/ui_shared.h"
 #include "common/composition.h"
 #include "common/workspace.h"
 #include "common/dispatchers.h"
+#include "common/easings.h"
 
 namespace Raster {
 
@@ -57,10 +59,22 @@ namespace Raster {
     }
 
     Json AttributeBase::Serialize() {
+        Json serializedKeyframes = {};
+
+        for (auto& keyframe : keyframes) {
+            serializedKeyframes.push_back({
+                {"Timestamp", keyframe.timestamp},
+                {"ID", keyframe.id},
+                {"Value", SerializeKeyframeValue(keyframe.value)},
+                {"Easing", keyframe.easing.has_value() ? keyframe.easing.value()->Serialize() : nullptr}
+            });
+        }
+
         return {
             {"PackageName", packageName},
             {"Name", name},
             {"ID", id},
+            {"Keyframes", serializedKeyframes},
             {"Data", AbstractSerialize()}
         };
     }
@@ -101,12 +115,18 @@ namespace Raster {
 
         auto& beginKeyframeValue = keyframes.at(targetKeyframeIndex - 1).value;
         auto& endkeyframeValue = keyframes.at(targetKeyframeIndex).value;
+        if (keyframes.at(targetKeyframeIndex).easing.has_value()) {
+            interpolationPercentage = keyframes.at(targetKeyframeIndex).easing.value()->Get(interpolationPercentage);
+        }
 
         return AbstractInterpolate(beginKeyframeValue, endkeyframeValue, interpolationPercentage, t_frame, t_composition);
     }
 
+    static bool s_legendFocused = false;
+
     void AttributeBase::RenderLegend(Composition* t_composition) {
         this->composition = t_composition;
+        s_legendFocused = ImGui::IsWindowFocused();
         auto& project = Workspace::s_project.value();
         float currentFrame = project.currentFrame - t_composition->beginFrame;
         auto currentValue = Get(currentFrame, t_composition);
@@ -321,9 +341,22 @@ namespace Raster {
         return std::nullopt;
     }
 
-    static std::vector<int> s_selectedKeyframes;
+    std::optional<int> AttributeBase::GetKeyframeIndexByID(int t_id) {
+        int index;
+        for (auto& keyframe : keyframes) {
+            if (keyframe.id == t_id) return index;
+            index++;
+        }
+        return std::nullopt;
+    }
 
-    void AttributeBase::RenderKeyframe(AttributeKeyframe t_keyframe) {
+
+    static bool s_timelineFocused = false;
+
+    void AttributeBase::RenderKeyframe(AttributeKeyframe& t_keyframe) {
+        auto& project = Workspace::GetProject();
+        auto& selectedKeyframes = project.selectedKeyframes;
+        s_timelineFocused = ImGui::IsWindowFocused();
         if (!composition) return;
         if (UIShared::s_timelineAttributeHeights.find(composition->id) == UIShared::s_timelineAttributeHeights.end()) return;
         SortKeyframes();
@@ -332,7 +365,7 @@ namespace Raster {
             ImVec2((composition->endFrame - composition->beginFrame) * UIShared::s_timelinePixelsPerFrame, ImGui::GetWindowSize().y)
         ));
         float keyframeHeight = UIShared::s_timelineAttributeHeights[composition->id];
-        float keyframeWidth = 6;
+        float keyframeWidth = 9;
         RectBounds keyframeBounds(
             ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
             ImVec2(keyframeWidth, keyframeHeight)
@@ -345,6 +378,7 @@ namespace Raster {
         );
 
         ImVec4 keyframeColor = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
+        ImVec4 baseKeyframeColor = keyframeColor;
         if (!MouseHoveringBounds(keyframeLogicBounds)) {
             keyframeColor = keyframeColor * 0.8f;
         }
@@ -379,8 +413,20 @@ namespace Raster {
 
         UIShared::s_timelineAnykeyframeDragged = UIShared::s_timelineAnykeyframeDragged || anyKeyframesDragged;
 
+
+        std::string popupID = FormatString("##attributeKeyframePopup%i", t_keyframe.id);
+
+        bool keyframePopupActive = false;
+
+        if (ImGui::BeginPopup(popupID.c_str())) {
+            RenderKeyframePopup(t_keyframe);
+            keyframePopupActive = true;
+            UIShared::s_timelineBlockPopup = true;
+            ImGui::EndPopup();
+        }
+
         if ((MouseHoveringBounds(keyframeLogicBounds) || keyframeDrag.isActive)) {
-            if (ImGui::BeginTooltip()) {
+            if (!keyframePopupActive && ImGui::BeginTooltip()) {
                 auto& project = Workspace::s_project.value();
                 ImGui::Text("%s %s", ICON_FA_STOPWATCH, project.FormatFrameToTime(composition->beginFrame + t_keyframe.timestamp).c_str());
                 Dispatchers::DispatchString(t_keyframe.value);
@@ -388,27 +434,31 @@ namespace Raster {
             }
             bool previousDragActive = keyframeDrag.isActive;
             keyframeDrag.Activate();
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-                if (!ImGui::GetIO().KeyCtrl && !previousDragActive & s_selectedKeyframes.size() <= 1) {
-                    s_selectedKeyframes = {t_keyframe.id};
-                    std::cout << "overriding selected keyframes" << std::endl;
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+                if (!ImGui::GetIO().KeyCtrl && !previousDragActive & selectedKeyframes.size() <= 1) {
+                    selectedKeyframes = {t_keyframe.id};
+                    UIShared::s_lastClickedObjectType = LastClickedObjectType::Keyframe;
                 } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl) {
-                    auto keyframeIterator = std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), t_keyframe.id);
-                    if (keyframeIterator == s_selectedKeyframes.end()) {
-                        s_selectedKeyframes.push_back(t_keyframe.id);
-                        std::cout << "appending selected keyframes" << std::endl;
+                    auto keyframeIterator = std::find(selectedKeyframes.begin(), selectedKeyframes.end(), t_keyframe.id);
+                    if (keyframeIterator == selectedKeyframes.end()) {
+                        selectedKeyframes.push_back(t_keyframe.id);
+                        UIShared::s_lastClickedObjectType = LastClickedObjectType::Keyframe;
                     } else if (ImGui::GetIO().KeyCtrl) {
-                        std::cout << "removing unused keyframes" << std::endl;
-                        s_selectedKeyframes.erase(keyframeIterator);
+                        selectedKeyframes.erase(keyframeIterator);
                     }
                 }
             }
 
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && ImGui::IsWindowFocused() && MouseHoveringBounds(keyframeLogicBounds)) {
+                ImGui::OpenPopup(popupID.c_str());
+                UIShared::s_timelineBlockPopup = true;
+            }
+
             float keyframeDragDistance;
-            if (keyframeDrag.GetDragDistance(keyframeDragDistance) && !UIShared::s_timelineDragged) {
-                for (auto& keyframeID : s_selectedKeyframes) {
+            if (keyframeDrag.GetDragDistance(keyframeDragDistance) && !UIShared::s_timelineDragged && ImGui::IsWindowFocused()) {
+                for (auto& keyframeID : selectedKeyframes) {
                     bool breakDrag = false;
-                    for (auto& testingKeyframeID : s_selectedKeyframes) {
+                    for (auto& testingKeyframeID : selectedKeyframes) {
                         auto selectedKeyframeCandidate = Workspace::GetKeyframeByKeyframeID(testingKeyframeID);
                         if (selectedKeyframeCandidate.has_value()) {
                             auto& selectedKeyframe = selectedKeyframeCandidate.value();
@@ -432,9 +482,9 @@ namespace Raster {
             }
         } else if (!keyframeDrag.isActive) {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().KeyCtrl) {
-                auto keyframeIterator = std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), t_keyframe.id);
-                if (keyframeIterator != s_selectedKeyframes.end() && !UIShared::s_timelineDragged && keyframeDrag.isActive) {
-                    s_selectedKeyframes.erase(keyframeIterator);
+                auto keyframeIterator = std::find(selectedKeyframes.begin(), selectedKeyframes.end(), t_keyframe.id);
+                if (keyframeIterator != selectedKeyframes.end() && !UIShared::s_timelineDragged && keyframeDrag.isActive) {
+                    selectedKeyframes.erase(keyframeIterator);
                 }
 
                 bool oneKeyframeTouched = false;
@@ -443,20 +493,21 @@ namespace Raster {
                         ImVec2((composition->beginFrame + keyframe.timestamp) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
                         ImVec2(keyframeWidth, keyframeHeight)
                     );
-                    if (MouseHoveringBounds(keyframeTestLogicBounds)) {
+                    if (MouseHoveringBounds(keyframeTestLogicBounds) || !ImGui::IsWindowHovered() || !UIShared::s_timelineDragged) {
                         oneKeyframeTouched = true;
                     }
                 }
                 if (!oneKeyframeTouched) {
                     for (auto& keyframe : keyframes) {
-                        auto keyframeIterator = std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), keyframe.id);
-                        if (keyframeIterator != s_selectedKeyframes.end()) {
-                            s_selectedKeyframes.erase(keyframeIterator);
+                        auto keyframeIterator = std::find(selectedKeyframes.begin(), selectedKeyframes.end(), keyframe.id);
+                        if (keyframeIterator != selectedKeyframes.end()) {
+                            selectedKeyframes.erase(keyframeIterator);
                         }
                     }
+                    UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
                 }
             } else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-                for (auto& keyframeID : s_selectedKeyframes) {
+                for (auto& keyframeID : selectedKeyframes) {
                     auto selectedKeyframeCandidate = Workspace::GetKeyframeByKeyframeID(keyframeID);
                     if (selectedKeyframeCandidate.has_value()) {
                         auto& selectedKeyframe = selectedKeyframeCandidate.value();
@@ -466,14 +517,115 @@ namespace Raster {
             }
         }
 
-
-        if (std::find(s_selectedKeyframes.begin(), s_selectedKeyframes.end(), t_keyframe.id) != s_selectedKeyframes.end()) {
+        if (std::find(selectedKeyframes.begin(), selectedKeyframes.end(), t_keyframe.id) != selectedKeyframes.end()) {
             keyframeColor = keyframeColor * 2;
         }
         keyframeColor.w = 1.0f;
         DrawRect(keyframeBounds, keyframeColor);
+        
+        auto& keyframeIndex = targetKeyframeIndex;
+        if (keyframeIndex + 1 < keyframes.size()) {
+            auto& nextKeyframe = keyframes[keyframeIndex + 1];
+            float timestampDifference = nextKeyframe.timestamp - t_keyframe.timestamp;
+            float distanceBetweenKeyframes = timestampDifference * UIShared::s_timelinePixelsPerFrame;
+
+            if (nextKeyframe.easing.has_value()) {
+                auto& nextEasing = nextKeyframe.easing.value();
+                const int SMOOTHNESS = 32;
+                std::vector<float> percentages(SMOOTHNESS);
+                float step = 1.0f / (float) SMOOTHNESS;
+                for (int i = 0; i < SMOOTHNESS; i++) {
+                    percentages[i] = nextEasing->Get(i * step);
+                }
+
+                ImVec2 canvasPos = keyframeBounds.BR;
+                canvasPos.y -= 2;
+
+                ImVec2 lastLinePosition = canvasPos;
+                lastLinePosition.y -= percentages[0] * (keyframeBounds.size.y - 2);
+
+                float distanceStep = distanceBetweenKeyframes / SMOOTHNESS;
+
+                auto reservedCursor = ImGui::GetCursorPos();
+                ImGui::SetCursorPos(reservedCursor + ImVec2{
+                    keyframeBounds.pos.x + keyframeBounds.size.x,
+                    keyframeBounds.pos.y
+                });
+                ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 20, 28, ImVec2(distanceBetweenKeyframes, keyframeBounds.size.y));
+                ImGui::SetCursorPos(reservedCursor);
+
+                RectBounds stripesBounds(
+                    ImVec2(keyframeBounds.pos.x + keyframeBounds.size.x, 0),
+                    ImVec2(distanceBetweenKeyframes, keyframeBounds.size.y)
+                );
+                ImVec4 graphColor = baseKeyframeColor;
+
+                std::string easingPopupID = FormatString("##easingPopup%i", nextKeyframe.id);
+
+                if (MouseHoveringBounds(stripesBounds) && ImGui::IsWindowFocused()) {
+                    if (ImGui::GetIO().MouseDoubleClicked[ImGuiMouseButton_Left]) {
+                        ImGui::OpenPopup(easingPopupID.c_str());
+                        graphColor = graphColor * 1.2f;
+                    }
+                    if (ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left]) {
+                        selectedKeyframes = {nextKeyframe.id};
+                    }
+                    ImGui::SetTooltip("%s %s", ICON_FA_CIRCLE_QUESTION " " ICON_FA_BEZIER_CURVE, Localization::GetString("DOUBLE_CLICK_FOR_EASING_EDITING").c_str());
+                    graphColor = graphColor * 1.2f;
+                }
+                graphColor.w = 1.0f;
+
+                if (ImGui::BeginPopup(easingPopupID.c_str(), ImGuiWindowFlags_NoMove)) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, nextEasing->prettyName.c_str()).c_str());
+                    nextEasing->RenderDetails();
+                    ImGui::EndPopup();
+                }
+
+
+                for (int i = 1; i < SMOOTHNESS; i++) {
+                    ImVec2 nextLinePosition = canvasPos;
+                    nextLinePosition.x += distanceStep * i;
+                    nextLinePosition.y -= percentages[i] * (keyframeBounds.size.y - 2);
+
+                    ImGui::GetWindowDrawList()->AddLine(lastLinePosition, nextLinePosition, ImGui::GetColorU32(graphColor), 2);
+
+                    lastLinePosition = nextLinePosition;
+                }
+            } 
+        } 
+
 
         PopClipRect();
+    }
+
+    void AttributeBase::RenderKeyframePopup(AttributeKeyframe& t_keyframe) {
+        auto& selectedKeyframes = Workspace::GetProject().selectedKeyframes;
+        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINK, name.c_str()).c_str());
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("KEYFRAME_EASING").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("KEYFRAME_EASING").c_str()).c_str());
+            if (t_keyframe.easing.has_value()) {
+                t_keyframe.easing.value()->RenderDetails();
+            }
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_EASING").c_str()).c_str())) {
+                t_keyframe.easing = std::nullopt;
+            }
+            for (auto& implementation : Easings::s_implementations) {
+                bool isEasingSelected = t_keyframe.easing.has_value() && t_keyframe.easing.value()->packageName == implementation.description.packageName;
+                if (ImGui::MenuItem(FormatString("%s%s %s", isEasingSelected ? ICON_FA_CHECK " " : "", ICON_FA_BEZIER_CURVE, implementation.description.prettyName.c_str()).c_str())) {
+                    t_keyframe.easing = Easings::InstantiateEasing(implementation.description.packageName);
+                }
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_KEYFRAMES").c_str()).c_str(), "Delete")) {
+            m_deletedKeyframes = selectedKeyframes;
+            selectedKeyframes.clear();
+        }
+        ImGui::Separator();
+        ImGui::Text("%s %s %i %s", ICON_FA_CIRCLE_INFO, Localization::GetString("TOTAL").c_str(), (int) keyframes.size(), Localization::GetString("KEYFRAMES").c_str());
     }
 
     void AttributeBase::RenderPopup() {
@@ -483,9 +635,15 @@ namespace Raster {
     std::vector<int> AttributeBase::m_deletedKeyframes;
 
     void AttributeBase::ProcessKeyframeShortcuts() {
-        if (ImGui::Shortcut(ImGuiKey_Delete)) {
-            m_deletedKeyframes = s_selectedKeyframes;
-            s_selectedKeyframes.clear();
+        if (!Workspace::s_project.has_value()) return;
+        auto& project = Workspace::GetProject();
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && s_timelineFocused && UIShared::s_lastClickedObjectType == LastClickedObjectType::Keyframe) {
+            auto& selectedKeyframes = Workspace::GetProject().selectedKeyframes;
+            m_deletedKeyframes = selectedKeyframes;
+            selectedKeyframes.clear();
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && s_legendFocused) {
+            s_deletedAttributes = project.selectedAttributes;
         }
         auto deletedKeyframes = m_deletedKeyframes;
         m_deletedKeyframes.clear();

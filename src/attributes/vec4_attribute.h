@@ -22,8 +22,8 @@ namespace Raster {
         void AbstractRenderDetails();
         void AbstractRenderPopup();
 
-        void Load(Json t_data);
+        Json SerializeKeyframeValue(std::any t_value);
+        std::any LoadKeyframeValue(Json t_value);
 
-        Json AbstractSerialize();
     };
 };

@@ -157,6 +157,7 @@ namespace Raster {
         s_windows.push_back(UIFactory::SpawnRenderingUI());
         s_windows.push_back(UIFactory::SpawnTimelineUI());
         s_windows.push_back(UIFactory::SpawnAssetManagerUI());
+        s_windows.push_back(UIFactory::SpawnEasingEditor());
     }
 
     void App::RenderLoop() {

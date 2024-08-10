@@ -284,7 +284,7 @@ namespace Raster {
             if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_V)) {
                 ProcessPasteAction();
             }
-            if (ImGui::Shortcut(ImGuiKey_Delete)) {
+            if (ImGui::Shortcut(ImGuiKey_Delete) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
                 ProcessDeleteAction();
             }
             if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_D)) {
@@ -321,6 +321,7 @@ namespace Raster {
             }
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && project.selectedCompositions.size() > 1 && !s_anyCompositionWasPressed) {
                 project.selectedCompositions = {project.selectedCompositions[0]};
+                UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
                 std::cout << "overriding compositions" << std::endl;
             }
             
@@ -443,7 +444,12 @@ namespace Raster {
                     upperLeft.x = glm::max(upperLeft.x, legendWidth);
                     bottomRight.x = glm::max(bottomRight.x, legendWidth + rectSize.x);
                     bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
+                    auto reservedCursor = ImGui::GetCursorPos();
+                    ImGui::SetCursorPos(buttonCursor);
+                    ImGui::SetCursorPosX(buttonCursor.x + dragSize.x);
+                    ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 40, 214, ImVec2{rectSize.x, rectSize.y});
                     ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle, upperLeft, bottomRight);
+                    ImGui::SetCursorPos(reservedCursor);
                 }
             }
 
@@ -877,9 +883,10 @@ namespace Raster {
     }
 
     void TimelineUI::RenderTimelinePopup() {
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !s_layerPopupActive && ImGui::IsWindowFocused()) {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !s_layerPopupActive && ImGui::IsWindowFocused() && !UIShared::s_timelineBlockPopup) {
             ImGui::OpenPopup("##layerPopup");
         }
+        UIShared::s_timelineBlockPopup = false;
         PopStyleVars();
         if (ImGui::BeginPopup("##layerPopup")) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());

@@ -23,11 +23,10 @@ namespace Raster {
 
         void AbstractRenderDetails();
 
-        void Load(Json t_data);
+        Json SerializeKeyframeValue(std::any t_value);
+        std::any LoadKeyframeValue(Json t_value);
 
-        Json AbstractSerialize();
     private:
-        bool m_linkedSize;
         int m_parentAttributeID;
     };
 };

@@ -4,6 +4,7 @@
 #include "windows/rendering.h"
 #include "windows/timeline.h"
 #include "windows/asset_manager.h"
+#include "windows/easing_editor.h"
 
 namespace Raster {
     AbstractUI UIFactory::SpawnNodeGraphUI() {
@@ -24,5 +25,9 @@ namespace Raster {
 
     AbstractUI UIFactory::SpawnAssetManagerUI() {
         return (AbstractUI) std::make_unique<AssetManagerUI>();
+    }
+
+    AbstractUI UIFactory::SpawnEasingEditor() {
+        return (AbstractUI) std::make_unique<EasingEditorUI>();
     }
 }

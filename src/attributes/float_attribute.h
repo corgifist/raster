@@ -14,12 +14,11 @@ namespace Raster {
         std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition);
         std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited);
 
+        Json SerializeKeyframeValue(std::any t_value);
+        std::any LoadKeyframeValue(Json t_value);
+
         void RenderKeyframes();
 
         void AbstractRenderDetails();
-
-        void Load(Json t_data);
-
-        Json AbstractSerialize();
     };
 };
