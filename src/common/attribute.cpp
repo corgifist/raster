@@ -563,9 +563,11 @@ namespace Raster {
                 std::string easingPopupID = FormatString("##easingPopup%i", nextKeyframe.id);
 
                 if (MouseHoveringBounds(stripesBounds) && ImGui::IsWindowFocused()) {
+                    if (ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left]) {
+                        graphColor = graphColor * 1.5f;
+                    }
                     if (ImGui::GetIO().MouseDoubleClicked[ImGuiMouseButton_Left]) {
                         ImGui::OpenPopup(easingPopupID.c_str());
-                        graphColor = graphColor * 1.2f;
                     }
                     if (ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left]) {
                         selectedKeyframes = {nextKeyframe.id};

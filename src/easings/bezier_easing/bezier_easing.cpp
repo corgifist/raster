@@ -119,11 +119,40 @@ namespace Raster {
                     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNone) && ImGui::BeginTooltip()) {
                         ImVec2 curvePreviewProcessedSize = ImVec2(220, 220);
                         glm::vec4 previewPoints = preset.points;
+                        static glm::vec4 actualTargetPoints = glm::vec4(0, 0, 1, 1);
+                        static glm::vec4 beginPoints, endPoints;
+                        static float animationPercentage;
+                        static bool mustAnimate = false;
+
+                        if (previewPoints != actualTargetPoints && beginPoints != actualTargetPoints) {
+                            beginPoints = actualTargetPoints;
+                            endPoints = previewPoints;
+                            animationPercentage = 0.0f;
+                            mustAnimate = true;
+                            std::cout << "setting animation state" << std::endl;
+                        }
+
+                        if (mustAnimate) {
+                            actualTargetPoints = glm::mix(beginPoints, endPoints, std::clamp(animationPercentage, 0.0f, 1.0f));
+                            animationPercentage += ImGui::GetIO().DeltaTime * 25;
+                        }
+
+                        if (animationPercentage > 1) {
+                            beginPoints = glm::vec4(-1);
+                            mustAnimate = false;
+                        }
+                        
 
                         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, preset.name.c_str()).c_str());
 
                         ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 14, curvePreviewProcessedSize);
-                        ImGui::Bezier("curvePreview", glm::value_ptr(previewPoints), curvePreviewProcessedSize.x, false, std::nullopt, false);
+                        ImGui::Bezier("curvePreview", glm::value_ptr(actualTargetPoints), curvePreviewProcessedSize.x, false, std::nullopt, false);
+
+                        std::string pointsInfo = FormatString("%s P1: (%0.2f; %0.2f)\n%s P2: (%0.2f; %0.2f)", ICON_FA_BEZIER_CURVE, actualTargetPoints[0], actualTargetPoints[1], ICON_FA_BEZIER_CURVE, actualTargetPoints[2], actualTargetPoints[3]);
+                        ImVec2 infoSize = ImGui::CalcTextSize(pointsInfo.c_str());
+                        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - infoSize.x / 2.0f);
+                        ImGui::Text("%s", pointsInfo.c_str());
+
                         ImGui::EndTooltip();
                     }
                 }
