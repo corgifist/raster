@@ -137,5 +137,7 @@
     "NO_ATTRIBUTE_AVAILABLE": "No Attribute Available",
     "OVERSHOOT": "Enable/Disable Overshoot",
     "EASING_EDITOR": "Easing Editor",
-    "DOUBLE_CLICK_FOR_EASING_EDITING": "Double Click for Easing Editing"
+    "DOUBLE_CLICK_FOR_EASING_EDITING": "Double Click for Easing Editing",
+    "CURVE_PRESETS": "Curve Presets",
+    "TOTAL_PRESETS_COUNT": "Total Presets Count"
 }

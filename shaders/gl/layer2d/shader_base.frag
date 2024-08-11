@@ -17,7 +17,6 @@ uniform sampler2D uTexture;
 uniform vec2 uUVPosition;
 uniform vec2 uUVSize;
 uniform float uUVAngle;
-uniform vec2 uUVAnchor;
 
 uniform bool uMaintainUVRange;
 
@@ -49,9 +48,7 @@ void main() {
 
     uv += uUVPosition;
 
-    uv += uUVAnchor;
     uv = rotate(uv, uUVAngle);
-    uv -= uUVAnchor;
 
     uv *= uUVSize;
 

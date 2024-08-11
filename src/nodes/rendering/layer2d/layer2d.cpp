@@ -64,11 +64,12 @@ namespace Raster {
             auto& shape = shapeCandidate.value();
             uvTransform.size = 1.0f / uvTransform.size;
 
-            uvTransform.anchor.x *= -1;
-            uvTransform.anchor *= 0.5f;
+            auto uvPosition = uvTransform.DecomposePosition();
+            auto uvSize = uvTransform.DecomposeSize();
+            auto uvAngle = uvTransform.DecomposeRotation();
 
-            uvTransform.position.x *= -1;
-            uvTransform.position *= 0.5f;
+            uvPosition.x *= -1;
+            uvPosition *= 0.5f;
 
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
@@ -77,10 +78,9 @@ namespace Raster {
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", project.GetProjectionMatrix() * transform.GetTransformationMatrix());
 
             GPU::SetShaderUniform(pipeline.fragment, "uMaintainUVRange", maintainUVRange);
-            GPU::SetShaderUniform(pipeline.fragment, "uUVPosition", uvTransform.position);
-            GPU::SetShaderUniform(pipeline.fragment, "uUVSize", uvTransform.size);
-            GPU::SetShaderUniform(pipeline.fragment, "uUVAngle", glm::radians(uvTransform.angle));
-            GPU::SetShaderUniform(pipeline.fragment, "uUVAnchor", uvTransform.anchor);
+            GPU::SetShaderUniform(pipeline.fragment, "uUVPosition", uvPosition);
+            GPU::SetShaderUniform(pipeline.fragment, "uUVSize", uvSize);
+            GPU::SetShaderUniform(pipeline.fragment, "uUVAngle", glm::radians(uvAngle));
             GPU::SetShaderUniform(pipeline.fragment, "uColor", color);
             GPU::SetShaderUniform(pipeline.fragment, "uTextureAvailable", texture.handle ? 1 : 0);
 

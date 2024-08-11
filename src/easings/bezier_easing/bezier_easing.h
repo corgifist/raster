@@ -6,6 +6,14 @@
 #define EPSILON 1e-6
 
 namespace Raster {
+
+    struct CurvePreset {
+        std::string name;
+        glm::vec4 points;
+
+        CurvePreset(std::string t_name, glm::vec4 t_points);
+    };
+
     struct BezierEasing : public EasingBase {
     public:
         BezierEasing();
