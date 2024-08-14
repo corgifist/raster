@@ -56,6 +56,7 @@ namespace Raster {
     static bool s_scrollbarActive = true;
     static bool s_layerPopupActive = false;
     static bool s_anyCompositionWasPressed = false;
+    static bool s_timelineFocused = false;
 
     static float s_timelineScrollY = 0;
 
@@ -162,6 +163,7 @@ namespace Raster {
         UIShared::s_timelinePixelsPerFrame = s_pixelsPerFrame;
         ImGui::Begin(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
             s_rootWindowSize = ImGui::GetWindowSize();
+            s_timelineFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
                 s_pixelsPerFrame += 1;
             }
@@ -1076,7 +1078,7 @@ namespace Raster {
                 splitterDragging = true;   
             }
         }
-        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused() && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && s_timelineFocused && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             s_splitterState = GetRelativeMousePos().x / ImGui::GetWindowSize().x;
         } else splitterDragging = false;
 
