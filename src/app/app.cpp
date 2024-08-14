@@ -173,7 +173,7 @@ namespace Raster {
             GPU::SetWindowTitle(constructedTitle);
 
             GPU::BeginFrame();
-                if (Workspace::s_project.has_value() && !ImGui::IsAnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Space)) {
+                if (Workspace::s_project.has_value() && ImGui::IsAnyItemActive() == false && ImGui::IsAnyItemFocused() == false && ImGui::IsKeyPressed(ImGuiKey_Space)) {
                     Workspace::GetProject().playing = !Workspace::GetProject().playing;
                 }
                 if (Workspace::s_project.has_value()) {
