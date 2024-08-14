@@ -8,6 +8,7 @@ namespace Raster {
         float framerate;
         float currentFrame;
         float timeTravelOffset;
+        bool playing, looping;
 
         glm::vec2 preferredResolution;
         glm::vec4 backgroundColor;

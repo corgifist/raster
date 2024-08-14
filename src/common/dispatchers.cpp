@@ -13,6 +13,8 @@ namespace Raster {
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers;
     OverlayDispatchersCollection Dispatchers::s_overlayDispatchers;
 
+    bool Dispatchers::s_enableOverlays = true;
+
 
     void Dispatchers::DispatchProperty(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
         for (auto& dispatcher : s_propertyDispatchers) {

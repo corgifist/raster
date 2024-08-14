@@ -139,5 +139,7 @@
     "EASING_EDITOR": "Easing Editor",
     "DOUBLE_CLICK_FOR_EASING_EDITING": "Double Click for Easing Editing",
     "CURVE_PRESETS": "Curve Presets",
-    "TOTAL_PRESETS_COUNT": "Total Presets Count"
+    "TOTAL_PRESETS_COUNT": "Total Presets Count",
+    "LOOP_PLAYBACK": "Loop Playback",
+    "ENABLE_PREVIEW_OVERLAYS": "Enable Preview Overlays"
 }

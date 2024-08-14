@@ -1,8 +1,12 @@
 #include "bezier_easing.h"
+
 #include "font/font.h"
+
+#include "common/localization.h"
+
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_bezier.h"
-#include "common/localization.h"
+#include "../../ImGui/imgui_stdlib.h"
 #include "../../ImGui/imgui_stripes.h"
 
 namespace Raster {
@@ -10,6 +14,10 @@ namespace Raster {
     CurvePreset::CurvePreset(std::string t_name, glm::vec4 t_points) {
         this->name = t_name;
         this->points = t_points;
+
+        this->filteredCategoryName = ReplaceString(t_name, ".*\\(|\\)", "");
+        this->category = ReplaceString(t_name, " \\(\\w+\\)", "");
+        this->filteredName = ReplaceString(LowerCase(t_name), "\\s|\\(|\\)", "");
     }
 
     static std::vector<CurvePreset> s_presets = {
@@ -22,7 +30,22 @@ namespace Raster {
         CurvePreset("Ease In Out (Quad)", glm::vec4(0.45, 0, 0.55, 1)),
         CurvePreset("Ease In (Cubic)", glm::vec4(0.32, 0, 0.67, 0)),
         CurvePreset("Ease Out (Cubic)", glm::vec4(0.33, 1, 0.68, 1)),
-        CurvePreset("Ease In Out (Cubic)", glm::vec4(0.65, 0, 0.35, 1))
+        CurvePreset("Ease In Out (Cubic)", glm::vec4(0.65, 0, 0.35, 1)),
+        CurvePreset("Ease In (Quart)", glm::vec4(0.5, 0, 0.75, 0)),
+        CurvePreset("Ease Out (Quart)", glm::vec4(0.25, 1, 0.5, 1)),
+        CurvePreset("Ease In Out (Quart)", glm::vec4(0.76, 0, 0.24, 1)),
+        CurvePreset("Ease In (Quint)", glm::vec4(0.64, 0, 0.78, 0)),
+        CurvePreset("Ease Out (Quint)", glm::vec4(0.22, 1, 0.36, 1)),
+        CurvePreset("Ease In Out (Quint)", glm::vec4(0.83, 0, 0.17, 1)),
+        CurvePreset("Ease In (Expo)", glm::vec4(0.7, 0, 0.84, 0)),
+        CurvePreset("Ease Out (Expo)", glm::vec4(0.16, 1, 0.3, 1)),
+        CurvePreset("Ease In Out (Expo)", glm::vec4(0.87, 0, 0.13, 1)),
+        CurvePreset("Ease In (Circ)", glm::vec4(0.55, 0, 1, 0.45)),
+        CurvePreset("Ease Out (Circ)", glm::vec4(0, 0.55, 0.45, 1)),
+        CurvePreset("Ease In Out (Circ)", glm::vec4(0.85, 0, 0.15, 1)),
+        CurvePreset("Ease In (Back)", glm::vec4(0.36, 0, 0.66, -0.56)),
+        CurvePreset("Ease Out (Back)", glm::vec4(0.34, 1.56, 0.64, 1)),
+        CurvePreset("Ease In Out (Back)", glm::vec4(0.68, -0.6, 0.32, 1.6))
     };
 
     BezierEasing::BezierEasing() {
@@ -63,12 +86,29 @@ namespace Raster {
     }
 
     void BezierEasing::AbstractRenderDetails() {
+        ImGui::PushID(id);
         ImVec2 bezierEditorSize(230, 230);
         float constraintsPower = 0.3;
 
         ImVec2 processedBezierSize = bezierEditorSize;
         if (m_constrained) {
-            processedBezierSize = processedBezierSize * 0.6;
+            std::optional<float> sizeCandidate = std::nullopt;
+            float overshootMultiplier = 0.5f;
+            for (int i = 0; i < 4; i++) {
+                auto point = m_points[i];
+                if (IsInBounds(point, 0.0f, 1.0f)) continue;
+                float overshootAmount;
+                if (point > 1) overshootAmount = point - 1;
+                else if (point < 0) overshootAmount = +point;
+                
+                if (sizeCandidate.value_or(-100) < overshootAmount * overshootMultiplier) {
+                    sizeCandidate = std::abs(overshootAmount * overshootMultiplier);
+                }
+            }
+
+            if (sizeCandidate.has_value()) {
+                processedBezierSize = bezierEditorSize * (1 - std::clamp(std::abs(sizeCandidate.value() * 2), 0.3f, 1.0f));
+            }
         }
 
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - bezierEditorSize.x / 2.0f);
@@ -111,51 +151,118 @@ namespace Raster {
             if (ImGui::BeginPopup("##curvePresets")) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("CURVE_PRESETS").c_str()).c_str());
                 std::optional<CurvePreset> hoveredPreset;
+                std::vector<std::string> categories;
+                static std::string previousSearchFilter = "";
+                static std::string searchFilter = "";
+                static std::string searchableFilter = "";
+                ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &searchFilter);
+                if (previousSearchFilter != searchFilter) {
+                    searchableFilter = ReplaceString(LowerCase(searchFilter), " ", "");
+                }
+                previousSearchFilter = searchFilter;
                 for (auto& preset : s_presets) {
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_BEZIER_CURVE, preset.name.c_str()).c_str())) {
-                        this->m_points = preset.points;
-                        ImGui::CloseCurrentPopup();
+                    std::string category = preset.category;
+                    bool searchFilterSatisfied = false;
+                    for (auto& preset : s_presets) {
+                        if (preset.category != category) continue;
+                        searchFilterSatisfied = !(
+                            !searchFilter.empty() && preset.filteredName.find(searchableFilter) == std::string::npos
+                        );
+                        if (searchFilterSatisfied) break;
                     }
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNone) && ImGui::BeginTooltip()) {
-                        ImVec2 curvePreviewProcessedSize = ImVec2(220, 220);
-                        glm::vec4 previewPoints = preset.points;
-                        static glm::vec4 actualTargetPoints = glm::vec4(0, 0, 1, 1);
-                        static glm::vec4 beginPoints, endPoints;
-                        static float animationPercentage;
-                        static bool mustAnimate = false;
-
-                        if (previewPoints != actualTargetPoints && beginPoints != actualTargetPoints) {
-                            beginPoints = actualTargetPoints;
-                            endPoints = previewPoints;
-                            animationPercentage = 0.0f;
-                            mustAnimate = true;
-                            std::cout << "setting animation state" << std::endl;
-                        }
-
-                        if (mustAnimate) {
-                            actualTargetPoints = glm::mix(beginPoints, endPoints, std::clamp(animationPercentage, 0.0f, 1.0f));
-                            animationPercentage += ImGui::GetIO().DeltaTime * 25;
-                        }
-
-                        if (animationPercentage > 1) {
-                            beginPoints = glm::vec4(-1);
-                            mustAnimate = false;
-                        }
-                        
-
-                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, preset.name.c_str()).c_str());
-
-                        ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 14, curvePreviewProcessedSize);
-                        ImGui::Bezier("curvePreview", glm::value_ptr(actualTargetPoints), curvePreviewProcessedSize.x, false, std::nullopt, false);
-
-                        std::string pointsInfo = FormatString("%s P1: (%0.2f; %0.2f)\n%s P2: (%0.2f; %0.2f)", ICON_FA_BEZIER_CURVE, actualTargetPoints[0], actualTargetPoints[1], ICON_FA_BEZIER_CURVE, actualTargetPoints[2], actualTargetPoints[3]);
-                        ImVec2 infoSize = ImGui::CalcTextSize(pointsInfo.c_str());
-                        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - infoSize.x / 2.0f);
-                        ImGui::Text("%s", pointsInfo.c_str());
-
-                        ImGui::EndTooltip();
+                    if (std::find(categories.begin(), categories.end(), category) == categories.end() && searchFilterSatisfied) {
+                        categories.push_back(category);
                     }
                 }
+                ImGui::BeginChild("##internalCurvePresetsContainer", ImVec2(ImGui::GetContentRegionAvail().x, 320));
+                for (auto& category : categories) {
+                    if (ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, category.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+                        for (auto& preset : s_presets) {
+                            if (preset.category != category) continue;
+                            if ((
+                                !searchFilter.empty() && preset.filteredName.find(searchableFilter) == std::string::npos
+                            )) continue;
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_BEZIER_CURVE, preset.filteredCategoryName.c_str()).c_str())) {
+                                this->m_points = preset.points;
+                                ImGui::CloseCurrentPopup();
+                            }
+                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNone) && ImGui::BeginTooltip()) {
+                                ImVec2 curvePreviewProcessedSize = ImVec2(220, 220);
+                                glm::vec4 previewPoints = preset.points;
+                                static glm::vec4 actualTargetPoints = glm::vec4(0, 0, 1, 1);
+                                static ImVec2 actualBezierSize = curvePreviewProcessedSize;
+                                static glm::vec4 beginPoints, endPoints;
+                                static ImVec2 beginBezierSize, endBezierSize;
+                                static float animationPercentage;
+                                static bool mustAnimate = false;
+
+                                if (previewPoints != actualTargetPoints && beginPoints != actualTargetPoints && beginBezierSize != actualBezierSize) {
+                                    beginPoints = actualTargetPoints;
+                                    endPoints = previewPoints;
+
+                                    beginBezierSize = actualBezierSize;
+
+                                    std::optional<float> sizeCandidate = std::nullopt;
+                                    for (int i = 0; i < 4; i++) {
+                                        auto point = previewPoints[i];
+                                        if (IsInBounds(point, 0.0f, 1.0f)) continue;
+                                        float overshootAmount;
+                                        if (point > 1) overshootAmount = point - 1;
+                                        else if (point < 0) overshootAmount = +point;
+                                        
+                                        float overshootMultiplier = 0.7f;
+                                        if (sizeCandidate.value_or(-100) < overshootAmount * overshootMultiplier) {
+                                            sizeCandidate = std::abs(overshootAmount * overshootMultiplier);
+                                        }
+                                    }
+
+                                    if (sizeCandidate.has_value()) {
+                                        float size = sizeCandidate.value();
+                                        endBezierSize = curvePreviewProcessedSize * (1.0f - std::abs(sizeCandidate.value()));
+                                    } else {
+                                        endBezierSize = curvePreviewProcessedSize;
+                                    }
+                                    
+
+                                    animationPercentage = 0.0f;
+                                    mustAnimate = true;
+                                }
+
+                                if (mustAnimate) {
+                                    actualTargetPoints = glm::mix(beginPoints, endPoints, std::clamp(animationPercentage, 0.0f, 1.0f));
+                                    actualBezierSize = ImLerp(beginBezierSize, endBezierSize, std::clamp(animationPercentage, 0.0f, 1.0f));
+                                    animationPercentage += ImGui::GetIO().DeltaTime * 25;
+                                }
+
+                                if (animationPercentage > 1) {
+                                    beginPoints = glm::vec4(-1);
+                                    beginBezierSize = ImVec2(-1, -1);
+                                    mustAnimate = false;
+                                }
+                                
+
+                                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, preset.name.c_str()).c_str());
+
+
+                                ImGui::BeginChild("##presetPreviewCurve", curvePreviewProcessedSize, ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+                                    ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 14, curvePreviewProcessedSize);
+                                    auto currentCursor = ImGui::GetCursorPos();
+                                    ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - actualBezierSize / 2.0f);
+                                    ImGui::Bezier("curvePreview", glm::value_ptr(actualTargetPoints), actualBezierSize.x, false, std::nullopt, false);
+                                ImGui::EndChild();
+
+                                std::string pointsInfo = FormatString("%s P1: (%0.2f; %0.2f)\n%s P2: (%0.2f; %0.2f)", ICON_FA_BEZIER_CURVE, actualTargetPoints[0], actualTargetPoints[1], ICON_FA_BEZIER_CURVE, actualTargetPoints[2], actualTargetPoints[3]);
+                                ImVec2 infoSize = ImGui::CalcTextSize(pointsInfo.c_str());
+                                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - infoSize.x / 2.0f);
+                                ImGui::Text("%s", pointsInfo.c_str());
+
+                                ImGui::EndTooltip();
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
+                }
+                ImGui::EndChild();
                 ImGui::Separator();
                 ImGui::Text("%s %s: %i", ICON_FA_CIRCLE_INFO, Localization::GetString("TOTAL_PRESETS_COUNT").c_str(), (int) s_presets.size());
 
@@ -168,12 +275,7 @@ namespace Raster {
             pointsChildWidth = ImGui::GetWindowSize().x;
         ImGui::EndChild();
 
-        if (m_constrained) {
-            m_points[0] = std::clamp(m_points[0], -constraintsPower, 1 + constraintsPower);
-            m_points[1] = std::clamp(m_points[1], -constraintsPower, 1 + constraintsPower);
-            m_points[2] = std::clamp(m_points[2], -constraintsPower, 1 + constraintsPower);
-            m_points[3] = std::clamp(m_points[3], -constraintsPower, 1 + constraintsPower);
-        }
+        ImGui::PopID();
     }
 
     float BezierEasing::SampleCurveX(double t) {

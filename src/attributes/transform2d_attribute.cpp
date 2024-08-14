@@ -36,7 +36,7 @@ namespace Raster {
             auto& project = Workspace::GetProject();
             auto& parentAttribute = parentAttributeCandidate.value();
             auto parentComposition = Workspace::GetCompositionByAttributeID(parentAttribute->id).value();
-            auto dynamicValue = parentAttribute->Get(project.currentFrame - parentComposition->beginFrame, parentComposition);
+            auto dynamicValue = parentAttribute->Get(project.GetCurrentTime() - parentComposition->beginFrame, parentComposition);
             if (dynamicValue.type() == typeid(Transform2D)) {
                 auto transform = std::any_cast<Transform2D>(dynamicValue);
                 result.parentTransform = std::make_shared<Transform2D>(transform);

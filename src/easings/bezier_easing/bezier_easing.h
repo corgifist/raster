@@ -9,6 +9,9 @@ namespace Raster {
 
     struct CurvePreset {
         std::string name;
+        std::string category;
+        std::string filteredCategoryName;
+        std::string filteredName;
         glm::vec4 points;
 
         CurvePreset(std::string t_name, glm::vec4 t_points);
@@ -26,6 +29,7 @@ namespace Raster {
         Json AbstractSerialize();
 
     private:
+
         float SampleCurveX(double t);
         float SampleCurveY(double t);
         float SampleCurveDerivativeX(double t);

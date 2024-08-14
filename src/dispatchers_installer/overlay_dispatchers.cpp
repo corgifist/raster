@@ -2,6 +2,7 @@
 #include "common/transform2d.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
+#include "font/font.h"
 
 #define DRAG_CIRCLE_RADIUS 8
 #define ANCHOR_CIRCLE_RADIUS 6

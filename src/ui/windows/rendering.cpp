@@ -143,6 +143,24 @@ namespace Raster {
                             ImGui::Text(infoText.c_str());
                         }
                     }
+                    static ImVec2 settingsChildSize = ImVec2(30, 10);
+                    ImGui::SetCursorPos({
+                        ImGui::GetWindowSize().x - settingsChildSize.x,
+                        0
+                    });
+                    ImGui::BeginChild("##settingsChild", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+                        ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                        if (!Dispatchers::s_enableOverlays) {
+                            buttonColor = buttonColor * 0.8f;
+                        }
+                        ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+                        if (ImGui::Button(FormatString("%s %s", Dispatchers::s_enableOverlays ? ICON_FA_CHECK : ICON_FA_XMARK, ICON_FA_UP_DOWN_LEFT_RIGHT).c_str())) {
+                            Dispatchers::s_enableOverlays = !Dispatchers::s_enableOverlays;
+                        }
+                        ImGui::SetItemTooltip("%s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("ENABLE_PREVIEW_OVERLAYS").c_str());
+                        ImGui::PopStyleColor();
+                        settingsChildSize = ImGui::GetWindowSize();
+                    ImGui::EndChild();
                 ImGui::EndChild();
 
                 ImGui::BeginChild("##miniTimeline", ImVec2(ImGui::GetContentRegionAvail().x, miniTimelineSize), ImGuiChildFlags_AutoResizeY);
@@ -158,17 +176,28 @@ namespace Raster {
                         project.currentFrame -= 1;
                     }
                     ImGui::SameLine();
+                    if (ImGui::Button(project.playing ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
+                        project.playing = !project.playing;
+                    }
+                    ImGui::SameLine();
                     static float forwardSeekSize = 20;
                     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - forwardSeekSize);
-                        int signedCurrentFrame = static_cast<int>(project.currentFrame);
-                        ImGui::SliderInt("##timelineSlider", &signedCurrentFrame, 0, project.GetProjectLength(), firstTimestampText.c_str());
-                        project.currentFrame = signedCurrentFrame;
+                        ImGui::SliderFloat("##timelineSlider", &project.currentFrame, 0, project.GetProjectLength(), firstTimestampText.c_str());
                     ImGui::PopItemWidth();
                     ImGui::SameLine();
                     float firstForwardSeekCursor = ImGui::GetCursorPosX();
                     if (ImGui::Button(ICON_FA_FORWARD)) {
                         project.currentFrame += 1;
                     }
+                    ImGui::SameLine();
+                    buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                    if (!project.looping) buttonColor = buttonColor * 0.8f;
+                    ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+                        if (ImGui::Button(ICON_FA_CIRCLE_NOTCH)) {
+                            project.looping = !project.looping;
+                        }
+                    ImGui::PopStyleColor();
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_CIRCLE_NOTCH, Localization::GetString("LOOP_PLAYBACK").c_str());
                     ImGui::SameLine();
                     firstTimestampText = project.FormatFrameToTime(project.GetProjectLength() - project.currentFrame);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));

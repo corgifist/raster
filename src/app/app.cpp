@@ -42,7 +42,6 @@ namespace Raster {
         ImGuiIO& io = ImGui::GetIO();
 
         ImFontConfig fontCfg = {};
-        fontCfg.PixelSnapH = true;
 
         static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
 
@@ -58,17 +57,17 @@ namespace Raster {
         );
 
         fontCfg.RasterizerDensity = 5;
+
         fontCfg.MergeMode = false;
         Font::s_denseFont = io.Fonts->AddFontFromMemoryCompressedTTF(
                     Font::s_fontBytes.data(), Font::s_fontSize,
                     16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic());
 
-        fontCfg.GlyphMinAdvanceX = 16.0f * 2.0f / 3.0f;
         fontCfg.MergeMode = true;
         io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
             16.0f * 0.85f, &fontCfg, icons_ranges
-        );
+        ); 
 
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
@@ -78,8 +77,10 @@ namespace Raster {
         Compositor::Initialize();
 
         auto& style = ImGui::GetStyle();
-        style.CurveTessellationTol = 0.01f;
-        style.ScrollSmooth = 3;
+        // style.CurveTessellationTol = 0.01f;
+        style.ScrollSmooth = 4;
+        style.SeparatorTextAlign = ImVec2(0.5, 0.5);
+        style.ScrollbarSize = 10;
 
         ImVec4 *colors = style.Colors;
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -172,6 +173,24 @@ namespace Raster {
             GPU::SetWindowTitle(constructedTitle);
 
             GPU::BeginFrame();
+                if (Workspace::s_project.has_value() && !ImGui::IsAnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Space)) {
+                    Workspace::GetProject().playing = !Workspace::GetProject().playing;
+                }
+                if (Workspace::s_project.has_value()) {
+                    auto& project = Workspace::GetProject();
+                    if (project.playing) {
+                        auto projectLength = project.GetProjectLength();
+                        if (project.currentFrame >= projectLength) {
+                            if (project.looping) {
+                                project.currentFrame = 0;
+                            } else project.playing = false;
+                        } else {
+                            if (project.currentFrame < projectLength) {
+                                project.currentFrame += (project.framerate * ImGui::GetIO().DeltaTime);
+                            }
+                        }
+                    }
+                }
                 GPU::BindFramebuffer(std::nullopt);
                 Compositor::s_bundles.clear();
                 Compositor::EnsureResolutionConstraints();

@@ -145,11 +145,11 @@ namespace Raster {
             }
             auto& project = Workspace::GetProject();
             std::string attributesTreeText = project.selectedAttributes.empty() ? Localization::GetString("NO_ATTRIBUTES_SELECTED") : std::to_string(project.selectedAttributes.size()) + " " + Localization::GetString("ATTRIBUTES_SELECTED");
+            ImGui::SetWindowFontScale(1.6f);
             ImGui::PushFont(Font::s_denseFont);
-            ImGui::SetWindowFontScale(1.5f);
                 bool attributesTreeExpanded = ImGui::TreeNode(FormatString("%s %s###_attributesTree", ICON_FA_LINK, attributesTreeText.c_str()).c_str());
-            ImGui::SetWindowFontScale(1.0f);
             ImGui::PopFont();
+            ImGui::SetWindowFontScale(1.0f);
             if (attributesTreeExpanded) {
                 for (auto& attributeID : project.selectedAttributes) {
                     auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);

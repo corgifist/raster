@@ -17,6 +17,8 @@ namespace Raster {
             (float) data["BackgroundColor"][2],
             (float) data["BackgroundColor"][3]
         };
+        this->playing = data["Playing"];
+        this->looping = data["Looping"];
         this->selectedCompositions = data["SelectedCompositions"].get<std::vector<int>>();
         this->selectedAttributes = data["SelectedAttributes"].get<std::vector<int>>();
         this->selectedNodes = data["SelectedNodes"].get<std::vector<int>>();
@@ -35,6 +37,8 @@ namespace Raster {
         this->preferredResolution = {
             1080, 1080
         };
+        this->playing = false;
+        this->looping = false;
         this->backgroundColor = {0, 0, 0, 1};
         this->timeTravelOffset = 0;
     }
@@ -88,6 +92,8 @@ namespace Raster {
         data["BackgroundColor"] = {
             backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a
         };
+        data["Playing"] = playing;
+        data["Looping"] = looping;
         data["SelectedCompositions"] = selectedCompositions;
         data["SelectedNodes"] = selectedNodes;
         data["SelectedAttributes"] = selectedAttributes;

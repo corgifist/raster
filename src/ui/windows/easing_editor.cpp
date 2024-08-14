@@ -27,7 +27,7 @@ namespace Raster {
                     if (easingCandidate.has_value()) {
                         easingCandidate.value()->RenderDetails();
                     } else {
-                        ImGui::SetWindowFontScale(1.5f);
+                        ImGui::SetWindowFontScale(1.6f);
                         ImGui::PushFont(Font::s_denseFont);
                             std::string warningMessage;
                             if (!attributeCandidate.has_value()) {

@@ -37,9 +37,7 @@ namespace Raster {
         static float zoom = 1.0f;
 
         std::string str = std::any_cast<std::string>(t_attribute);
-        if (zoom > 1) {
-            ImGui::PushFont(Font::s_denseFont);
-        }
+        ImGui::PushFont(Font::s_denseFont);
         ImGui::SetWindowFontScale(zoom);
             ImVec2 textSize = ImGui::CalcTextSize(str.c_str());
             ImGui::SetCursorPos(ImVec2{
@@ -48,9 +46,7 @@ namespace Raster {
             } + textOffset);
             ImGui::Text(str.c_str());
         ImGui::SetWindowFontScale(1.0f);
-        if (zoom > 1) {
-            ImGui::PopFont();
-        }
+        ImGui::PopFont();
 
         int lines = SplitString(str, "\n").size();
         std::string footerText = FormatString("%i %s; %i %s; UTF-8", (int) str.size(), Localization::GetString("CHARS").c_str(), lines, Localization::GetString("LINES").c_str());
@@ -126,7 +122,7 @@ namespace Raster {
             ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
             auto& project = Workspace::GetProject();
-            if (!project.selectedAttributes.empty()) {
+            if (!project.selectedAttributes.empty() && Dispatchers::s_enableOverlays) {
                 for (auto& attributeID : project.selectedAttributes) {
                     auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
                     auto compositionCandidate = Workspace::GetCompositionByAttributeID(attributeID);

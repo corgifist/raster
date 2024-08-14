@@ -510,7 +510,7 @@ namespace Raster {
                         }
                         if (breakDrag && selectedComposoitions.size() > 1 && layerDragDistance < 0) break;
                         auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
-                        if (selectedCompositionCandidate.has_value()) {
+                        if (selectedCompositionCandidate.has_value() && ImGui::IsWindowFocused()) {
                             auto& selectedComposition = selectedCompositionCandidate.value();
                             ImVec2 reservedBounds = ImVec2(selectedComposition->beginFrame, selectedComposition->endFrame);
 
@@ -939,7 +939,20 @@ namespace Raster {
                 backgroundBounds.size.x / 2.0f - timestampSize.x / 2.0f,
                 backgroundBounds.size.y / 2.0f - timestampSize.y / 2.0f
             ));
+            static bool timestampHovered = false;
+            ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+            if (timestampHovered) textColor = textColor * 0.8f;
+            ImGui::PushStyleColor(ImGuiCol_Text, textColor);
             ImGui::Text("%s", formattedTimestamp.c_str());
+            timestampHovered = ImGui::IsItemHovered();
+            ImGui::PopStyleColor();
+            static bool timestampDragged = false;
+            if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+                project.currentFrame += ImGui::GetIO().MouseDelta.x / s_pixelsPerFrame;
+                project.currentFrame = std::clamp(project.currentFrame, 0.0f, project.GetProjectLength());
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+                timestampDragged = true;
+            } else timestampDragged = false;
             ImGui::PopFont();
             ImGui::SetWindowFontScale(1.0f);
 

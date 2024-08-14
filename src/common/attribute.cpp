@@ -132,6 +132,43 @@ namespace Raster {
         auto currentValue = Get(currentFrame, t_composition);
         bool openRenamePopup = false;
         ImGui::PushID(id);
+            bool graphButtonEnabled = true;
+            if (keyframes.size() <= 1) graphButtonEnabled = false;
+            if (!graphButtonEnabled) ImGui::BeginDisabled();
+            std::string easingPopupID = FormatString("##easingPopupLegendID", id);
+            if (ImGui::Button(ICON_FA_BEZIER_CURVE)) {
+                ImGui::OpenPopup(easingPopupID.c_str());
+            }
+            ImGui::SameLine();
+            if (!graphButtonEnabled) ImGui::EndDisabled();
+            if (ImGui::BeginPopup(easingPopupID.c_str(), ImGuiWindowFlags_NoMove)) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, name.c_str()).c_str());
+                int targetKeyframeIndex = -1;
+                int keyframesLength = keyframes.size();
+                float renderViewTime = currentFrame;
+
+                for (int i = 0; i < keyframesLength; i++) {
+                    float keyframeTimestamp = keyframes.at(i).timestamp;
+                    if (renderViewTime <= keyframeTimestamp) {
+                        targetKeyframeIndex = i;
+                        break;
+                    }
+                }
+                if (targetKeyframeIndex != -1) {
+                    auto& nextKeyframe = keyframes[targetKeyframeIndex];
+                    if (nextKeyframe.easing.has_value()) {
+                        nextKeyframe.easing.value()->RenderDetails();
+                    } else {
+                        for (auto& implementation : Easings::s_implementations) {
+                            bool isEasingSelected = nextKeyframe.easing.has_value() && nextKeyframe.easing.value()->packageName == implementation.description.packageName;
+                            if (ImGui::MenuItem(FormatString("%s%s %s", isEasingSelected ? ICON_FA_CHECK " " : "", ICON_FA_BEZIER_CURVE, implementation.description.prettyName.c_str()).c_str())) {
+                                nextKeyframe.easing = Easings::InstantiateEasing(implementation.description.packageName);
+                            }
+                        }
+                    }
+                }
+                ImGui::EndPopup();
+            }
             bool buttonPressed = ImGui::Button(KeyframeExists(currentFrame) && keyframes.size() != 1 ? ICON_FA_TRASH_CAN : ICON_FA_PLUS);
             bool shouldAddKeyframe = buttonPressed;
             ImGui::SameLine();
