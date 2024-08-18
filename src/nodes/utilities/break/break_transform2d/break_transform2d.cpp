@@ -33,6 +33,16 @@ namespace Raster {
     void BreakTransform2D::AbstractRenderProperties() {
         RenderAttributeProperty("Transform");
     }
+    
+    void BreakTransform2D::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Transform", Transform2D(t_data["Transform"]));    
+    }
+
+    Json BreakTransform2D::AbstractSerialize() {
+        return {
+            {"Transform", RASTER_ATTRIBUTE_CAST(Transform2D, "Transform").Serialize()}
+        };
+    }
 
     bool BreakTransform2D::AbstractDetailsAvailable() {
         return false;

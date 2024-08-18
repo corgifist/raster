@@ -16,7 +16,9 @@ namespace Raster {
 
     struct CompositorTarget {
         Texture colorAttachment, uvAttachment;
-        Composition* owner;
+        float opacity;
+        std::string blendMode;
+        int compositionID;
     };
 
     struct Compositor {
@@ -36,6 +38,7 @@ namespace Raster {
         static void EnsureResolutionConstraints();
         static void EnsureResolutionConstraintsForFramebuffer(Framebuffer& t_fbo);
 
+        static void PerformManualComposition(std::vector<CompositorTarget> t_targets);
         static void PerformComposition(std::vector<int> t_allowedCompositions = {});
 
         static glm::vec2 GetRequiredResolution();

@@ -30,6 +30,9 @@ namespace Raster {
 
         void AbstractRenderProperties();
 
+        void AbstractLoadSerialized(Json t_data);
+        Json AbstractSerialize();
+
         std::string Icon();
         std::string AbstractHeader();
         std::optional<std::string> Footer();

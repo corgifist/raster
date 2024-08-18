@@ -2,7 +2,6 @@
 #include "gpu/gpu.h"
 #include "gpu/async_upload.h"
 #include "font/font.h"
-#include "../ImGui/imgui_node_editor.h"
 #include "common/common.h"
 #include "traverser/traverser.h"
 #include "build_number.h"
@@ -18,6 +17,8 @@ namespace Raster {
     std::vector<AbstractUI> App::s_windows{};
 
     void App::Initialize() {
+        static NFD::Guard s_guard;
+
         GPU::Initialize();
         AsyncUpload::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
@@ -33,11 +34,6 @@ namespace Raster {
         DefaultNodeCategories::Initialize();
 
         Workspace::Initialize();
-        Workspace::s_project = Project();
-        Composition newComposition;
-        Workspace::s_project.value().compositions.push_back(newComposition);
-        Workspace::s_project.value().selectedCompositions = {newComposition.id};
-
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -70,7 +66,7 @@ namespace Raster {
         ); 
 
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+        // io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         DispatchersInstaller::Initialize();
         Attributes::Initialize();
@@ -153,6 +149,7 @@ namespace Raster {
         style.GrabRounding = 4;
 
 
+        s_windows.push_back(UIFactory::SpawnDockspaceUI());
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
         s_windows.push_back(UIFactory::SpawnRenderingUI());
@@ -201,7 +198,6 @@ namespace Raster {
                 }
                 Traverser::TraverseAll();
 
-                ImGui::DockSpaceOverViewport();
                 for (const auto& window : s_windows) {
                     window->Render();
                 }

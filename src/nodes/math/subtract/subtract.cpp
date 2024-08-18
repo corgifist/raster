@@ -34,6 +34,18 @@ namespace Raster {
         RenderAttributeProperty("B");
     }
 
+    void Subtract::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("A", t_data["A"].get<float>());
+        SetAttributeValue("B", t_data["B"].get<float>());
+    }
+
+    Json Subtract::AbstractSerialize() {
+        return {
+            {"A", RASTER_ATTRIBUTE_CAST(float, "A")},
+            {"B", RASTER_ATTRIBUTE_CAST(float, "B")}    
+        };
+    }
+
     bool Subtract::AbstractDetailsAvailable() {
         return false;
     }

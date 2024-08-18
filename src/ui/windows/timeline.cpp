@@ -24,6 +24,10 @@ namespace Raster {
         Count
     };
 
+    enum class TimestampFormat {
+        Regular, Frame, Seconds
+    };
+
     static void SplitDrawList() {
         ImGui::GetWindowDrawList()->ChannelsSplit(static_cast<int>(TimelineChannels::Count));
     }
@@ -162,6 +166,18 @@ namespace Raster {
 
         UIShared::s_timelinePixelsPerFrame = s_pixelsPerFrame;
         ImGui::Begin(FormatString("%s %s", ICON_FA_TIMELINE, Localization::GetString("TIMELINE").c_str()).c_str());
+            if (!Workspace::IsProjectLoaded()) {
+                ImGui::PushFont(Font::s_denseFont);
+                ImGui::SetWindowFontScale(2.0f);
+                    ImVec2 exclamationSize = ImGui::CalcTextSize(ICON_FA_TRIANGLE_EXCLAMATION);
+                    ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - exclamationSize / 2.0f);
+                    ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopFont();
+                ImGui::End();
+                PopStyleVars();
+                return;
+            }
             s_rootWindowSize = ImGui::GetWindowSize();
             s_timelineFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
@@ -449,7 +465,7 @@ namespace Raster {
                     auto reservedCursor = ImGui::GetCursorPos();
                     ImGui::SetCursorPos(buttonCursor);
                     ImGui::SetCursorPosX(buttonCursor.x + dragSize.x);
-                    ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 40, 214, ImVec2{rectSize.x, rectSize.y});
+                    ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 14, 214, ImVec2{rectSize.x, rectSize.y});
                     ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle, upperLeft, bottomRight);
                     ImGui::SetCursorPos(reservedCursor);
                 }
@@ -935,7 +951,15 @@ namespace Raster {
             auto& project = Workspace::s_project.value();
             ImGui::PushFont(Font::s_denseFont);
             ImGui::SetWindowFontScale(1.5f);
+            static TimestampFormat timestampFormat = TimestampFormat::Regular;
+            if (!project.customData.contains("TimelineTimestampFormat")) {
+                project.customData["TimelineTimestampFormat"] = static_cast<int>(timestampFormat);
+            } else {
+                timestampFormat = static_cast<TimestampFormat>(project.customData["TimelineTimestampFormat"]);
+            }
             std::string formattedTimestamp = project.FormatFrameToTime(project.currentFrame);
+            if (timestampFormat == TimestampFormat::Frame) formattedTimestamp = std::to_string((int) project.currentFrame);
+            if (timestampFormat == TimestampFormat::Seconds) formattedTimestamp = FormatString("%.2f", Precision(project.currentFrame / project.framerate, 2));
             ImVec2 timestampSize = ImGui::CalcTextSize(formattedTimestamp.c_str());
             ImGui::SetCursorPos(ImVec2(
                 backgroundBounds.size.x / 2.0f - timestampSize.x / 2.0f,
@@ -947,6 +971,28 @@ namespace Raster {
             ImGui::PushStyleColor(ImGuiCol_Text, textColor);
             ImGui::Text("%s", formattedTimestamp.c_str());
             timestampHovered = ImGui::IsItemHovered();
+            if (timestampHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                ImGui::OpenPopup("##timestampFormatPopup");
+            }
+            PopStyleVars();
+            ImGui::PopFont();
+            ImGui::SetWindowFontScale(1.0f);
+            if (ImGui::BeginPopup("##timestampFormatPopup")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("TIMESTAMP_FORMAT").c_str()).c_str());
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("REGULAR").c_str()).c_str())) {
+                    timestampFormat = TimestampFormat::Regular;
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("FRAMES").c_str()).c_str())) {
+                    timestampFormat = TimestampFormat::Frame;
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("SECONDS").c_str()).c_str())) {
+                    timestampFormat = TimestampFormat::Seconds;
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::PushFont(Font::s_denseFont);
+            PushStyleVars();
+            project.customData["TimelineTimestampFormat"] = static_cast<int>(timestampFormat);
             ImGui::PopStyleColor();
             static bool timestampDragged = false;
             if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
@@ -1038,6 +1084,7 @@ namespace Raster {
                         UIShared::s_timelineAttributeHeights[composition.id] = ImGui::GetCursorPosY() - firstAttribueCursor;
                     }
                     ImGui::TreePop();
+                    ImGui::Spacing();
                     s_legendOffsets[composition.id] = ImGui::GetCursorPosY() - firstCursor;
                 }
                 ImGui::PopID();
@@ -1090,7 +1137,7 @@ namespace Raster {
         float mouseX = GetRelativeMousePos().x - ImGui::GetScrollX();
         DUMP_VAR(mouseX);
         float eventZone = ImGui::GetWindowSize().x / 10.0f;
-        float mouseDeltaX = ImGui::GetIO().MouseDelta.x;
+        float mouseDeltaX = 5;
         if (mouseX > ImGui::GetWindowSize().x - eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
             ImGui::SetScrollX(ImGui::GetScrollX() + mouseDeltaX);
             return mouseDeltaX;

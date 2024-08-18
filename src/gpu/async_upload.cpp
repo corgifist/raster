@@ -63,7 +63,10 @@ namespace Raster {
 
         std::vector<int> skipID;
         while (m_running) {
-            if (SyncIsInfosEmpty()) continue; 
+            while (SyncIsInfosEmpty() && m_running) {
+                continue;
+            }
+            if (!m_running) break;
             auto pair = SyncGetFirstAsyncUploadInfo();
             auto& info = pair.second;
             bool deleted = false;

@@ -7,6 +7,17 @@
 namespace Raster {
     void RenderingUI::Render() {
         ImGui::Begin(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("RENDERING").c_str()).c_str(), nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse);
+            if (!Workspace::IsProjectLoaded()) {
+                ImGui::PushFont(Font::s_denseFont);
+                ImGui::SetWindowFontScale(2.0f);
+                    ImVec2 exclamationSize = ImGui::CalcTextSize(ICON_FA_TRIANGLE_EXCLAMATION);
+                    ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - exclamationSize / 2.0f);
+                    ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopFont();
+                ImGui::End();
+                return;
+            }
             if (Workspace::s_project.has_value()) {
                 auto& project = Workspace::s_project.value();
                 auto& selectedNodes = project.selectedNodes;
@@ -53,6 +64,48 @@ namespace Raster {
                         }
                     }
 
+                    if (!project.customData.contains("PreviewResolutionScale")) {
+                        project.customData["PreviewResolutionScale"] = 1.0f;
+                    }
+
+                    float previewResolutionScale = project.customData["PreviewResolutionScale"];
+
+                    std::string previewResolutionName = Localization::GetString("CUSTOM");
+                    if (previewResolutionScale == 1.0f) previewResolutionName = Localization::GetString("FULL");
+                    else if (previewResolutionScale == 0.5f) previewResolutionName = Localization::GetString("HALF");
+                    else if (previewResolutionScale == 0.3f) previewResolutionName = Localization::GetString("THIRD");
+                    else if (previewResolutionScale == 0.2f) previewResolutionName = Localization::GetString("QUARTER");
+
+                    if (ImGui::MenuItem(FormatString("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("PREVIEW_RESOLUTION").c_str(), previewResolutionName.c_str()).c_str())) {
+                        ImGui::OpenPopup("##previewResolutionPresets");
+                    }
+
+                    if (ImGui::BeginPopup("##previewResolutionPresets")) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("PREVIEW_RESOLUTION").c_str()).c_str());
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("FULL").c_str()).c_str())) {
+                            previewResolutionScale = 1.0f;
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("HALF").c_str()).c_str())) {
+                            previewResolutionScale = 0.5f;
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("THIRD").c_str()).c_str())) {
+                            previewResolutionScale = 0.3f;
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("QUARTER").c_str()).c_str())) {
+                            previewResolutionScale = 0.2f;
+                        }
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("CUSTOM").c_str()).c_str())) {
+                            ImGui::SliderFloat("##customResolution", &previewResolutionScale, 0.1f, 1.0f, "%0.2f");
+                            ImGui::EndMenu();
+                        }
+                        ImGui::EndPopup();
+                    }
+                    ImGui::Separator();
+
+                    project.customData["PreviewResolutionScale"] = previewResolutionScale;
+
+                    Compositor::previewResolutionScale = previewResolutionScale;
+
                     int attributesCount = 0;
                     int selectedAttributeIndex = 0;
                     if (!selectedNodes.empty()) {
@@ -87,6 +140,7 @@ namespace Raster {
                             }
                         }
                     }
+
                     ImGui::EndMenuBar();
                 }
 
@@ -186,10 +240,6 @@ namespace Raster {
                     ImGui::PopItemWidth();
                     ImGui::SameLine();
                     float firstForwardSeekCursor = ImGui::GetCursorPosX();
-                    if (ImGui::Button(ICON_FA_FORWARD)) {
-                        project.currentFrame += 1;
-                    }
-                    ImGui::SameLine();
                     buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
                     if (!project.looping) buttonColor = buttonColor * 0.8f;
                     ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
@@ -197,6 +247,10 @@ namespace Raster {
                             project.looping = !project.looping;
                         }
                     ImGui::PopStyleColor();
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_FORWARD)) {
+                        project.currentFrame += 1;
+                    }
                     ImGui::SetItemTooltip("%s %s", ICON_FA_CIRCLE_NOTCH, Localization::GetString("LOOP_PLAYBACK").c_str());
                     ImGui::SameLine();
                     firstTimestampText = project.FormatFrameToTime(project.GetProjectLength() - project.currentFrame);

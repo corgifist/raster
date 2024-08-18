@@ -32,6 +32,18 @@ namespace Raster {
         RenderAttributeProperty("MultiplyBy");
     }
 
+    void Sine::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Input", t_data["Input"].get<float>());
+        SetAttributeValue("MultiplyBy", t_data["MultiplyBy"].get<float>());
+    }
+
+    Json Sine::AbstractSerialize() {
+        return {
+            {"Input", RASTER_ATTRIBUTE_CAST(float, "Input")},
+            {"MultiplyBy", RASTER_ATTRIBUTE_CAST(float, "MultiplyBy")}
+        };
+    }
+
     bool Sine::AbstractDetailsAvailable() {
         return true;
     }

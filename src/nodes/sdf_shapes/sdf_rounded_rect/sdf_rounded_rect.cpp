@@ -36,6 +36,16 @@ namespace Raster {
         RenderAttributeProperty("Rounding");
     }
 
+    void SDFRoundedRect::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Rounding", t_data["Rounding"].get<float>());    
+    }
+
+    Json SDFRoundedRect::AbstractSerialize() {
+        return {
+            {"Rounding", RASTER_ATTRIBUTE_CAST(float, "Rounding")}
+        };
+    }
+
     bool SDFRoundedRect::AbstractDetailsAvailable() {
         return false;
     }

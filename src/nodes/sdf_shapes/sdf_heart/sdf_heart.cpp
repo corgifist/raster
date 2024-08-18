@@ -9,13 +9,13 @@ namespace Raster {
 
         AddOutputPin("Shape");
 
-        SetupAttribute("Size", glm::vec2(0.5f, 0.5f));
+        SetupAttribute("Size", 0.5f);
     }
 
     AbstractPinMap SDFHeart::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
 
-        auto sizeCandidate = GetAttribute<glm::vec2>("Size");
+        auto sizeCandidate = GetAttribute<float>("Size");
         if (sizeCandidate.has_value()) {
             auto& size = sizeCandidate.value();
             static SDFShape s_heartShape;
@@ -24,7 +24,7 @@ namespace Raster {
                 s_heartShape.distanceFunctionCode = ReadFile(GPU::GetShadersPath() + "sdf_shapes/sdf_heart.frag");
             }
             s_heartShape.uniforms = {
-                {"vec2", "uSDFHeartSize", size}
+                {"float", "uSDFHeartSize", size}
             };
             TryAppendAbstractPinMap(result, "Shape", s_heartShape);
         }
@@ -34,6 +34,16 @@ namespace Raster {
 
     void SDFHeart::AbstractRenderProperties() {
         RenderAttributeProperty("Size");
+    }
+
+    void SDFHeart::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Size", t_data["Size"].get<float>());   
+    }
+
+    Json SDFHeart::AbstractSerialize() {
+        return {
+            {"Size", RASTER_ATTRIBUTE_CAST(float, "Size")}
+        };
     }
 
     bool SDFHeart::AbstractDetailsAvailable() {

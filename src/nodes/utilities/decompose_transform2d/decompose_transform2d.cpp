@@ -33,6 +33,16 @@ namespace Raster {
         RenderAttributeProperty("Transform");
     }
 
+    Json DecomposeTransform2D::AbstractSerialize() {
+        return {
+            {"Tranfsorm", RASTER_ATTRIBUTE_CAST(Transform2D, "Transform").Serialize()}
+        };
+    }
+    
+    void DecomposeTransform2D::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Transform", Transform2D(t_data["Transform"]));    
+    }
+
     bool DecomposeTransform2D::AbstractDetailsAvailable() {
         return false;
     }

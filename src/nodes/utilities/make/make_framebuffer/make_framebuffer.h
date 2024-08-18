@@ -17,6 +17,9 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
 
+        void AbstractLoadSerialized(Json t_data);
+        Json AbstractSerialize();
+
         private:
         std::optional<Framebuffer> m_internalFramebuffer;
 

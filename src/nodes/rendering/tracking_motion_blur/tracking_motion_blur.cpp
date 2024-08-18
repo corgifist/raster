@@ -123,6 +123,18 @@ namespace Raster {
         return result;
     }
 
+    void TrackingMotionBlur::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("BlurIntensity", t_data["BlurIntensity"].get<float>());
+        SetAttributeValue("Samples", t_data["Samples"].get<int>());
+    }
+
+    Json TrackingMotionBlur::AbstractSerialize() {
+        return {
+            {"BlurIntensity", RASTER_ATTRIBUTE_CAST(float, "BlurIntensity")},
+            {"Samples", RASTER_ATTRIBUTE_CAST(int, "Samples")}
+        };
+    }
+
     void TrackingMotionBlur::AbstractRenderProperties() {
         RenderAttributeProperty("BlurIntensity");
         RenderAttributeProperty("Samples");

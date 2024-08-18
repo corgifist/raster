@@ -52,6 +52,17 @@ namespace Raster {
         }
     }
 
+    void MakeSamplerSettings::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("TextureFiltering", t_data["TextureFiltering"].get<int>());
+        SetAttributeValue("TextureWrapping", t_data["TextureWrapping"].get<int>());    
+    }
+
+    Json MakeSamplerSettings::AbstractSerialize() {
+        return {
+            {"TextureFiltering", RASTER_ATTRIBUTE_CAST(int, "TextureFiltering")},
+            {"TextureWrapping", RASTER_ATTRIBUTE_CAST(int, "TextureWrapping")}
+        };
+    }
     bool MakeSamplerSettings::AbstractDetailsAvailable() {
         return false;
     }

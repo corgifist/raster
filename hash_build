@@ -31,10 +31,10 @@ build_modules = [
     [gpu, shared, [glfw, raster_common, raster_ImGui, raster_image]],
     [compositor, shared, [raster_gpu, raster_common]]
     [attributes, shared, [raster_common, raster_ImGui]],
-    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor, raster_node_category, raster_dispatchers_installer]],
+    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category, nfd]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd]],
     [sampler_constants_base, shared, [raster_common]],
-    [core, binary, [raster_common, raster_app]],
+    [core, binary, [raster_common, raster_app, bfd, unwind]],
     
     ["bezier_easing", easing, [raster_common]],
     ["constant_easing", easing, [raster_common]],

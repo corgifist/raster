@@ -91,6 +91,16 @@ namespace Raster {
         return base;
     }
 
+    void LoadTextureByPath::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Path", t_data["Path"].get<std::string>());
+    }
+
+    Json LoadTextureByPath::AbstractSerialize() {
+        return {
+            {"Path", RASTER_ATTRIBUTE_CAST(std::string, "Path")}
+        };
+    }
+
     std::optional<std::string> LoadTextureByPath::Footer() {
         return std::nullopt;
     }

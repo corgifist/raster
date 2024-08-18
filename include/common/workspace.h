@@ -10,6 +10,7 @@
 #include "attribute.h"
 #include "sampler_settings.h"
 #include "easings.h"
+#include "assets.h"
 
 #define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
 
@@ -60,5 +61,6 @@ namespace Raster {
         static std::string GetTypeName(std::any& t_value);
 
         static Project& GetProject();
+        static bool IsProjectLoaded();
     };
 };

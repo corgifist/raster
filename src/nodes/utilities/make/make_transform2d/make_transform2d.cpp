@@ -47,6 +47,29 @@ namespace Raster {
         RenderAttributeProperty("ParentTransform");
     }
 
+    void MakeTransform2D::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Position", glm::vec2(t_data["Position"][0], t_data["Position"][1]));
+        SetAttributeValue("Size", glm::vec2(t_data["Size"][0], t_data["Size"][1]));
+        SetAttributeValue("Anchor", glm::vec2(t_data["Anchor"][0], t_data["Anchor"][1]));
+        SetAttributeValue("Angle", t_data["Angle"].get<float>());
+        SetAttributeValue("ParentTransform", Transform2D(t_data["ParentTransform"]));   
+    }
+
+    Json MakeTransform2D::AbstractSerialize() {
+        auto position = RASTER_ATTRIBUTE_CAST(glm::vec2, "Position");
+        auto size = RASTER_ATTRIBUTE_CAST(glm::vec2, "Size");
+        auto anchor = RASTER_ATTRIBUTE_CAST(glm::vec2, "Anchor");
+        auto angle = RASTER_ATTRIBUTE_CAST(float, "Angle");
+        auto parentTransform = RASTER_ATTRIBUTE_CAST(Transform2D, "ParentTransform");
+        return {
+            {"Position", {position.x, position.y}},
+            {"Size", {size.x, size.y}},
+            {"Anchor", {anchor.x, anchor.y}},
+            {"Angle", angle},
+            {"ParentTransform", parentTransform.Serialize()}
+        };
+    }
+
     bool MakeTransform2D::AbstractDetailsAvailable() {
         return false;
     }

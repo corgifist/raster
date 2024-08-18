@@ -36,6 +36,17 @@ namespace Raster {
         RenderAttributeProperty("Size");
     }
 
+    void SDFRhombus::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Size", glm::vec2(t_data["Size"][0], t_data["Size"][1]));    
+    }
+
+    Json SDFRhombus::AbstractSerialize() {
+        auto size = RASTER_ATTRIBUTE_CAST(glm::vec2, "Size");
+        return {
+            {"Size", {size.x, size.y}}
+        };
+    }
+
     bool SDFRhombus::AbstractDetailsAvailable() {
         return false;
     }

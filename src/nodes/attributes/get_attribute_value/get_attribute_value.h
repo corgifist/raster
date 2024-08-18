@@ -13,6 +13,9 @@ namespace Raster {
 
         std::optional<AbstractAttribute> GetCompositionAttribute();
 
+        void AbstractLoadSerialized(Json t_data);
+        Json AbstractSerialize();
+
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();

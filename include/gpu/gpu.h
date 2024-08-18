@@ -187,5 +187,6 @@ namespace Raster {
         static void SetWindowTitle(std::string title);
 
         static void* GetImGuiContext();
+        static void* GetNFDWindowHandle(void* window);
     };
 }

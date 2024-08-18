@@ -397,20 +397,21 @@ namespace Raster {
         if (!composition) return;
         if (UIShared::s_timelineAttributeHeights.find(composition->id) == UIShared::s_timelineAttributeHeights.end()) return;
         SortKeyframes();
+        float keyframeYOffset = -3;
         PushClipRect(RectBounds(
-            ImVec2(composition->beginFrame * UIShared::s_timelinePixelsPerFrame, ImGui::GetScrollY()),
+            ImVec2(composition->beginFrame * UIShared::s_timelinePixelsPerFrame, ImGui::GetScrollY() + keyframeYOffset),
             ImVec2((composition->endFrame - composition->beginFrame) * UIShared::s_timelinePixelsPerFrame, ImGui::GetWindowSize().y)
         ));
         float keyframeHeight = UIShared::s_timelineAttributeHeights[composition->id];
         float keyframeWidth = 9;
         RectBounds keyframeBounds(
-            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
+            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, keyframeYOffset),
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
         keyframeWidth *= 1.5f;
         RectBounds keyframeLogicBounds(
-            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
+            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, keyframeYOffset),
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
@@ -568,11 +569,11 @@ namespace Raster {
 
             if (nextKeyframe.easing.has_value()) {
                 auto& nextEasing = nextKeyframe.easing.value();
-                const int SMOOTHNESS = 32;
+                const int SMOOTHNESS = 64;
                 std::vector<float> percentages(SMOOTHNESS);
                 float step = 1.0f / (float) SMOOTHNESS;
                 for (int i = 0; i < SMOOTHNESS; i++) {
-                    percentages[i] = nextEasing->Get(i * step);
+                    percentages[i] = std::clamp(nextEasing->Get(i * step), 0.0f, 0.95f);
                 }
 
                 ImVec2 canvasPos = keyframeBounds.BR;

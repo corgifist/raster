@@ -59,6 +59,7 @@ namespace Raster {
         }
 
         Easings::Initialize();
+        Assets::Initialize();
     }
 
     std::optional<AbstractNode> Workspace::CopyAbstractNode(AbstractNode node) {
@@ -419,5 +420,9 @@ namespace Raster {
 
     Project& Workspace::GetProject() {
         return s_project.value();
+    }
+
+    bool Workspace::IsProjectLoaded() {
+        return s_project.has_value();
     }
 }

@@ -15,6 +15,9 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
 
+        void AbstractLoadSerialized(Json t_data);
+        Json AbstractSerialize();
+
     private:
         void TransformShapeUniforms(SDFShape& t_shape, std::string t_uniqueID);
         void TransformShape(SDFShape& t_shape, std::string t_uniqueID);

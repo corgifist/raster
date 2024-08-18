@@ -120,6 +120,25 @@ namespace Raster {
         }
     }
 
+    void Layer2D::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Transform", Transform2D(t_data["Transform"]));
+        SetAttributeValue("UVTransform", Transform2D(t_data["UVTransform"]));
+        SetAttributeValue("Color", glm::vec4(t_data["Color"][0], t_data["Color"][1], t_data["Color"][2], t_data["Color"][3]));
+        SetAttributeValue("MaintainUVRange", t_data["MaintainUVRange"].get<bool>());
+        SetAttributeValue("SamplerSettings", SamplerSettings(t_data["SamplerSettings"]));
+    }
+
+    Json Layer2D::AbstractSerialize() {
+        auto color = RASTER_ATTRIBUTE_CAST(glm::vec4, "Color");
+        return {
+            {"Transform", RASTER_ATTRIBUTE_CAST(Transform2D, "Transform").Serialize()},
+            {"UVTransform", RASTER_ATTRIBUTE_CAST(Transform2D, "UVTransform").Serialize()},
+            {"Color", {color.r, color.g, color.b, color.a}},
+            {"MaintainUVRange", RASTER_ATTRIBUTE_CAST(bool, "MaintainUVRange")},
+            {"SamplerSettings", RASTER_ATTRIBUTE_CAST(SamplerSettings, "SamplerSettings").Serialize()}
+        };
+    }
+
     void Layer2D::AbstractRenderProperties() {
         RenderAttributeProperty("Transform");
         RenderAttributeProperty("UVTransform");

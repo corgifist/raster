@@ -5,6 +5,7 @@
 #include "common/common.h"
 #include "utils/widgets.h"
 #include "font/IconsFontAwesome5.h"
+#include "font/font.h"
 
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_stdlib.h"

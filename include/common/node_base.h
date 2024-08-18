@@ -6,6 +6,9 @@
 #include "typedefs.h"
 #include "node_category/node_category.h"
 
+#define RASTER_ATTRIBUTE_CAST(t_type, t_name) \
+    std::any_cast<t_type>(m_attributes[t_name])
+
 namespace Raster {
 
     enum class PinType {

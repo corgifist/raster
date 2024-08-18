@@ -101,6 +101,16 @@ namespace Raster {
         return std::nullopt;
     }
 
+    void SDFMix::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Phase", t_data["Phase"].get<float>());    
+    }
+
+    Json SDFMix::AbstractSerialize() {
+        return {
+            {"Phase", RASTER_ATTRIBUTE_CAST(float, "Phase")}
+        };
+    }
+
     void SDFMix::AbstractRenderProperties() {
         RenderAttributeProperty("Phase");
     }

@@ -26,6 +26,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "json.hpp"
 
+#include <nfd.hpp>
+
 #define RASTER_PACKAGED "packaged.raster."
 
 #define print(expr) std::cout << expr << std::endl
@@ -112,6 +114,11 @@ namespace Raster {
     template<class T>
     static T GetBaseName(T const & path, T const & delims = "/\\") {
         return path.substr(path.find_last_of(delims) + 1);
+    }
+
+    static float Precision( float f, int places ) {
+        float n = std::pow(10.0f, places ) ;
+        return std::round(f * n) / n ;
     }
 
 }

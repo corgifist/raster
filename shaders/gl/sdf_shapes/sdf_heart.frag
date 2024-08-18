@@ -2,7 +2,7 @@ float fSDFHeartDOT2(in vec2 v ) { return dot(v,v); }
 
 float fSDFHeart(vec2 P)
 {
-    float size = uSDFHeartSize.x;
+    float size = uSDFHeartSize;
     P = vec2(P.x,-P.y)/(size/3.5); // transform to weird space (to match original shader)
     
     vec2 q = abs( vec2(P.x-P.y,P.x+P.y)/1.41421356237309504880168872420969808 ) - 1.0;

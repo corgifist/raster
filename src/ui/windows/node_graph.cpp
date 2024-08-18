@@ -285,11 +285,21 @@ namespace Raster {
         static std::optional<ImVec2> nodeSearchMousePos;
 
         ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str());
+            if (!Workspace::IsProjectLoaded()) {
+                ImGui::PushFont(Font::s_denseFont);
+                ImGui::SetWindowFontScale(2.0f);
+                    ImVec2 exclamationSize = ImGui::CalcTextSize(ICON_FA_TRIANGLE_EXCLAMATION);
+                    ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - exclamationSize / 2.0f);
+                    ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopFont();
+                ImGui::End();
+                return;
+            }
         ImGui::PushFont(Font::s_denseFont);
             static std::unordered_map<int, Nodes::EditorContext*> compositionContexts;
             Nodes::EditorContext* ctx = nullptr;
             
-            auto& project = Workspace::GetProject();
             auto compositionsCandidate = Workspace::GetSelectedCompositions();
             if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
             if (compositionsCandidate.has_value()) {
@@ -343,13 +353,16 @@ namespace Raster {
             }
 
             if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable)) {
-                for (auto& compositionID : project.selectedCompositions) {
-                    auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
-                    if (compositionCandidate.has_value()) {
-                        auto& composition = compositionCandidate.value();
-                        if (ImGui::BeginTabItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str())) {
-                            s_currentComposition = composition;
-                            ImGui::EndTabItem();
+                if (Workspace::IsProjectLoaded()) {
+                    auto& project = Workspace::GetProject();
+                    for (auto& compositionID : project.selectedCompositions) {
+                        auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+                        if (compositionCandidate.has_value()) {
+                            auto& composition = compositionCandidate.value();
+                            if (ImGui::BeginTabItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str())) {
+                                s_currentComposition = composition;
+                                ImGui::EndTabItem();
+                            }
                         }
                     }
                 }
@@ -633,7 +646,8 @@ namespace Raster {
 
                                             if (endPin.pinID == startPin.pinID) {
                                                 Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-                                            } else if (endPin.type == startPin.type) {
+                                            } else if (endPin.type == startPin.type || (Workspace::GetNodeByPinID(startPin.pinID).has_value() && Workspace::GetNodeByPinID(endPin.pinID) 
+                                                            && Workspace::GetNodeByPinID(startPin.pinID).value()->nodeID == Workspace::GetNodeByPinID(endPin.pinID).value()->nodeID)) {
                                                 ShowLabel(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("INVALID_LINK").c_str()), ImColor(45, 32, 32, 180));
                                                 Nodes::RejectNewItem(ImColor(255, 0, 0), 2.0f);
                                             } else {
@@ -828,6 +842,7 @@ namespace Raster {
                         for (auto& entry : Attributes::s_attributes) {
                             if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
                                 auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
+                                auto& project = Workspace::GetProject();
                                 if (attributeCandidate.has_value()) {
                                     s_currentComposition->attributes.push_back(attributeCandidate.value());
                                     project.selectedAttributes = {attributeCandidate.value()->id};
@@ -1014,13 +1029,18 @@ namespace Raster {
                     }
                 }
                 Nodes::Resume();
-                project.selectedNodes.clear();
+                if (Workspace::IsProjectLoaded()) {
+                    Workspace::GetProject().selectedNodes.clear();
+                }
 
                 std::vector<Nodes::NodeId> temporarySelectedNodes(Nodes::GetSelectedObjectCount());
                 Nodes::GetSelectedNodes(temporarySelectedNodes.data(), Nodes::GetSelectedObjectCount());
 
-                for (auto& nodeID : temporarySelectedNodes) {
-                    project.selectedNodes.push_back((int) nodeID.Get());
+                if (Workspace::IsProjectLoaded()) {
+                    auto& project = Workspace::GetProject();
+                    for (auto& nodeID : temporarySelectedNodes) {
+                        project.selectedNodes.push_back((int) nodeID.Get());
+                    }
                 }
 
                 if (ImGui::Shortcut(ImGuiKey_ModCtrl | ImGuiKey_C)) {

@@ -27,6 +27,12 @@ namespace Raster {
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
         }
+        for (auto& asset : data["Assets"]) {
+            auto assetCandidate = Assets::InstantiateSerializedAsset(asset);
+            if (assetCandidate.has_value()) {
+                assets.push_back(assetCandidate.value());
+            }
+        }
     }
 
     Project::Project() {
@@ -101,6 +107,10 @@ namespace Raster {
         data["Compositions"] = {};
         for (auto& composition : compositions) {
             data["Compositions"].push_back(composition.Serialize());
+        }
+        data["Assets"] = {};
+        for (auto& asset : assets) {
+            data["Asset"].push_back(asset->Serialize());
         }
 
         return data;

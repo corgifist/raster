@@ -1,9 +1,11 @@
 #pragma once
 #include "raster.h"
 #include "typedefs.h"
+#include "assets.h"
 
 namespace Raster {
     struct Project {
+        std::string path;
         std::string name, description;
         float framerate;
         float currentFrame;
@@ -14,6 +16,7 @@ namespace Raster {
         glm::vec4 backgroundColor;
         
         std::vector<Composition> compositions;
+        std::vector<AbstractAsset> assets;
 
         std::vector<int> selectedCompositions;
         std::vector<int> selectedNodes;

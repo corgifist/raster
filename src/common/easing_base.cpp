@@ -13,7 +13,7 @@ namespace Raster {
     Json EasingBase::Serialize() {
         return {
             {"ID", id},
-            {"PackageName", id},
+            {"PackageName", packageName},
             {"Data", AbstractSerialize()}
         };
     }

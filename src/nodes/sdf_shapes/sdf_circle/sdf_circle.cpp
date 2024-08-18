@@ -36,6 +36,17 @@ namespace Raster {
         RenderAttributeProperty("Radius");
     }
 
+    void SDFCircle::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Radius", t_data["Radius"].get<float>());
+    }
+
+    Json SDFCircle::AbstractSerialize() {
+        return {
+            {"Radius", RASTER_ATTRIBUTE_CAST(float, "Radius")}
+        };
+    }
+
+
     bool SDFCircle::AbstractDetailsAvailable() {
         return false;
     }

@@ -30,6 +30,18 @@ namespace Raster {
         RenderAttributeProperty("Y");
     }
 
+    Json MakeVec2::AbstractSerialize() {
+        return {
+            {"X", RASTER_ATTRIBUTE_CAST(float, "X")},
+            {"Y", RASTER_ATTRIBUTE_CAST(float, "Y")}
+        };
+    }
+
+    void MakeVec2::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("X", t_data["X"].get<float>());
+        SetAttributeValue("Y", t_data["Y"].get<float>());  
+    }
+
     bool MakeVec2::AbstractDetailsAvailable() {
         return false;
     }

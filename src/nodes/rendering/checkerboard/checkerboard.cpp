@@ -62,6 +62,26 @@ namespace Raster {
         return result;
     }
 
+    void Checkerboard::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Color1", glm::vec4(t_data["Color1"][0], t_data["Color1"][1], t_data["Color1"][2], t_data["Color1"][3]));    
+        SetAttributeValue("Color2", glm::vec4(t_data["Color2"][0], t_data["Color2"][1], t_data["Color2"][2], t_data["Color2"][3])); 
+        SetAttributeValue("Position", glm::vec2(t_data["Position"][0], t_data["Position"][1]));
+        SetAttributeValue("Size", glm::vec2(t_data["Size"][0], t_data["Size"][1]));   
+    }
+
+    Json Checkerboard::AbstractSerialize() {
+        auto color1 = RASTER_ATTRIBUTE_CAST(glm::vec4, "Color1");
+        auto color2 = RASTER_ATTRIBUTE_CAST(glm::vec4, "Color2");
+        auto position = RASTER_ATTRIBUTE_CAST(glm::vec2, "Position");
+        auto size = RASTER_ATTRIBUTE_CAST(glm::vec2, "Size");
+        return {
+            {"Color1", {color1.r, color1.g, color1.b, color1.a}},
+            {"Color2", {color2.r, color2.g, color2.b, color2.a}},
+            {"Position", {position.x, position.y}},
+            {"Size", {size.x, size.y}}
+        };
+    }
+
     void Checkerboard::AbstractRenderProperties() {
         RenderAttributeProperty("Color1");
         RenderAttributeProperty("Color2");

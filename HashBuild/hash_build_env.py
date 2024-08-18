@@ -99,7 +99,7 @@ def object_compile(source, arch, args=[], library_path="."):
         while (poll_result := v_process.poll()) == None:
             pass
         if poll_result != 0:
-            os.remove("hash_build_files/{hash_string(k_source_file)}.hash")
+            os.remove(f"hash_build_files/{hash_string(k_source_file)}.hash")
             sys.exit(1)
 
     object_compile_processes.clear()

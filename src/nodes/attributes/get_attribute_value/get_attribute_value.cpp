@@ -49,6 +49,18 @@ namespace Raster {
         return std::nullopt;
     }
 
+    void GetAttributeValue::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("AttributeName", t_data["AttributeName"].get<std::string>());
+        SetAttributeValue("AttributeID", t_data["AttributeID"].get<int>());
+    }
+
+    Json GetAttributeValue::AbstractSerialize() {
+        return {
+            {"AttributeName", std::any_cast<std::string>(m_attributes["AttributeName"])},
+            {"AttributeID", std::any_cast<int>(m_attributes["AttributeID"])}
+        };
+    }
+
     void GetAttributeValue::AbstractRenderProperties() {
         ImGui::Text(ICON_FA_CIRCLE_INFO " You Can Access Attribute by Name or ID");
         ImGui::Spacing();

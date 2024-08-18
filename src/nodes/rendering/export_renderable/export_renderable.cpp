@@ -35,7 +35,9 @@ namespace Raster {
             targets.push_back(CompositorTarget{
                 .colorAttachment = renderable.attachments[0],
                 .uvAttachment = renderable.attachments[1],
-                .owner = composition
+                .opacity = composition->GetOpacity(),
+                .blendMode = composition->blendMode,
+                .compositionID = composition->id
             });
 
             this->lastExportedType = std::type_index(typeid(Framebuffer));

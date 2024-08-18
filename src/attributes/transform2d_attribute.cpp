@@ -5,8 +5,6 @@ namespace Raster {
     Transform2DAttribute::Transform2DAttribute() {
         AttributeBase::Initialize();
 
-        auto& project = Workspace::s_project.value();
-
         Transform2D transform;
         transform.size = {1, 1};
 

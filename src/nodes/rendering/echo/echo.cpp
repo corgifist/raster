@@ -69,6 +69,18 @@ namespace Raster {
         return result;
     }
 
+    void Echo::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("Steps", t_data["Steps"].get<int>());
+        SetAttributeValue("FrameStep", t_data["FrameStep"].get<int>());
+    }
+
+    Json Echo::AbstractSerialize() {
+        return {
+            {"Steps", RASTER_ATTRIBUTE_CAST(int, "Steps")},
+            {"FrameStep", RASTER_ATTRIBUTE_CAST(int, "FrameStep")}
+        };
+    }
+
     void Echo::AbstractRenderProperties() {
         RenderAttributeProperty("Steps");
         RenderAttributeProperty("FrameStep");

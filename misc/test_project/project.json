@@ -1,0 +1,612 @@
+{
+    "Assets": null,
+    "BackgroundColor": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+    ],
+    "Compositions": [
+        {
+            "Attributes": [
+                {
+                    "Data": null,
+                    "ID": 1638772049,
+                    "Keyframes": [
+                        {
+                            "Easing": null,
+                            "ID": 1434746201,
+                            "Timestamp": 0.0,
+                            "Value": {
+                                "Anchor": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "Angle": 0.0,
+                                "Position": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "Size": [
+                                    1.0,
+                                    1.0
+                                ]
+                            }
+                        }
+                    ],
+                    "Name": "Parent",
+                    "PackageName": "packaged.raster.transform2d_attribute"
+                },
+                {
+                    "Data": null,
+                    "ID": 191000007,
+                    "Keyframes": [
+                        {
+                            "Easing": null,
+                            "ID": 1193642130,
+                            "Timestamp": 0.0,
+                            "Value": 0.0
+                        },
+                        {
+                            "Easing": null,
+                            "ID": 868016147,
+                            "Timestamp": 62.0,
+                            "Value": 0.20000000298023224
+                        }
+                    ],
+                    "Name": "ShakeSpeed",
+                    "PackageName": "packaged.raster.float_attribute"
+                },
+                {
+                    "Data": null,
+                    "ID": 573845335,
+                    "Keyframes": [
+                        {
+                            "Easing": null,
+                            "ID": 955203927,
+                            "Timestamp": 0.0,
+                            "Value": 0.0
+                        },
+                        {
+                            "Easing": null,
+                            "ID": 1711109833,
+                            "Timestamp": 62.0,
+                            "Value": 0.5
+                        },
+                        {
+                            "Easing": null,
+                            "ID": 1252047257,
+                            "Timestamp": 190.0,
+                            "Value": 0.5
+                        },
+                        {
+                            "Easing": {
+                                "Data": [
+                                    0.6800000071525574,
+                                    -0.6000000238418579,
+                                    0.3199999928474426,
+                                    1.600000023841858,
+                                    false
+                                ],
+                                "ID": 751438494,
+                                "PackageName": "packaged.raster.bezier_easing"
+                            },
+                            "ID": 1240929966,
+                            "Timestamp": 299.0,
+                            "Value": 0.0
+                        }
+                    ],
+                    "Name": "ShakeAmplitude",
+                    "PackageName": "packaged.raster.float_attribute"
+                }
+            ],
+            "BeginFrame": 0.0,
+            "BlendMode": "",
+            "Description": "Empty Composition",
+            "Enabled": true,
+            "EndFrame": 335.5,
+            "ID": 761278716,
+            "Name": "New Composition",
+            "Nodes": [
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 1080144090,
+                            "LinkedAttribute": "Base",
+                            "PinID": 374726254,
+                            "PinType": 0
+                        },
+                        {
+                            "ConnectedPinID": 1618307664,
+                            "Flow": false,
+                            "LinkID": 527805985,
+                            "LinkedAttribute": "Texture",
+                            "PinID": 1361991409,
+                            "PinType": 0
+                        },
+                        {
+                            "ConnectedPinID": 1950941799,
+                            "Flow": false,
+                            "LinkID": 1369351338,
+                            "LinkedAttribute": "Transform",
+                            "PinID": 1256659992,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "Color": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "MaintainUVRange": true,
+                        "SamplerSettings": {
+                            "FilteringMode": 0,
+                            "WrappingMode": 0
+                        },
+                        "Transform": {
+                            "Anchor": [
+                                0.0,
+                                0.0
+                            ],
+                            "Angle": 0.0,
+                            "Position": [
+                                0.0,
+                                0.0
+                            ],
+                            "Size": [
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "UVTransform": {
+                            "Anchor": [
+                                0.0,
+                                0.0
+                            ],
+                            "Angle": 0.0,
+                            "Position": [
+                                0.0,
+                                0.0
+                            ],
+                            "Size": [
+                                1.0,
+                                1.0
+                            ]
+                        }
+                    },
+                    "NodeID": 476035180,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 262983852,
+                            "LinkedAttribute": "Framebuffer",
+                            "PinID": 2059382824,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.layer2d"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "FlowInputPin": {
+                        "ConnectedPinID": -1,
+                        "Flow": true,
+                        "LinkID": 1262158641,
+                        "LinkedAttribute": "",
+                        "PinID": 485708262,
+                        "PinType": 0
+                    },
+                    "FlowOutputPin": {
+                        "ConnectedPinID": -1,
+                        "Flow": true,
+                        "LinkID": 1893735968,
+                        "LinkedAttribute": "",
+                        "PinID": 203619805,
+                        "PinType": 1
+                    },
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 120071455,
+                            "Flow": false,
+                            "LinkID": 1105622351,
+                            "LinkedAttribute": "Renderable",
+                            "PinID": 1886488002,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": null,
+                    "NodeID": 1677799784,
+                    "OutputPins": null,
+                    "PackageName": "packaged.raster.export_renderable"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": null,
+                    "NodeData": {
+                        "AttributeID": 1638772049,
+                        "AttributeName": ""
+                    },
+                    "NodeID": 2113834824,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 1748407291,
+                            "LinkedAttribute": "Value",
+                            "PinID": 1799876471,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.get_attribute_value"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": null,
+                    "NodeData": {
+                        "Path": "internal/output.png"
+                    },
+                    "NodeID": 1498799190,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 667107989,
+                            "LinkedAttribute": "Texture",
+                            "PinID": 1618307664,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.load_texture_by_path"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 1799876471,
+                            "Flow": false,
+                            "LinkID": 1989583256,
+                            "LinkedAttribute": "ParentTransform",
+                            "PinID": 1691958399,
+                            "PinType": 0
+                        },
+                        {
+                            "ConnectedPinID": 262018903,
+                            "Flow": false,
+                            "LinkID": 1414843179,
+                            "LinkedAttribute": "Position",
+                            "PinID": 1470366517,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "Anchor": [
+                            0.0,
+                            0.0
+                        ],
+                        "Angle": 0.0,
+                        "ParentTransform": {
+                            "Anchor": [
+                                0.0,
+                                0.0
+                            ],
+                            "Angle": 0.0,
+                            "Position": [
+                                0.0,
+                                0.0
+                            ],
+                            "Size": [
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "Position": [
+                            0.0,
+                            0.0
+                        ],
+                        "Size": [
+                            0.4000000059604645,
+                            0.4000000059604645
+                        ]
+                    },
+                    "NodeID": 678884614,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 190049239,
+                            "LinkedAttribute": "Output",
+                            "PinID": 1950941799,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.make_transform2d"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": null,
+                    "NodeData": {
+                        "RelativeTime": false
+                    },
+                    "NodeID": 1275247743,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 1627259957,
+                            "LinkedAttribute": "Time",
+                            "PinID": 224631168,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.get_time"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": null,
+                    "NodeData": {
+                        "AttributeID": 191000007,
+                        "AttributeName": ""
+                    },
+                    "NodeID": 655109533,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 1436366687,
+                            "LinkedAttribute": "Value",
+                            "PinID": 818620722,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.get_attribute_value"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 224631168,
+                            "Flow": false,
+                            "LinkID": 1135825680,
+                            "LinkedAttribute": "A",
+                            "PinID": 1457781555,
+                            "PinType": 0
+                        },
+                        {
+                            "ConnectedPinID": 818620722,
+                            "Flow": false,
+                            "LinkID": 1968833412,
+                            "LinkedAttribute": "B",
+                            "PinID": 912020600,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "A": 1.0,
+                        "B": 1.0
+                    },
+                    "NodeID": 168481903,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 935469552,
+                            "LinkedAttribute": "Value",
+                            "PinID": 1927152628,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.multiply"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 1927152628,
+                            "Flow": false,
+                            "LinkID": 1663155903,
+                            "LinkedAttribute": "Input",
+                            "PinID": 391797642,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "Input": 0.0,
+                        "MultiplyBy": 1.0
+                    },
+                    "NodeID": 803007449,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 1554223220,
+                            "LinkedAttribute": "Value",
+                            "PinID": 296112173,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.sine"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": null,
+                    "NodeData": {
+                        "AttributeID": 573845335,
+                        "AttributeName": ""
+                    },
+                    "NodeID": 2086442716,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 601884099,
+                            "LinkedAttribute": "Value",
+                            "PinID": 1745509767,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.get_attribute_value"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 296112173,
+                            "Flow": false,
+                            "LinkID": 907721777,
+                            "LinkedAttribute": "A",
+                            "PinID": 1710007319,
+                            "PinType": 0
+                        },
+                        {
+                            "ConnectedPinID": 1745509767,
+                            "Flow": false,
+                            "LinkID": 1026985533,
+                            "LinkedAttribute": "B",
+                            "PinID": 788716007,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "A": 1.0,
+                        "B": 1.0
+                    },
+                    "NodeID": 2095942679,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 884884704,
+                            "LinkedAttribute": "Value",
+                            "PinID": 369465826,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.multiply"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 369465826,
+                            "Flow": false,
+                            "LinkID": 611503340,
+                            "LinkedAttribute": "X",
+                            "PinID": 947027672,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "X": 1.0,
+                        "Y": 0.0
+                    },
+                    "NodeID": 1780016681,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 896193514,
+                            "LinkedAttribute": "Output",
+                            "PinID": 262018903,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.make_vec2"
+                },
+                {
+                    "Bypassed": false,
+                    "Enabled": true,
+                    "InputPins": [
+                        {
+                            "ConnectedPinID": 2059382824,
+                            "Flow": false,
+                            "LinkID": 1795456018,
+                            "LinkedAttribute": "Base",
+                            "PinID": 382255822,
+                            "PinType": 0
+                        },
+                        {
+                            "ConnectedPinID": 1950941799,
+                            "Flow": false,
+                            "LinkID": 1276145268,
+                            "LinkedAttribute": "Transform",
+                            "PinID": 1921376405,
+                            "PinType": 0
+                        }
+                    ],
+                    "NodeData": {
+                        "BlurIntensity": 1.0,
+                        "Samples": 50
+                    },
+                    "NodeID": 271932017,
+                    "OutputPins": [
+                        {
+                            "ConnectedPinID": -1,
+                            "Flow": false,
+                            "LinkID": 1128583545,
+                            "LinkedAttribute": "Framebuffer",
+                            "PinID": 120071455,
+                            "PinType": 1
+                        }
+                    ],
+                    "PackageName": "packaged.raster.tracking_motion_blur"
+                }
+            ],
+            "Opacity": 1.0,
+            "OpacityAttributeID": -1
+        }
+    ],
+    "CurrentFrame": 131.75,
+    "CustomData": {
+        "PreviewResolutionScale": 1.0,
+        "TimelineTimestampFormat": 0,
+        "Transform2DAttributeData": {
+            "-1ParentTransform": false,
+            "1638772049": false,
+            "476035180Transform": false,
+            "476035180UVTransform": false,
+            "678884614ParentTransform": false
+        },
+        "Vec2AttributeDispatcherData": {
+            "##Anchor678884614": false,
+            "##Position678884614": false,
+            "##Size678884614": true
+        },
+        "Vec4AttributeDispatcherData": {
+            "Placeholder": false
+        }
+    },
+    "Description": "Empty Project",
+    "Framerate": 60.0,
+    "Looping": true,
+    "Name": "New Project",
+    "Playing": false,
+    "PreferredResolution": [
+        1080.0,
+        1080.0
+    ],
+    "SelectedAttributes": [
+        573845335
+    ],
+    "SelectedCompositions": [
+        761278716
+    ],
+    "SelectedNodes": []
+}

@@ -78,6 +78,17 @@ namespace Raster {
         RenderAttributeProperty("BackgroundColor");
     }
 
+    void MakeFramebuffer::AbstractLoadSerialized(Json t_data) {
+        SetAttributeValue("BackgroundColor", glm::vec4(t_data["BackgroundColor"][0], t_data["BackgroundColor"][1], t_data["BackgroundColor"][2], t_data["BackgroundColor"][3]));    
+    }
+
+    Json MakeFramebuffer::AbstractSerialize() {
+        auto color = RASTER_ATTRIBUTE_CAST(glm::vec4, "BackgroundColor");
+        return {
+            {"BackgroundColor", {color.r, color.g, color.b, color.a}}
+        };
+    }
+
     bool MakeFramebuffer::AbstractDetailsAvailable() {
         return false;
     }

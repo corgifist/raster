@@ -14,6 +14,8 @@
 
 #include "image/image.h"
 
+#include <nfd_glfw3.h>
+
 #define HANDLE_TO_GLUINT(x) ((uint32_t) (uint64_t) (x))
 #define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
 
@@ -645,5 +647,10 @@ namespace Raster {
 
     void* GPU::GetImGuiContext() {
         return ImGui::GetCurrentContext();
+    }
+
+    void* GPU::GetNFDWindowHandle(void* window) {
+        NFD_GetNativeWindowFromGLFWWindow((GLFWwindow*) info.display, (nfdwindowhandle_t*) window);
+        return window;
     }
 }

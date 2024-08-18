@@ -57,6 +57,10 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
 
+
+        void AbstractLoadSerialized(Json t_data);
+        Json AbstractSerialize();
+
     private:
         std::optional<SDFShape> GetShape();
         std::optional<Pipeline> GetPipeline();
