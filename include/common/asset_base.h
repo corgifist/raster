@@ -13,11 +13,18 @@ namespace Raster {
         std::string name;
         std::string packageName;
 
+        AssetBase();
+        ~AssetBase();
+
         void Initialize();
         void RenderDetails();
 
         std::optional<Texture> GetPreviewTexture();
         void Import(std::string t_path);
+
+        std::optional<std::uintmax_t> GetSize();
+        std::optional<std::string> GetResolution();
+        std::optional<std::string> GetDuration();
 
         bool IsReady();
 
@@ -28,10 +35,16 @@ namespace Raster {
         virtual bool AbstractIsReady() { return true; }
 
         virtual std::optional<Texture> AbstractGetPreviewTexture() { return std::nullopt; }
-        virtual void AbstractImport(std::string t_path);
+        virtual void AbstractImport(std::string t_path) {}
 
-        virtual void AbstractLoad(Json t_data) = 0;
-        virtual Json AbstractSerialize() = 0;
+        virtual std::optional<std::string> AbstractGetResolution() { return std::nullopt; }
+
+        virtual std::optional<std::string> AbstractGetDuration() { return std::nullopt; }
+
+        virtual void AbstractLoad(Json t_data) {}
+        virtual Json AbstractSerialize() { return {}; };
+
+        virtual std::optional<std::uintmax_t> AbstractGetSize() { return std::nullopt; }
 
         virtual void AbstractRenderDetails() {};
     };

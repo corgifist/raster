@@ -89,6 +89,14 @@ vec3 blendHardLight(vec3 base, vec3 blend, float opacity) {
 	return (blendHardLight(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+vec3 blendNegation(vec3 base, vec3 blend) {
+	return vec3(1.0)-abs(vec3(1.0)-base-blend);
+}
+
+vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
+	return (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
+}
+
 
 vec3 blendMaster(vec3 base, vec3 blend, float opacity) {
     
@@ -98,10 +106,13 @@ vec3 blendMaster(vec3 base, vec3 blend, float opacity) {
 	if (uBlendMode == 3) return (blendColorDodge(base, blend, opacity));
 	if (uBlendMode == 4) return (blendDarken(base, blend, opacity));
 	if (uBlendMode == 5) return (abs(base-blend) * opacity + base * (1.0 - opacity));
-	if (uBlendMode == 6) return ((base+blend-2.0*base*blend) * opacity + base * (1.0 - opacity));
-	if (uBlendMode == 7) return (blendGlow(base, blend, opacity));
-	if (uBlendMode == 8) return (blendHardLight(base, blend, opacity));
-	if (uBlendMode == 9) return (base * blend * opacity + base * (1.0 - opacity));
+	if (uBlendMode == 6) return ((base / blend) * opacity + base * (1.0 - opacity));
+	if (uBlendMode == 7) return ((base+blend-2.0*base*blend) * opacity + base * (1.0 - opacity));
+	if (uBlendMode == 8) return (blendGlow(base, blend, opacity));
+	if (uBlendMode == 9) return (blendHardLight(base, blend, opacity));
+	if (uBlendMode == 10) return (base * blend * opacity + base * (1.0 - opacity));
+	if (uBlendMode == 11) return (blendNegation(base, blend, opacity));
+	if (uBlendMode == 12) return ((base - blend) * opacity + base * (1.0 - opacity));
 
     return mix(base, blend, opacity);
 }

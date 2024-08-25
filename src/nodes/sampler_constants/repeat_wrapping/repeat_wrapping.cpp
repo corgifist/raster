@@ -2,15 +2,15 @@
 #include "gpu/gpu.h"
 
 extern "C" {
-    Raster::AbstractNode SpawnNode() {
+    RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureWrappingMode::Repeat));
     }
 
-    void OnStartup() {
+    RASTER_DL_EXPORT void OnStartup() {
         Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"));
     }
 
-    Raster::NodeDescription GetDescription() {
+    RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "Repeat Sampler Wrapping",
             .packageName = RASTER_PACKAGED "repeat_sampler_wrapping_constant",

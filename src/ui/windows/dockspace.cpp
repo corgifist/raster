@@ -52,7 +52,9 @@ namespace Raster {
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER, Localization::GetString("PROJECT").c_str()).c_str())) {
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_PROJECT").c_str()).c_str(), "Ctrl+N")) {
                     NFD::UniquePath path;
-                    nfdresult_t result = NFD::PickFolder(path);
+                    nfdwindowhandle_t window;
+                    GPU::GetNFDWindowHandle(&window);
+                    nfdresult_t result = NFD::PickFolder(path, nullptr, window);
                     if (result == NFD_OKAY) {
                         s_projectPath = path.get();
                         openProjectInfoEditor = true;
@@ -60,7 +62,9 @@ namespace Raster {
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("OPEN_PROJECT").c_str()).c_str(), "Ctrl+O")) {
                     NFD::UniquePath path;
-                    nfdresult_t result = NFD::PickFolder(path);
+                    nfdwindowhandle_t window;
+                    GPU::GetNFDWindowHandle(&window);
+                    nfdresult_t result = NFD::PickFolder(path, nullptr, window);
                     if (result == NFD_OKAY) {
                         if (std::filesystem::exists(std::string(path.get()) + "/project.json")) {
                                 Workspace::s_project = Project(ReadJson(std::string(path.get()) + "/project.json"));
@@ -70,7 +74,7 @@ namespace Raster {
                 }
                 std::string saveProject = Workspace::IsProjectLoaded() ? 
                         FormatString("%s %s '%s'", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE").c_str(), Workspace::GetProject().name.c_str()) :
-                        Localization::GetString("SAVE_PROJECT");
+                        FormatString("%s %s", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE_PROJECT").c_str());
                 if (ImGui::MenuItem(saveProject.c_str(), "Ctrl+S", nullptr, Workspace::IsProjectLoaded())) {
                     auto& project = Workspace::GetProject();
                     WriteFile(project.path + "/project.json", project.Serialize().dump());

@@ -2,7 +2,7 @@
 #include "raster.h"
 #include "common/common.h"
 #include "gpu/gpu.h"
-#include "common/managed_framebuffer.h"
+#include "compositor/managed_framebuffer.h"
 
 namespace Raster {
     struct Checkerboard : public NodeBase {

@@ -8,6 +8,7 @@ namespace Raster {
 
     AsyncUploadInfo::AsyncUploadInfo() {
         this->ready = false;
+        this->executed = false;
     }
 
     void AsyncUpload::Initialize() {
@@ -63,15 +64,13 @@ namespace Raster {
 
         std::vector<int> skipID;
         while (m_running) {
-            while (SyncIsInfosEmpty() && m_running) {
-                continue;
-            }
-            if (!m_running) break;
+            if (SyncIsInfosEmpty()) continue;
+            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
             auto pair = SyncGetFirstAsyncUploadInfo();
             auto& info = pair.second;
-            bool deleted = false;
-            if (std::find(skipID.begin(), skipID.end(), pair.first) != skipID.end()) continue;
+            if (info.executed) continue;
 
+            info.executed = true;
             if (info.deleteTexture.handle) {
                 GPU::DestroyTexture(info.deleteTexture);
                 SyncDestroyAsyncUploadInfo(pair.first);
@@ -87,12 +86,10 @@ namespace Raster {
             GPU::Flush();
 
             info.texture = generatedTexture;
-            *info.image = Image();
             info.image = nullptr;
             info.ready = true;
 
             SyncPutAsyncUploadInfo(pair.first, info);
-            skipID.push_back(pair.first);
         }
     }
 
@@ -113,7 +110,13 @@ namespace Raster {
 
     bool AsyncUpload::SyncIsInfosEmpty() {
         std::lock_guard<std::mutex> lg(m_infoMutex); 
-        return m_infos.empty();
+        if (m_infos.empty()) return true;
+        for (auto& info : m_infos) {
+            if (!info.second.executed) {
+                return false; 
+            }
+        }
+        return true;
     }
 
     std::pair<int, AsyncUploadInfo> AsyncUpload::SyncGetFirstAsyncUploadInfo() {

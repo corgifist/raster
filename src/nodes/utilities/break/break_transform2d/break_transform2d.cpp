@@ -62,11 +62,11 @@ namespace Raster {
 }
 
 extern "C" {
-    Raster::AbstractNode SpawnNode() {
+    RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::BreakTransform2D>();
     }
 
-    Raster::NodeDescription GetDescription() {
+    RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "Break Transform2D",
             .packageName = RASTER_PACKAGED "break_transform2d",

@@ -201,8 +201,11 @@ namespace Raster {
             if (attributeTextClicked && !ImGui::GetIO().KeyCtrl) {
                 project.selectedAttributes = {id};
             } else if (attributeTextClicked && ImGui::GetIO().KeyCtrl) {
-                if (std::find(selectedAttributes.begin(), selectedAttributes.end(), id) == selectedAttributes.end()) {
+                auto attributeIterator = std::find(selectedAttributes.begin(), selectedAttributes.end(), id);
+                if (attributeIterator == selectedAttributes.end()) {
                     selectedAttributes.push_back(id);
+                } else {
+                    selectedAttributes.erase(attributeIterator);
                 }
             }
 
@@ -415,7 +418,7 @@ namespace Raster {
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
-        ImVec4 keyframeColor = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
+        ImVec4 keyframeColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
         ImVec4 baseKeyframeColor = keyframeColor;
         if (!MouseHoveringBounds(keyframeLogicBounds)) {
             keyframeColor = keyframeColor * 0.8f;
@@ -472,7 +475,7 @@ namespace Raster {
             }
             bool previousDragActive = keyframeDrag.isActive;
             keyframeDrag.Activate();
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused() && !UIShared::s_timelineDragged) {
                 if (!ImGui::GetIO().KeyCtrl && !previousDragActive & selectedKeyframes.size() <= 1) {
                     selectedKeyframes = {t_keyframe.id};
                     UIShared::s_lastClickedObjectType = LastClickedObjectType::Keyframe;
@@ -596,7 +599,7 @@ namespace Raster {
                     ImVec2(keyframeBounds.pos.x + keyframeBounds.size.x, 0),
                     ImVec2(distanceBetweenKeyframes, keyframeBounds.size.y)
                 );
-                ImVec4 graphColor = baseKeyframeColor;
+                ImVec4 graphColor = ImGui::GetStyleColorVec4(ImGuiCol_PlotLines);
 
                 std::string easingPopupID = FormatString("##easingPopup%i", nextKeyframe.id);
 

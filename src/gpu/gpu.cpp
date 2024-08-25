@@ -176,6 +176,10 @@ namespace Raster {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
         ImGui_ImplOpenGL3_Init();
         ImGui_ImplGlfw_InitForOpenGL(display, true);
 
@@ -232,6 +236,14 @@ namespace Raster {
         ImGui::Render();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        auto& io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
         glfwSwapBuffers((GLFWwindow*) info.display);
     }
 
@@ -591,37 +603,6 @@ namespace Raster {
         GLuint handle = HANDLE_TO_GLUINT(sampler.handle);
         glDeleteSamplers(1, &handle);
         sampler = Sampler();
-    }
-
-    std::string GPU::TextureFilteringOperationToString(TextureFilteringOperation operation) {
-        switch (operation) {
-            case TextureFilteringOperation::Magnify: return "Magnify";
-            default: return "Minify";
-        }
-    }
-
-    std::string GPU::TextureWrappingAxisToString(TextureWrappingAxis axis) {
-        switch (axis) {
-            case TextureWrappingAxis::S: return "S";
-            default: return "T";
-        }
-    }
-
-
-    std::string GPU::TextureFilteringModeToString(TextureFilteringMode mode) {
-        switch (mode) {
-            case TextureFilteringMode::Linear: return "Linear";
-            default: return "Nearest";
-        }
-    }
-
-    std::string GPU::TextureWrappingModeToString(TextureWrappingMode mode) {
-        switch (mode) {
-            case TextureWrappingMode::ClampToBorder: return "ClampToBorder";
-            case TextureWrappingMode::ClampToEdge: return "ClampToEdge";
-            case TextureWrappingMode::MirroredRepeat: return "MirroredRepeat";
-            default: return "Repeat";
-        }
     }
 
     void GPU::DrawArrays(int count) {

@@ -1,25 +1,26 @@
 #include "timeline.h"
 #include "font/font.h"
-#include "attributes/attributes.h"
+#include "common/attributes.h"
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
 #include "compositor/blending.h"
 #include "common/transform2d.h"
+#include "common/dispatchers.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
 #define TICKS_BAR_HEIGHT 30
 #define TICK_SMALL_WIDTH 3
 #define LAYER_HEIGHT 44
-#define LAYER_SEPARATOR 1.5f
+#define LAYER_SEPARATOR 1
 
 #define ROUND_EVEN(x) std::round( (x) * 0.5f ) * 2.0f
 
 namespace Raster {
 
     enum class TimelineChannels {
-        Separators,
         Compositions,
+        Separators,
         Timestamps,
         Count
     };
@@ -74,6 +75,9 @@ namespace Raster {
     static ImVec2 s_rootWindowSize;
 
     static std::vector<Composition> s_copyCompositions;
+
+    static std::string s_compositionFilter = "";
+    static uint32_t s_colorMarkFilter = IM_COL32(0, 0, 0, 0);
 
     static float precision(float f, int places) {
         float n = std::pow(10.0f, places ) ;
@@ -158,6 +162,27 @@ namespace Raster {
         return pressed;
     }
 
+    static bool TextColorButton(const char* id, ImVec4 color) {
+        if (ImGui::BeginChild(FormatString("##%scolorMark", id).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
+            ImGui::SetCursorPos({0, 0});
+            ImGui::PushStyleColor(ImGuiCol_Button, color);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color * 1.1f);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, color * 1.2f);
+            ImGui::ColorButton(FormatString("%s %s", ICON_FA_DROPLET, id).c_str(), color, ImGuiColorEditFlags_AlphaPreview);
+            ImGui::PopStyleColor(3);
+            ImGui::SameLine();
+            if (ImGui::IsWindowHovered()) ImGui::BeginDisabled();
+            std::string defaultColorMarkText = "";
+            if (Workspace::s_defaultColorMark == id) {
+                defaultColorMarkText = FormatString(" (%s)", Localization::GetString("DEFAULT").c_str());
+            }
+            ImGui::Text("%s %s%s", ICON_FA_DROPLET, id, defaultColorMarkText.c_str());
+            if (ImGui::IsWindowHovered()) ImGui::EndDisabled();
+        }
+        ImGui::EndChild();
+        return ImGui::IsItemClicked();
+    }
+
     void TimelineUI::Render() {
         PushStyleVars();
 
@@ -178,6 +203,13 @@ namespace Raster {
                 PopStyleVars();
                 return;
             }
+            auto& project = Workspace::GetProject();
+            if (project.customData.contains("TimelineColorFilter")) {
+                s_colorMarkFilter = project.customData["TimelineColorFilter"];
+            }
+            if (project.customData.contains("TimelineSplitterSTate")) {
+                s_splitterState = project.customData["TimelineSplitterState"];
+            }
             s_rootWindowSize = ImGui::GetWindowSize();
             s_timelineFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
@@ -193,6 +225,8 @@ namespace Raster {
             RenderCompositionsEditor();
             RenderSplitter();
             s_legendOffsets.clear();
+            project.customData["TimelineColorFilter"] = s_colorMarkFilter;
+            project.customData["TimelineSplitterState"] = s_splitterState;
         ImGui::End();
         PopStyleVars();
     }
@@ -214,10 +248,16 @@ namespace Raster {
             ImVec2(ImGui::GetWindowSize().x, TICKS_BAR_HEIGHT)
         );
 
-        DrawRect(backgroundBounds, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+        DrawRect(backgroundBounds, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
         if (MouseHoveringBounds(backgroundBounds) && !s_anyLayerDragged) {
             s_timelineDrag.Activate();
         }
+
+        SetDrawListChannel(TimelineChannels::Separators);
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(
+            backgroundBounds.UL.x, backgroundBounds.BR.y
+        ), backgroundBounds.BR, IM_COL32(0, 0, 0, 255), 1.0f);
+        SetDrawListChannel(TimelineChannels::Compositions);
     }
 
     void TimelineUI::RenderTicks() {
@@ -227,6 +267,7 @@ namespace Raster {
             ImVec2(ImGui::GetScrollX(), ImGui::GetScrollY()),
             ImVec2(ImGui::GetWindowSize().x, TICKS_BAR_HEIGHT)
         );
+
 
         auto& project = Workspace::s_project.value();
 
@@ -294,7 +335,13 @@ namespace Raster {
             timelineFlags |= ImGuiWindowFlags_AlwaysHorizontalScrollbar;
         if (showVerticalScrollbar)
             timelineFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
-        ImGui::BeginChild("##timelineCompositions", ImVec2(ImGui::GetWindowSize().x * (1 - s_splitterState), ImGui::GetContentRegionAvail().y), 0, timelineFlags);
+        ImVec4 editorBackgroundColor = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg) * 1.2f;
+        editorBackgroundColor.w = 1.0f;
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, editorBackgroundColor);
+        bool timelineCompositionsChildStatus = ImGui::BeginChild("##timelineCompositions", ImVec2(ImGui::GetWindowSize().x * (1 - s_splitterState), ImGui::GetContentRegionAvail().y), 0, timelineFlags);
+        ImGui::PopStyleColor();
+        if (timelineCompositionsChildStatus) {
+            SplitDrawList();
             AttributeBase::ProcessKeyframeShortcuts();
             if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_C)) {
                 ProcessCopyAction();
@@ -322,13 +369,14 @@ namespace Raster {
                 showHorizontalScrollbar = true;
 
             ImDrawList* drawList = ImGui::GetWindowDrawList();
-            SplitDrawList();
             RenderTicks();
 
             float layerAccumulator = 0;
             s_anyLayerDragged = false;
             for (int i = project.compositions.size(); i --> 0;) {
                 auto& composition = project.compositions[i];
+                if (!s_compositionFilter.empty() && LowerCase(composition.name).find(LowerCase(s_compositionFilter)) == std::string::npos) continue;
+                if (s_colorMarkFilter != IM_COL32(0, 0, 0, 0) && composition.colorMark != s_colorMarkFilter) continue;
                 ImGui::SetCursorPosY(backgroundBounds.size.y + layerAccumulator);
                 RenderComposition(composition.id);
                 float legendOffset = 0;
@@ -357,6 +405,8 @@ namespace Raster {
                 IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, shadowAlpha) 
             );
             RenderTimelineRuler();
+        }
+        
         ImGui::EndChild();
     }
 
@@ -368,7 +418,7 @@ namespace Raster {
             auto& selectedComposoitions = project.selectedCompositions;
             ImGui::PushID(composition->id);
             ImGui::SetCursorPosX(std::ceil(composition->beginFrame * s_pixelsPerFrame));
-            ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_Button));
+            ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(composition->colorMark);
             bool isCompositionSelected = false;
             if (std::find(selectedComposoitions.begin(), selectedComposoitions.end(), t_id) != selectedComposoitions.end()) {
                 buttonColor = 1.1f * buttonColor;
@@ -467,6 +517,13 @@ namespace Raster {
                     ImGui::SetCursorPosX(buttonCursor.x + dragSize.x);
                     ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 14, 214, ImVec2{rectSize.x, rectSize.y});
                     ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle, upperLeft, bottomRight);
+                    if (ImGui::IsMouseHoveringRect(upperLeft, bottomRight) && s_timelineFocused) {
+                        if (ImGui::BeginTooltip()) {
+                            std::any dynamicFramebuffer = framebuffer;
+                            Dispatchers::DispatchString(dynamicFramebuffer);
+                            ImGui::EndTooltip();
+                        }
+                    }
                     ImGui::SetCursorPos(reservedCursor);
                 }
             }
@@ -593,7 +650,7 @@ namespace Raster {
                 ImVec2(ImGui::GetScrollX(), buttonCursor.y + buttonSize.y - LAYER_SEPARATOR / 2.0f),
                 ImVec2(ImGui::GetWindowSize().x, LAYER_SEPARATOR)
             );
-            DrawRect(separatorBounds, ImGui::GetStyleColorVec4(ImGuiCol_Separator));
+            DrawRect(separatorBounds, ImVec4(0, 0, 0, 1));
             SetDrawListChannel(TimelineChannels::Compositions);
 
             for (auto& attribute : composition->attributes) {
@@ -768,8 +825,14 @@ namespace Raster {
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("SELECT_COMPOSITION").c_str()).c_str())) {
             AppendSelectedCompositions(t_composition);
         }
-        if (ImGui::MenuItem(FormatString("%s %s", t_composition->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED_DISABLED").c_str()).c_str())) {
-            t_composition->enabled = !t_composition->enabled;
+        if (ImGui::MenuItem(FormatString("%s %s", t_composition->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITIONS").c_str()).c_str())) {
+            for (auto& compositionID : project.selectedCompositions) {
+                auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+                if (compositionCandidate.has_value()) {
+                    auto& composition = compositionCandidate.value();
+                    composition->enabled = !composition->enabled;
+                }
+            }
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Delete")) {
             auto selectedCompositionsCopy = selectedCompositions;
@@ -880,9 +943,9 @@ namespace Raster {
     void TimelineUI::RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID) {
         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
         auto& project = Workspace::GetProject();
-        for (auto& entry : Attributes::s_attributes) {
-            if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
-                auto attributeCandidate = Attributes::InstantiateAttribute(entry.packageName);
+        for (auto& entry : Attributes::s_implementations) {
+            if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.description.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
+                auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
                 if (attributeCandidate.has_value()) {
                     t_composition->attributes.push_back(attributeCandidate.value());
                     if (!t_parentTreeID && s_compositionTrees.find(t_composition->id) != s_compositionTrees.end()) {
@@ -938,7 +1001,9 @@ namespace Raster {
     }
 
     void TimelineUI::RenderLegend() {
-        ImGui::BeginChild("##timelineLegend", ImVec2(ImGui::GetWindowSize().x * s_splitterState, ImGui::GetContentRegionAvail().y));
+        Composition* targetCompositionDelete = nullptr;
+        if (ImGui::BeginChild("##timelineLegend", ImVec2(ImGui::GetWindowSize().x * s_splitterState, ImGui::GetContentRegionAvail().y))) {
+            SplitDrawList();
             if (s_targetLegendScroll > 0) {
                 s_timelineScrollY = s_targetLegendScroll;
             }
@@ -949,67 +1014,140 @@ namespace Raster {
                 ImVec2(ImGui::GetWindowSize().x, TICKS_BAR_HEIGHT)
             );
             auto& project = Workspace::s_project.value();
-            ImGui::PushFont(Font::s_denseFont);
-            ImGui::SetWindowFontScale(1.5f);
-            static TimestampFormat timestampFormat = TimestampFormat::Regular;
-            if (!project.customData.contains("TimelineTimestampFormat")) {
+            static ImVec2 infoCentererSize = ImVec2(200, 20);
+            ImGui::SetCursorPos(backgroundBounds.size / 2.0f - infoCentererSize / 2.0f);
+            if (ImGui::BeginChild("##infoCenterer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                ImGui::PushFont(Font::s_denseFont);
+                ImGui::SetWindowFontScale(1.6f);
+                static TimestampFormat timestampFormat = TimestampFormat::Regular;
+                if (!project.customData.contains("TimelineTimestampFormat")) {
+                    project.customData["TimelineTimestampFormat"] = static_cast<int>(timestampFormat);
+                } else {
+                    timestampFormat = static_cast<TimestampFormat>(project.customData["TimelineTimestampFormat"]);
+                }
+                std::string formattedTimestamp = project.FormatFrameToTime(project.currentFrame);
+                if (timestampFormat == TimestampFormat::Frame) formattedTimestamp = std::to_string((int) project.currentFrame);
+                if (timestampFormat == TimestampFormat::Seconds) formattedTimestamp = FormatString("%.2f", Precision(project.currentFrame / project.framerate, 2));
+                ImVec2 timestampSize = ImGui::CalcTextSize(formattedTimestamp.c_str());
+                ImGui::SetCursorPos(ImVec2(
+                    5,
+                    backgroundBounds.size.y / 2.0f - timestampSize.y / 2.0f
+                ));
+                static bool timestampHovered = false;
+                ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+                if (timestampHovered) textColor = textColor * 0.8f;
+                ImGui::PushStyleColor(ImGuiCol_Text, textColor);
+                ImGui::Text("%s", formattedTimestamp.c_str());
+                ImGui::PopStyleColor();
+                timestampHovered = ImGui::IsItemHovered();
+                if (timestampHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                    ImGui::OpenPopup("##timestampFormatPopup");
+                }
+                PopStyleVars();
+                ImGui::PopFont();
+                ImGui::SetWindowFontScale(1.0f);
+                if (ImGui::BeginPopup("##timestampFormatPopup")) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("TIMESTAMP_FORMAT").c_str()).c_str());
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("REGULAR").c_str()).c_str())) {
+                        timestampFormat = TimestampFormat::Regular;
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("FRAMES").c_str()).c_str())) {
+                        timestampFormat = TimestampFormat::Frame;
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("SECONDS").c_str()).c_str())) {
+                        timestampFormat = TimestampFormat::Seconds;
+                    }
+                    ImGui::EndPopup();
+                }
+                PushStyleVars();
+
+                static ImVec2 searchFilterChildSize = ImVec2(200, 20);
+                ImGui::SameLine(0, 6);
+                ImGui::SetCursorPosY(
+                    backgroundBounds.size.y / 2.0f - searchFilterChildSize.y / 2.0f
+                );
+                if (ImGui::BeginChild("##compositionSearchChild", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                    static std::string s_newCompositionName = "";
+                    if (ImGui::Button(ICON_FA_PLUS)) {
+                        s_newCompositionName = "New Composition";
+                        ImGui::OpenPopup("##createNewCompositionPopup");
+                    }
+                    ImGui::SameLine();
+
+                    static bool createNewCompositionPopupFieldFocused = false;
+                    PopStyleVars();
+                    if (ImGui::BeginPopup("##createNewCompositionPopup")) {
+                        if (!createNewCompositionPopupFieldFocused) ImGui::SetKeyboardFocusHere(0);
+                        ImGui::InputTextWithHint("##newCompositionName", FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("NEW_COMPOSITION_NAME").c_str()).c_str(), &s_newCompositionName);
+                        ImGui::SameLine();
+                        if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                            Composition newComposition;
+                            newComposition.name = s_newCompositionName;
+                            project.compositions.push_back(newComposition);
+                            ImGui::CloseCurrentPopup();
+                        }
+                        createNewCompositionPopupFieldFocused = true;
+
+                        ImGui::EndPopup();
+                    } else createNewCompositionPopupFieldFocused = false;
+                    PushStyleVars();
+
+                    PopStyleVars();
+                    if (ImGui::ColorButton(FormatString("%s %s", ICON_FA_TAG, Localization::GetString("FILTER_BY_COLOR_MARK").c_str()).c_str(), ImGui::ColorConvertU32ToFloat4(s_colorMarkFilter), ImGuiColorEditFlags_AlphaPreview)) {
+                        ImGui::OpenPopup("##filterByColorMark");
+                    }
+
+                    if (ImGui::BeginPopup("##filterByColorMark")) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FILTER, Localization::GetString("FILTER_BY_COLOR_MARK").c_str()).c_str());
+                        static std::string s_colorMarkNameFilter = "";
+                        ImGui::InputTextWithHint("##colorMarkFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_colorMarkNameFilter);
+                        if (ImGui::BeginChild("##filterColorMarkCandidates", ImVec2(ImGui::GetContentRegionAvail().x, 220))) {
+                            if (TextColorButton(Localization::GetString("NO_FILTER").c_str(), IM_COL32(0, 0, 0, 0))) {
+                                s_colorMarkFilter = IM_COL32(0, 0, 0, 0);
+                                ImGui::CloseCurrentPopup();
+                            }
+                            for (auto& pair : Workspace::s_colorMarks) {    
+                                if (!s_colorMarkNameFilter.empty() && LowerCase(pair.first).find(LowerCase(s_colorMarkNameFilter)) == std::string::npos) continue;
+                                if (TextColorButton(pair.first.c_str(), ImGui::ColorConvertU32ToFloat4(pair.second))) {
+                                    s_colorMarkFilter = pair.second;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            }
+                        }
+                        ImGui::EndChild();
+                        ImGui::EndPopup();
+                    }
+                    PushStyleVars();
+
+                    ImGui::SameLine();
+
+                    ImGui::PushItemWidth(220);
+                        ImGui::InputTextWithHint("##compositionSearch", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_compositionFilter);
+                    ImGui::PopItemWidth();
+                    searchFilterChildSize = ImGui::GetWindowSize();
+                }
+                ImGui::EndChild();
+
                 project.customData["TimelineTimestampFormat"] = static_cast<int>(timestampFormat);
-            } else {
-                timestampFormat = static_cast<TimestampFormat>(project.customData["TimelineTimestampFormat"]);
+                static bool timestampDragged = false;
+                if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+                    project.currentFrame += ImGui::GetIO().MouseDelta.x / s_pixelsPerFrame;
+                    project.currentFrame = std::clamp(project.currentFrame, 0.0f, project.GetProjectLength());
+                    ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+                    timestampDragged = true;
+                } else timestampDragged = false;
+                ImGui::SetWindowFontScale(1.0f);
+                infoCentererSize = ImGui::GetWindowSize();
             }
-            std::string formattedTimestamp = project.FormatFrameToTime(project.currentFrame);
-            if (timestampFormat == TimestampFormat::Frame) formattedTimestamp = std::to_string((int) project.currentFrame);
-            if (timestampFormat == TimestampFormat::Seconds) formattedTimestamp = FormatString("%.2f", Precision(project.currentFrame / project.framerate, 2));
-            ImVec2 timestampSize = ImGui::CalcTextSize(formattedTimestamp.c_str());
-            ImGui::SetCursorPos(ImVec2(
-                backgroundBounds.size.x / 2.0f - timestampSize.x / 2.0f,
-                backgroundBounds.size.y / 2.0f - timestampSize.y / 2.0f
-            ));
-            static bool timestampHovered = false;
-            ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
-            if (timestampHovered) textColor = textColor * 0.8f;
-            ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-            ImGui::Text("%s", formattedTimestamp.c_str());
-            timestampHovered = ImGui::IsItemHovered();
-            if (timestampHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                ImGui::OpenPopup("##timestampFormatPopup");
-            }
-            PopStyleVars();
-            ImGui::PopFont();
-            ImGui::SetWindowFontScale(1.0f);
-            if (ImGui::BeginPopup("##timestampFormatPopup")) {
-                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("TIMESTAMP_FORMAT").c_str()).c_str());
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("REGULAR").c_str()).c_str())) {
-                    timestampFormat = TimestampFormat::Regular;
-                }
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("FRAMES").c_str()).c_str())) {
-                    timestampFormat = TimestampFormat::Frame;
-                }
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("SECONDS").c_str()).c_str())) {
-                    timestampFormat = TimestampFormat::Seconds;
-                }
-                ImGui::EndPopup();
-            }
-            ImGui::PushFont(Font::s_denseFont);
-            PushStyleVars();
-            project.customData["TimelineTimestampFormat"] = static_cast<int>(timestampFormat);
-            ImGui::PopStyleColor();
-            static bool timestampDragged = false;
-            if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
-                project.currentFrame += ImGui::GetIO().MouseDelta.x / s_pixelsPerFrame;
-                project.currentFrame = std::clamp(project.currentFrame, 0.0f, project.GetProjectLength());
-                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-                timestampDragged = true;
-            } else timestampDragged = false;
-            ImGui::PopFont();
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::EndChild();
 
             ImGui::SetCursorPos({0, backgroundBounds.size.y});
 
-            Composition* targetCompositionDelete = nullptr;
             float layerAccumulator = 0;
             for (int i = project.compositions.size(); i --> 0;) {
                 auto& composition = project.compositions[i];
+                if (!s_compositionFilter.empty() && LowerCase(composition.name).find(LowerCase(s_compositionFilter)) == std::string::npos) continue;
+                if (s_colorMarkFilter != IM_COL32(0, 0, 0, 0) && composition.colorMark != s_colorMarkFilter) continue;
                 std::string compositionName = FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str());
                 ImVec2 compositionNameSize = ImGui::CalcTextSize(compositionName.c_str());
                 ImVec2 baseCursor = ImVec2{
@@ -1031,6 +1169,28 @@ namespace Raster {
                 }
                 if (ImGui::BeginPopup(FormatString("##createAttribute%i", composition.id).c_str())) {
                     RenderNewAttributePopup(&composition);
+                    ImGui::EndPopup();
+                }
+                ImGui::SameLine();
+                std::string colorMarkEditorPopupID = FormatString("##colorMarkEditorPopup%i", composition.id);
+                bool colorMarkEditorPressed = ImGui::ColorButton(FormatString("%s %s", ICON_FA_TAG, Localization::GetString("COLOR_MARK").c_str()).c_str(), ImGui::ColorConvertU32ToFloat4(composition.colorMark), ImGuiColorEditFlags_AlphaPreview);
+                if (colorMarkEditorPressed) {
+                    ImGui::OpenPopup(colorMarkEditorPopupID.c_str());
+                }
+                if (ImGui::BeginPopup(colorMarkEditorPopupID.c_str())) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_TAG, Localization::GetString("COLOR_MARK").c_str()).c_str());
+                    static std::string s_colorMarkFilter = "";
+                    ImGui::InputTextWithHint("##colorMarkFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_colorMarkFilter);
+                    if (ImGui::BeginChild("##colorMarkCandidates", ImVec2(ImGui::GetContentRegionAvail().x, 210))) {
+                        for (auto& colorPair : Workspace::s_colorMarks) {
+                            ImVec4 v4ColorMark = ImGui::ColorConvertU32ToFloat4(colorPair.second);
+                            if (TextColorButton(colorPair.first.c_str(), v4ColorMark)) {
+                                composition.colorMark = colorPair.second;
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }
+                    }
+                    ImGui::EndChild();
                     ImGui::EndPopup();
                 }
                 ImGui::SameLine();
@@ -1064,7 +1224,7 @@ namespace Raster {
                     ImVec2(ImGui::GetWindowSize().x, LAYER_SEPARATOR)
                 );
 
-                DrawRect(separatorBounds, ImGui::GetStyleColorVec4(ImGuiCol_Separator));
+                DrawRect(separatorBounds, ImVec4(0, 0, 0, 1));
                 ImGui::SetCursorPos(reservedCursor);
 
                 if (ImGui::BeginPopup(FormatString("##compositionLegendPopup%i", composition.id).c_str())) {
@@ -1097,6 +1257,7 @@ namespace Raster {
                 ImGui::TreeNodeSetOpen(s_legendTargetOpenTree, true);
                 s_legendTargetOpenTree = 0;
             }
+        }
         ImGui::EndChild();
 
         if (targetCompositionDelete) {
@@ -1147,7 +1308,7 @@ namespace Raster {
             if (ImGui::GetScrollX() + mouseDeltaX > 0) {
                 ImGui::SetScrollX(ImGui::GetScrollX() + mouseDeltaX);
             }
-            return mouseDeltaX;
+            return -mouseDeltaX;
         }
 
         return 0;

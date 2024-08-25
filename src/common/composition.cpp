@@ -13,6 +13,7 @@ namespace Raster {
         this->opacity = 1.0f;
         this->opacityAttributeID = -1;
         this->enabled = true;
+        this->colorMark = Workspace::s_colorMarks[Workspace::s_defaultColorMark];
     }
 
     Composition::Composition(Json data) {
@@ -25,6 +26,7 @@ namespace Raster {
         this->opacity = data["Opacity"];
         this->opacityAttributeID = data["OpacityAttributeID"];
         this->enabled = data["Enabled"];
+        this->colorMark = data["ColorMark"];
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -70,6 +72,7 @@ namespace Raster {
         data["Opacity"] = opacity;
         data["OpacityAttributeID"] = opacityAttributeID;
         data["Enabled"] = enabled;
+        data["ColorMark"] = colorMark;
         data["Nodes"] = {};
         for (auto& node : nodes) {
             data["Nodes"].push_back(node->Serialize());

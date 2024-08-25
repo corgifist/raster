@@ -3,7 +3,7 @@
 #include "raster.h"
 #include "typedefs.h"
 #include "node_base.h"
-#include "attributes/attributes.h"
+#include "attributes.h"
 
 namespace Raster {
     struct Composition {
@@ -16,6 +16,7 @@ namespace Raster {
         float opacity;
         int opacityAttributeID;
         bool enabled;
+        uint32_t colorMark;
 
         Composition();
         Composition(Json data);

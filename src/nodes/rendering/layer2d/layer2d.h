@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
-#include "common/managed_framebuffer.h"
+#include "compositor/managed_framebuffer.h"
 #include "common/transform2d.h"
 #include "raster.h"
 

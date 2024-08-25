@@ -22,6 +22,7 @@ namespace Raster {
         std::vector<int> selectedNodes;
         std::vector<int> selectedAttributes;
         std::vector<int> selectedKeyframes;
+        std::vector<int> selectedAssets;
 
         Json customData;
 

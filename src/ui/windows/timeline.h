@@ -15,37 +15,37 @@ namespace Raster {
     struct TimelineUI : public UI {
         void Render();
 
-        void PushStyleVars();
-        void PopStyleVars();
+        static void PushStyleVars();
+        static void PopStyleVars();
 
-        void RenderTicksBar();
-        void RenderTicks();
+        static void RenderTicksBar();
+        static void RenderTicks();
 
-        void RenderComposition(int t_id);
-        void RenderCompositionPopup(Composition* composition, ImGuiID t_parentTreeID = 0);
-        void RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID = 0);
+        static void RenderComposition(int t_id);
+        static void RenderCompositionPopup(Composition* composition, ImGuiID t_parentTreeID = 0);
+        static void RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID = 0);
 
-        void RenderCompositionsEditor();
-        void RenderLegend();
-        void RenderSplitter();
+        static void RenderCompositionsEditor();
+        static void RenderLegend();
+        static void RenderSplitter();
 
-        void RenderTimelineRuler();
+        static void RenderTimelineRuler();
 
-        void RenderTimelinePopup();
+        static void RenderTimelinePopup();
 
-        void DeleteComposition(Composition* composition);
-        void AppendSelectedCompositions(Composition* composition);
+        static void DeleteComposition(Composition* composition);
+        static void AppendSelectedCompositions(Composition* composition);
 
-        void ProcessCopyAction();
-        void ProcessPasteAction();
-        void ProcessDeleteAction();
+        static void ProcessCopyAction();
+        static void ProcessPasteAction();
+        static void ProcessDeleteAction();
 
-        void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
+        static void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
 
-        void ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
+        static void ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
 
-        float ProcessLayerScroll();
+        static float ProcessLayerScroll();
 
-        ImVec2 GetRelativeMousePos();
+        static ImVec2 GetRelativeMousePos();
     };
 };

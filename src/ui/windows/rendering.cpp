@@ -48,13 +48,18 @@ namespace Raster {
                     if (selectedPin.empty()) {
                         if (Compositor::primaryFramebuffer.has_value()) {
                             dispatcherTarget = Compositor::primaryFramebuffer.value();
-                            
                             mustDispatchOverlay = true;
                         }
                     }
                 
                     auto& selectedCompositions = project.selectedCompositions;
-                    if (!selectedCompositions.empty()) {
+                    if (!selectedNodes.empty()) {
+                        auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes[0]);
+                        if (nodeCandidate.has_value()) {
+                            auto& node = nodeCandidate.value();
+                            ImGui::Text("%s %s", ICON_FA_CIRCLE_NODES, node->Header().c_str());
+                        }
+                    } else if (!selectedCompositions.empty()) {
                         auto compositionCandidate = Workspace::GetCompositionByID(selectedCompositions[0]);
                         if (compositionCandidate.has_value()) {
                             auto& composition = compositionCandidate.value();
@@ -62,6 +67,10 @@ namespace Raster {
                             ImGui::Separator();
                             ImGui::SameLine(0, 8.0f);
                         }
+                    } else {
+                        ImGui::Text("%s %s", ICON_FA_LIST, project.name.c_str());
+                        ImGui::Separator();
+                        ImGui::SameLine(0, 8.0f);
                     }
 
                     if (!project.customData.contains("PreviewResolutionScale")) {
@@ -145,7 +154,8 @@ namespace Raster {
                 }
 
                 static float miniTimelineSize = 20;
-                ImGui::BeginChild("##renderPreview", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - miniTimelineSize));
+                ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                if (ImGui::BeginChild("##renderPreview", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - miniTimelineSize))) {
                     bool attributeWasDispatched = false;
                     if (!selectedNodes.empty()) {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes.at(0));
@@ -202,8 +212,7 @@ namespace Raster {
                         ImGui::GetWindowSize().x - settingsChildSize.x,
                         0
                     });
-                    ImGui::BeginChild("##settingsChild", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
-                        ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                    if (ImGui::BeginChild("##settingsChild", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
                         if (!Dispatchers::s_enableOverlays) {
                             buttonColor = buttonColor * 0.8f;
                         }
@@ -214,10 +223,12 @@ namespace Raster {
                         ImGui::SetItemTooltip("%s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("ENABLE_PREVIEW_OVERLAYS").c_str());
                         ImGui::PopStyleColor();
                         settingsChildSize = ImGui::GetWindowSize();
+                    }
                     ImGui::EndChild();
+                }
                 ImGui::EndChild();
 
-                ImGui::BeginChild("##miniTimeline", ImVec2(ImGui::GetContentRegionAvail().x, miniTimelineSize), ImGuiChildFlags_AutoResizeY);
+                if (ImGui::BeginChild("##miniTimeline", ImVec2(ImGui::GetContentRegionAvail().x, miniTimelineSize), ImGuiChildFlags_AutoResizeY)) {
                     float firstTimelineCursorY = ImGui::GetCursorPosY();
                     std::string firstTimestampText = project.FormatFrameToTime(project.currentFrame);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -263,7 +274,8 @@ namespace Raster {
                     ImGui::SameLine();
                     forwardSeekSize = ImGui::GetCursorPosX() - firstForwardSeekCursor;
                     ImGui::NewLine();
-                ImGui::EndChild();
+                    ImGui::EndChild();
+                }
             }
         ImGui::End();
     }

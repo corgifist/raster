@@ -20,6 +20,9 @@ namespace Raster {
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 
+        static std::unordered_map<std::string, uint32_t> s_colorMarks;
+        static std::string s_defaultColorMark;
+
         static std::vector<int> s_targetSelectNodes;
 
         static std::unordered_map<int, std::any> s_pinCache;
@@ -57,6 +60,9 @@ namespace Raster {
         static std::optional<AbstractAttribute> GetAttributeByAttributeID(int t_attributeID);
         static std::optional<AbstractAttribute> GetAttributeByName(Composition* t_composition, std::string t_name);
         static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
+
+        static std::optional<AbstractAsset> GetAssetByAssetID(int t_assetID);
+        static std::optional<int> GetAssetIndexByAssetID(int t_assetID);
 
         static std::string GetTypeName(std::any& t_value);
 

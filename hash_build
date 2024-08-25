@@ -1,63 +1,76 @@
 build_arch = "64"
 executable_name = "raster"
 
-object_add_compile_options(fPIC)
+object_add_compile_options(fPIC) # for shared libraries stuff
 object_add_compile_options(g) # include debug symbols
-object_add_compile_options("O0")
-object_add_compile_options(Werror)
+object_add_compile_options("O0") # disable optimizations
+object_add_compile_options(Werror) # interpret all warnings as errors
 object_set_include_path("include/")
 
 load_module("misc/scripts/raster_module.py")
 
-object_add_compile_options("I/usr/include/freetype2")
+object_add_compile_options(pkg_config("freetype2"))
+
+std_cxx = "20"
+
+stack_walker_deps = []
 
 if eq(get_platform(), windows) {
     shared_lib_prefix = "raster_"
     shared_lib_ext = ".dll"
+    stack_walker_deps = [
+        dbghelp
+    ]
 } else {
     shared_lib_prefix = "libraster_"
     shared_lib_ext = ".so"
 }
 
+dump_compilation_commands()
+
 build_modules = [
     [ImGui, shared, [freetype]],
     [font, shared],
-    [common, shared],
-    [dispatchers_installer, shared, [raster_common]],
+    [common, shared, [raster_ImGui, raster_font]],
+    [dispatchers_installer, shared, [raster_common, raster_ImGui, raster_font]],
     [node_category, shared, [raster_common]],
     [dynamic_math, shared, [raster_common]],
     [traverser, shared, [raster_common]],
-    [image, shared, [raster_common, OpenImageIO]],
-    [gpu, shared, [glfw, raster_common, raster_ImGui, raster_image]],
-    [compositor, shared, [raster_gpu, raster_common]]
-    [attributes, shared, [raster_common, raster_ImGui]],
-    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category, nfd]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_attributes, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd]],
+    [image, shared, [raster_common, pkg_config("OpenImageIO", "--libs")]],
+    [gpu, shared, [ternary(eq(get_platform(), windows), glfw3, glfw), raster_common, raster_ImGui, raster_image]],
+    [compositor, shared, [raster_gpu, raster_common]],
+    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category, raster_font, nfd]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd]],
     [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app, bfd, unwind]],
     
-    ["bezier_easing", easing, [raster_common]],
-    ["constant_easing", easing, [raster_common]],
+    ["bezier_easing", easing, [raster_common, raster_ImGui]],
+    ["constant_easing", easing, [raster_common, raster_ImGui]],
 
-    ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category]],
+    ["image_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_image]],
 
-    ["attributes/get_attribute_value", node, [raster_common, raster_node_category]],
+    ["float_attribute", attribute, [raster_common, raster_ImGui]],
+    ["vec4_attribute", attribute, [raster_common, raster_ImGui]],
+    ["transform2d_attribute", attribute, [raster_common, raster_ImGui]],
+
+    ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category, raster_image]],
+    ["attributes/get_attribute_value", node, [raster_common, raster_node_category, raster_ImGui]],
 
     ["utilities/make/make_framebuffer", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["utilities/make/make_sampler_settings", node, [raster_common, raster_node_category]],
-    ["utilities/make/make_transform2d", node, [raster_common]],
+    ["utilities/make/make_transform2d", node, [raster_common, raster_node_category]],
     ["utilities/get_time", node, [raster_common, raster_node_category]],
     ["utilities/transport_value", node, [raster_common, raster_node_category]],
     ["utilities/make/make_vec2", node, [raster_common, raster_node_category]],
     ["utilities/make/make_vec3", node, [raster_common, raster_node_category]],
     ["utilities/make/make_vec4", node, [raster_common, raster_node_category]],
-    ["utilities/decompose_transform2d", node, [raster_common, raster_node_category]],
-    ["utilities/break/break_transform2d", node, [raster_common, raster_node_category]],
+    ["utilities/decompose_transform2d", node, [raster_common, raster_node_category, raster_ImGui]],
+    ["utilities/break/break_transform2d", node, [raster_common, raster_node_category, raster_ImGui]],
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/echo", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
-    ["rendering/checkerboard", node, [raster_common, raster_gpu, raster_node_category]],
+    ["rendering/checkerboard", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
     ["rendering/tracking_motion_blur", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
@@ -67,13 +80,12 @@ build_modules = [
     ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
 
-    ["math/sine", node, [raster_common, raster_dynamic_math]],
-    ["math/sine", node, [raster_common, raster_dynamic_math]],
-    ["math/abs", node, [raster_common, raster_dynamic_math]],
-    ["math/multiply", node, [raster_common, raster_dynamic_math]],
-    ["math/add", node, [raster_common, raster_dynamic_math]],
-    ["math/subtract", node, [raster_common, raster_dynamic_math]],
-    ["math/divide", node, [raster_common, raster_dynamic_math]],
+    ["math/sine", node, [raster_common, raster_dynamic_math, raster_ImGui, raster_node_category]],
+    ["math/abs", node, [raster_common, raster_dynamic_math, raster_ImGui, raster_node_category]],
+    ["math/multiply", node, [raster_common, raster_dynamic_math, raster_node_category]],
+    ["math/add", node, [raster_common, raster_dynamic_math, raster_node_category]],
+    ["math/subtract", node, [raster_common, raster_dynamic_math, raster_node_category]],
+    ["math/divide", node, [raster_common, raster_dynamic_math, raster_node_category]],
 
     ["sdf_shapes/sdf_circle", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_rounded_rect", node, [raster_common, raster_node_category, raster_gpu]],
@@ -82,7 +94,11 @@ build_modules = [
     ["sdf_shapes/sdf_mix", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_annular", node, [raster_common, raster_node_category, raster_gpu]],
 
-    ["other/debug_print", node, [raster_common, raster_node_category]]
+    ["other/debug_print", node, [raster_common, raster_node_category, raster_ImGui]]
+]
+
+required_folders = [
+    nodes, easings, assets, attributes
 ]
 
 scenario build_master {
@@ -90,17 +106,25 @@ scenario build_master {
 
     write_build_number()
 
-    if not(path_exists("nodes/")) {
-        info("creating nodes/ because one doesn't exist")
-        mkdir("nodes")
-    }
-
-    if not(path_exists("easings/")) {
-        info("creating easings/ because one doesn't exist")
-        mkdir("easings")
-    }
+    call_scenario(check_required_folders)
 
     for_each($build_modules, target_build_module, execute_dispatch_module_safe)
+}
+
+# FOLDER CHECKER
+
+scenario check_required_folders {
+    for_each($required_folders, required_folder, execute_check_required_folders)
+}
+
+scenario execute_check_required_folders {
+    required_folder_with_slash = cat($required_folder, "/")
+    if not(path_exists($required_folder_with_slash)) {
+        mkdir($required_folder_with_slash)
+        info(cat(cat("creating ", $required_folder_with_slash), " because one doesn't exist"))
+    } else {
+        info(cat(cat("folder ", $required_folder_with_slash), " already exists"))
+    }
 }
 
 # DISPATCHER LOGIC
@@ -120,12 +144,23 @@ scenario dispatch_module_builder {
 
     is_node = false
     is_easing = false
+    is_asset = false
+    is_attribute = false
+
     if eq($target_module_type, node) {
         is_node = true
         target_module_type = shared
     }
     if eq($target_module_type, easing) {
         is_easing = true
+        target_module_type = shared
+    }
+    if eq($target_module_type, asset) {
+        is_asset = true
+        target_module_type = shared
+    }
+    if eq($target_module_type, attribute) {
+        is_attribute = true
         target_module_type = shared
     }
 
@@ -136,6 +171,13 @@ scenario dispatch_module_builder {
     if eq($is_easing, true) {
         targets_glob_path = cat("src/easings/", $target_module_name)
     }
+    if eq($is_asset, true) {
+        targets_glob_path = cat("src/assets/", $target_module_name)
+    }
+    if eq($is_attribute, true) {
+        targets_glob_path = cat("src/attributes/", $target_module_name)
+    }
+
     targets = glob_files($targets_glob_path, "cpp")
     objects = object_compile($targets, $build_arch)
     deps = []
@@ -143,6 +185,12 @@ scenario dispatch_module_builder {
     if greater(list_len($target_build_module), 2) {
         deps = cat($deps, list_nth($target_build_module, 2))
     }
+
+    if eq($target_module_name, core) {
+        deps = cat($deps, $stack_walker_deps)
+    }
+
+    deps = cat($deps, [pthread])
 
     target_executable_name = $target_module_name
     if eq($target_module_type, shared) {
@@ -153,6 +201,14 @@ scenario dispatch_module_builder {
     }
 
     if eq($is_easing, true) {
+        target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
+    }
+
+    if eq($is_asset, true) {
+        target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
+    }
+
+    if eq($is_attribute, true) {
         target_executable_name = cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))
     }
 
@@ -168,6 +224,14 @@ scenario dispatch_module_builder {
     if eq($is_easing, true) {
         mv($target_executable_name, cat("easings/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
     }
+
+    if eq($is_asset, true) {
+        mv($target_executable_name, cat("assets/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
+    }
+
+    if eq($is_attribute, true) {
+        mv($target_executable_name, cat("attributes/", cat($shared_lib_prefix, cat(hash($target_module_name), $shared_lib_ext))))
+    }
 }
 
 scenario execute_dispatch_error {
@@ -177,9 +241,20 @@ scenario execute_dispatch_error {
 }
 
 scenario clean {
-    if path_exists("nodes/") { rmdir("nodes") }
-    if path_exists("easings/") { rmdir("easings") }
+    call_scenario(clean_required_folders)
     object_clean()
+}
+
+scenario clean_required_folders {
+    for_each($required_folders, clean_required_folder, execute_clean_required_folders)
+}
+
+scenario execute_clean_required_folders {
+    clean_required_folder_with_slash = cat($clean_required_folder, "/")
+    if path_exists($clean_required_folder_with_slash) {
+        rmdir($clean_required_folder_with_slash)
+        info(cat("removing ", $clean_required_folder_with_slash))
+    }
 }
 
 default_scenario = build_master

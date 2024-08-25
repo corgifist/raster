@@ -1,4 +1,5 @@
 libraster_*.so
+raster_*.dll
 raster
 test.json
 shader_cache/
@@ -9,3 +10,5 @@ hash_build_files/
 raster
 internal/
 HashBuild/__pycache__/
+*.a
+*.exe

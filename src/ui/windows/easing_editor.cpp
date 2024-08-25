@@ -2,7 +2,7 @@
 
 namespace Raster {
     void EasingEditorUI::Render() {
-        ImGui::Begin(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("EASING_EDITOR").c_str()).c_str());
+        if (ImGui::Begin(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("EASING_EDITOR").c_str()).c_str())) {
             if (!Workspace::IsProjectLoaded()) {
                 ImGui::PushFont(Font::s_denseFont);
                 ImGui::SetWindowFontScale(2.0f);
@@ -29,12 +29,12 @@ namespace Raster {
             ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - headerSize.x / 2.0f);
             ImGui::Text("%s", headerText.c_str());
 
-            ImGui::BeginChild("##isolatedEasingContent", ImGui::GetContentRegionAvail());
+            if (ImGui::BeginChild("##isolatedEasingContent", ImGui::GetContentRegionAvail())) {
                 static ImVec2 contentSize = ImVec2(100, 100);
                 ImGui::SetCursorPos(
                     ImGui::GetWindowSize() / 2.0f - contentSize / 2.0f
                 );
-                ImGui::BeginChild("##easingEditorContent", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+                if (ImGui::BeginChild("##easingEditorContent", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
                     if (easingCandidate.has_value()) {
                         easingCandidate.value()->RenderDetails();
                     } else {
@@ -53,9 +53,12 @@ namespace Raster {
                         ImGui::SetWindowFontScale(1.0f);
                     }
                     contentSize = ImGui::GetWindowSize();
+                }
                 ImGui::EndChild();
+            }
             ImGui::EndChild();
-
+        }
+        
         ImGui::End();
     }
 };

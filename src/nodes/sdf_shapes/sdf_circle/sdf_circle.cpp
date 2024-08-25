@@ -65,18 +65,18 @@ namespace Raster {
 }
 
 extern "C" {
-    Raster::AbstractNode SpawnNode() {
+    RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::SDFCircle>();
     }
 
-    void OnStartup() {
+    RASTER_DL_EXPORT void OnStartup() {
         Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_SHAPES, "Shapes");
 
         Raster::Workspace::s_typeColors[ATTRIBUTE_TYPE(Raster::SDFShape)] = RASTER_COLOR32(52, 235, 222, 255);
         Raster::Workspace::s_typeNames[ATTRIBUTE_TYPE(Raster::SDFShape)] = "SDFShape";
     }
 
-    Raster::NodeDescription GetDescription() {
+    RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "SDF Circle",
             .packageName = RASTER_PACKAGED "sdf_circle",

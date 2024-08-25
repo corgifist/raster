@@ -11,7 +11,7 @@ namespace Raster {
                     node->executionsPerFrame = 0;
                     node->ClearAttributesCache();
                 }
-                if (!IsInBounds(std::floor(project.currentFrame), std::floor(composition.beginFrame), std::floor(composition.endFrame))) continue;
+                if (!IsInBounds(project.currentFrame, composition.beginFrame, composition.endFrame)) continue;
                 if (!composition.enabled) continue;
                 for (auto& node : composition.nodes) {
                     if (node->flowInputPin.has_value()) {

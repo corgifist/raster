@@ -1,3 +1,5 @@
+#define OIIO_STATIC_BUILD
+
 #include <OpenImageIO/imageio.h>
 #include "image/image.h"
 
@@ -21,7 +23,6 @@ namespace Raster {
         if (spec.format.elementsize() == 2) targetTypeDesc = OIIO::TypeDesc::HALF;
         if (spec.format.elementsize() == 4) targetTypeDesc = OIIO::TypeDesc::FLOAT;
         std::vector<uint8_t> data(spec.width * spec.height * spec.nchannels * targetTypeDesc.elementsize());
-        DUMP_VAR(targetTypeDesc.elementsize());
         input->read_image(0, 0, 0, spec.nchannels, targetTypeDesc, data.data());
 
         Image result;

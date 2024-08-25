@@ -6,7 +6,7 @@
 namespace Raster {
 
     enum class LastClickedObjectType {
-        Composition, Keyframe, None
+        Composition, Keyframe, Asset, None
     };
 
     struct UIShared {

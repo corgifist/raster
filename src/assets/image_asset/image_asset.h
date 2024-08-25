@@ -1,6 +1,8 @@
 #pragma once
+
 #include "common/asset_base.h"
 #include "gpu/async_upload.h"
+#include "../../ImGui/imgui.h"
 
 namespace Raster {
     struct ImageAsset : public AssetBase {
@@ -17,6 +19,9 @@ namespace Raster {
         Json AbstractSerialize();
 
         void AbstractRenderDetails();
+
+        std::optional<std::uintmax_t> AbstractGetSize();
+        std::optional<std::string> AbstractGetResolution();
 
         std::string m_relativePath;
 

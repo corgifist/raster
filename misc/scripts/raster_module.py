@@ -2,6 +2,7 @@ from hash_build_env import *
 import os
 import hashlib
 import shutil
+import subprocess
 
 def list_nth(array, index):
     return array[int(index)]
@@ -45,6 +46,14 @@ def hash_(s):
 def string_replace(string, subject, replacement):
     return string.replace(subject, replacement)
 
+def pkg_config(lib_name, action = '--cflags'):
+    result = subprocess.run(['pkg-config', action, lib_name], capture_output=True, text=True)
+    if result.returncode == 0:
+        return CustomArgs((result.stdout[1:] if action == '--cflags' else result.stdout).replace("\n", ""))
+    raise RuntimeError(f"{lib_name} is not found!")
+
+def ternary(a, b, c):
+    return b if a else c
 
 functions["greater"] = greater
 functions["less"] = less
@@ -55,3 +64,5 @@ functions["write_build_number"] = write_build_number
 functions["hash"] = hash_
 functions["string_replace"] = string_replace
 functions["rmdir"] = shutil.rmtree
+functions["pkg_config"] = pkg_config
+functions["ternary"] = ternary

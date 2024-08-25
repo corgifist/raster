@@ -13,7 +13,7 @@ namespace Raster {
     }
 
     void NodeBase::SetupAttribute(std::string t_attribute, std::any t_value) {
-        this->m_attributes[t_attribute] = t_value;
+        SetAttributeValue(t_attribute, t_value);
         this->m_attributesOrder.push_back(t_attribute);
     }
 

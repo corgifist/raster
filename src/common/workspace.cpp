@@ -36,6 +36,22 @@ namespace Raster {
         RASTER_TYPE_NAME(SamplerSettings)
     };
 
+    std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {
+        {"Red", RASTER_COLOR32(241, 70, 63, 255)},
+        {"Pink", RASTER_COLOR32(230, 42, 101, 255)},
+        {"Purple", RASTER_COLOR32(153, 54, 171, 255)},
+        {"Deep Purple", RASTER_COLOR32(100, 68, 179, 255)},
+        {"Indigo", RASTER_COLOR32(60, 87, 176, 255)},
+        {"Blue", RASTER_COLOR32(32, 154, 239, 255)},
+        {"Light Blue", RASTER_COLOR32(13, 172, 238, 255)},
+        {"Cyan", RASTER_COLOR32(28, 188, 210, 255)}, 
+        {"Teal", RASTER_COLOR32(24, 149, 135, 255)},
+        {"Green", RASTER_COLOR32(84, 172, 88, 255)},
+        {"Light Green", RASTER_COLOR32(143, 192, 87, 255)}
+    };
+
+    std::string Workspace::s_defaultColorMark = "Teal";
+
     void Workspace::Initialize() {
         if (!std::filesystem::exists("nodes/")) {
             std::filesystem::create_directory("nodes");
@@ -60,6 +76,7 @@ namespace Raster {
 
         Easings::Initialize();
         Assets::Initialize();
+        Attributes::Initialize();
     }
 
     std::optional<AbstractNode> Workspace::CopyAbstractNode(AbstractNode node) {
@@ -162,7 +179,9 @@ namespace Raster {
                 node->libraryName = nodeImplementation.value().libraryName;
                 node->enabled = data["Enabled"];
                 node->bypassed = data["Bypassed"];
-                node->AbstractLoadSerialized(data["NodeData"]);
+                if (data.contains("NodeData") && !data["NodeData"].is_null()) {
+                    node->AbstractLoadSerialized(data["NodeData"]);
+                }
                 if (!data["FlowInputPin"].is_null()) {
                     node->flowInputPin = GenericPin(data["FlowInputPin"]);
                 }
@@ -170,42 +189,46 @@ namespace Raster {
                     node->flowOutputPin = GenericPin(data["FlowOutputPin"]);
                 }
 
-                for (auto& pin : data["InputPins"]) {
-                    bool continueLoop = false;
-                    for (auto& inputPin : node->inputPins) {
-                        if (inputPin.linkedAttribute == pin["LinkedAttribute"]) {
-                            continueLoop = true;
-                            break;
-                        }
-                    }
-                    if (continueLoop) {
-                        int pinIndex = 0;
+                if (!data["InputPins"].is_null()) {
+                    for (auto& pin : data["InputPins"]) {
+                        bool continueLoop = false;
                         for (auto& inputPin : node->inputPins) {
-                            if (inputPin.linkedAttribute == pin["LinkedAttribute"]) break;
-                            pinIndex++;
+                            if (inputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
+                                continueLoop = true;
+                                break;
+                            }
                         }
-                        node->inputPins.erase(node->inputPins.begin() + pinIndex);
+                        if (continueLoop) {
+                            int pinIndex = 0;
+                            for (auto& inputPin : node->inputPins) {
+                                if (inputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) break;
+                                pinIndex++;
+                            }
+                            node->inputPins.erase(node->inputPins.begin() + pinIndex);
+                        }
+                        node->inputPins.push_back(GenericPin(pin));
                     }
-                    node->inputPins.push_back(GenericPin(pin));
                 }
 
-                for (auto& pin : data["OutputPins"]) {
-                    bool continueLoop = false; 
-                    for (auto& outputPin : node->outputPins) {
-                        if (outputPin.linkedAttribute == pin["LinkedAttribute"]) {
-                            continueLoop = true;
-                            break;
-                        }
-                    }
-                    if (continueLoop) {
-                        int pinIndex = 0;
+                if (!data["OutputPins"].is_null()) {
+                    for (auto& pin : data["OutputPins"]) {
+                        bool continueLoop = false; 
                         for (auto& outputPin : node->outputPins) {
-                            if (outputPin.linkedAttribute == pin["LinkedAttribute"]) break;
-                            pinIndex++;
+                            if (outputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
+                                continueLoop = true;
+                                break;
+                            }
                         }
-                        node->outputPins.erase(node->outputPins.begin() + pinIndex);
+                        if (continueLoop) {
+                            int pinIndex = 0;
+                            for (auto& outputPin : node->outputPins) {
+                                if (outputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) break;
+                                pinIndex++;
+                            }
+                            node->outputPins.erase(node->outputPins.begin() + pinIndex);
+                        }
+                        node->outputPins.push_back(GenericPin(pin));
                     }
-                    node->outputPins.push_back(GenericPin(pin));
                 }
 
                 return node;
@@ -405,6 +428,28 @@ namespace Raster {
                         }
                     }
                 }
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AbstractAsset> Workspace::GetAssetByAssetID(int t_assetID) {
+        if (Workspace::IsProjectLoaded()) {
+            auto& project = Workspace::GetProject();
+            for (auto& asset : project.assets) {
+                if (asset->id == t_assetID) return asset;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<int> Workspace::GetAssetIndexByAssetID(int t_assetID) {
+        int index = 0;
+        if (Workspace::IsProjectLoaded()) {
+            auto& project = Workspace::GetProject();
+            for (auto& asset : project.assets) {
+                if (asset->id == t_assetID) return index;
+                index++;
             }
         }
         return std::nullopt;

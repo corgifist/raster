@@ -14,6 +14,7 @@
 #include "workspace.h"
 #include "randomizer.h"
 #include "attribute.h"
+#include "attributes.h"
 
 #define INSTANTIATE_ATTRIBUTE_TEMPLATE(T) \
     template std::optional<T> NodeBase::GetAttribute<T>(std::string); 

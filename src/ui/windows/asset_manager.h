@@ -14,5 +14,9 @@
 namespace Raster {
     struct AssetManagerUI : public UI {
         void Render();
+
+        static void RenderAssetPopup(AbstractAsset& asset);
+        static std::optional<AbstractAsset> ImportAsset();
+        static void AutoImportAsset();
     };
 };

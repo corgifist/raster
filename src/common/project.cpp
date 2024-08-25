@@ -22,6 +22,8 @@ namespace Raster {
         this->selectedCompositions = data["SelectedCompositions"].get<std::vector<int>>();
         this->selectedAttributes = data["SelectedAttributes"].get<std::vector<int>>();
         this->selectedNodes = data["SelectedNodes"].get<std::vector<int>>();
+        this->selectedKeyframes = data["SelectedKeyframes"].get<std::vector<int>>();
+        this->selectedAssets = data["SelectedAssets"].get<std::vector<int>>();
         this->customData = data["CustomData"];
         this->timeTravelOffset = 0;
         for (auto& composition : data["Compositions"]) {
@@ -50,13 +52,13 @@ namespace Raster {
     }
 
     float Project::GetProjectLength() {
-        float candidate = FLT_MAX;
+        float candidate = FLT_MIN;
         for (auto& composition : compositions) {
-            if (composition.endFrame < candidate) {
+            if (composition.endFrame > candidate) {
                 candidate = composition.endFrame;
             }
         }
-        return candidate == FLT_MAX ? 0 : candidate;
+        return candidate == FLT_MIN ? 0 : candidate;
     }
 
     std::string Project::FormatFrameToTime(float frame) {
@@ -103,14 +105,18 @@ namespace Raster {
         data["SelectedCompositions"] = selectedCompositions;
         data["SelectedNodes"] = selectedNodes;
         data["SelectedAttributes"] = selectedAttributes;
+        data["SelectedKeyframes"] = selectedKeyframes;
+        data["SelectedAssets"] = selectedAssets;
         data["CustomData"] = customData;
+
         data["Compositions"] = {};
         for (auto& composition : compositions) {
             data["Compositions"].push_back(composition.Serialize());
         }
+        
         data["Assets"] = {};
         for (auto& asset : assets) {
-            data["Asset"].push_back(asset->Serialize());
+            data["Assets"].push_back(asset->Serialize());
         }
 
         return data;

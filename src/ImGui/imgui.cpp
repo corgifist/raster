@@ -5775,7 +5775,7 @@ bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, I
         g.Style.ChildBorderSize = 0.0f;
 
     // Begin into window
-    const bool ret = Begin(temp_window_name, NULL, window_flags);
+    const bool ret = Begin(temp_window_name, NULL, window_flags, true);
 
     // Restore style
     g.Style.ChildBorderSize = backup_border_size;
@@ -6775,8 +6775,11 @@ ImGuiWindow* ImGui::FindBlockingModal(ImGuiWindow* window)
 //   You can use the "##" or "###" markers to use the same label with different id, or same id with different label. See documentation at the top of this file.
 // - Return false when window is collapsed, so you can early out in your code. You always need to call ImGui::End() even if false is returned.
 // - Passing 'bool* p_open' displays a Close button on the upper-right corner of the window, the pointed value will be set to false when the button is pressed.
-bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
+bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags, bool artificial_child)
 {
+
+    ImGui::PushStyleColor(ImGuiCol_Separator, IM_COL32(22, 22, 22, 255));
+
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
     IM_ASSERT(name != NULL && name[0] != '\0');     // Window name required
@@ -6812,6 +6815,7 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
         window_just_activated_by_user |= (window->PopupId != popup_ref.PopupId); // We recycle popups so treat window as activated if popup id changed
         window_just_activated_by_user |= (window != popup_ref.Window);
     }
+    
 
     // Update Flags, LastFrameActive, BeginOrderXXX fields
     const bool window_was_appearing = window->Appearing;
@@ -7683,6 +7687,15 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
             return false;
         }
 #endif
+
+    ImGui::PopStyleColor();
+
+    if (!artificial_child && !(window->Flags & ImGuiWindowFlags_MenuBar)) {
+        ImVec2 offset = window->DockIsActive ? ImVec2(0, 0) : ImVec2(1, 1);
+        window->DrawList->PushClipRectFullScreen();
+        window->DrawList->AddRect(window->Pos - offset, window->Pos + window->Size + offset, ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) ? IM_COL32(25, 133, 236, 255) : IM_COL32(32, 32, 32, 255), 0, 0, 1);
+        window->DrawList->PopClipRect();
+    }
 
     return !window->SkipItems;
 }
@@ -11785,7 +11798,7 @@ bool ImGui::BeginPopupEx(ImGuiID id, ImGuiWindowFlags flags)
         ImFormatString(name, IM_ARRAYSIZE(name), "##Popup_%08x", id); // Not recycling, so we can close/open during the same frame
 
     flags |= ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoDocking;
-    bool is_open = Begin(name, NULL, flags);
+    bool is_open = Begin(name, NULL, flags, true);
     if (!is_open) // NB: Begin can return false when the popup is completely clipped (e.g. zero size display)
         EndPopup();
 

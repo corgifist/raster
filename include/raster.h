@@ -20,6 +20,8 @@
 #include <codecvt>
 #include <locale>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
@@ -33,6 +35,12 @@
 #define print(expr) std::cout << expr << std::endl
 
 #define DUMP_VAR(var) print(#var << " = " << (var))
+
+#if defined(UNIX) && !defined(WIN32)
+    #define RASTER_DL_EXPORT
+#else
+    #define RASTER_DL_EXPORT __declspec(dllexport)
+#endif
 
 namespace Raster {
 
@@ -119,6 +127,14 @@ namespace Raster {
     static float Precision( float f, int places ) {
         float n = std::pow(10.0f, places ) ;
         return std::round(f * n) / n ;
+    }
+
+    static float GetPercentageInBounds(float v, float min, float max) {
+        return (v - min) / (max - min);
+    }
+
+    static std::string GetExtension(std::string t_path) {
+        return t_path.substr(t_path.find_last_of("."));
     }
 
 }

@@ -158,11 +158,11 @@ namespace Raster {
 }
 
 extern "C" {
-    Raster::AbstractNode SpawnNode() {
+    RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::TrackingMotionBlur>();
     }
 
-    Raster::NodeDescription GetDescription() {
+    RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "Tracking Motion Blur",
             .packageName = RASTER_PACKAGED "tracking_motion_blur",

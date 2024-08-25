@@ -311,8 +311,8 @@ namespace Raster {
         );
         ImGui::ItemAdd(ImRect(positionDragBounds.UL, positionDragBounds.BR), ImGui::GetID("##transformContainer"));
         if ((MouseHoveringBounds(positionDragBounds) || positionDragActive) && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left] && !anchorDragging && !xDragActive && !yDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive) {
-            transform.position.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x;
-            transform.position.y += -ImGui::GetIO().MouseDelta.y / t_regionSize.y;
+            transform.position.x += ImGui::GetIO().MouseDelta.x / (t_regionSize.x / t_zoom);
+            transform.position.y += -ImGui::GetIO().MouseDelta.y / (t_regionSize.y / t_zoom);
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
             ImGui::SetTooltip("%s Move Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
 

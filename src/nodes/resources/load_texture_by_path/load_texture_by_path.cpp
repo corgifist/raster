@@ -43,7 +43,7 @@ namespace Raster {
     void LoadTextureByPath::UpdateTextureArchive() {
         std::string path = GetAttribute<std::string>("Path").value_or("");
         if (std::filesystem::exists(path) && !std::filesystem::is_directory(path)) {
-            if (!m_loader.IsInitialized()) {
+            if (!m_loader.IsInitialized() && !m_asyncUploadID) {
                 m_loader = AsyncImageLoader(path);
                 if (archive.has_value()) {
                     auto& textureArchive = archive.value();
@@ -62,6 +62,7 @@ namespace Raster {
 
                     if (!m_asyncUploadID) {
                         m_asyncUploadID = AsyncUpload::GenerateTextureFromImage(image);
+                        m_loader = AsyncImageLoader();
                         std::cout << "requesting async upload" << std::endl;
                     }
                 }
@@ -70,7 +71,6 @@ namespace Raster {
                 auto& info = AsyncUpload::GetUpload(m_asyncUploadID);
                 archive = TextureArchive(info.texture, path);
                 AsyncUpload::DestroyUpload(m_asyncUploadID);
-                m_loader = AsyncImageLoader();
             }
         }
     }
@@ -111,11 +111,11 @@ namespace Raster {
 }
 
 extern "C" {
-    Raster::AbstractNode SpawnNode() {
+    RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::LoadTextureByPath>();
     }
 
-    Raster::NodeDescription GetDescription() {
+    RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
             .prettyName = "Load Texture By Path",
             .packageName = "packaged.raster.load_texture_by_path",

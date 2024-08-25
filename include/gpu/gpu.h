@@ -169,11 +169,36 @@ namespace Raster {
         static void SetSamplerTextureWrappingMode(Sampler& sampler, TextureWrappingAxis axis, TextureWrappingMode mode);
         static void DestroySampler(Sampler& sampler);
 
-        static std::string TextureFilteringOperationToString(TextureFilteringOperation operation);
-        static std::string TextureWrappingAxisToString(TextureWrappingAxis axis);
+        static std::string TextureFilteringOperationToString(TextureFilteringOperation operation) {
+            switch (operation) {
+                case TextureFilteringOperation::Magnify: return "Magnify";
+                default: return "Minify";
+            }
+        }
 
-        static std::string TextureFilteringModeToString(TextureFilteringMode mode);
-        static std::string TextureWrappingModeToString(TextureWrappingMode mode);
+        static std::string TextureWrappingAxisToString(TextureWrappingAxis axis) {
+            switch (axis) {
+                case TextureWrappingAxis::S: return "S";
+                default: return "T";
+            }
+        }
+
+
+        static std::string TextureFilteringModeToString(TextureFilteringMode mode) {
+            switch (mode) {
+                case TextureFilteringMode::Linear: return "Linear";
+                default: return "Nearest";
+            }
+        }
+
+        static std::string TextureWrappingModeToString(TextureWrappingMode mode) {
+            switch (mode) {
+                case TextureWrappingMode::ClampToBorder: return "ClampToBorder";
+                case TextureWrappingMode::ClampToEdge: return "ClampToEdge";
+                case TextureWrappingMode::MirroredRepeat: return "MirroredRepeat";
+                default: return "Repeat";
+            }
+        }
 
 
         static void DestroyShader(Shader shader);

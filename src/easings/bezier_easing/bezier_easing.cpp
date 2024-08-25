@@ -22,6 +22,8 @@ namespace Raster {
 
     static std::vector<CurvePreset> s_presets = {
         CurvePreset("Linear", glm::vec4(0, 0, 1, 1)),
+        CurvePreset("Emphasized (Accelerate)", glm::vec4(0.3, 0.0, 0.8, 0.15)),
+        CurvePreset("Emphasized (Decelerate)", glm::vec4(0.05, 0.7, 0.1, 1)),
         CurvePreset("Ease In (Sine)", glm::vec4(0.12, 0, 0.39, 0)),
         CurvePreset("Ease Out (Sine)", glm::vec4(0.61, 1, 0.88, 1)),
         CurvePreset("Ease In Out (Sine)", glm::vec4(0.37, 0, 0.63, 1)),
@@ -231,7 +233,7 @@ namespace Raster {
                                 if (mustAnimate) {
                                     actualTargetPoints = glm::mix(beginPoints, endPoints, std::clamp(animationPercentage, 0.0f, 1.0f));
                                     actualBezierSize = ImLerp(beginBezierSize, endBezierSize, std::clamp(animationPercentage, 0.0f, 1.0f));
-                                    animationPercentage += ImGui::GetIO().DeltaTime * 25;
+                                    animationPercentage += ImGui::GetIO().DeltaTime * 20;
                                 }
 
                                 if (animationPercentage > 1) {

@@ -48,6 +48,17 @@ namespace Raster {
         return std::nullopt;
     }
 
+    std::optional<AbstractAsset> Assets::CopyAsset(AbstractAsset t_asset) {
+        auto copyCandidate = InstantiateSerializedAsset(t_asset->Serialize());
+        if (copyCandidate.has_value()) {
+            auto& result = copyCandidate.value();
+            result->id = Randomizer::GetRandomInteger();
+            result->name += " (Copy)";
+            return result;
+        }
+        return std::nullopt;
+    }
+
     std::optional<AssetImplementation> Assets::GetAssetImplementation(std::string t_packageName) {
         for (auto& impl : s_implementations) {
             if (impl.description.packageName == t_packageName) return impl;

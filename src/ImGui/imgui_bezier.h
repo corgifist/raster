@@ -44,8 +44,10 @@ namespace ImGui
         }
     }
 
+
+#define STEPS 256
+
     float BezierValue(float dt01, float P[4]) {
-        enum { STEPS = 256 };
         ImVec2 Q[4] = { { 0, 0 }, { P[0], P[1] }, { P[2], P[3] }, { 1, 1 } };
         ImVec2 results[STEPS + 1];
         bezier_table<STEPS>(Q, results);
@@ -54,13 +56,12 @@ namespace ImGui
 
 #define AREA_WIDTH area_width
 #define AREA_CONSTRAINED constrained
+#define SMOOTHNESS 64
+#define CURVE_WIDTH 4
+#define LINE_WIDTH 1
+#define GRAB_RADIUS 8
+#define GRAB_BORDER 2
     int Bezier(const char *label, float P[5], int area_width = 0, bool constrained = false, std::optional<std::vector<float>> customValues = std::nullopt, bool useHandles = true) {
-        // visuals
-        enum { SMOOTHNESS = 64 }; // curve smoothness: the higher number of segments, the smoother curve
-        enum { CURVE_WIDTH = 4 }; // main curved line width
-        enum { LINE_WIDTH = 1 }; // handlers: small lines width
-        enum { GRAB_RADIUS = 8 }; // handlers: circle radius
-        enum { GRAB_BORDER = 2 }; // handlers: circle border width
 
         // bezier widget
 

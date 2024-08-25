@@ -40,6 +40,12 @@
             "Icon": "ICON_FA_MINUS"
         },
         {
+            "Name": "Divide",
+            "CodeName": "blend_divide",
+            "Formula": "(base / blend) * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_DIVIDE"
+        },
+        {
             "Name": "Exclusion",
             "CodeName": "blend_exclusion",
             "Formula": "(base+blend-2.0*base*blend) * opacity + base * (1.0 - opacity)",
@@ -64,6 +70,19 @@
             "CodeName": "blend_multiply",
             "Formula": "base * blend * opacity + base * (1.0 - opacity)",
             "Icon": "ICON_FA_XMARK"
+        },
+        {
+            "Name": "Negation",
+            "CodeName": "blend_negation",
+            "Formula": "blendNegation(base, blend, opacity)",
+            "Icon": "ICON_FA_PALLETE",
+            "Functions": "blending/negation"
+        },
+        {
+            "Name": "Subtract",
+            "CodeName": "blend_subtract",
+            "Formula": "(base - blend) * opacity + base * (1.0 - opacity)",
+            "Icon": "ICON_FA_MINUS"
         }
     ]
 }

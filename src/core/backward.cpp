@@ -21,7 +21,12 @@
 
 // - apt-get install binutils-dev ...
 // - g++/clang++ -lbfd ...
-#define BACKWARD_HAS_BFD 1
+
+#if defined(UNIX) && !defined(WIN32)
+    #define BACKWARD_HAS_BFD 1
+    #define BACKWARD_HAS_LIBUNWIND 1
+#endif
+
 
 // - apt-get install libdwarf-dev ...
 // - g++/clang++ -ldwarf ...
@@ -31,7 +36,6 @@
 // for potentially more detailed stack traces you can use libunwind
 // - apt-get install libunwind-dev
 // - g++/clang++ -lunwind
-#define BACKWARD_HAS_LIBUNWIND 1
 
 #include "backward.hpp"
 

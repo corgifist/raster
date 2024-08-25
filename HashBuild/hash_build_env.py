@@ -22,6 +22,14 @@ include_path = None
 
 dump_compilation_process = False
 
+class CustomArgs(str):
+    def __init__(self, custom_arg):
+        self.custom_arg = custom_arg
+
+    def __str__(self):
+        return self.custom_arg
+
+
 def cat(a, b):
     return a + b
 
@@ -92,6 +100,8 @@ def object_compile(source, arch, args=[], library_path="."):
                     if target in object_compile_processes:
                         del object_compile_processes[target]
 
+                if dump_compilation_process:
+                    info(compile_command)
                 object_compile_processes[file] = subprocess.Popen(list(filter(lambda x: x != '', compile_command.split(" "))), stdout=sys.stdout, stderr=sys.stderr)
     
     for k_source_file, v_process in object_compile_processes.items():
@@ -130,6 +140,9 @@ def glob_files(root, ext):
 def get_platform():
     return platform.system().lower()
 
+def create_custom_arg(arg):
+    return CustomArgs(arg)
+
 def eq(a, b):
     return a == b
 
@@ -144,14 +157,14 @@ def link_executable(objects, out, link_libraries=[], shared='null', basename='im
     str_objects = ' '.join(objects)
     transformed_libraries = list()
     for lib in link_libraries:
-        transformed_libraries.append("-l" + lib)
+        transformed_libraries.append(("-l" + lib) if not isinstance(lib, CustomArgs) else lib.custom_arg)
     out_implib = ""
-    if get_platform() == "windows" and shared:
-        out_implib = f"-Wl,--export-all-symbols,--out-implib,lib{basename}.a"
     if rpath != '':
         rpath = f'-Wl,-rpath,{rpath}'
     link_command = f"g++ -L {library_path} {'-shared' if shared else ''} -o {out} {str_objects}{' ' if len(link_libraries) != 0 else ''}{' '.join(transformed_libraries)} {' '.join(link_options)} {out_implib} {rpath}"
     info(f"linking {'executable' if not shared else 'shared library'} {out}")
+    if dump_compilation_process:
+        info(link_command)
     link_process = subprocess.run(list(filter(lambda x: x != '', link_command.split(" "))), stdout=sys.stdout, stderr=sys.stderr)
     if link_process.returncode != 0:
         fatal("linker returned non-zero code!")
@@ -187,12 +200,16 @@ def string_contains(x, y):
 def load_module(path):
     return exec(open(path).read())
 
+def dump_compilation_commands():
+    global dump_compilation_process
+    dump_compilation_process = True
+
 functions = {
     "print": print,
     'cat': cat,
     "object_compile": object_compile,
     "object_add_compile_options": lambda x: compile_options.append("-" + x),
-    "dump_compilation_commands": lambda x: [dump_compilation_commands := True][0],
+    "dump_compilation_commands": dump_compilation_commands,
     "dump_var_env": dump_var_env,
     "glob_files": glob_files,
     "object_clean": object_clean,
@@ -218,7 +235,8 @@ functions = {
     'not': _not,
     "mv": shutil.move,
     "load_module": load_module,
-    'exit': sys.exit
+    'exit': sys.exit,
+    "custom_arg": create_custom_arg
 }
 
 def arg_wrapper(func, args):

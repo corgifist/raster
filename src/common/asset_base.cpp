@@ -1,6 +1,11 @@
 #include "common/asset_base.h"
 
 namespace Raster {
+
+    AssetBase::AssetBase() {}
+
+    AssetBase::~AssetBase() {}
+
     void AssetBase::Initialize() {
         this->id = Randomizer::GetRandomInteger();
         this->name = "Uninitialized Asset";
@@ -14,7 +19,8 @@ namespace Raster {
         return {
             {"ID", id},
             {"Name", name},
-            {"Data", AbstractSerialize()}
+            {"Data", AbstractSerialize()},
+            {"PackageName", packageName}
         };
     }
 
@@ -28,6 +34,18 @@ namespace Raster {
 
     std::optional<Texture> AssetBase::GetPreviewTexture() {
         return AbstractGetPreviewTexture();
+    }
+    
+    std::optional<std::uintmax_t> AssetBase::GetSize() {
+        return AbstractGetSize();
+    }
+
+    std::optional<std::string> AssetBase::GetResolution() {
+        return AbstractGetResolution();
+    }
+
+    std::optional<std::string> AssetBase::GetDuration() {
+        return AbstractGetDuration();
     }
 
     void AssetBase::Load(Json t_data) {

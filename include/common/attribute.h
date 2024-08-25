@@ -24,6 +24,11 @@ namespace Raster {
         int attributeID;
     };
 
+    struct AttributeDescription {
+        std::string packageName;
+        std::string prettyName;
+    };
+
     struct AttributeBase {
         int id;
         std::string name, packageName;

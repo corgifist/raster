@@ -12,6 +12,7 @@ namespace Raster {
         Texture deleteTexture;
         std::shared_ptr<Image> image;
         bool ready;
+        bool executed;
 
         AsyncUploadInfo();
     };

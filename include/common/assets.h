@@ -7,6 +7,7 @@ namespace Raster {
     struct AssetDescription {
         std::string prettyName;
         std::string packageName;
+        std::string icon;
         std::vector<std::string> extensions;
     };
 
@@ -21,6 +22,8 @@ namespace Raster {
         static void Initialize();
         static std::optional<AbstractAsset> InstantiateAsset(std::string t_packageName);
         static std::optional<AbstractAsset> InstantiateSerializedAsset(Json t_data);
+
+        static std::optional<AbstractAsset> CopyAsset(AbstractAsset t_asset);
 
         static std::optional<AssetImplementation> GetAssetImplementation(std::string t_packageName);
     };
