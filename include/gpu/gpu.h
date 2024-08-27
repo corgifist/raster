@@ -142,8 +142,9 @@ namespace Raster {
 
         static Framebuffer GenerateFramebuffer(uint32_t width, uint32_t height, std::vector<Texture> attachments);
         static void DestroyFramebuffer(Framebuffer fbo);
+        static void DestroyFramebufferWithAttachments(Framebuffer fbo);
 
-        static Shader GenerateShader(ShaderType type, std::string name);
+        static Shader GenerateShader(ShaderType type, std::string name, bool useBinaryCache = true);
 
         // TODO: Implement compute pipeline
         static Pipeline GeneratePipeline(Shader vertexShader, Shader fragmentShader);

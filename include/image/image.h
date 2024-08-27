@@ -23,6 +23,9 @@ namespace Raster {
     struct ImageLoader {
     public:
         static std::optional<Image> Load(std::string t_path);
+
+        static std::string GetImplementationName();
+        static std::vector<std::string> GetSupportedExtensions();
     };
 
     struct AsyncImageLoader {

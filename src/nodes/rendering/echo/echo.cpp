@@ -22,6 +22,15 @@ namespace Raster {
         }
     }
 
+    Echo::~Echo() {
+        if (m_framebuffer.handle) {
+            for (auto& attachment : m_framebuffer.attachments) {
+                GPU::DestroyTexture(attachment);
+            }
+            GPU::DestroyFramebuffer(m_framebuffer);
+        }
+    }
+
     AbstractPinMap Echo::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
@@ -44,7 +53,7 @@ namespace Raster {
             for (int i = 0; i < steps + 1; i++) {
                 auto baseCandidate = GetAttribute<Framebuffer>("Base");
                 if (baseCandidate.has_value()) {
-                    if (project.GetCurrentTime() < 0) {
+                    if (project.GetCorrectCurrentTime() < 0) {
                         project.TimeTravel(frameStep);
                         continue;
                     }

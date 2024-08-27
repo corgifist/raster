@@ -4,6 +4,7 @@
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
 #include "compositor/managed_framebuffer.h"
+#include "compositor/texture_interoperability.h"
 #include "common/transform2d.h"
 #include "raster.h"
 

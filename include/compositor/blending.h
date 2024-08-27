@@ -26,6 +26,7 @@ namespace Raster {
         Blending(Json json);
 
         Framebuffer PerformBlending(BlendingMode& mode, Texture base, Texture blend, float opacity);
+        Framebuffer PerformManualBlending(BlendingMode& mode, Texture base, Texture blend, float opacity, glm::vec4 backgroundColor);
 
         void GenerateBlendingPipeline();
         void EnsureResolutionConstraints(Texture& texture);

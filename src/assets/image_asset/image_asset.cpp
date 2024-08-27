@@ -62,7 +62,12 @@ namespace Raster {
         return std::nullopt;
     }
 
+    std::optional<std::string> ImageAsset::AbstractGetPath() {
+        return m_originalPath;
+    }
+
     void ImageAsset::AbstractImport(std::string t_path) {
+        this->m_originalPath = t_path;
         std::string relativePath = FormatString("%i%s", id, std::filesystem::path(t_path).extension().c_str());
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), relativePath.c_str());
         this->m_relativePath = relativePath;
@@ -75,12 +80,14 @@ namespace Raster {
 
     Json ImageAsset::AbstractSerialize() {
         return {
-            {"RelativePath", m_relativePath}
+            {"RelativePath", m_relativePath},
+            {"OriginalPath", m_originalPath}
         };
     }
 
     void ImageAsset::AbstractLoad(Json t_data) {
         this->m_relativePath = t_data["RelativePath"];
+        this->m_originalPath = t_data["OriginalPath"];
     }
 
     void ImageAsset::AbstractRenderDetails() {
@@ -105,7 +112,7 @@ extern "C" {
             .prettyName = "Image Asset",
             .packageName = RASTER_PACKAGED "image_asset",
             .icon = ICON_FA_IMAGE,
-            .extensions = {"png", "jpg", "exr", "webp", "bmp", "psd"}
+            .extensions = Raster::ImageLoader::GetSupportedExtensions()
         };
     }
 }

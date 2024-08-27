@@ -42,6 +42,30 @@
     #define RASTER_DL_EXPORT __declspec(dllexport)
 #endif
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+    #define SystemOpenURL(url) system(FormatString("%s %s", "start", (url).c_str()).c_str())
+#elif __APPLE__
+    #define SystemOpenURL(url)  system(FormatString("%s %s &&", "open", (url).c_str()).c_str())
+#elif __linux__
+    #define SystemOpenURL(url)  system(FormatString("%s %s &&", "xdg-open", (url).c_str()).c_str())
+#else
+    #error "Cannot determine valid SystemOpenURL implementation for your platform :("
+#endif
+
+#if defined(__GNUC__)
+    #if defined(__clang__)
+        #define COMPILER_FMT "Clang: %s"
+    #else
+        #define COMPILER_FMT "GNUC: %s"
+    #endif
+    #define COMPILER_VERSION __VERSION__
+#elif defined(_MSC_VER)
+    #define COMPILER_FMT "MSVC: %d"
+    #define COMPILER_VERSION _MSC_FULL_VER
+#else
+    #error Cannot determine valid COMPILER_FMT / COMPILER_VERSION implementation for your compiler :(
+#endif
+
 namespace Raster {
 
     using Json = nlohmann::json;

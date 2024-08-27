@@ -25,7 +25,6 @@ namespace Raster {
         this->selectedKeyframes = data["SelectedKeyframes"].get<std::vector<int>>();
         this->selectedAssets = data["SelectedAssets"].get<std::vector<int>>();
         this->customData = data["CustomData"];
-        this->timeTravelOffset = 0;
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
         }
@@ -48,7 +47,6 @@ namespace Raster {
         this->playing = false;
         this->looping = false;
         this->backgroundColor = {0, 0, 0, 1};
-        this->timeTravelOffset = 0;
     }
 
     float Project::GetProjectLength() {
@@ -75,16 +73,16 @@ namespace Raster {
         return glm::ortho(-aspect, aspect, 1.0f * (invert ? -1 : 1), -1.0f * (invert ? -1 : 1), -1.0f, 1.0f);
     }
 
-    float Project::GetCurrentTime() {
-        return currentFrame + timeTravelOffset;
+    float Project::GetCorrectCurrentTime() {
+        return currentFrame + std::reduce(timeTravelStack.begin(), timeTravelStack.end());
     }
 
     void Project::TimeTravel(float t_offset) {
-        timeTravelOffset += t_offset;
+        timeTravelStack.push_back(t_offset);
     }
 
     void Project::ResetTimeTravel() {
-        timeTravelOffset = 0;
+        timeTravelStack.pop_back();
     }
 
     Json Project::Serialize() {

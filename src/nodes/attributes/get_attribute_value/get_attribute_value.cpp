@@ -23,7 +23,7 @@ namespace Raster {
             auto& attribute = attributeCandidate.value();
             auto& project = Workspace::s_project.value();
             auto parentComposition = Workspace::GetCompositionByNodeID(nodeID).value();
-            TryAppendAbstractPinMap(result, "Value", attribute->Get(project.GetCurrentTime() - parentComposition->beginFrame, parentComposition));
+            TryAppendAbstractPinMap(result, "Value", attribute->Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition));
         }
         return result;
     }

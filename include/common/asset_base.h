@@ -25,6 +25,7 @@ namespace Raster {
         std::optional<std::uintmax_t> GetSize();
         std::optional<std::string> GetResolution();
         std::optional<std::string> GetDuration();
+        std::optional<std::string> GetPath();
 
         bool IsReady();
 
@@ -40,6 +41,8 @@ namespace Raster {
         virtual std::optional<std::string> AbstractGetResolution() { return std::nullopt; }
 
         virtual std::optional<std::string> AbstractGetDuration() { return std::nullopt; }
+
+        virtual std::optional<std::string> AbstractGetPath() { return std::nullopt; }
 
         virtual void AbstractLoad(Json t_data) {}
         virtual Json AbstractSerialize() { return {}; };

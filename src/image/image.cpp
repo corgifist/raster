@@ -43,6 +43,38 @@ namespace Raster {
         return result;
     }
 
+    std::string ImageLoader::GetImplementationName() {
+        return FormatString("OpenImageIO %i.%i.%i", OIIO_VERSION_MAJOR, OIIO_VERSION_MINOR, OIIO_VERSION_PATCH);
+    }
+
+    static void TryDeleteExtension(std::vector<std::string>& extensions, std::string extension) {
+        auto extensionIterator = std::find(extensions.begin(), extensions.end(), extension);
+        if (extensionIterator != extensions.end()) {
+            extensions.erase(extensionIterator);
+        }
+    }
+
+    std::vector<std::string> ImageLoader::GetSupportedExtensions() {
+        std::vector<std::string> result;
+        for (auto& pair : OIIO::get_extension_map()) {
+            for (auto& extension : pair.second) {
+                result.push_back(ReplaceString(extension, "\\.", ""));
+            }
+        }
+        TryDeleteExtension(result, "avi");
+        TryDeleteExtension(result, "qt");
+        TryDeleteExtension(result, "mov");
+        TryDeleteExtension(result, "mp4");
+        TryDeleteExtension(result, "m4a");
+        TryDeleteExtension(result, "m4v");
+        TryDeleteExtension(result, "3gp");
+        TryDeleteExtension(result, "3g2");
+        TryDeleteExtension(result, "mj2");
+        TryDeleteExtension(result, "m4v");
+        TryDeleteExtension(result, "mpg");
+        return result;
+    }
+
     AsyncImageLoader::AsyncImageLoader() {
         this->m_initialized = false;
     }

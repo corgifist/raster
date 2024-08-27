@@ -9,7 +9,7 @@ namespace Raster {
         std::string name, description;
         float framerate;
         float currentFrame;
-        float timeTravelOffset;
+        std::vector<float> timeTravelStack;
         bool playing, looping;
 
         glm::vec2 preferredResolution;
@@ -30,7 +30,9 @@ namespace Raster {
         Project(Json data);
 
         float GetProjectLength();
-        float GetCurrentTime();
+
+        // Respects TimeTravel offsets
+        float GetCorrectCurrentTime();
 
         void TimeTravel(float t_offset);
         void ResetTimeTravel();

@@ -23,7 +23,20 @@ namespace Raster {
                 auto& selectedNodes = project.selectedNodes;
                 auto selectedCompositionsCandidate = Workspace::GetSelectedCompositions();
 
-                static std::string selectedPin = "";
+                static std::unordered_map<int, std::string> selectedPinsMap;
+                if (project.customData.contains("RenderingSelectedPinsMap")) {
+                    selectedPinsMap = project.customData["RenderingSelectedPinsMap"];
+                }
+                static bool compositionLock = false;
+                if (project.customData.contains("RenderingCompositionLock")) {
+                    compositionLock = project.customData["RenderingCompositionLock"];
+                }
+                static std::string nullPin = "";
+                nullPin = "";
+                static int previousNodeID = -1;
+
+                static std::string selectedPin = nullPin;
+ 
                 static std::optional<std::any> dispatcherTarget;
                 static int selectedAttributeID = -1;
                 bool mustDispatchOverlay = false;
@@ -39,13 +52,27 @@ namespace Raster {
                             if (attributes.empty()) {
                                 selectedPin = "";
                             }
-                            if (!attributes.empty() && std::find(attributes.begin(), attributes.end(), selectedPin) == attributes.end()) {
+/*                             if (!attributes.empty() && std::find(attributes.begin(), attributes.end(), selectedPin) == attributes.end()) {
                                 selectedPin = *std::next(attributes.begin(), 0);
+                            } */
+                            if (!selectedNodes.empty() && (selectedPin.empty() || previousNodeID != selectedNodes[0])) {
+                                if (selectedPinsMap.find(selectedNodes[0]) == selectedPinsMap.end()) {
+                                    auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes[0]);
+                                    if (nodeCandidate.has_value()) {
+                                        auto& node = nodeCandidate.value();
+                                        if (!node->GetAttributesList().empty()) {
+                                            selectedPinsMap[selectedNodes[0]] = node->GetAttributesList()[0];
+                                        }
+                                    }
+                                }
+                                if (selectedPinsMap.find(selectedNodes[0]) != selectedPinsMap.end()) {
+                                    selectedPin = selectedPinsMap[selectedNodes[0]];
+                                }
                             }
                         }
                     } else selectedPin = "";
 
-                    if (selectedPin.empty()) {
+                    if (selectedPin.empty() || compositionLock) {
                         if (Compositor::primaryFramebuffer.has_value()) {
                             dispatcherTarget = Compositor::primaryFramebuffer.value();
                             mustDispatchOverlay = true;
@@ -53,17 +80,27 @@ namespace Raster {
                     }
                 
                     auto& selectedCompositions = project.selectedCompositions;
-                    if (!selectedNodes.empty()) {
+                    if (!selectedNodes.empty() && !compositionLock) {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes[0]);
                         if (nodeCandidate.has_value()) {
                             auto& node = nodeCandidate.value();
                             ImGui::Text("%s %s", ICON_FA_CIRCLE_NODES, node->Header().c_str());
+                            ImGui::Separator();
+                            ImGui::SameLine(0, 8.0f);
                         }
                     } else if (!selectedCompositions.empty()) {
                         auto compositionCandidate = Workspace::GetCompositionByID(selectedCompositions[0]);
                         if (compositionCandidate.has_value()) {
                             auto& composition = compositionCandidate.value();
-                            ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str());
+                            static bool textHovered = false;
+                            float factor = textHovered ? 0.7f : 1.0f;
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(factor));
+                                ImGui::Text("%s%s %s", compositionLock ? ICON_FA_LOCK " " : "", ICON_FA_LAYER_GROUP, composition->name.c_str());
+                            ImGui::PopStyleColor();
+                            textHovered = ImGui::IsItemHovered();
+                            if (textHovered && ImGui::IsItemClicked() && ImGui::IsWindowFocused()) {
+                                compositionLock = !compositionLock;
+                            }
                             ImGui::Separator();
                             ImGui::SameLine(0, 8.0f);
                         }
@@ -150,14 +187,24 @@ namespace Raster {
                         }
                     }
 
+                    if (!selectedNodes.empty()) {
+                        selectedPinsMap[selectedNodes[0]] = selectedPin;
+                    }
+
                     ImGui::EndMenuBar();
                 }
+
+                if (!selectedNodes.empty()) {
+                    previousNodeID = selectedNodes[0];
+                }
+                project.customData["RenderingSelectedPinsMap"] = selectedPinsMap;
+                project.customData["RenderingCompositionLock"] = compositionLock;
 
                 static float miniTimelineSize = 20;
                 ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
                 if (ImGui::BeginChild("##renderPreview", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - miniTimelineSize))) {
                     bool attributeWasDispatched = false;
-                    if (!selectedNodes.empty()) {
+                    if (!selectedNodes.empty() && !compositionLock) {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes.at(0));
                         if (nodeCandidate.has_value()) {
                             auto& node = nodeCandidate.value();
@@ -274,8 +321,8 @@ namespace Raster {
                     ImGui::SameLine();
                     forwardSeekSize = ImGui::GetCursorPosX() - firstForwardSeekCursor;
                     ImGui::NewLine();
-                    ImGui::EndChild();
                 }
+                ImGui::EndChild();
             }
         ImGui::End();
     }

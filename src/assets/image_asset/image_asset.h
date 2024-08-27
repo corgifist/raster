@@ -22,8 +22,10 @@ namespace Raster {
 
         std::optional<std::uintmax_t> AbstractGetSize();
         std::optional<std::string> AbstractGetResolution();
+        std::optional<std::string> AbstractGetPath();
 
         std::string m_relativePath;
+        std::string m_originalPath;
 
         AsyncUploadInfoID m_uploadID;
         AsyncImageLoader m_loader;

@@ -39,9 +39,18 @@ namespace Raster {
     void AssetManagerUI::RenderAssetPopup(AbstractAsset& t_asset) {
         auto& project = Workspace::GetProject();
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_PLUS, Localization::GetString("REIMPORT_ASSET").c_str()).c_str())) {
+            auto originalAsset = t_asset;
             auto assetCandidate = ImportAsset();
             if (assetCandidate.has_value()) {
                 t_asset = assetCandidate.value();
+                t_asset->id = originalAsset->id;
+            }
+        }
+        auto pathCandidate = t_asset->GetPath();
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("REVEAL_IN_FILE_EXPLORER").c_str()).c_str(), "Ctrl+R")) {
+            auto& path = pathCandidate.value();
+            if (std::filesystem::exists(path)) {
+                SystemOpenURL(path);
             }
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_ASSETS").c_str()).c_str(), "Ctrl+D")) {
@@ -59,7 +68,7 @@ namespace Raster {
             }
             project.selectedAssets = tempSelectedAssets;
         }
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_ASSETS").c_str()).c_str())) {
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_ASSETS").c_str()).c_str(), "Delete")) {
             s_targetDeleteAssets = project.selectedAssets;
             project.selectedAssets.clear();
         }
@@ -147,7 +156,17 @@ namespace Raster {
                             auto& texture = textureCandidate.value();
                             auto fitSize = FitRectInRect(assetPreviewSize, ImVec2(texture.width, texture.height));
                             ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - fitSize / 2.0f);
-                            ImGui::Image((ImTextureID) texture.handle, fitSize);
+                            static bool imageHovered = false;
+                            float factor = imageHovered ? 0.7f : 1.0f;
+                            ImGui::Image((ImTextureID) texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(factor));
+                            imageHovered = ImGui::IsItemHovered();
+                            if (imageHovered && ImGui::IsWindowFocused() && ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left]) {
+                                ImGui::OpenPopup("##assetPreviewTextureMaximized");
+                            }
+                            if (ImGui::BeginPopup("##assetPreviewTextureMaximized")) {
+                                ImGui::Image((ImTextureID) texture.handle, FitRectInRect(ImGui::GetWindowViewport()->Size, ImVec2(texture.width, texture.height)) / 2);
+                                ImGui::EndPopup();
+                            }
                         }
                     }
                 } else {
@@ -242,6 +261,7 @@ namespace Raster {
                     // 2 - duration
                     // 3 - resolution
                     // 4 - size
+                    // 5 - path
                     ImGuiTableFlags tableFlags = 0;
                     tableFlags |= ImGuiTableFlags_RowBg;
                     tableFlags |= ImGuiTableFlags_BordersV;
@@ -257,11 +277,12 @@ namespace Raster {
                     tableFlags |= ImGuiTableFlags_ScrollX;
                     tableFlags |= ImGuiTableFlags_ScrollY;
 
-                    if (ImGui::BeginTable("##assetsTable", 4, tableFlags)) {
+                    if (ImGui::BeginTable("##assetsTable", 5, tableFlags)) {
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NAME").c_str()).c_str());
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("DURATION").c_str()).c_str());
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str()).c_str());
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_SCALE_BALANCED, Localization::GetString("SIZE").c_str()).c_str());
+                        ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_FOLDER, Localization::GetString("PATH").c_str()).c_str());
 
                         ImGui::TableHeadersRow();
 

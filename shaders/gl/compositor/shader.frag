@@ -19,5 +19,4 @@ void main() {
     gColor = texture(uColor, uv);
     gUV = texture(uUV, uv);
     gColor.a *= uOpacity;
-    if (gColor.a == 0.0) discard;
 }

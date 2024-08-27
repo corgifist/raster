@@ -356,6 +356,14 @@ namespace Raster {
         return fbo;
     }
 
+    void GPU::DestroyFramebufferWithAttachments(Framebuffer fbo) {
+        for (auto& attachment : fbo.attachments) {
+            GPU::DestroyTexture(attachment);
+        }
+
+        GPU::DestroyFramebuffer(fbo);
+    }
+
     void GPU::DestroyFramebuffer(Framebuffer fbo) {
         GLuint fboHandle = (uint32_t) (uint64_t) fbo.handle;
         GLuint depthHandle = (uint32_t) (uint64_t) fbo.depthHandle;
@@ -375,7 +383,7 @@ namespace Raster {
         }
     }
 
-    Shader GPU::GenerateShader(ShaderType type, std::string name) {
+    Shader GPU::GenerateShader(ShaderType type, std::string name, bool useBinaryCache) {
         GLenum enumType = 0;
         std::string extension = "";
         switch (type) {
@@ -415,7 +423,7 @@ namespace Raster {
         
         bool mustReplaceBlob = false;
 
-        if (std::filesystem::exists(nameHashPath)) {
+        if (std::filesystem::exists(nameHashPath) && useBinaryCache) {
             std::string savedCodeHash = ReadFile(nameHashPath);
             if (savedCodeHash == codeHash) {
                 std::cout << "found cached version of " << name << std::endl;
@@ -453,7 +461,7 @@ namespace Raster {
             throw std::runtime_error(std::string(log.data()));
         }
 
-        if (std::filesystem::exists(nameHashPath)) {
+        if (std::filesystem::exists(nameHashPath) && useBinaryCache) {
             std::string savedHash = ReadFile(nameHashPath);
             if (savedHash != codeHash) {
                 mustReplaceBlob = true;
@@ -462,7 +470,7 @@ namespace Raster {
             mustReplaceBlob = true;
         }
 
-        if (mustReplaceBlob) {
+        if (mustReplaceBlob && useBinaryCache) {
             GLint formatCount;
             glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formatCount);
 

@@ -26,5 +26,10 @@ vec3 blendMaster(vec3 base, vec3 blend, float opacity) {
 
 void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
-    gColor = vec4(blendMaster(texture(uBase, uv).rgb, texture(uBlend, uv).rgb, uOpacity), 1.0);
+    vec4 baseTexel = texture(uBase, uv);
+    vec4 blendTexel = texture(uBlend, uv);
+    gColor = vec4(0);
+    if (baseTexel.w != 0.0 && blendTexel.w != 0.0) {
+        gColor = vec4(blendMaster(baseTexel.xyz, blendTexel.xyz, uOpacity), 1.0);
+    }
 }

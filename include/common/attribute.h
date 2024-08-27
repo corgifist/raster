@@ -39,6 +39,7 @@ namespace Raster {
         std::any Get(float t_frame, Composition* composition);
         virtual void RenderKeyframes() = 0;
         void RenderLegend(Composition* t_composition);
+        void RenderAttributePopup(Composition* t_composition);
         virtual void Load(Json t_data) {};
         
         virtual Json SerializeKeyframeValue(std::any t_value) = 0;

@@ -3,12 +3,12 @@
 #include "layer2d.h"
 
 #include "../../../ImGui/imgui.h"
+#include "common/dispatchers.h"
 
 #define UNIFORM_CLAUSE(t_uniform, t_type) \
     if (t_uniform.value.type() == typeid(t_type)) GPU::SetShaderUniform(pipeline.fragment, t_uniform.name, std::any_cast<t_type>(t_uniform.value))
 
 namespace Raster {
-
 
     std::optional<Pipeline> Layer2D::s_nullShapePipeline;
 
@@ -46,7 +46,7 @@ namespace Raster {
         auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base"));
         auto transformCandidate = GetAttribute<Transform2D>("Transform");
         auto colorCandidate = GetAttribute<glm::vec4>("Color");
-        auto textureCandidate = GetAttribute<Texture>("Texture");
+        auto textureCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Texture"));
         auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings");
         auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform");
         auto maintainUVRangeCandidate = GetAttribute<bool>("MaintainUVRange");
@@ -193,7 +193,7 @@ namespace Raster {
 
         Pipeline generatedPipeline = GPU::GeneratePipeline(
             GPU::GenerateShader(ShaderType::Vertex, "layer2d/shader"),
-            GPU::GenerateShader(ShaderType::Fragment, clearShaderFile)
+            GPU::GenerateShader(ShaderType::Fragment, clearShaderFile, false)
         );
 
         std::filesystem::remove(shaderFile);

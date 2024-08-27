@@ -9,6 +9,12 @@
 #define RASTER_ATTRIBUTE_CAST(t_type, t_name) \
     std::any_cast<t_type>(m_attributes[t_name])
 
+#define RASTER_SERIALIZE_WRAPPER(t_type, t_name) \
+    {t_name, RASTER_ATTRIBUTE_CAST(t_type, t_name)}
+
+#define RASTER_DESERIALIZE_WRAPPER(t_type, t_name) \
+    SetAttributeValue(t_name, t_data[t_name].get<t_type>())    
+
 namespace Raster {
 
     enum class PinType {

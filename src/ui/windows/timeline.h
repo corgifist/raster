@@ -40,11 +40,15 @@ namespace Raster {
         static void ProcessPasteAction();
         static void ProcessDeleteAction();
 
+        static void ProcessShortcuts();
+
         static void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
 
         static void ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
 
         static float ProcessLayerScroll();
+
+        static void RenderLayerDragDrop(Composition* t_composition);
 
         static ImVec2 GetRelativeMousePos();
     };

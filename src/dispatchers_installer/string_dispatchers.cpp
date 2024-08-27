@@ -3,6 +3,7 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
 #include "../ImGui/imgui_drag.h"
+#include "../ImGui/imgui_stripes.h"
 #include "overlay_dispatchers.h"
 #include "string_dispatchers.h"
 #include "common/transform2d.h"
@@ -63,13 +64,17 @@ namespace Raster {
         ImGui::Text("%s %s: %i", ICON_FA_IMAGE, Localization::GetString("ATTACHMENTS_COUNT").c_str(), (int) framebuffer.attachments.size());
         ImGui::Separator();
         ImGui::Spacing();
+        int index = 0;
         for (auto& attachment : framebuffer.attachments) {
             std::any dynamicAttachment = attachment;
             ImGui::BeginChild(FormatString("##%i", (int) (uint64_t) attachment.handle).c_str(), ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
                 DispatchTextureValue(dynamicAttachment);
             ImGui::EndChild();
-            ImGui::Separator();
-            ImGui::Spacing();
+            if (index + 1 != framebuffer.attachments.size()) {
+                ImGui::Separator();
+                ImGui::Spacing();
+            }
+            index++;
         }
     }
 
@@ -96,8 +101,8 @@ namespace Raster {
                 ImVec2(0, 0), 
                 fitSize
             );
-            ImGui::GetWindowDrawList()->AddRectFilled(backgroundBounds.UL, backgroundBounds.BR, ImGui::GetColorU32(ImVec4(0, 0, 0, 1)));
-            OverlayDispatchers::DispatchTransform2DValue(transformCopy, nullptr, -1, 1.0f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 20, 28, fitSize);
+            OverlayDispatchers::DispatchTransform2DValue(transformCopy, nullptr, -1, 0.5f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
         ImGui::EndChild();
     }
 

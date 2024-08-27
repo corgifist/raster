@@ -259,37 +259,7 @@ namespace Raster {
             }
             if (ImGui::BeginPopup(FormatString("##attribute%i", id).c_str())) {
                 ImGui::SeparatorText(FormatString("%s%s %s (%i)", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_STOPWATCH, name.c_str(), id).c_str());
-                if (t_composition->opacityAttributeID == id) {
-                    ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
-                }
-                RenderPopup();
-                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
-                    ImGui::InputText("##attributeName", &name);
-                    ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("ATTRIBUTE_NAME").c_str());
-                    ImGui::EndMenu();
-                }
-                if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
-                    t_composition->opacityAttributeID = id;
-                }
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE").c_str()).c_str())) {
-                    auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
-                    s_duplicatedAttributes.push_back(AttributeDuplicateBundle{
-                        .targetComposition = parentComposition,
-                        .attribute = Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value()
-                    });
-                }
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_ATTRIBUTE").c_str()).c_str())) {
-                    s_deletedAttributes.push_back(id);
-                }
-                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTES_DATA").c_str()).c_str())) {
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("ID").c_str()).c_str())) {
-                        ImGui::SetClipboardText(std::to_string(id).c_str());
-                    }
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("NAME").c_str()).c_str())) {
-                        ImGui::SetClipboardText(name.c_str());
-                    }
-                    ImGui::EndMenu();
-                }
+                RenderAttributePopup(t_composition);
                 ImGui::EndPopup();
             }
             ImGui::SameLine();
@@ -335,6 +305,43 @@ namespace Raster {
             if (indexCandidate.has_value()) {
                 keyframes.erase(keyframes.begin() + indexCandidate.value());
             }
+        }
+    }
+
+    void AttributeBase::RenderAttributePopup(Composition* t_composition) {
+        if (t_composition->opacityAttributeID == id) {
+            ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
+        }
+        RenderPopup();
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
+            ImGui::InputText("##attributeName", &name);
+            ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("ATTRIBUTE_NAME").c_str());
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTES_DATA").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTES_DATA").c_str()).c_str());
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("ID").c_str()).c_str())) {
+                ImGui::SetClipboardText(std::to_string(id).c_str());
+            }
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("NAME").c_str()).c_str())) {
+                ImGui::SetClipboardText(name.c_str());
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
+            t_composition->opacityAttributeID = id;
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_ATTRIBUTE").c_str()).c_str(), "Ctrl+D")) {
+            auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
+            s_duplicatedAttributes.push_back(AttributeDuplicateBundle{
+                .targetComposition = parentComposition,
+                .attribute = Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value()
+            });
+        }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_ATTRIBUTE").c_str()).c_str(), "Delete")) {
+            s_deletedAttributes.push_back(id);
         }
     }
 
@@ -643,7 +650,7 @@ namespace Raster {
 
     void AttributeBase::RenderKeyframePopup(AttributeKeyframe& t_keyframe) {
         auto& selectedKeyframes = Workspace::GetProject().selectedKeyframes;
-        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINK, name.c_str()).c_str());
+        RenderPopup();
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("KEYFRAME_EASING").c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("KEYFRAME_EASING").c_str()).c_str());
             if (t_keyframe.easing.has_value()) {

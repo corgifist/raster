@@ -9,6 +9,7 @@ namespace Raster {
     struct TrackingMotionBlur : public NodeBase {
     public:
         TrackingMotionBlur();
+        ~TrackingMotionBlur();
         
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
         void AbstractRenderProperties();

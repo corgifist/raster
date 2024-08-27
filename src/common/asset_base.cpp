@@ -48,6 +48,10 @@ namespace Raster {
         return AbstractGetDuration();
     }
 
+    std::optional<std::string> AssetBase::GetPath() {
+        return AbstractGetPath();
+    }
+
     void AssetBase::Load(Json t_data) {
         AbstractLoad(t_data);
     }

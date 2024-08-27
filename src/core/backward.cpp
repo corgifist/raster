@@ -41,6 +41,8 @@
 
 namespace backward {
 
-backward::SignalHandling sh;
+#if defined(UNIX) && !defined(WIN32)
+    backward::SignalHandling sh;
+#endif
 
 } // namespace backward

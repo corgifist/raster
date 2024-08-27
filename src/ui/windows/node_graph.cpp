@@ -840,10 +840,6 @@ namespace Raster {
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_NODE").c_str()).c_str(), "Tab")) {
                             openSearchPopup = true;
                         }
-                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("COMPOSITION_PROPERTIES").c_str()).c_str())) {
-                            TimelineUI::RenderCompositionPopup(s_currentComposition);
-                            ImGui::EndMenu();
-                        }
                         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str())) {
                             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_ATTRIBUTE").c_str()).c_str());
                             for (auto& entry : Attributes::s_implementations) {
@@ -864,6 +860,10 @@ namespace Raster {
                                     }
                                 }
                             }
+                            ImGui::EndMenu();
+                        }
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("COMPOSITION_PROPERTIES").c_str()).c_str())) {
+                            TimelineUI::RenderCompositionPopup(s_currentComposition);
                             ImGui::EndMenu();
                         }
                         ImGui::Separator();

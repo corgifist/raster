@@ -11,5 +11,7 @@ namespace Raster {
         static std::optional<std::any> Divide(std::any t_a, std::any t_b);
         static std::optional<std::any> Subtract(std::any t_a, std::any t_b);
         static std::optional<std::any> Add(std::any t_a, std::any t_b);
+
+        static std::optional<std::any> Mix(std::any t_a, std::any t_b, std::any t_percentage);
     };
 };

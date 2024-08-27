@@ -181,5 +181,14 @@
     "COLOR_MARK": "Color Mark",
     "DEFAULT": "Default",
     "FILTER_BY_COLOR_MARK": "Filter by Color Mark",
-    "NO_FILTER": "No Filter"
+    "NO_FILTER": "No Filter",
+    "DUPLICATE_ATTRIBUTE": "Duplicate Attribute",
+    "PATH": "Path",
+    "IN_POINT": "In Point",
+    "OUT_POINT": "Out Point",
+    "IN_OUT_POINTS": "In/Out Points",
+    "REVEAL_IN_FILE_EXPLORER": "Reveal in File Explorer",
+    "NONE": "None",
+    "NO_BLENDING": "No Blending",
+    "BLENDING_MODE": "Blending Mode"
 }

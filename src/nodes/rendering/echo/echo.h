@@ -8,6 +8,7 @@ namespace Raster {
     struct Echo : public NodeBase {
     public:
         Echo();
+        ~Echo();
         
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
         void AbstractRenderProperties();

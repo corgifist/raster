@@ -55,7 +55,7 @@ namespace Raster {
         );
     }
 
-    Framebuffer Blending::PerformBlending(BlendingMode& mode, Texture base, Texture blend, float opacity) {
+    Framebuffer Blending::PerformManualBlending(BlendingMode& mode, Texture base, Texture blend, float opacity, glm::vec4 backgroundColor) {
         if (!pipelineCandidate.has_value()) return Framebuffer{};
         EnsureResolutionConstraints(base);
 
@@ -63,7 +63,7 @@ namespace Raster {
         auto& pipeline = pipelineCandidate.value();
         GPU::BindFramebuffer(framebuffer);
         GPU::BindPipeline(pipeline);
-        GPU::ClearFramebuffer(0, 0, 0, 1);
+        GPU::ClearFramebuffer(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
         GPU::SetShaderUniform(pipeline.fragment, "uResolution", {base.width, base.height});
         GPU::SetShaderUniform(pipeline.fragment, "uBlendMode", GetModeIndexByCodeName(mode.codename).value());
         GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
@@ -73,6 +73,10 @@ namespace Raster {
         GPU::DrawArrays(3);
 
         return framebuffer;
+    }
+
+    Framebuffer Blending::PerformBlending(BlendingMode& mode, Texture base, Texture blend, float opacity) {
+        return PerformManualBlending(mode, base, blend, opacity, glm::vec4(0, 0, 0, 1));
     }
 
     void Blending::EnsureResolutionConstraints(Texture& texture) {

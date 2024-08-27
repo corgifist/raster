@@ -28,6 +28,22 @@ namespace Raster {
         }
     }
 
+    TrackingMotionBlur::~TrackingMotionBlur() {
+        if (m_framebuffer.handle) {
+            for (auto& attachment : m_framebuffer.attachments) {
+                GPU::DestroyTexture(attachment);
+            }
+            GPU::DestroyFramebuffer(m_framebuffer);
+        }
+
+        if (m_temporalFramebuffer.handle) {
+            for (auto& attachment : m_temporalFramebuffer.attachments) {
+                GPU::DestroyTexture(attachment);
+            }
+            GPU::DestroyFramebuffer(m_temporalFramebuffer);
+        }
+    }
+
     AbstractPinMap TrackingMotionBlur::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
