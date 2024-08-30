@@ -12,3 +12,4 @@ internal/
 HashBuild/__pycache__/
 *.a
 *.exe
+misc/projects/*

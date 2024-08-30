@@ -50,12 +50,38 @@ namespace Raster {
 
         int lines = SplitString(str, "\n").size();
         std::string footerText = FormatString("%i %s; %i %s; UTF-8", (int) str.size(), Localization::GetString("CHARS").c_str(), lines, Localization::GetString("LINES").c_str());
-        ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
+        
+        static ImVec2 footerChildSize = ImVec2(200, 20);
+
         ImGui::SetCursorPos({
-            ImGui::GetWindowSize().x / 2.0f - footerSize.x / 2.0f,
-            ImGui::GetWindowSize().y - footerSize.y - ImGui::GetStyle().WindowPadding.x
+            ImGui::GetWindowSize().x / 2.0f - footerChildSize.x / 2.0f,
+            ImGui::GetWindowSize().y - footerChildSize.y
         });
-        ImGui::Text(footerText.c_str());
+        if (ImGui::BeginChild("##footerStringInfo", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+            ImGui::Text("%s", footerText.c_str());
+            ImGui::SameLine();
+            ImGui::Text("|");
+            ImGui::SameLine();
+            static bool zoomTextHovered = false;
+            ImVec4 baseTextColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+            float factor = zoomTextHovered ? 0.7f : 1.0f;
+            ImGui::PushStyleColor(ImGuiCol_Text, baseTextColor * factor);
+                ImGui::Text("%s %0.2f", ICON_FA_EXPAND, zoom);
+            ImGui::PopStyleColor();
+            zoomTextHovered = ImGui::IsItemHovered();
+
+            if (zoomTextHovered && ImGui::IsWindowFocused() && ImGui::GetIO().MouseDown[ImGuiMouseButton_Left]) {
+                ImGui::OpenPopup("##stringZoomDrag");
+            }
+
+            if (ImGui::BeginPopup("##stringZoomDrag")) {
+                ImGui::DragFloat("##zoomDrag", &zoom, 0.05f, 0.5f);
+                ImGui::EndPopup();
+            }
+
+            footerChildSize = ImGui::GetWindowSize();
+        }
+        ImGui::EndChild();
 
         textDrag.Activate();
         float textDragDistance;

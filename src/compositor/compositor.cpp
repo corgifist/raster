@@ -114,7 +114,7 @@ namespace Raster {
     glm::vec2 Compositor::GetRequiredResolution() {
         if (Workspace::s_project.has_value()) {
             auto& project = Workspace::s_project.value();
-            return project.preferredResolution * previewResolutionScale;
+            return glm::trunc(project.preferredResolution * previewResolutionScale);
         }
         return glm::vec2();
     }

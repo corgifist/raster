@@ -11,6 +11,8 @@
 #include "../../ImGui/imgui_stdlib.h"
 #include "../../ImGui/imgui_stripes.h"
 
+#define ASSET_MANAGER_DRAG_DROP_PAYLOAD "ASSET_MANAGER_DRAG_DROP_PAYLOAD"
+
 namespace Raster {
     struct AssetManagerUI : public UI {
         void Render();

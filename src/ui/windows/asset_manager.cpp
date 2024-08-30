@@ -15,11 +15,7 @@ namespace Raster {
         {AssetPreviewType::List, ICON_FA_LIST}
     };
 
-    static std::unordered_map<AssetPreviewType, std::string> s_assetPreviewNameMap = {
-        {AssetPreviewType::Table, Localization::GetString("TABLE")},
-        {AssetPreviewType::Grid, Localization::GetString("GRID")},
-        {AssetPreviewType::List, Localization::GetString("LIST")}
-    };
+    static std::unordered_map<AssetPreviewType, std::string> s_assetPreviewNameMap;
 
     static std::string ConvertToHRSize(std::uintmax_t size) {
         int o{};
@@ -142,6 +138,13 @@ namespace Raster {
                 ImGui::PopFont();
                 ImGui::End();
                 return;
+            }
+            if (s_assetPreviewNameMap.empty()) {
+                s_assetPreviewNameMap = {
+                    {AssetPreviewType::Table, Localization::GetString("TABLE")},
+                    {AssetPreviewType::Grid, Localization::GetString("GRID")},
+                    {AssetPreviewType::List, Localization::GetString("LIST")}
+                };
             }
             auto& project = Workspace::GetProject();
             auto& selectedAssets = project.selectedAssets;

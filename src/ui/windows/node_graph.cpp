@@ -3,6 +3,7 @@
 #include "common/ui_shared.h"
 #include "common/dispatchers.h"
 #include "timeline.h"
+#include "asset_manager.h"
 
 namespace Raster {
 
@@ -1080,7 +1081,7 @@ namespace Raster {
                 if (s_currentComposition) {
                     ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
                     ImGui::PushFont(Font::s_denseFont);
-                        ImGui::SetWindowFontScale(1.5f);
+                        ImGui::SetWindowFontScale(1.7f);
                             ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str());
                         ImGui::SetWindowFontScale(1.0f);
                     ImGui::PopFont();
@@ -1109,6 +1110,8 @@ namespace Raster {
                             ImGui::CloseCurrentPopup();
                         }
                         ImGui::EndPopup();
+                    } else {
+                        isEditingDescription = false;
                     }
                 }
             }
@@ -1124,6 +1127,22 @@ namespace Raster {
                             s_currentComposition->nodes.push_back(attributeNode);
                             s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = attributeNode->nodeID,
+                                .position = nodeSearchMousePos.value_or(s_mousePos),
+                                .mustBeSelected = true
+                            });
+                        }
+                    }
+                }
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD)) {
+                    int assetID = *((int*) payload->Data);
+                    if (s_currentComposition) {
+                        auto assetHandleNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_asset_id");
+                        if (assetHandleNodeCandidate.has_value()) {
+                            auto& assetHandleNode = assetHandleNodeCandidate.value();
+                            assetHandleNode->SetAttributeValue("AssetID", assetID);
+                            s_currentComposition->nodes.push_back(assetHandleNode);
+                            s_deferredNodeCreations.push_back(DeferredNodeCreation{
+                                .nodeID = assetHandleNode->nodeID,
                                 .position = nodeSearchMousePos.value_or(s_mousePos),
                                 .mustBeSelected = true
                             });

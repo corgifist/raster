@@ -21,13 +21,15 @@ namespace Raster {
         {ATTRIBUTE_TYPE(glm::vec2), RASTER_COLOR32(185, 214, 56, 255)},
         {ATTRIBUTE_TYPE(Raster::Framebuffer), RASTER_COLOR32(52, 235, 171, 255)},
         {ATTRIBUTE_TYPE(Transform2D), RASTER_COLOR32(120, 66, 245, 255)},
-        {ATTRIBUTE_TYPE(SamplerSettings), RASTER_COLOR32(124, 186, 53, 255)}
+        {ATTRIBUTE_TYPE(SamplerSettings), RASTER_COLOR32(124, 186, 53, 255)},
+        {ATTRIBUTE_TYPE(int), RASTER_COLOR32(50, 168, 82, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
         RASTER_TYPE_NAME(std::string),
         RASTER_TYPE_NAME(Texture),
         RASTER_TYPE_NAME(float),
+        RASTER_TYPE_NAME(int),
         RASTER_TYPE_NAME(glm::vec4),
         RASTER_TYPE_NAME(glm::vec3),
         RASTER_TYPE_NAME(glm::vec2),

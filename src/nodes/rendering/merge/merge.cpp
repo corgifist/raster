@@ -89,14 +89,16 @@ namespace Raster {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_DROPLET, Localization::GetString("BLENDING_MODE").c_str()).c_str());
             static std::string s_searchFilter = "";
             ImGui::InputTextWithHint("##blendingFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_searchFilter);
-            if (ImGui::BeginChild("##blendingModesContainer", ImVec2(0, 300), ImGuiChildFlags_AutoResizeX)) {
+            if (ImGui::BeginChild("##blendingModesContainer", ImVec2(ImGui::GetContentRegionAvail().x, 300))) {
                 if (ImGui::Selectable(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NORMAL").c_str()).c_str())) {
                     blendMode = "";
+                    ImGui::CloseCurrentPopup();
                 }
                 for (auto& mode : blending.modes) {
                     if (!s_searchFilter.empty() && LowerCase(mode.name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
                     if (ImGui::MenuItem(FormatString("%s %s", Font::GetIcon(mode.icon).c_str(), mode.name.c_str()).c_str())) {
                         blendMode = mode.codename;
+                        ImGui::CloseCurrentPopup();
                     }
                 }
             }

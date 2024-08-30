@@ -156,7 +156,7 @@ namespace Raster {
                     int selectedAttributeIndex = 0;
                     if (!selectedNodes.empty()) {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes.at(0));
-                        if (nodeCandidate.has_value()) {
+                        if (nodeCandidate.has_value() && !nodeCandidate.value()->GetAttributesList().empty()) {
                             auto& node = nodeCandidate.value();
                             auto attributes = node->GetAttributesList();
                             for (auto& pin : node->outputPins) {
