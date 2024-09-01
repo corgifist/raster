@@ -388,12 +388,15 @@ namespace Raster {
             ImGui::EndChild();
         }
 
-        auto& project = Workspace::GetProject();
-        for (auto& assetID : s_targetDeleteAssets) {
-            auto indexCandidate = Workspace::GetAssetIndexByAssetID(assetID);
-            if (indexCandidate.has_value()) {
-                auto& index = indexCandidate.value();
-                project.assets.erase(project.assets.begin() + index);
+        if (Workspace::IsProjectLoaded()) {
+            auto& project = Workspace::GetProject();
+            for (auto& assetID : s_targetDeleteAssets) {
+                auto indexCandidate = Workspace::GetAssetIndexByAssetID(assetID);
+                if (indexCandidate.has_value()) {
+                    auto& index = indexCandidate.value();
+                    project.assets[index]->Delete();
+                    project.assets.erase(project.assets.begin() + index);
+                }
             }
         }
         ImGui::End();

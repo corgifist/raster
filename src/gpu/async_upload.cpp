@@ -5,6 +5,7 @@ namespace Raster {
     std::unordered_map<int, AsyncUploadInfo> AsyncUpload::m_infos;
     std::thread AsyncUpload::m_uploader;
     bool AsyncUpload::m_running = false;
+    void* AsyncUpload::m_context;
 
     AsyncUploadInfo::AsyncUploadInfo() {
         this->ready = false;
@@ -14,6 +15,7 @@ namespace Raster {
     void AsyncUpload::Initialize() {
         std::cout << "booting up async uploader" << std::endl;
         m_running = true;
+        m_context = GPU::ReserveContext();
         m_uploader = std::thread(AsyncUpload::UploaderLogic);
     }
 
@@ -60,7 +62,7 @@ namespace Raster {
     }
 
     void AsyncUpload::UploaderLogic() {
-        GPU::InitializeContext();
+        GPU::SetCurrentContext(m_context);
 
         std::vector<int> skipID;
         while (m_running) {
@@ -82,6 +84,7 @@ namespace Raster {
             if (info.image->precision == ImagePrecision::Full) precision = TexturePrecision::Full;
 
             auto generatedTexture = GPU::GenerateTexture(info.image->width, info.image->height, info.image->channels, precision);
+            DUMP_VAR((uint64_t) generatedTexture.handle);
             GPU::UpdateTexture(generatedTexture, 0, 0, info.image->width, info.image->height, info.image->channels, info.image->data.data());
             GPU::Flush();
 

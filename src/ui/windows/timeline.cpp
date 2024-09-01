@@ -396,7 +396,7 @@ namespace Raster {
                 }
                 layerAccumulator += LAYER_HEIGHT + legendOffset;
             }
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && project.selectedCompositions.size() > 1 && !s_anyCompositionWasPressed) {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && project.selectedCompositions.size() > 1 && !s_anyCompositionWasPressed && ImGui::IsWindowFocused()) {
                 project.selectedCompositions = {project.selectedCompositions[0]};
                 UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
                 std::cout << "overriding compositions" << std::endl;

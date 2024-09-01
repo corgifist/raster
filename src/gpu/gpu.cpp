@@ -32,7 +32,7 @@ namespace Raster {
                     const GLchar* message,
                     const void* userParam )
     {
-        if (severity != GL_DEBUG_TYPE_ERROR && severity != GL_DEBUG_TYPE_PERFORMANCE) return;
+        if (type == GL_DEBUG_TYPE_OTHER) return;
     fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
                 type, severity, message );
@@ -161,6 +161,7 @@ namespace Raster {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         GLFWwindow* display = glfwCreateWindow(1280, 720, "Raster", nullptr, nullptr);
         info.display = display;
@@ -204,17 +205,27 @@ namespace Raster {
     }
 
     void GPU::Flush() {
-        glFinish();
+        auto fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        glFlush();
+        glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
     }
 
-    void GPU::InitializeContext() {
-        if (std::this_thread::get_id() == s_mainThreadID) {
-            throw std::runtime_error("context already initialized!");
-        }
-
+    void* GPU::ReserveContext() {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
         auto newContext = glfwCreateWindow(8, 8, "Raster Background Context", nullptr, (GLFWwindow*) info.display);
-        glfwMakeContextCurrent(newContext);
+        if (!newContext) {
+            std::cout << "failed to create background context!" << std::endl;
+        }
+        return newContext;
+    }
+
+    void GPU::SetCurrentContext(void* context) {
+        glfwMakeContextCurrent((GLFWwindow*) context);
     }
 
     bool GPU::MustTerminate() {
@@ -251,13 +262,15 @@ namespace Raster {
         GLuint textureHandle;
         glGenTextures(1, &textureHandle);
         glBindTexture(GL_TEXTURE_2D, textureHandle);
+
+        DUMP_VAR(textureHandle);
         
         auto format = InterpretTextureInfo(channels, precision);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Texture texture;

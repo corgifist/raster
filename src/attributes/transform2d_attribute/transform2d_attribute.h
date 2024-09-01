@@ -8,10 +8,16 @@
 #include "common/transform2d.h"
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_stdlib.h"
+#include "../asset_attribute/asset_attribute.h"
 
 #define TRANSFORM2D_PARENT_PAYLOAD "TRANSFORM2D_PARENT_PAYLOAD"
 
 namespace Raster {
+
+    enum class ParentAssetType {
+        Attribute, Asset
+    };
+
     struct Transform2DAttribute : public AttributeBase {
     public:
         Transform2DAttribute();
@@ -22,6 +28,10 @@ namespace Raster {
         void RenderKeyframes();
 
         void AbstractRenderDetails();
+        void AbstractRenderPopup();
+
+        bool RenderParentAttributePopup();
+        void RenderMoreAttributesPopup();
 
         Json AbstractSerialize();
         void Load(Json t_data);
@@ -31,5 +41,7 @@ namespace Raster {
 
     private:
         int m_parentAttributeID;
+        int m_parentAssetID;
+        ParentAssetType m_parentAssetType;
     };
 };

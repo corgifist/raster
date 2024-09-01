@@ -8,6 +8,9 @@ namespace Raster {
         this->m_texture = std::nullopt;
         this->m_asyncCopy = std::nullopt;
         this->m_loader = AsyncImageLoader();
+
+        this->m_relativePath = "";
+        this->m_originalPath = "";
     }
 
     bool ImageAsset::AbstractIsReady() {
@@ -68,7 +71,7 @@ namespace Raster {
 
     void ImageAsset::AbstractImport(std::string t_path) {
         this->m_originalPath = t_path;
-        std::string relativePath = FormatString("%i%s", id, std::filesystem::path(t_path).extension().c_str());
+        std::string relativePath = FormatString("%i%s", id, GetExtension(t_path).c_str());
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), relativePath.c_str());
         this->m_relativePath = relativePath;
         this->m_asyncCopy = std::async(std::launch::async, [t_path, absolutePath, relativePath]() {
@@ -98,6 +101,12 @@ namespace Raster {
             ImGui::Text("%s %s: %ix%i", ICON_FA_EXPAND, Localization::GetString("IMAGE_RESOLUTION").c_str(), (int) texture.width, (int) texture.height);
             ImGui::Text("%s %s: %0.2f", ICON_FA_IMAGE, Localization::GetString("ASPECT_RATIO").c_str(), (float) texture.width / (float) texture.height);
             ImGui::Text("%s %s: %i", ICON_FA_DROPLET, Localization::GetString("NUMBER_OF_CHANNELS").c_str(), texture.channels);
+        }
+    }
+
+    void ImageAsset::AbstractDelete() {
+        if (std::filesystem::exists(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()))) {
+            std::filesystem::remove(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()));
         }
     }
 };

@@ -26,6 +26,7 @@ namespace Raster {
         SetupAttribute("Shape", SDFShape());
         SetupAttribute("SamplerSettings", SamplerSettings());
         SetupAttribute("MaintainUVRange", true);
+        SetupAttribute("AspectRatioCorrection", false);
 
         if (!s_nullShapePipeline.has_value()) {
             s_nullShapePipeline = GeneratePipelineFromShape(SDFShape()).pipeline;
@@ -50,10 +51,11 @@ namespace Raster {
         auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings");
         auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform");
         auto maintainUVRangeCandidate = GetAttribute<bool>("MaintainUVRange");
+        auto aspectRatioCorrectionCandidate = GetAttribute<bool>("AspectRatioCorrection");
         auto shapeCandidate = GetShape();
         auto pipelineCandidate = GetPipeline();
 
-        if (pipelineCandidate && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && maintainUVRangeCandidate.has_value() && shapeCandidate.has_value()) {
+        if (pipelineCandidate && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && maintainUVRangeCandidate.has_value() && aspectRatioCorrectionCandidate.has_value() && shapeCandidate.has_value()) {
             auto& pipeline = pipelineCandidate.value();
             auto& transform = transformCandidate.value();
             auto& color = colorCandidate.value();
@@ -61,6 +63,7 @@ namespace Raster {
             auto& samplerSettings = samplerSettingsCandidate.value();
             auto uvTransform = uvTransformCandidate.value();
             auto& maintainUVRange = maintainUVRangeCandidate.value();
+            auto& aspectRatioCorrection = aspectRatioCorrectionCandidate.value();
             auto& shape = shapeCandidate.value();
             uvTransform.size = 1.0f / uvTransform.size;
 
@@ -78,6 +81,11 @@ namespace Raster {
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", project.GetProjectionMatrix() * transform.GetTransformationMatrix());
 
             GPU::SetShaderUniform(pipeline.fragment, "uMaintainUVRange", maintainUVRange);
+            GPU::SetShaderUniform(pipeline.fragment, "uAspectRatioCorrection", aspectRatioCorrection);
+            if (aspectRatioCorrection) {
+                glm::vec2 decomposedSize = transform.DecomposeSize();
+                GPU::SetShaderUniform(pipeline.fragment, "uAspectRatio", decomposedSize.x / decomposedSize.y);
+            }
             GPU::SetShaderUniform(pipeline.fragment, "uUVPosition", uvPosition);
             GPU::SetShaderUniform(pipeline.fragment, "uUVSize", uvSize);
             GPU::SetShaderUniform(pipeline.fragment, "uUVAngle", glm::radians(uvAngle));
@@ -125,6 +133,7 @@ namespace Raster {
         SetAttributeValue("UVTransform", Transform2D(t_data["UVTransform"]));
         SetAttributeValue("Color", glm::vec4(t_data["Color"][0], t_data["Color"][1], t_data["Color"][2], t_data["Color"][3]));
         SetAttributeValue("MaintainUVRange", t_data["MaintainUVRange"].get<bool>());
+        if (t_data.contains("AspectRatioCorrection")) SetAttributeValue("AspectRatioCorrection", t_data["AspectRatioCorrection"].get<bool>());
         SetAttributeValue("SamplerSettings", SamplerSettings(t_data["SamplerSettings"]));
     }
 
@@ -135,6 +144,7 @@ namespace Raster {
             {"UVTransform", RASTER_ATTRIBUTE_CAST(Transform2D, "UVTransform").Serialize()},
             {"Color", {color.r, color.g, color.b, color.a}},
             {"MaintainUVRange", RASTER_ATTRIBUTE_CAST(bool, "MaintainUVRange")},
+            {"AspectRatioCorrection", RASTER_ATTRIBUTE_CAST(bool, "AspectRatioCorrection")},
             {"SamplerSettings", RASTER_ATTRIBUTE_CAST(SamplerSettings, "SamplerSettings").Serialize()}
         };
     }
@@ -144,6 +154,7 @@ namespace Raster {
         RenderAttributeProperty("UVTransform");
         RenderAttributeProperty("Color");
         RenderAttributeProperty("MaintainUVRange");
+        RenderAttributeProperty("AspectRatioCorrection");
         RenderAttributeProperty("SamplerSettings");
     }
 

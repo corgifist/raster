@@ -44,5 +44,7 @@ namespace Raster {
         static std::mutex m_infoMutex;
         static std::unordered_map<int, AsyncUploadInfo> m_infos;
         static std::thread m_uploader;
+
+        static void* m_context;
     };
 };

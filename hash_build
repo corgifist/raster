@@ -52,6 +52,7 @@ build_modules = [
     ["float_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec4_attribute", attribute, [raster_common, raster_ImGui]],
     ["transform2d_attribute", attribute, [raster_common, raster_ImGui]],
+    ["asset_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category, raster_image]],
     ["resources/get_asset_id", node, [raster_common, raster_node_category]],
@@ -69,15 +70,20 @@ build_modules = [
     ["utilities/make/make_vec4", node, [raster_common, raster_node_category]],
     ["utilities/decompose_transform2d", node, [raster_common, raster_node_category, raster_ImGui]],
     ["utilities/break/break_transform2d", node, [raster_common, raster_node_category, raster_ImGui]],
+    ["utilities/break/break_vec4", node, [raster_common, raster_node_category]],
+    ["utilities/break/break_vec3", node, [raster_common, raster_node_category]],
     ["utilities/posterize_time", node, [raster_common, raster_node_category]],
+    ["utilities/hue_to_rgb", node, [raster_common, raster_node_category]],
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category, raster_ImGui]],
+    ["rendering/solid2d", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/echo", node, [raster_common, raster_gpu, raster_compositor, raster_node_category]],
     ["rendering/checkerboard", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
     ["rendering/tracking_motion_blur", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
     ["rendering/merge", node, [raster_common, raster_gpu, raster_node_category, raster_compositor, raster_ImGui, raster_font]],
     ["rendering/brightness_contrast_saturation_vibrance_hue", node, [raster_common, raster_gpu, raster_node_category, raster_compositor, raster_ImGui]],
+    ["rendering/gamma_correction", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],

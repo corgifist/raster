@@ -130,7 +130,8 @@ namespace Raster {
         static void BeginFrame();
         static void EndFrame();
 
-        static void InitializeContext();
+        static void* ReserveContext();
+        static void SetCurrentContext(void* context);
 
         static void Flush();
 

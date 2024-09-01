@@ -29,8 +29,8 @@ namespace Raster {
         transform = glm::translate(transform, glm::vec3(position, 0.0f));
         transform = glm::translate(transform, glm::vec3(anchor, 0.0f));
         transform = glm::rotate(transform, glm::radians(-angle), glm::vec3(0, 0, 1));
-        transform = glm::translate(transform, glm::vec3(-anchor, 0.0f));
-        transform = glm::scale(transform, glm::vec3(size, 1.0f));   
+        transform = glm::translate(transform, glm::vec3(-anchor, 0.0f)); 
+        transform = glm::scale(transform, glm::vec3(size, 1.0f));  
         return GetParentMatrix() * transform;
     }
 

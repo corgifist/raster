@@ -37,7 +37,26 @@ namespace Raster {
         };
     }
 
+    void GetAssetID::AbstractRenderDetails() {
+        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        if (assetIDCandidate.has_value()) {
+            auto& assetID = assetIDCandidate.value();
+            auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
+            if (assetCandidate.has_value()) {
+                assetCandidate.value()->RenderDetails();
+            }
+        }
+    }
+
     bool GetAssetID::AbstractDetailsAvailable() {
+        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        if (assetIDCandidate.has_value()) {
+            auto& assetID = assetIDCandidate.value();
+            auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
+            if (assetCandidate.has_value()) {
+                return true;
+            }
+        }
         return false;
     }
 

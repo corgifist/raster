@@ -192,5 +192,8 @@
     "NO_BLENDING": "No Blending",
     "BLENDING_MODE": "Blending Mode",
     "NORMAL": "Normal",
-    "NEW_COMPOSITION_NAME": "New Composition Name"
+    "NEW_COMPOSITION_NAME": "New Composition Name",
+    "NO_ASSET": "No Asset",
+    "SELECT_ASSET": "Select Asset",
+    "SET_AS_PARENT_ASSET": "Set as Asset Parent"
 }

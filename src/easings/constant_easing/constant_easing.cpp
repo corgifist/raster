@@ -38,6 +38,7 @@ namespace Raster {
         static float pointsChildWidth = 150;
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - pointsChildWidth / 2.0f);
         ImGui::BeginChild("##dragsChild", ImVec2(bezierEditorSize.x, 0), ImGuiChildFlags_AutoResizeY);
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Constant", ICON_FA_BEZIER_CURVE);
             ImGui::SameLine();
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);

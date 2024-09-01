@@ -49,6 +49,7 @@ namespace Raster {
     }
 }
 
+
 extern "C" {
     RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::DebugPrintNode>();

@@ -29,6 +29,8 @@ namespace Raster {
 
         bool IsReady();
 
+        void Delete();
+
         Json Serialize();
         void Load(Json t_data);
     private:
@@ -46,6 +48,8 @@ namespace Raster {
 
         virtual void AbstractLoad(Json t_data) {}
         virtual Json AbstractSerialize() { return {}; };
+
+        virtual void AbstractDelete() {}
 
         virtual std::optional<std::uintmax_t> AbstractGetSize() { return std::nullopt; }
 

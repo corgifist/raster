@@ -52,6 +52,10 @@ namespace Raster {
         return AbstractGetPath();
     }
 
+    void AssetBase::Delete() {
+        AbstractDelete();
+    }
+
     void AssetBase::Load(Json t_data) {
         AbstractLoad(t_data);
     }

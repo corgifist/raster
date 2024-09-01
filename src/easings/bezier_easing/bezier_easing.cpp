@@ -123,6 +123,7 @@ namespace Raster {
         static float pointsChildWidth = 150;
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - pointsChildWidth / 2.0f);
         ImGui::BeginChild("##dragsChild", ImVec2(bezierEditorSize.x, 0), ImGuiChildFlags_AutoResizeY);
+            ImGui::AlignTextToFramePadding();
             ImGui::Text(ICON_FA_BEZIER_CURVE " P1");
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_RECYCLE "##p1")) {
@@ -135,6 +136,7 @@ namespace Raster {
                 ImGui::DragFloat2("##p1Drag", glm::value_ptr(m_points), 0.05f);
             ImGui::PopItemWidth();
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text(ICON_FA_BEZIER_CURVE " P2");
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_RECYCLE "##p2")) {

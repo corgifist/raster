@@ -20,6 +20,9 @@ uniform float uUVAngle;
 
 uniform bool uMaintainUVRange;
 
+uniform float uAspectRatio;
+uniform bool uAspectRatioCorrection;
+
 SDF_UNIFORMS_PLACEHOLDER
 
 float saturateUV(float a) {
@@ -45,6 +48,7 @@ void main() {
     gColor = uColor;
     vec2 uv = vUV;
     uv -= 0.5;
+    if (uAspectRatioCorrection) uv.x *= uAspectRatio;
 
     uv += uUVPosition;
 

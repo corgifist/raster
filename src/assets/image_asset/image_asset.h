@@ -19,6 +19,8 @@ namespace Raster {
         Json AbstractSerialize();
 
         void AbstractRenderDetails();
+        
+        void AbstractDelete();
 
         std::optional<std::uintmax_t> AbstractGetSize();
         std::optional<std::string> AbstractGetResolution();

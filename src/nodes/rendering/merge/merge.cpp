@@ -32,7 +32,7 @@ namespace Raster {
         auto opacityCandidate = GetAttribute<float>("Opacity");
         auto blendingModeCandidate = GetAttribute<std::string>("BlendingMode");
 
-        if (aCandidate.has_value() && bCandidate.has_value() && opacityCandidate.has_value() && blendingModeCandidate.has_value()) {
+        if (aCandidate.has_value() && bCandidate.has_value() && opacityCandidate.has_value() && blendingModeCandidate.has_value() && aCandidate.value().attachments.size() > 1 && bCandidate.value().attachments.size() > 1) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
             auto& a = aCandidate.value();
             auto& b = bCandidate.value();
