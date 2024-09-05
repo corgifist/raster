@@ -262,8 +262,6 @@ namespace Raster {
         GLuint textureHandle;
         glGenTextures(1, &textureHandle);
         glBindTexture(GL_TEXTURE_2D, textureHandle);
-
-        DUMP_VAR(textureHandle);
         
         auto format = InterpretTextureInfo(channels, precision);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -578,6 +576,11 @@ namespace Raster {
     void GPU::BlitFramebuffer(Framebuffer base, Texture texture, int attachment) {
         glCopyImageSubData(HANDLE_TO_GLUINT(texture.handle), GL_TEXTURE_2D, 0, 0, 0, 0,
                            HANDLE_TO_GLUINT(base.attachments[attachment].handle), GL_TEXTURE_2D, 0, 0, 0, 0, base.width, base.height, 1);
+    }
+
+    void GPU::BlitTexture(Texture base, Texture blit) {
+        glCopyImageSubData(HANDLE_TO_GLUINT(blit.handle), GL_TEXTURE_2D, 0, 0, 0, 0,
+                           HANDLE_TO_GLUINT(base.handle), GL_TEXTURE_2D, 0, 0, 0, 0, base.width, base.height, 1);
     }
 
     Sampler GPU::GenerateSampler() {

@@ -1,6 +1,9 @@
 #include "image_asset.h"
 
 namespace Raster {
+
+    std::optional<Pipeline> ImageAsset::s_gammaPipeline;
+
     ImageAsset::ImageAsset() {
         AssetBase::Initialize();
 
@@ -11,6 +14,13 @@ namespace Raster {
 
         this->m_relativePath = "";
         this->m_originalPath = "";
+
+        if (!s_gammaPipeline.has_value()) {
+            s_gammaPipeline = GPU::GeneratePipeline(
+                GPU::GenerateShader(ShaderType::Vertex, "gamma_correction/shader"),
+                GPU::GenerateShader(ShaderType::Fragment, "gamma_correction/shader")
+            );
+        }
     }
 
     bool ImageAsset::AbstractIsReady() {
@@ -40,6 +50,38 @@ namespace Raster {
         if (AsyncUpload::IsUploadReady(m_uploadID)) {
             auto& info = AsyncUpload::GetUpload(m_uploadID);
             m_texture = info.texture;
+
+            if (s_gammaPipeline.has_value() && GetExtension(m_relativePath) == ".exr") {
+                auto& pipeline = s_gammaPipeline.value();
+                Texture copiedTexture = GPU::GenerateTexture(info.texture.width, info.texture.height, info.texture.channels, info.texture.precision);
+                Texture gammaTexture = GPU::GenerateTexture(info.texture.width, info.texture.height, info.texture.channels, info.texture.precision);
+
+                Framebuffer gammaFbo = GPU::GenerateFramebuffer(info.texture.width, info.texture.height, {gammaTexture});
+
+                GPU::BlitTexture(copiedTexture, info.texture);
+
+                GPU::BindFramebuffer(gammaFbo);
+                GPU::BindPipeline(pipeline);
+                GPU::ClearFramebuffer(0, 0, 0, 0);
+
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(info.texture.width, info.texture.height));
+                GPU::SetShaderUniform(pipeline.fragment, "uGamma", 2.2f);
+                GPU::BindTextureToShader(pipeline.fragment, "uColor", copiedTexture, 0);
+                GPU::SetShaderUniform(pipeline.fragment, "uUVAvailable", 0);
+
+                GPU::DrawArrays(3);
+
+                GPU::BindFramebuffer(std::nullopt);
+
+                GPU::BlitTexture(info.texture, gammaTexture);
+
+                GPU::DestroyTexture(copiedTexture);
+                GPU::DestroyTexture(gammaTexture);
+                GPU::DestroyFramebuffer(gammaFbo);
+            }
+
+            
+
             AsyncUpload::DestroyUpload(m_uploadID);
         }
 
@@ -107,6 +149,11 @@ namespace Raster {
     void ImageAsset::AbstractDelete() {
         if (std::filesystem::exists(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()))) {
             std::filesystem::remove(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()));
+        }
+
+        auto textureCandidate = AbstractGetPreviewTexture();
+        if (textureCandidate.has_value()) {
+            GPU::DestroyTexture(textureCandidate.value());
         }
     }
 };

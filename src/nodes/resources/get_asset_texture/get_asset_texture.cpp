@@ -10,6 +10,7 @@ namespace Raster {
         AddOutputPin("Texture");
         AddOutputPin("Resolution");
         AddOutputPin("AspectRatio");
+        AddOutputPin("CorrectedSize");
     }
 
     AbstractPinMap GetAssetTexture::AbstractExecute(AbstractPinMap t_accumulator) {
@@ -26,6 +27,7 @@ namespace Raster {
                     TryAppendAbstractPinMap(result, "Texture", texture);
                     TryAppendAbstractPinMap(result, "Resolution", glm::vec2(texture.width, texture.height));
                     TryAppendAbstractPinMap(result, "AspectRatio", (float) texture.width / (float) texture.height);
+                    TryAppendAbstractPinMap(result, "CorrectedSize", glm::vec2((float) texture.width / (float) texture.height, 1.0f));
                 }
             }
         }

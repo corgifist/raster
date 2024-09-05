@@ -42,8 +42,19 @@ namespace Raster {
                 t_asset->id = originalAsset->id;
             }
         }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_REPLY, Localization::GetString("REPLACE_WITH_PLACEHOLDER_ASSET").c_str()).c_str())) {
+            auto placeholderCandidate = Assets::InstantiateAsset(RASTER_PACKAGED "placeholder_asset");
+            if (placeholderCandidate.has_value()) {
+                t_asset->Delete();
+                int originalID = t_asset->id;
+                std::string originalName = t_asset->name;
+                t_asset = placeholderCandidate.value();
+                t_asset->id = originalID;
+                t_asset->name = originalName;
+            }
+        }
         auto pathCandidate = t_asset->GetPath();
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("REVEAL_IN_FILE_EXPLORER").c_str()).c_str(), "Ctrl+R")) {
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("REVEAL_IN_FILE_EXPLORER").c_str()).c_str(), "Ctrl+R", nullptr, pathCandidate.has_value())) {
             auto& path = pathCandidate.value();
             if (std::filesystem::exists(path)) {
                 SystemOpenURL(path);
@@ -70,11 +81,13 @@ namespace Raster {
         }
     }
 
-    std::optional<AbstractAsset> AssetManagerUI::ImportAsset() {
+    std::optional<AbstractAsset> AssetManagerUI::ImportAsset(std::optional<std::string> targetAssetPackageName) {
         std::vector<std::string> stringStorage;
         std::vector<nfdfilteritem_t> filePickerFilters;
         for (auto& implementation : Assets::s_implementations) {
             auto& description = implementation.description;
+            if (targetAssetPackageName.has_value() && targetAssetPackageName.value() != description.packageName) continue; 
+            if (description.extensions.empty()) continue;
             nfdfilteritem_t filter;
             filter.name = description.prettyName.c_str();
             
@@ -89,35 +102,44 @@ namespace Raster {
 
             filePickerFilters.push_back(filter);
         }
-        NFD::UniquePath path;
-        auto result = NFD::OpenDialog(path, filePickerFilters.data(), filePickerFilters.size());
-        if (result == NFD_OKAY) {
-            std::optional<std::string> assetPackageNameCandidate;
-            std::string pathExtension = GetExtension(path.get());
-            pathExtension = ReplaceString(pathExtension, "\\.", "");
-            for (auto& implementation : Assets::s_implementations) {
-                auto& extensions = implementation.description.extensions;
-                if (std::find(extensions.begin(), extensions.end(), pathExtension) != extensions.end()) {
-                    assetPackageNameCandidate = implementation.description.packageName;
-                    break;
-                }
-            }
 
-            if (assetPackageNameCandidate.has_value()) {
-                auto& assetPackageName = assetPackageNameCandidate.value();
-                auto assetCandidate = Assets::InstantiateAsset(assetPackageName);
-                if (assetCandidate.has_value()) {
-                    auto& asset = assetCandidate.value();
-                    asset->Import(path.get());
-                    return asset;
+        if (!filePickerFilters.empty()) {
+            NFD::UniquePath path;
+            auto result = NFD::OpenDialog(path, filePickerFilters.data(), filePickerFilters.size());
+            if (result == NFD_OKAY) {
+                std::optional<std::string> assetPackageNameCandidate;
+                std::string pathExtension = GetExtension(path.get());
+                pathExtension = ReplaceString(pathExtension, "\\.", "");
+                for (auto& implementation : Assets::s_implementations) {
+                    auto& extensions = implementation.description.extensions;
+                    if (std::find(extensions.begin(), extensions.end(), pathExtension) != extensions.end()) {
+                        assetPackageNameCandidate = implementation.description.packageName;
+                        break;
+                    }
+                }
+
+                if (assetPackageNameCandidate.has_value()) {
+                    auto& assetPackageName = assetPackageNameCandidate.value();
+                    auto assetCandidate = Assets::InstantiateAsset(assetPackageName);
+                    if (assetCandidate.has_value()) {
+                        auto& asset = assetCandidate.value();
+                        asset->Import(path.get());
+                        return asset;
+                    }
                 }
             }
         }
+
+        if (filePickerFilters.empty() && targetAssetPackageName.has_value()) {
+            auto assetCandidate = Assets::InstantiateAsset(targetAssetPackageName.value());
+            return assetCandidate;
+        }
+
         return std::nullopt;
     }
 
-    void AssetManagerUI::AutoImportAsset() {
-        auto assetCandidate = ImportAsset();
+    void AssetManagerUI::AutoImportAsset(std::optional<std::string> targetAssetPackageName) {
+        auto assetCandidate = ImportAsset(targetAssetPackageName);
         if (assetCandidate.has_value()) {
             auto& project = Workspace::GetProject();
             auto& asset = assetCandidate.value();
@@ -183,7 +205,7 @@ namespace Raster {
                 }
             }
             ImGui::EndChild();
-            ImGui::SameLine();
+            ImGui::SameLine(0, 8);
             if (ImGui::BeginChild("##assetDetailsInfo", ImVec2(ImGui::GetContentRegionAvail().x, assetPreviewSize.y))) {
                 if (!selectedAssets.empty()) {
                     auto assetCandidate = Workspace::GetAssetByAssetID(selectedAssets[0]);
@@ -214,6 +236,23 @@ namespace Raster {
 
             if (ImGui::Button(ICON_FA_FOLDER_PLUS)) {
                 AutoImportAsset();
+            }
+
+            ImGui::SameLine(0, 3);
+
+            if (ImGui::Button(ICON_FA_PLUS)) {
+                ImGui::OpenPopup("##manualSelectAsset");
+            }
+
+            if (ImGui::BeginPopup("##manualSelectAsset")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_ASSET_TYPE").c_str()).c_str());
+                for (auto& implementation : Assets::s_implementations) {
+                    auto& description = implementation.description;
+                    if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, description.icon.c_str(), description.prettyName.c_str()).c_str())) {
+                        AutoImportAsset(description.packageName);
+                    }
+                }
+                ImGui::EndPopup();
             }
 
             static AssetPreviewType s_previewType = AssetPreviewType::Table;
@@ -375,6 +414,12 @@ namespace Raster {
                             auto sizeCandidate = asset->GetSize();
                             if (sizeCandidate.has_value()) {
                                 ImGui::Text("%s", ConvertToHRSize(sizeCandidate.value()).c_str());
+                            }
+
+                            ImGui::TableSetColumnIndex(4);
+                            auto pathCandidate = asset->GetPath();
+                            if (pathCandidate.has_value()) {
+                                ImGui::Text("%s", pathCandidate.value().c_str());
                             }
                         }
                         ImGui::EndTable();

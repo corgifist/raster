@@ -48,14 +48,16 @@ build_modules = [
     ["constant_easing", easing, [raster_common, raster_ImGui]],
 
     ["image_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_image]],
+    ["placeholder_asset", asset, [raster_common, raster_gpu, raster_ImGui]],
 
     ["float_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec4_attribute", attribute, [raster_common, raster_ImGui]],
     ["transform2d_attribute", attribute, [raster_common, raster_ImGui]],
     ["asset_attribute", attribute, [raster_common, raster_ImGui]],
+    ["color4_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category, raster_image]],
-    ["resources/get_asset_id", node, [raster_common, raster_node_category]],
+    ["resources/get_asset_id", node, [raster_common, raster_node_category, raster_ImGui]],
     ["resources/get_asset_texture", node, [raster_common, raster_node_category]],
 
     ["attributes/get_attribute_value", node, [raster_common, raster_node_category, raster_ImGui]],
@@ -99,6 +101,7 @@ build_modules = [
     ["math/subtract", node, [raster_common, raster_dynamic_math, raster_node_category]],
     ["math/divide", node, [raster_common, raster_dynamic_math, raster_node_category]],
     ["math/mix", node, [raster_common, raster_dynamic_math, raster_node_category]],
+    ["math/posterize", node, [raster_common, raster_dynamic_math, raster_node_category]],
 
     ["sdf_shapes/sdf_circle", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_rounded_rect", node, [raster_common, raster_node_category, raster_gpu]],

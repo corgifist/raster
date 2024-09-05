@@ -364,7 +364,6 @@ namespace Raster {
         bool timelineCompositionsChildStatus = ImGui::BeginChild("##timelineCompositions", ImVec2(ImGui::GetWindowSize().x * (1 - s_splitterState), ImGui::GetContentRegionAvail().y), 0, timelineFlags);
         ImGui::PopStyleColor();
         if (timelineCompositionsChildStatus) {
-            ProcessShortcuts();
             SplitDrawList();
             AttributeBase::ProcessKeyframeShortcuts();
 
@@ -418,6 +417,7 @@ namespace Raster {
             RenderTimelineRuler();
         }
         
+        ProcessShortcuts();
         ImGui::EndChild();
     }
 
@@ -1041,7 +1041,6 @@ namespace Raster {
     void TimelineUI::RenderLegend() {
         Composition* targetCompositionDelete = nullptr;
         if (ImGui::BeginChild("##timelineLegend", ImVec2(ImGui::GetWindowSize().x * s_splitterState, ImGui::GetContentRegionAvail().y))) {
-            ProcessShortcuts();
             SplitDrawList();
             if (s_targetLegendScroll > 0) {
                 s_timelineScrollY = s_targetLegendScroll;
@@ -1300,6 +1299,7 @@ namespace Raster {
                 s_legendTargetOpenTree = 0;
             }
         }
+        ProcessShortcuts();
         ImGui::EndChild();
 
         if (targetCompositionDelete) {

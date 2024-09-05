@@ -195,5 +195,9 @@
     "NEW_COMPOSITION_NAME": "New Composition Name",
     "NO_ASSET": "No Asset",
     "SELECT_ASSET": "Select Asset",
-    "SET_AS_PARENT_ASSET": "Set as Asset Parent"
+    "SET_AS_PARENT_ASSET": "Set as Asset Parent",
+    "SELECT_ASSET_TYPE": "Select Asset Type",
+    "REPLACE_WITH_PLACEHOLDER_ASSET": "Replace with Placeholder Asset",
+    "INSERT_ASSET_ID": "Insert Asset ID",
+    "INSERT_VALUE": "Insert Value"
 }

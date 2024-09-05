@@ -31,14 +31,50 @@ namespace Raster {
     }
 
     void AttributeDispatchers::DispatchIntAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+        auto& project = Workspace::GetProject();
         int i = std::any_cast<int>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_GEARS)) {
-            ImGui::OpenPopup(FormatString("%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
+            ImGui::OpenPopup(FormatString("##insertValue%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
         }
         ImGui::SameLine();
         ImGui::DragInt(FormatString("##%s", t_attribute.c_str()).c_str(), &i);
+
+        bool openAssetIDPopup = false;
+        bool openAttributesPopup = false;
+        if (ImGui::BeginPopup(FormatString("##insertValue%i%s", t_owner->nodeID, t_attribute.c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_VALUE").c_str()).c_str());
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ASSET_ID").c_str()).c_str())) {
+                openAssetIDPopup = true;
+            }
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ATTRIBUTE_ID").c_str()).c_str())) {
+                openAttributesPopup = true;
+            }
+            ImGui::EndPopup();
+        }
+
+        if (openAssetIDPopup) {
+            ImGui::OpenPopup(FormatString("##selectAsset%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
+        }
+
+        if (ImGui::BeginPopup(FormatString("##selectAsset%i%s", t_owner->nodeID, t_attribute.c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ASSET_ID").c_str()).c_str());
+            static std::string s_assetFilter = "";
+            ImGui::InputTextWithHint("##assetFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_assetFilter);
+            for (auto& asset : project.assets) {
+                auto description = Assets::GetAssetImplementation(asset->packageName).value();
+                if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
+                if (ImGui::MenuItem(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                    i = asset->id;
+                }
+            }
+            ImGui::EndPopup();
+        }
+
+        if (openAttributesPopup) {
+            ImGui::OpenPopup(FormatString("%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
+        }
         bool openMoreAttributesPopup = false;
         if (ImGui::BeginPopup(FormatString("%i%s", t_owner->nodeID, t_attribute.c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ATTRIBUTE_ID").c_str()).c_str());
@@ -231,8 +267,6 @@ namespace Raster {
     void AttributeDispatchers::DispatchTransform2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
         auto fitSize = FitRectInRect({ImGui::GetWindowSize().x, 256}, Workspace::s_project.value().preferredResolution);
         ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);
-        ImGui::Text("%s", t_attribute.c_str());
-        ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::BeginChild("##transformContainer", iFitSize, ImGuiChildFlags_Border);

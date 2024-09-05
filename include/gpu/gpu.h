@@ -140,6 +140,7 @@ namespace Raster {
         static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels);
         static void DestroyTexture(Texture texture);
         static void BindTextureToShader(Shader shader, std::string name, Texture texture, int unit);
+        static void BlitTexture(Texture base, Texture blit);
 
         static Framebuffer GenerateFramebuffer(uint32_t width, uint32_t height, std::vector<Texture> attachments);
         static void DestroyFramebuffer(Framebuffer fbo);

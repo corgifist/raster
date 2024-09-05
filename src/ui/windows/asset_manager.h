@@ -18,7 +18,7 @@ namespace Raster {
         void Render();
 
         static void RenderAssetPopup(AbstractAsset& asset);
-        static std::optional<AbstractAsset> ImportAsset();
-        static void AutoImportAsset();
+        static std::optional<AbstractAsset> ImportAsset(std::optional<std::string> targetAssetPackageName = std::nullopt);
+        static void AutoImportAsset(std::optional<std::string> targetAssetPackageName = std::nullopt);
     };
 };

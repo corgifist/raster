@@ -46,8 +46,9 @@ namespace Raster {
             GPU::BindTextureToShader(pipeline.fragment, "uColor", framebuffer.attachments.at(0), 0);
             if (framebuffer.attachments.size() > 1) {
                 GPU::BindTextureToShader(pipeline.fragment, "uUV", framebuffer.attachments.at(1), 1);
+                GPU::SetShaderUniform(pipeline.fragment, "uUVAvailable", 1);
             } else {
-                GPU::SetShaderUniform(pipeline.fragment, "uUV", -1);
+                GPU::SetShaderUniform(pipeline.fragment, "uUVAvailable", 0);
             }
             GPU::SetShaderUniform(pipeline.fragment, "uGamma", gamma);
             GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));

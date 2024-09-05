@@ -1,6 +1,6 @@
 #include "dynamic_math/dynamic_math.h"
 
-/*        IF IT WORKS, DON'T TOUCH IT       */
+/*       IF IT WORKS, DON'T TOUCH IT        */
 /* HIGHLY CONFUSING PREPROCESSOR CODE AHEAD */
 
 #define TYPE_EQUALS(t_a, t_type) \
@@ -9,9 +9,16 @@
 #define ANY_CAST(t_any, t_type) \
     std::any_cast<t_type>(t_any)
 
+#define BINARY_TYPE_CHECKING(t_a_type, t_b_type) \
+    if (TYPE_EQUALS(t_a, t_a_type) && TYPE_EQUALS(t_b, t_b_type))
+
 #define BINARY_CLAUSE(a_type, b_type, operation)              \
-    if (TYPE_EQUALS(t_a, a_type) && TYPE_EQUALS(t_b, b_type)) \
+    BINARY_TYPE_CHECKING(a_type, b_type) \
         return ANY_CAST(t_a, a_type) operation ANY_CAST(t_b, b_type)
+
+#define POSTERIZE_CLAUSE(a_type, b_type) \
+    BINARY_TYPE_CHECKING(a_type, b_type) \
+        return glm::ceil(ANY_CAST(t_a, a_type) * ANY_CAST(t_b, b_type)) / ANY_CAST(t_b, b_type)
 
 #define MULTIPLY_CLAUSE(a_type, b_type) \
     BINARY_CLAUSE(a_type, b_type, *)
@@ -60,6 +67,18 @@
 #define ABS_CLAUSE(t_type) \
     SINGLE_GLM_FUNCTION_CLAUSE(t_type, glm::abs)
 
+#define TRUNC_CLAUSE(t_type) \
+    SINGLE_GLM_FUNCTION_CLAUSE(t_type, glm::trunc)
+
+#define CEIL_CLAUSE(t_type) \
+    SINGLE_GLM_FUNCTION_CLAUSE(t_type, glm::ceil)
+
+#define FLOOR_CLAUSE(t_type) \
+    SINGLE_GLM_FUNCTION_CLAUSE(t_type, glm::floor)
+
+#define SIGN_CLAUSE(t_type) \
+    SINGLE_GLM_FUNCTION_CLAUSE(t_type, glm::sign)
+
 #define SINGLE_VALUE_CLAUSES(clause_type) \
     clause_type(float);                   \
     clause_type(glm::vec2);               \
@@ -77,6 +96,32 @@ namespace Raster
     std::optional<std::any> DynamicMath::Abs(std::any t_value)
     {
         SINGLE_VALUE_CLAUSES(ABS_CLAUSE);
+        return std::nullopt;
+    }
+
+    std::optional<std::any> Trunc(std::any t_value) {
+        SINGLE_VALUE_CLAUSES(TRUNC_CLAUSE);
+        return std::nullopt;
+    }
+
+    std::optional<std::any> Ceil(std::any t_value) {
+        SINGLE_VALUE_CLAUSES(CEIL_CLAUSE);
+        return std::nullopt;
+    }
+
+    std::optional<std::any> Floor(std::any t_value) {
+        SINGLE_VALUE_CLAUSES(FLOOR_CLAUSE);
+        return std::nullopt;
+    }
+
+    std::optional<std::any> Sign(std::any t_value) {
+        SINGLE_VALUE_CLAUSES(SIGN_CLAUSE);
+        return std::nullopt;
+    }
+
+    std::optional<std::any> Negate(std::any t_a) {
+        std::any t_b = -1.0f;
+        BINARY_TYPE_CLAUSES(MULTIPLY_CLAUSE);
         return std::nullopt;
     }
 
@@ -101,6 +146,12 @@ namespace Raster
     std::optional<std::any> DynamicMath::Subtract(std::any t_a, std::any t_b)
     {
         BINARY_TYPE_CLAUSES(SUBTRACT_CLAUSE);
+        return std::nullopt;
+    }
+
+    std::optional<std::any> DynamicMath::Posterize(std::any t_a, std::any t_b)
+    {
+        BINARY_TYPE_CLAUSES(POSTERIZE_CLAUSE);
         return std::nullopt;
     }
 

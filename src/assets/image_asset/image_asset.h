@@ -2,6 +2,7 @@
 
 #include "common/asset_base.h"
 #include "gpu/async_upload.h"
+#include "gpu/gpu.h"
 #include "../../ImGui/imgui.h"
 
 namespace Raster {
@@ -35,5 +36,7 @@ namespace Raster {
         std::optional<std::future<bool>> m_asyncCopy;
 
         std::optional<Texture> m_texture;
+
+        static std::optional<Pipeline> s_gammaPipeline;
     };
 };
