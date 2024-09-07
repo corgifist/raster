@@ -66,13 +66,11 @@ namespace Raster {
     }
 
     void GammaCorrection::AbstractLoadSerialized(Json t_data) {
-        RASTER_DESERIALIZE_WRAPPER(float, "Gamma");
+        DeserializeAllAttributes(t_data);
     }
 
     Json GammaCorrection::AbstractSerialize() {
-        return {
-            RASTER_SERIALIZE_WRAPPER(float, "Gamma")
-        };
+        return SerializeAllAttributes();
     }
 
     bool GammaCorrection::AbstractDetailsAvailable() {

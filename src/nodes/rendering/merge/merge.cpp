@@ -110,15 +110,11 @@ namespace Raster {
     }
 
     void Merge::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("BlendingMode", t_data["BlendingMode"].get<std::string>());
-        SetAttributeValue("Opacity", t_data["Opacity"].get<float>());
+        DeserializeAllAttributes(t_data);
     }
 
     Json Merge::AbstractSerialize() {
-        return {
-            {"BlendingMode", RASTER_ATTRIBUTE_CAST(std::string, "BlendingMode")},
-            {"Opacity", RASTER_ATTRIBUTE_CAST(float, "Opacity")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool Merge::AbstractDetailsAvailable() {

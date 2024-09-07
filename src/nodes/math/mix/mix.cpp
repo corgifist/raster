@@ -39,16 +39,11 @@ namespace Raster {
     }
 
     void Mix::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("A", t_data["A"].get<float>());
-        SetAttributeValue("B", t_data["B"].get<float>());
+        DeserializeAllAttributes(t_data);
     }
 
     Json Mix::AbstractSerialize() {
-        return {
-            {"A", RASTER_ATTRIBUTE_CAST(float, "A")},
-            {"B", RASTER_ATTRIBUTE_CAST(float, "B")},
-            {"Phase", RASTER_ATTRIBUTE_CAST(float, "Phase")} 
-        };
+        return SerializeAllAttributes();
     }
 
     bool Mix::AbstractDetailsAvailable() {

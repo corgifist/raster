@@ -33,15 +33,11 @@ namespace Raster {
     }
 
     void Sine::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Input", t_data["Input"].get<float>());
-        SetAttributeValue("MultiplyBy", t_data["MultiplyBy"].get<float>());
+        DeserializeAllAttributes(t_data);
     }
 
     Json Sine::AbstractSerialize() {
-        return {
-            {"Input", RASTER_ATTRIBUTE_CAST(float, "Input")},
-            {"MultiplyBy", RASTER_ATTRIBUTE_CAST(float, "MultiplyBy")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool Sine::AbstractDetailsAvailable() {

@@ -21,6 +21,15 @@ namespace Raster {
     }
 
     void TransportValue::AbstractRenderProperties() {
+        RenderAttributeProperty("Input");
+    }
+
+    void TransportValue::AbstractLoadSerialized(Json t_data) {
+        DeserializeAllAttributes(t_data);
+    }
+
+    Json TransportValue::AbstractSerialize() {
+        return SerializeAllAttributes();
     }
 
     bool TransportValue::AbstractDetailsAvailable() {

@@ -151,6 +151,7 @@ namespace Raster {
     }
 
     static std::thread::id s_mainThreadID;
+    static std::unordered_map<void*, std::unordered_map<std::string, int>> shaderRegistry;
 
     void GPU::Initialize() {
         s_mainThreadID = std::this_thread::get_id();
@@ -519,6 +520,9 @@ namespace Raster {
 
     void GPU::DestroyShader(Shader shader) {
         if (!shader.handle) return;
+        if (shaderRegistry.find(shader.handle) != shaderRegistry.end()) {
+            shaderRegistry.erase(shader.handle);
+        }
         glDeleteProgram(HANDLE_TO_GLUINT(shader.handle));
     }
 
@@ -531,12 +535,13 @@ namespace Raster {
     }
 
     int GPU::GetShaderUniformLocation(Shader shader, std::string name) {
-        static std::unordered_map<void*, std::unordered_map<std::string, int>> shaderRegistry;
         if (shaderRegistry.find(shader.handle) == shaderRegistry.end()) {
             shaderRegistry[shader.handle] = {};
         }
         auto& uniformsMap = shaderRegistry[shader.handle];
         if (uniformsMap.find(name) != uniformsMap.end()) {
+            if (uniformsMap[name] < 0) {
+            }
             return uniformsMap[name];
         }
         uniformsMap[name] = glGetUniformLocation(HANDLE_TO_GLUINT(shader.handle), name.c_str());

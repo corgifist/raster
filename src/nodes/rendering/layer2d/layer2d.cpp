@@ -126,27 +126,23 @@ namespace Raster {
             UNIFORM_CLAUSE(uniform, glm::vec4);
             UNIFORM_CLAUSE(uniform, glm::mat4);
         }
+#if 0
+        if (ImGui::BeginTooltip()) {
+            for (auto& uniform : t_shape.uniforms) {
+                ImGui::Text("%s %s", uniform.type.c_str(), uniform.name.c_str());
+                Dispatchers::DispatchString(uniform.value);
+            }
+            ImGui::EndTooltip();
+        }
+#endif
     }
 
     void Layer2D::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Transform", Transform2D(t_data["Transform"]));
-        SetAttributeValue("UVTransform", Transform2D(t_data["UVTransform"]));
-        SetAttributeValue("Color", glm::vec4(t_data["Color"][0], t_data["Color"][1], t_data["Color"][2], t_data["Color"][3]));
-        SetAttributeValue("MaintainUVRange", t_data["MaintainUVRange"].get<bool>());
-        if (t_data.contains("AspectRatioCorrection")) SetAttributeValue("AspectRatioCorrection", t_data["AspectRatioCorrection"].get<bool>());
-        SetAttributeValue("SamplerSettings", SamplerSettings(t_data["SamplerSettings"]));
+        DeserializeAllAttributes(t_data);
     }
 
     Json Layer2D::AbstractSerialize() {
-        auto color = RASTER_ATTRIBUTE_CAST(glm::vec4, "Color");
-        return {
-            {"Transform", RASTER_ATTRIBUTE_CAST(Transform2D, "Transform").Serialize()},
-            {"UVTransform", RASTER_ATTRIBUTE_CAST(Transform2D, "UVTransform").Serialize()},
-            {"Color", {color.r, color.g, color.b, color.a}},
-            {"MaintainUVRange", RASTER_ATTRIBUTE_CAST(bool, "MaintainUVRange")},
-            {"AspectRatioCorrection", RASTER_ATTRIBUTE_CAST(bool, "AspectRatioCorrection")},
-            {"SamplerSettings", RASTER_ATTRIBUTE_CAST(SamplerSettings, "SamplerSettings").Serialize()}
-        };
+        return SerializeAllAttributes();
     }
 
     void Layer2D::AbstractRenderProperties() {
@@ -178,6 +174,7 @@ namespace Raster {
             GPU::DestroyPipeline(pipeline.pipeline);
             m_pipeline = GeneratePipelineFromShape(shape);
         }
+
         return m_pipeline.value().pipeline;
     }
 
@@ -200,8 +197,6 @@ namespace Raster {
         std::string shaderFile = GPU::GetShadersPath() + clearShaderFile + ".frag";
         WriteFile(shaderFile, shaderBase);
 
-        DUMP_VAR(t_shape.distanceFunctionCode);
-
         Pipeline generatedPipeline = GPU::GeneratePipeline(
             GPU::GenerateShader(ShaderType::Vertex, "layer2d/shader"),
             GPU::GenerateShader(ShaderType::Fragment, clearShaderFile, false)
@@ -211,7 +206,8 @@ namespace Raster {
 
         return SDFShapePipeline{
             .shape = t_shape,
-            .pipeline = generatedPipeline
+            .pipeline = generatedPipeline,
+            .shaderCode = shaderBase
         };
     }
 

@@ -84,7 +84,6 @@ namespace Raster {
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
             Nodes::PinPivotAlignment({-0.45f, 0.5});
 
-
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
             if (pin.flow) {
@@ -114,7 +113,22 @@ namespace Raster {
         ImGui::SameLine(0, 0.0f);
         ImGui::SetWindowFontScale(s_pinTextScale);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.5f);
-            ImGui::Text(pin.linkedAttribute.c_str());
+            std::string linkedAttributeText = pin.linkedAttribute;
+            auto nodeCandidate = Workspace::GetNodeByPinID(pin.pinID);
+            if (nodeCandidate.has_value()) {
+                auto& node = nodeCandidate.value();
+                auto compositionCandidate = Workspace::GetCompositionByNodeID(node->nodeID);
+                std::string linkedAttributeID = FormatString("<%i>.%s", node->nodeID, pin.linkedAttribute.c_str());
+                if (compositionCandidate.has_value()) {
+                    auto& composition = compositionCandidate.value();
+                    for (auto& attribute : composition->attributes) {
+                        if (attribute->internalAttributeName == linkedAttributeID) {
+                            linkedAttributeText = ICON_FA_LINK + std::string(" ") + linkedAttributeText;
+                        }
+                    }
+                }
+            }
+            ImGui::Text(linkedAttributeText.c_str());
             ImGui::SameLine();
             s_maxRuntimeInputPinX = ImGui::GetCursorPosX() - s_originalCursor.x;
             ImGui::NewLine();
@@ -791,6 +805,56 @@ namespace Raster {
                                         } else {
                                             node->inputPins.erase(node->inputPins.begin() + attributeIndex);
                                         }
+                                    }
+                                    ImGui::SameLine();
+                                    std::string exposeToTimelinePopupID = FormatString("##exposeToTimeline%i%s", node->nodeID, attribute.c_str());
+                                    bool exposedToTimeline = false;
+                                    auto compositionCandidate = Workspace::GetCompositionByNodeID(node->nodeID);
+                                    if (compositionCandidate.has_value()) {
+                                        auto& composition = compositionCandidate.value();
+                                        std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                        for (auto& attribute : composition->attributes) {
+                                            if (attribute->internalAttributeName == exposedAttributeID) {
+                                                exposedToTimeline = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    std::string exposeToTimelineIcon = ICON_FA_TIMELINE " " ICON_FA_PLUS;
+                                    if (exposedToTimeline) exposeToTimelineIcon = ICON_FA_TIMELINE " " ICON_FA_TRASH_CAN;
+                                    if (ImGui::SmallButton(FormatString("%s %s", exposeToTimelineIcon.c_str(), Localization::GetString(exposedToTimeline ? "HIDE_FROM_TIMELINE" : "EXPOSE_TO_TIMELINE").c_str()).c_str())) {
+                                        if (!exposedToTimeline) {
+                                            ImGui::OpenPopup(exposeToTimelinePopupID.c_str());
+                                        } else {
+                                            if (compositionCandidate.has_value()) {
+                                                auto& composition = compositionCandidate.value();
+                                                std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                int attributeIndex = 0;
+                                                for (auto& attribute : composition->attributes) {
+                                                    if (attribute->internalAttributeName == exposedAttributeID) {
+                                                        composition->attributes.erase(composition->attributes.begin() + attributeIndex);
+                                                        break;
+                                                    }
+                                                    attributeIndex++;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (ImGui::BeginPopup(exposeToTimelinePopupID.c_str())) {
+                                        ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_TIMELINE, Localization::GetString("EXPOSE_TO_TIMELINE").c_str(), attribute.c_str()).c_str());
+                                        for (auto& entry : Attributes::s_implementations) {
+                                            if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.description.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
+                                                auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
+                                                if (attributeCandidate.has_value()) {
+                                                    auto& exposedAttribute = attributeCandidate.value();
+                                                    exposedAttribute->internalAttributeName = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                    exposedAttribute->name = attribute;
+                                                    s_currentComposition->attributes.push_back(exposedAttribute);
+                                                }
+                                            }
+                                        }
+                                        ImGui::EndPopup();
                                     }
                                     ImGui::PopID();
                                 }

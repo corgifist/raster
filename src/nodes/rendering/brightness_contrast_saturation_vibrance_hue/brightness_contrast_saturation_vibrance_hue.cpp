@@ -76,21 +76,11 @@ namespace Raster {
     }
 
     void BrightnessContrastSaturationVibranceHue::AbstractLoadSerialized(Json t_data) {
-        RASTER_DESERIALIZE_WRAPPER(float, "Brightness");
-        RASTER_DESERIALIZE_WRAPPER(float, "Contrast");
-        RASTER_DESERIALIZE_WRAPPER(float, "Saturation");
-        RASTER_DESERIALIZE_WRAPPER(float, "Vibrance");
-        RASTER_DESERIALIZE_WRAPPER(float, "Hue");
+        DeserializeAllAttributes(t_data);
     }
 
     Json BrightnessContrastSaturationVibranceHue::AbstractSerialize() {
-        return {
-            RASTER_SERIALIZE_WRAPPER(float, "Brightness"),
-            RASTER_SERIALIZE_WRAPPER(float, "Contrast"),
-            RASTER_SERIALIZE_WRAPPER(float, "Saturation"),
-            RASTER_SERIALIZE_WRAPPER(float, "Vibrance"),
-            RASTER_SERIALIZE_WRAPPER(float, "Hue"),
-        };
+        return SerializeAllAttributes();
     }
 
     bool BrightnessContrastSaturationVibranceHue::AbstractDetailsAvailable() {

@@ -12,8 +12,6 @@
 #include "easings.h"
 #include "assets.h"
 
-#define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
-
 namespace Raster {
     struct Workspace {
         static std::optional<Project> s_project;

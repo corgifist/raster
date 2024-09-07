@@ -9,6 +9,7 @@ namespace Raster {
 
         SetupAttribute("A", 1.0f);
         SetupAttribute("Levels", 1.0f);
+        SetupAttribute("Intensity", 1.0f);
 
         AddOutputPin("Value");
     }
@@ -17,12 +18,21 @@ namespace Raster {
         AbstractPinMap result = {};
         auto aCandidate = GetDynamicAttribute("A");
         auto levelsCandidate = GetDynamicAttribute("Levels");
+        auto intensityCandidate = GetDynamicAttribute("Intensity");
         if (aCandidate.has_value() && levelsCandidate.has_value()) {
             auto& a = aCandidate.value();
             auto& b = levelsCandidate.value();
-            auto posterizationCandidate = DynamicMath::Posterize(a, b);
-            if (posterizationCandidate.has_value()) {
-                TryAppendAbstractPinMap(result, "Value", posterizationCandidate.value());
+            auto& intensity = intensityCandidate.value();
+            auto intensityCalculationCandidate = DynamicMath::Divide(a, intensity);
+            if (intensityCalculationCandidate.has_value()) {
+                auto& intensityCalculation = intensityCalculationCandidate.value();
+                auto posterizationCandidate = DynamicMath::Posterize(intensityCalculation, b);
+                if (posterizationCandidate.has_value()) {
+                    auto resultCandidate = DynamicMath::Multiply(posterizationCandidate.value(), intensity);
+                    if (resultCandidate.has_value()) {
+                        TryAppendAbstractPinMap(result, "Value", resultCandidate.value());
+                    }
+                }
             }
         }
 
@@ -32,18 +42,15 @@ namespace Raster {
     void Posterize::AbstractRenderProperties() {
         RenderAttributeProperty("A");
         RenderAttributeProperty("Levels");
+        RenderAttributeProperty("Intensity");
     }
 
     void Posterize::AbstractLoadSerialized(Json t_data) {
-        RASTER_DESERIALIZE_WRAPPER(float, "A");
-        RASTER_DESERIALIZE_WRAPPER(float, "Levels");
+        DeserializeAllAttributes(t_data);
     }
 
     Json Posterize::AbstractSerialize() {
-        return {
-            RASTER_SERIALIZE_WRAPPER(float, "A"),
-            RASTER_SERIALIZE_WRAPPER(float, "Levels")  
-        };
+        return SerializeAllAttributes();
     }
 
     bool Posterize::AbstractDetailsAvailable() {

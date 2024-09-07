@@ -41,13 +41,11 @@ namespace Raster {
     }
 
     void PosterizeTime::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Levels", t_data["Levels"].get<int>()); 
+        DeserializeAllAttributes(t_data);
     }
 
     Json PosterizeTime::AbstractSerialize() {
-        return {
-            {"Levels", RASTER_ATTRIBUTE_CAST(int, "Levels")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool PosterizeTime::AbstractDetailsAvailable() {

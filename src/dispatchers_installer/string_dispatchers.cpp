@@ -21,8 +21,10 @@ namespace Raster {
 
     void StringDispatchers::DispatchTextureValue(std::any& t_attribute) {
         auto texture = std::any_cast<Texture>(t_attribute);
-        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height)).x / 2.0f);
-        ImGui::Image(texture.handle, FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height)));
+        ImVec2 fitSize = FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height));
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - fitSize.x / 2.0f);
+        ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 12, 194, fitSize);
+        ImGui::Image(texture.handle, fitSize);
         
         auto footerText = FormatString("%ix%i; %s (%s)", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str());
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);

@@ -60,13 +60,11 @@ namespace Raster {
     }
 
     void Abs::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Input", t_data["Input"].get<float>());    
+        DeserializeAllAttributes(t_data); 
     }
 
     Json Abs::AbstractSerialize() {
-        return {
-            {"Input", std::any_cast<float>(m_attributes["Input"])}
-        };
+        return SerializeAllAttributes();
     }
 
     std::string Abs::AbstractHeader() {

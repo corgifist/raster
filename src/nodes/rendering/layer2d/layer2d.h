@@ -43,6 +43,7 @@ namespace Raster {
     struct SDFShapePipeline {
         SDFShape shape;
         Pipeline pipeline;
+        std::string shaderCode;
     };
 
     struct Layer2D : public NodeBase {

@@ -53,6 +53,7 @@ namespace Raster {
 
     void AttributeBase::Initialize() {
         this->name = "New Attribute";
+        this->internalAttributeName = "";
         this->id = Randomizer::GetRandomInteger();
 
         this->composition = nullptr;
@@ -75,7 +76,8 @@ namespace Raster {
             {"Name", name},
             {"ID", id},
             {"Keyframes", serializedKeyframes},
-            {"Data", AbstractSerialize()}
+            {"Data", AbstractSerialize()},
+            {"InternalName", internalAttributeName}
         };
     }
 
@@ -188,8 +190,11 @@ namespace Raster {
             if (attributeTextHovered) textColor = textColor * 0.9f;
             if (attributeTextClicked) textColor = textColor * 0.9f;
             ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-                ImGui::Text("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
+                ImGui::Text("%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
             ImGui::PopStyleColor();
+            if (!internalAttributeName.empty()) {
+                ImGui::SetItemTooltip("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("INTERNAL_NAME").c_str(), internalAttributeName.c_str());
+            }
 
             std::string renamePopupID = FormatString("##renameAttribute%i", id);
             if (ImGui::IsItemHovered() && ImGui::IsWindowFocused() && ImGui::GetIO().MouseDoubleClicked[ImGuiMouseButton_Left]) {
@@ -309,9 +314,6 @@ namespace Raster {
     }
 
     void AttributeBase::RenderAttributePopup(Composition* t_composition) {
-        if (t_composition->opacityAttributeID == id) {
-            ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("USED_AS_OPACITY_ATTRIBUTE").c_str());
-        }
         RenderPopup();
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
             ImGui::InputText("##attributeName", &name);
@@ -409,7 +411,7 @@ namespace Raster {
         SortKeyframes();
         float keyframeYOffset = -3;
         PushClipRect(RectBounds(
-            ImVec2(composition->beginFrame * UIShared::s_timelinePixelsPerFrame, ImGui::GetScrollY() + keyframeYOffset),
+            ImVec2(composition->beginFrame * UIShared::s_timelinePixelsPerFrame, keyframeYOffset),
             ImVec2((composition->endFrame - composition->beginFrame) * UIShared::s_timelinePixelsPerFrame, ImGui::GetWindowSize().y)
         ));
         float keyframeHeight = UIShared::s_timelineAttributeHeights[composition->id];

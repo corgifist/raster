@@ -29,13 +29,11 @@ namespace Raster {
     }
 
     void GetTime::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("RelativeTime", t_data["RelativeTime"].get<bool>());    
+        DeserializeAllAttributes(t_data);   
     }
 
     Json GetTime::AbstractSerialize() {
-        return {
-            {"RelativeTime", RASTER_ATTRIBUTE_CAST(bool, "RelativeTime")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool GetTime::AbstractDetailsAvailable() {

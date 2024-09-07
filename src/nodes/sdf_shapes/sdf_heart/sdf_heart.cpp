@@ -37,13 +37,11 @@ namespace Raster {
     }
 
     void SDFHeart::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Size", t_data["Size"].get<float>());   
+        DeserializeAllAttributes(t_data);
     }
 
     Json SDFHeart::AbstractSerialize() {
-        return {
-            {"Size", RASTER_ATTRIBUTE_CAST(float, "Size")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool SDFHeart::AbstractDetailsAvailable() {

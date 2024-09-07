@@ -92,13 +92,11 @@ namespace Raster {
     }
 
     void SDFAnnular::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Intensity", t_data["Intensity"].get<float>());    
+        DeserializeAllAttributes(t_data);
     }
 
     Json SDFAnnular::AbstractSerialize() {
-        return {
-            {"Intensity", RASTER_ATTRIBUTE_CAST(float, "Intensity")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool SDFAnnular::AbstractDetailsAvailable() {

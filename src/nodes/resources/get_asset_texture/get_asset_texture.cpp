@@ -39,13 +39,11 @@ namespace Raster {
     }
 
     void GetAssetTexture::AbstractLoadSerialized(Json t_data) {
-        RASTER_DESERIALIZE_WRAPPER(int, "AssetID");
+        DeserializeAllAttributes(t_data);
     }
 
     Json GetAssetTexture::AbstractSerialize() {
-        return {
-            RASTER_SERIALIZE_WRAPPER(int, "AssetID")
-        };
+        return SerializeAllAttributes();
     }
 
     bool GetAssetTexture::AbstractDetailsAvailable() {

@@ -39,13 +39,11 @@ namespace Raster {
     }
 
     void HueToRGB::AbstractLoadSerialized(Json t_data) {
-        RASTER_DESERIALIZE_WRAPPER(float, "Hue");
+        DeserializeAllAttributes(t_data);
     }
 
     Json HueToRGB::AbstractSerialize() {
-        return {
-            RASTER_SERIALIZE_WRAPPER(float, "Hue")
-        };
+        return SerializeAllAttributes();
     }
 
     bool HueToRGB::AbstractDetailsAvailable() {

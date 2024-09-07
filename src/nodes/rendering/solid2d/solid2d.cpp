@@ -56,16 +56,11 @@ namespace Raster {
     }
 
     void Solid2D::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Transform", Transform2D(t_data["Transform"]));
-        SetAttributeValue("Color", glm::vec4(t_data["Color"][0], t_data["Color"][1], t_data["Color"][2], t_data["Color"][3]));
+        DeserializeAllAttributes(t_data);
     }
 
     Json Solid2D::AbstractSerialize() {
-        auto color = RASTER_ATTRIBUTE_CAST(glm::vec4, "Color");
-        return {
-            {"Transform", RASTER_ATTRIBUTE_CAST(Transform2D, "Transform").Serialize()},
-            {"Color", {color.r, color.g, color.b, color.a}},
-        };
+        return SerializeAllAttributes();
     }
 
     void Solid2D::AbstractRenderProperties() {

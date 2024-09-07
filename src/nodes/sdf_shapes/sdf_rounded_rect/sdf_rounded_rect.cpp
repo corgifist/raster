@@ -37,13 +37,11 @@ namespace Raster {
     }
 
     void SDFRoundedRect::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Rounding", t_data["Rounding"].get<float>());    
+        DeserializeAllAttributes(t_data);
     }
 
     Json SDFRoundedRect::AbstractSerialize() {
-        return {
-            {"Rounding", RASTER_ATTRIBUTE_CAST(float, "Rounding")}
-        };
+        return SerializeAllAttributes();
     }
 
     bool SDFRoundedRect::AbstractDetailsAvailable() {

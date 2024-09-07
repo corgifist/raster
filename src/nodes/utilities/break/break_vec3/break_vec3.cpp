@@ -29,14 +29,11 @@ namespace Raster {
     }
     
     void BreakVec3::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Vector", glm::vec3{t_data["Vector"][0].get<float>(), t_data["Vector"][1].get<float>(), t_data["Vector"][2].get<float>()});
+        DeserializeAllAttributes(t_data);
     }
 
     Json BreakVec3::AbstractSerialize() {
-        auto vec = RASTER_ATTRIBUTE_CAST(glm::vec3, "Vector");
-        return {
-            {"Vector", {vec.x, vec.y, vec.z}}
-        };
+        return SerializeAllAttributes();
     }
 
     bool BreakVec3::AbstractDetailsAvailable() {

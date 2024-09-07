@@ -29,13 +29,11 @@ namespace Raster {
     }
 
     void GetAssetID::AbstractLoadSerialized(Json t_data) {
-        RASTER_DESERIALIZE_WRAPPER(int, "AssetID");
+        DeserializeAllAttributes(t_data);
     }
 
     Json GetAssetID::AbstractSerialize() {
-        return {
-            RASTER_SERIALIZE_WRAPPER(int, "AssetID")
-        };
+        return SerializeAllAttributes();
     }
 
     void GetAssetID::AbstractRenderDetails() {

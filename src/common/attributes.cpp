@@ -43,6 +43,7 @@ namespace Raster {
                 attributeCandidate.value()->Load(t_data["Data"]);
                 attributeCandidate.value()->packageName = t_data["PackageName"];
                 attributeCandidate.value()->name = t_data["Name"];
+                attributeCandidate.value()->internalAttributeName = t_data["InternalName"];
                 return attributeCandidate;
             }
         }

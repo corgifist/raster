@@ -32,6 +32,7 @@ namespace Raster {
     struct AttributeBase {
         int id;
         std::string name, packageName;
+        std::string internalAttributeName;
         std::vector<AttributeKeyframe> keyframes;
 
         AttributeBase();

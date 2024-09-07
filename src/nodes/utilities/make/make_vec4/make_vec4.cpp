@@ -39,19 +39,11 @@ namespace Raster {
     }
 
     Json MakeVec4::AbstractSerialize() {
-        return {
-            {"X", RASTER_ATTRIBUTE_CAST(float, "X")},
-            {"Y", RASTER_ATTRIBUTE_CAST(float, "Y")},
-            {"Z", RASTER_ATTRIBUTE_CAST(float, "Z")},
-            {"W", RASTER_ATTRIBUTE_CAST(float, "W")}
-        };
+        return SerializeAllAttributes();
     }
 
     void MakeVec4::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("X", t_data["X"].get<float>());
-        SetAttributeValue("Y", t_data["Y"].get<float>());  
-        SetAttributeValue("Z", t_data["Z"].get<float>());
-        SetAttributeValue("W", t_data["W"].get<float>());
+        DeserializeAllAttributes(t_data);
     }
 
 

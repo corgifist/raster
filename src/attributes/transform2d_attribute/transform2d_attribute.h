@@ -38,8 +38,7 @@ namespace Raster {
 
         Json SerializeKeyframeValue(std::any t_value);
         std::any LoadKeyframeValue(Json t_value);
-
-    private:
+        
         int m_parentAttributeID;
         int m_parentAssetID;
         ParentAssetType m_parentAssetType;

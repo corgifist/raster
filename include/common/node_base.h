@@ -5,6 +5,7 @@
 #include "font/IconsFontAwesome5.h"
 #include "typedefs.h"
 #include "node_category/node_category.h"
+#include "dynamic_serialization.h"
 
 #define RASTER_ATTRIBUTE_CAST(t_type, t_name) \
     std::any_cast<t_type>(m_attributes[t_name])
@@ -13,7 +14,7 @@
     {t_name, RASTER_ATTRIBUTE_CAST(t_type, t_name)}
 
 #define RASTER_DESERIALIZE_WRAPPER(t_type, t_name) \
-    SetAttributeValue(t_name, t_data[t_name].get<t_type>())    
+    if (t_data.contains(t_name)) SetAttributeValue(t_name, t_data[t_name].get<t_type>())    
 
 namespace Raster {
 
@@ -93,6 +94,15 @@ namespace Raster {
         void GenerateFlowPins();
 
         void SetupAttribute(std::string t_attribute, std::any t_defaultValue);
+
+        void SerializeAttribute(Json& t_data, std::string t_attribute);
+        Json SerializeAttributes(std::vector<std::string> t_attributes);
+
+        void DeserializeAttribute(Json& t_data, std::string t_attribute);
+        void DeserializeAttributes(Json& t_data, std::vector<std::string> t_attributes);
+
+        Json SerializeAllAttributes();
+        void DeserializeAllAttributes(Json& t_data);
 
         void Initialize();
 

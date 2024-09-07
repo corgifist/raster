@@ -66,6 +66,13 @@
     #error Cannot determine valid COMPILER_FMT / COMPILER_VERSION implementation for your compiler :(
 #endif
 
+#define ATTRIBUTE_TYPE(T) \
+    std::type_index(typeid(T))
+
+#define RASTER_COLOR32(R,G,B,A)    (((uint32_t)(A)<<24) | ((uint32_t)(B)<<16) | ((uint32_t)(G)<<8) | ((uint32_t)(R)<<0))
+
+#define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
+
 namespace Raster {
 
     using Json = nlohmann::json;

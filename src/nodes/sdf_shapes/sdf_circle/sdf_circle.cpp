@@ -37,13 +37,11 @@ namespace Raster {
     }
 
     void SDFCircle::AbstractLoadSerialized(Json t_data) {
-        SetAttributeValue("Radius", t_data["Radius"].get<float>());
+        DeserializeAllAttributes(t_data);
     }
 
     Json SDFCircle::AbstractSerialize() {
-        return {
-            {"Radius", RASTER_ATTRIBUTE_CAST(float, "Radius")}
-        };
+        return SerializeAllAttributes();
     }
 
 

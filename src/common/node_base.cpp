@@ -7,7 +7,20 @@
 #include "../ImGui/imgui_stdlib.h"
 #include "common/dispatchers.h"
 
+#define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
+
+    static std::vector<std::pair<std::string, std::any>> s_defaultValues = {
+        {TYPE_NAME(ICON_FA_DIVIDE, int), 0},
+        {TYPE_NAME(ICON_FA_DIVIDE, float), 0.0f},
+        {TYPE_NAME(ICON_FA_QUOTE_LEFT, std::string), std::string("")},
+        {TYPE_NAME(ICON_FA_LEFT_RIGHT, glm::vec2), glm::vec2()},
+        {TYPE_NAME(ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER, glm::vec3), glm::vec3()},
+        {TYPE_NAME(ICON_FA_EXPAND, glm::vec4), glm::vec4()},
+        {TYPE_NAME(ICON_FA_UP_DOWN_LEFT_RIGHT, Transform2D), Transform2D()},
+        {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()}
+    };
+
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
         this->m_attributes[t_attribute] = t_value;
     }
@@ -77,6 +90,7 @@ namespace Raster {
             std::string exposeButtonTest = 
                 !isAttributeExposed ? FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE").c_str()) :
                                      FormatString("%s %s", ICON_FA_LINK_SLASH, Localization::GetString("HIDE").c_str());
+            std::string typeText = FormatString("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str(), Workspace::GetTypeName(dynamicCandidate).c_str());
             ImGui::PushFont(Font::s_denseFont);
                 ImGui::SetWindowFontScale(1.2f);
                     bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
@@ -99,6 +113,25 @@ namespace Raster {
                 }
             }
             ImGui::PopStyleColor();
+            ImGui::SameLine();
+            std::string valueTypePopupID = FormatString("##valueTypePopup%s%i", t_attribute.c_str(), nodeID);
+            if (ImGui::Button(typeText.c_str())) {
+                ImGui::OpenPopup(valueTypePopupID.c_str());
+            }
+            if (ImGui::BeginPopup(valueTypePopupID.c_str())) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str()).c_str());
+                for (auto& defaultValue : s_defaultValues) {
+                    if (ImGui::MenuItem(FormatString("%s", defaultValue.first.c_str()).c_str())) {
+                        m_attributes[t_attribute] = defaultValue.second;
+                        dynamicCandidate = defaultValue.second;
+                    }
+                    if (ImGui::BeginItemTooltip()) {
+                        Dispatchers::DispatchString(defaultValue.second);
+                        ImGui::EndTooltip();
+                    }
+                }
+                ImGui::EndPopup();
+            }
             if (attributeTreeExpanded) {
                 bool dispatcherWasFound = false;
                 for (auto& dispatcher : Dispatchers::s_propertyDispatchers) {
@@ -120,6 +153,48 @@ namespace Raster {
                 }
                 ImGui::TreePop();
             }
+        }
+    }
+
+    void NodeBase::SerializeAttribute(Json& t_data, std::string t_attribute) {
+        if (m_attributes.find(t_attribute) != m_attributes.end()) {
+            auto& attribute = m_attributes[t_attribute];
+            auto serializedAttribute = DynamicSerialization::Serialize(attribute);
+            if (serializedAttribute.has_value()) {
+                t_data[t_attribute] = serializedAttribute.value();
+            }
+        }
+    }
+
+    Json NodeBase::SerializeAttributes(std::vector<std::string> t_attributes) {
+        Json result;
+        for (auto& attribute : t_attributes) {
+            SerializeAttribute(result, attribute);
+        }
+        return result;
+    }
+
+    void NodeBase::DeserializeAttribute(Json& t_data, std::string t_attribute) {
+        if (t_data.contains(t_attribute)) {
+            auto serializedAttribute = t_data[t_attribute];
+            auto deserializedAttribute = DynamicSerialization::Deserialize(serializedAttribute);
+            if (deserializedAttribute.has_value()) {
+                m_attributes[t_attribute] = deserializedAttribute.value();
+            }
+        }
+    }
+
+    Json NodeBase::SerializeAllAttributes() {
+        Json result;
+        for (auto& attribute : m_attributes) {
+            SerializeAttribute(result, attribute.first);
+        }
+        return result;
+    }
+
+    void NodeBase::DeserializeAllAttributes(Json& t_data) {
+        for (auto [attribute, serializedData] : t_data.items()) {
+            DeserializeAttribute(t_data, attribute);
         }
     }
 
@@ -169,6 +244,21 @@ namespace Raster {
             m_attributesCache[t_attribute] = dynamicAttribute;
             return dynamicAttribute;
         } */
+
+        std::string exposedPinAttributeName = FormatString("<%i>.%s", nodeID, t_attribute.c_str());
+        auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+        if (compositionCandidate.has_value()) {
+            auto& project = Workspace::GetProject();
+            auto& composition = compositionCandidate.value();
+            for (auto& attribute : composition->attributes) {
+                if (attribute->internalAttributeName == exposedPinAttributeName) {
+                    auto attributeValue = attribute->Get(project.currentFrame - composition->beginFrame, composition);
+                    m_attributesCache[t_attribute] = attributeValue;
+                    return attributeValue;
+                }
+            }
+        }
+
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value() && targetNode.value()->enabled) {
             auto pinMap = targetNode.value()->AbstractExecute();
@@ -196,6 +286,12 @@ namespace Raster {
                 glm::vec3 vec3 = std::any_cast<glm::vec3>(dynamicAttribute);
                 glm::vec4 vec4 = glm::vec4(vec3, 1.0f);
                 dynamicAttribute = vec4;
+            }
+            if (typeid(T) == typeid(float) && dynamicAttribute.type() == typeid(int)) {
+                dynamicAttribute = (float) std::any_cast<int>(dynamicAttribute);
+            }
+            if (typeid(T) == typeid(int) && dynamicAttribute.type() == typeid(float)) {
+                dynamicAttribute = (int) std::any_cast<float>(dynamicAttribute);
             }
             if (dynamicAttribute.type() == typeid(T)) {
                 return std::any_cast<T>(dynamicAttribute);
