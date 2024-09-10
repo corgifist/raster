@@ -122,7 +122,7 @@ namespace Raster {
                 if (compositionCandidate.has_value()) {
                     auto& composition = compositionCandidate.value();
                     for (auto& attribute : composition->attributes) {
-                        if (attribute->internalAttributeName == linkedAttributeID) {
+                        if (attribute->internalAttributeName.find(linkedAttributeID) != std::string::npos) {
                             linkedAttributeText = ICON_FA_LINK + std::string(" ") + linkedAttributeText;
                         }
                     }
@@ -794,6 +794,7 @@ namespace Raster {
                                     }
 
                                     ImGui::BulletText("%s", attribute.c_str());
+
                                     if (ImGui::IsItemHovered() && attributeValue.has_value()) {
                                         s_outerTooltip = attributeValue.value();
                                     }
@@ -814,7 +815,7 @@ namespace Raster {
                                         auto& composition = compositionCandidate.value();
                                         std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
                                         for (auto& attribute : composition->attributes) {
-                                            if (attribute->internalAttributeName == exposedAttributeID) {
+                                            if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
                                                 exposedToTimeline = true;
                                                 break;
                                             }
@@ -831,7 +832,7 @@ namespace Raster {
                                                 std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
                                                 int attributeIndex = 0;
                                                 for (auto& attribute : composition->attributes) {
-                                                    if (attribute->internalAttributeName == exposedAttributeID) {
+                                                    if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
                                                         composition->attributes.erase(composition->attributes.begin() + attributeIndex);
                                                         break;
                                                     }
@@ -843,16 +844,53 @@ namespace Raster {
 
                                     if (ImGui::BeginPopup(exposeToTimelinePopupID.c_str())) {
                                         ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_TIMELINE, Localization::GetString("EXPOSE_TO_TIMELINE").c_str(), attribute.c_str()).c_str());
-                                        for (auto& entry : Attributes::s_implementations) {
-                                            if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.description.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
-                                                auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
-                                                if (attributeCandidate.has_value()) {
-                                                    auto& exposedAttribute = attributeCandidate.value();
-                                                    exposedAttribute->internalAttributeName = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
-                                                    exposedAttribute->name = attribute;
-                                                    s_currentComposition->attributes.push_back(exposedAttribute);
+                                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str())) {
+                                            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str());
+                                            for (auto& entry : Attributes::s_implementations) {
+                                                if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.description.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
+                                                    auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
+                                                    if (attributeCandidate.has_value()) {
+                                                        auto& exposedAttribute = attributeCandidate.value();
+                                                        exposedAttribute->internalAttributeName += (exposedAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                        exposedAttribute->name = attribute;
+                                                        s_currentComposition->attributes.push_back(exposedAttribute);
+                                                    }
                                                 }
                                             }
+                                            ImGui::EndMenu();
+                                        }
+                                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("USE_EXISTING_ATTRIBUTE").c_str()).c_str())) {
+                                            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("USE_EXISTING_ATTRIBUTE").c_str()).c_str());
+                                            static std::string attributeFilter = "";
+                                            ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
+                                            auto parentComposition = Workspace::GetCompositionByNodeID(node->nodeID).value();
+                                            bool oneCandidateWasDisplayed = false;
+                                            bool mustShowByID = false;
+                                            for (auto& parentAttribute : parentComposition->attributes) {
+                                                if (std::to_string(parentAttribute->id) == ReplaceString(attributeFilter, " ", "")) {
+                                                    mustShowByID = true;
+                                                    break;
+                                                }
+                                            }
+                                            for (auto& parentAttribute : parentComposition->attributes) {
+                                                if (!mustShowByID) {
+                                                    if (!attributeFilter.empty() && LowerCase(ReplaceString(parentAttribute->name, " ", "")).find(LowerCase(ReplaceString(attributeFilter, " ", ""))) == std::string::npos) continue;
+                                                    if (parentAttribute->id == id) continue;
+                                                } else {
+                                                    if (!attributeFilter.empty() && std::to_string(parentAttribute->id) != ReplaceString(attributeFilter, " ", "")) continue;
+                                                }
+                                                ImGui::PushID(parentAttribute->id);
+                                                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, parentAttribute->name.c_str()).c_str())) {
+                                                    parentAttribute->internalAttributeName += (parentAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                }
+                                                oneCandidateWasDisplayed = true;
+                                                ImGui::PopID();
+                                            }
+                                            if (!oneCandidateWasDisplayed) {
+                                                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
+                                                ImGui::Text("%s", Localization::GetString("NOTHING_TO_SHOW").c_str());
+                                            }
+                                            ImGui::EndMenu();
                                         }
                                         ImGui::EndPopup();
                                     }

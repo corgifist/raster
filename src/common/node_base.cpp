@@ -251,8 +251,8 @@ namespace Raster {
             auto& project = Workspace::GetProject();
             auto& composition = compositionCandidate.value();
             for (auto& attribute : composition->attributes) {
-                if (attribute->internalAttributeName == exposedPinAttributeName) {
-                    auto attributeValue = attribute->Get(project.currentFrame - composition->beginFrame, composition);
+                if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
+                    auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
                     m_attributesCache[t_attribute] = attributeValue;
                     return attributeValue;
                 }

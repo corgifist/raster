@@ -13,7 +13,7 @@ namespace Raster {
     }
 
     std::any AssetAttribute::AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) {
-        return std::any_cast<int>(t_beginValue);
+        return t_percentage > 0.97f ? std::any_cast<int>(t_endValue) : std::any_cast<int>(t_beginValue);
     }
 
     void AssetAttribute::RenderKeyframes() {

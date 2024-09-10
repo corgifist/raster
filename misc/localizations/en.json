@@ -202,5 +202,8 @@
     "INSERT_VALUE": "Insert Value",
     "EXPOSE_TO_TIMELINE": "Expose to Timeline",
     "HIDE_FROM_TIMELINE": "Hide from Timeline",
-    "INTERNAL_NAME": "Internal Name"
+    "INTERNAL_NAME": "Internal Name",
+    "REMOVE_PARENT_ASSET": "Remove Parent Asset",
+    "SELECT_PARENT_ASSET": "Select Parent Asset",
+    "USE_EXISTING_ATTRIBUTE": "Use Existing Attribute"
 }

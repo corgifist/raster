@@ -40,7 +40,7 @@ namespace Raster {
             GPU::SetShaderUniform(pipeline.fragment, "uResolution", m_resolution);
             GPU::DrawArrays(3);
 
-            // GPU::DestroyFramebuffer(smpteFramebuffer);
+            GPU::DestroyFramebuffer(smpteFramebuffer);
             m_texture = smpteTexture;
         }
         return m_texture;
@@ -65,6 +65,7 @@ namespace Raster {
     }
 
     void PlaceholderAsset::AbstractRenderDetails() {
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str());
         ImGui::SameLine();
         ImGui::DragFloat2("##dragResolution", glm::value_ptr(m_resolution), 1, 0, 0, "%0.0f");

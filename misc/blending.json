@@ -60,10 +60,17 @@
         },
         {
             "Name": "Hard Light",
-            "CodeName": "Hard Light",
+            "CodeName": "blend_hard_light",
             "Formula": "blendHardLight(base, blend, opacity)",
             "Functions": "blending/hard_light",
             "Icon": "ICON_FA_LIGHTBULB"
+        },
+        {
+            "Name": "Mask",
+            "CodeName": "blend_mask",
+            "Formula": "blendMask(base, blend, opacity)",
+            "Functions": "blending/mask",
+            "Icon": "ICON_FA_SQUARE"
         },
         {
             "Name": "Multiply",

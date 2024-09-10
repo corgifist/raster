@@ -56,7 +56,6 @@ namespace Raster {
                 auto backgroundTextureCandidate = GetAttribute<Texture>("BackgroundTexture");
                 auto& framebuffer = m_internalFramebuffer.value();
                 GPU::BindFramebuffer(framebuffer);
-                std::cout << backgroundColor.r << " " << backgroundColor.g << " " << backgroundColor.b << std::endl;
                 GPU::ClearFramebuffer(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
                 if (backgroundTextureCandidate.has_value() && backgroundTextureCandidate.value().handle) {
                     auto& pipeline = s_pipeline.value();

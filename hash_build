@@ -55,6 +55,8 @@ build_modules = [
     ["transform2d_attribute", attribute, [raster_common, raster_ImGui]],
     ["asset_attribute", attribute, [raster_common, raster_ImGui]],
     ["color4_attribute", attribute, [raster_common, raster_ImGui]],
+    ["vec3_attribute", attribute, [raster_common, raster_ImGui]],
+    ["vec2_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category, raster_image]],
     ["resources/get_asset_id", node, [raster_common, raster_node_category, raster_ImGui]],
@@ -88,6 +90,7 @@ build_modules = [
     ["rendering/brightness_contrast_saturation_vibrance_hue", node, [raster_common, raster_gpu, raster_node_category, raster_compositor, raster_ImGui]],
     ["rendering/gamma_correction", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
     ["rendering/lens_distortion", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
+    ["rendering/halftone", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],

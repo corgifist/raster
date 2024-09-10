@@ -244,6 +244,7 @@ namespace Raster {
 
             bool internalOpenMoreAttributesPopup = false;
             if (ImGui::BeginPopup(parentAttributePopupID.c_str())) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, name.c_str()).c_str());
                 internalOpenMoreAttributesPopup = RenderParentAttributePopup();
                 ImGui::EndPopup();
             }
@@ -312,8 +313,27 @@ namespace Raster {
             }
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_PARENT_ASSET").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_PARENT_ASSET").c_str()).c_str());
+            static std::string assetFilter = "";
+            ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &assetFilter);
+            auto& project = Workspace::GetProject();
+            for (auto& asset : project.assets) {
+                if (!assetFilter.empty() && LowerCase(ReplaceString(asset->name, " ", "")).find(LowerCase(ReplaceString(assetFilter, " ", ""))) == std::string::npos) continue;
+                auto implementation = Assets::GetAssetImplementation(asset->packageName).value();
+                ImGui::PushID(asset->id);
+                    if (ImGui::MenuItem(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                        m_parentAssetID = asset->id;
+                    }
+                ImGui::PopID();
+            }
+            ImGui::EndMenu();
+        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("REMOVE_PARENT_ATTRIBUTE").c_str()).c_str())) {
             m_parentAttributeID = -1;
+        }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("REMOVE_PARENT_ASSET").c_str()).c_str())) {
+            m_parentAssetID = -1;
         }
         return openMoreAttributesPopup;
     }
@@ -377,6 +397,7 @@ namespace Raster {
         if (RenderParentAttributePopup()) {
             ImGui::OpenPopup(FormatString("%imoreAttributes", id).c_str());
         }
+        ImGui::Separator();
     }
 }
 
