@@ -16,7 +16,7 @@ namespace Raster {
 
         if (!s_echoPipeline.has_value()) {
             s_echoPipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "echo/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "echo/shader")
             );
         }

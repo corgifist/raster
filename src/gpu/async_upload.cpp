@@ -84,7 +84,6 @@ namespace Raster {
             if (info.image->precision == ImagePrecision::Full) precision = TexturePrecision::Full;
 
             auto generatedTexture = GPU::GenerateTexture(info.image->width, info.image->height, info.image->channels, precision);
-            DUMP_VAR((uint64_t) generatedTexture.handle);
             GPU::UpdateTexture(generatedTexture, 0, 0, info.image->width, info.image->height, info.image->channels, info.image->data.data());
             GPU::Flush();
 

@@ -22,6 +22,7 @@
 namespace Raster {
 
     GPUInfo GPU::info{};
+    Shader GPU::s_basicShader;
 
     static void GLAPIENTRY
     MessageCallback( GLenum source,
@@ -203,6 +204,8 @@ namespace Raster {
 
         std::cout << info.version << std::endl;
         std::cout << info.renderer << std::endl;
+
+        s_basicShader = GPU::GenerateShader(ShaderType::Vertex, "basic/shader");
     }
 
     void GPU::Flush() {

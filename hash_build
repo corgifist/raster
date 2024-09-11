@@ -91,6 +91,7 @@ build_modules = [
     ["rendering/gamma_correction", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
     ["rendering/lens_distortion", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
     ["rendering/halftone", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
+    ["rendering/hashed_blur", node, [raster_common, raster_gpu, raster_node_category, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base, raster_node_category]],

@@ -18,7 +18,7 @@ namespace Raster {
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "base/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "halftone/shader")
             );
         }

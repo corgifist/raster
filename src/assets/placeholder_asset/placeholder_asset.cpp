@@ -9,7 +9,7 @@ namespace Raster {
 
         if (!s_smptePipeline.has_value()) {
             s_smptePipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "smpte_pattern/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "smpte_pattern/shader")
             );
         }

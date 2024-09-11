@@ -14,7 +14,7 @@ namespace Raster {
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "gamma_correction/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "gamma_correction/shader")
             );
         }

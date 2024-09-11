@@ -124,6 +124,7 @@ namespace Raster {
 
     struct GPU {
         static GPUInfo info;
+        static Shader s_basicShader;
 
         static void Initialize();
         static bool MustTerminate();

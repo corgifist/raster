@@ -18,7 +18,7 @@ namespace Raster {
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "tracking_motion_blur/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "tracking_motion_blur/shader")
             );
 

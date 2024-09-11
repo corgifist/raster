@@ -16,7 +16,7 @@ namespace Raster {
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "brightness_contrast_saturation_vibrance_hue/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "brightness_contrast_saturation_vibrance_hue/shader")
             );
         }

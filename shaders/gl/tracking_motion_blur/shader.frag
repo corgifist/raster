@@ -4,6 +4,10 @@
 precision highp float;
 #endif
 
+// This shader uses code from https://www.shadertoy.com/view/NscGDf
+// Many thanks to Xor (https://www.shadertoy.com/user/Xor) on Shadertoy!
+
+
 layout(location = 0) out vec4 gColor;
 
 uniform vec2 uResolution;

@@ -19,7 +19,7 @@ namespace Raster {
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "lens_distortion/shader"),
+                GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "lens_distortion/shader")
             );
         }

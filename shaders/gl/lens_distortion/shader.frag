@@ -4,6 +4,10 @@
 precision highp float;
 #endif
 
+// This shader was taken from https://www.shadertoy.com/view/3tXczj
+// And was modified in order to be compatible with Raster
+// Many thanks to peterekepeter (https://www.shadertoy.com/user/peterekepeter) on Shadertoy!
+
 layout(location = 0) out vec4 gColor;
 layout(location = 1) out vec4 gUV;
 

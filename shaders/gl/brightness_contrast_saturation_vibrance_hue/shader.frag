@@ -14,10 +14,13 @@
  **/
 
 
-
 #ifdef GL_ES
 precision highp float;
 #endif
+
+// This shader was taken from https://www.shadertoy.com/view/MdjBRy
+// And was modified to be compatible with Raster
+// Many thanks to starea (https://www.shadertoy.com/user/starea) on Shadertoy!
 
 layout(location = 0) out vec4 gColor;
 
