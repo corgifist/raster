@@ -122,7 +122,17 @@ namespace Raster {
     }
 
     std::string Merge::AbstractHeader() {
-        return "Merge";
+        std::string base = "Merge";
+        auto blendModeCandidate = GetAttribute<std::string>("BlendingMode");
+        if (blendModeCandidate.has_value()) {
+            auto& blendMode = blendModeCandidate.value();
+            auto& blending = Compositor::s_blending;
+            auto modeCandidate = blending.GetModeByCodeName(blendMode);
+            if (modeCandidate.has_value()) {
+                base += ": " + modeCandidate.value().name;
+            }
+        }
+        return base;
     }
 
     std::string Merge::Icon() {
