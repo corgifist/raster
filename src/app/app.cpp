@@ -11,6 +11,11 @@
 #include "dispatchers_installer/dispatchers_installer.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_freetype.h"
+#include "../avcpp/av.h"
+#include "../avcpp/ffmpeg.h"
+#include "../avcpp/avutils.h"
+
+using namespace av;
 
 namespace Raster {
 
@@ -18,6 +23,9 @@ namespace Raster {
 
     void App::Initialize() {
         static NFD::Guard s_guard;
+        av::init();
+        av::set_logging_level(AV_LOG_ERROR);
+        std::cout << "ffmpeg version: " << av::getversion() << std::endl;
 
         GPU::Initialize();
         AsyncUpload::Initialize();

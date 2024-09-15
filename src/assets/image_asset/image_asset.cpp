@@ -116,7 +116,7 @@ namespace Raster {
         std::string relativePath = FormatString("%i%s", id, GetExtension(t_path).c_str());
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), relativePath.c_str());
         this->m_relativePath = relativePath;
-        this->m_asyncCopy = std::async(std::launch::async, [t_path, absolutePath, relativePath]() {
+        this->m_asyncCopy = std::async(std::launch::async, [t_path, absolutePath]() {
             std::filesystem::copy(t_path, absolutePath);
             return true;
         });

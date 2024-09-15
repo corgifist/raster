@@ -205,5 +205,6 @@
     "INTERNAL_NAME": "Internal Name",
     "REMOVE_PARENT_ASSET": "Remove Parent Asset",
     "SELECT_PARENT_ASSET": "Select Parent Asset",
-    "USE_EXISTING_ATTRIBUTE": "Use Existing Attribute"
+    "USE_EXISTING_ATTRIBUTE": "Use Existing Attribute",
+    "NAVIGATE_TO_NODE": "Navigate to Node"
 }

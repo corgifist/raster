@@ -65,7 +65,7 @@ namespace Raster {
 
         void ClearAttributesCache();
 
-        virtual void AbstractLoadSerialized(Json data) {};
+        virtual void AbstractLoadSerialized(Json data) { DeserializeAllAttributes(data); };
         virtual void AbstractRenderProperties() {};
 
         std::optional<GenericPin> GetAttributePin(std::string t_attribute);
@@ -89,7 +89,7 @@ namespace Raster {
         virtual bool AbstractDetailsAvailable() { return false; };
         virtual void AbstractRenderDetails() {}
 
-        virtual Json AbstractSerialize() { return {}; };
+        virtual Json AbstractSerialize() { return SerializeAllAttributes(); };
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
         void GenerateFlowPins();
 

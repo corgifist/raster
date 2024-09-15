@@ -5,9 +5,12 @@ object_add_compile_options(fPIC) # for shared libraries stuff
 object_add_compile_options(g) # include debug symbols
 object_add_compile_options("O0") # disable optimizations
 object_add_compile_options(Werror) # interpret all warnings as errors
+object_add_compile_options(D__STDC_CONSTANT_MACROS)
 object_set_include_path("include/")
 
 load_module("misc/scripts/raster_module.py")
+
+ffmpeg_libraries_list = "libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"
 
 object_add_compile_options(pkg_config("freetype2"))
 
@@ -26,10 +29,11 @@ if eq(get_platform(), windows) {
     shared_lib_ext = ".so"
 }
 
-dump_compilation_commands()
+# dump_compilation_commands()
 
 build_modules = [
     [ImGui, shared, [freetype]],
+    [avcpp, shared, [pkg_config($ffmpeg_libraries_list, "--libs")]],
     [font, shared],
     [common, shared, [raster_ImGui, raster_font]],
     [dispatchers_installer, shared, [raster_common, raster_ImGui, raster_font]],
@@ -40,7 +44,7 @@ build_modules = [
     [gpu, shared, [ternary(eq(get_platform(), windows), glfw3, glfw), raster_common, raster_ImGui, raster_image]],
     [compositor, shared, [raster_gpu, raster_common]],
     [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category, raster_font, nfd]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd]],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd, raster_avcpp]],
     [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app, bfd, unwind]],
     
@@ -49,6 +53,7 @@ build_modules = [
 
     ["image_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_image]],
     ["placeholder_asset", asset, [raster_common, raster_gpu, raster_ImGui]],
+    ["media_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_avcpp, pkg_config($ffmpeg_libraries_list, "--libs")]],
 
     ["float_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec4_attribute", attribute, [raster_common, raster_ImGui]],

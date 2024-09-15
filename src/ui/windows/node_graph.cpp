@@ -396,6 +396,7 @@ namespace Raster {
                 ImGui::PopStyleVar();
                 if (ctx) {
                     bool openSearchPopup = false;
+                    bool openNavigateToNodePopup = false;
                     static Nodes::PinId connectedLastLinePin;
                     Nodes::Begin("NodeGraph");
                         ImGui::PushFont(Font::s_denseFont);
@@ -970,6 +971,9 @@ namespace Raster {
                             ImGui::EndMenu();
                         }
                         ImGui::Separator();
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO_NODE").c_str()).c_str(), "`")) {
+                            openNavigateToNodePopup = true;
+                        }
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("NAVIGATE_TO_SELECTED").c_str()).c_str())) {
                             Nodes::NavigateToSelection();
                         }
@@ -984,9 +988,15 @@ namespace Raster {
                         openSearchPopup = true;
                         ignoreLastLine = true;
                     }
+                    if (ImGui::Shortcut(ImGuiKey_GraveAccent)) {
+                        openNavigateToNodePopup = true;
+                    }
                     if (openSearchPopup) {
                         ImGui::OpenPopup("##createNewNodeSearch");
                         drawLastLine = true;
+                    }
+                    if (openNavigateToNodePopup) {
+                        ImGui::OpenPopup("##navigateToNodePopup");
                     }
                     if (ImGui::BeginPopup("##createNewNodeSearch")) {
                         if (ignoreLastLine) drawLastLine = false;
@@ -1140,6 +1150,27 @@ namespace Raster {
                             dimming = true;
                         }
                     }
+                    ImGui::PushFont(Font::s_normalFont);
+                    if (ImGui::BeginPopup("##navigateToNodePopup")) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO_NODE").c_str()).c_str());
+                        static std::string s_nodeFilter = "";
+                        ImGui::InputTextWithHint("##nodeSearchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_nodeFilter);
+                        if (ImGui::BeginChild("##nodeCandidates", ImVec2(250, 300))) {
+                            for (auto& node : s_currentComposition->nodes) {
+                                if (!s_nodeFilter.empty() && LowerCase(node->Header()).find(LowerCase(s_nodeFilter)) == std::string::npos) continue;
+                                ImGui::PushID(node->nodeID);
+                                    if (ImGui::MenuItem(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str())) {
+                                        Nodes::SelectNode(node->nodeID);
+                                        s_mustNavigateToSelection = true;
+                                        ImGui::CloseCurrentPopup();
+                                    }
+                                ImGui::PopID();
+                            }
+                        }
+                        ImGui::EndChild();
+                        ImGui::EndPopup();
+                    }
+                    ImGui::PopFont();
                     Nodes::Resume();
                     if (Workspace::IsProjectLoaded()) {
                         Workspace::GetProject().selectedNodes.clear();

@@ -196,6 +196,7 @@ namespace Raster {
         if (ImGui::BeginPopup(FormatString("##%iattribute", id).c_str())) {
             ImGui::SeparatorText(FormatString("%s Edit Value: %s", ICON_FA_UP_DOWN_LEFT_RIGHT, name.c_str()).c_str());
             
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
             ImGui::SameLine();
             float cursorX = ImGui::GetCursorPosX();
@@ -203,6 +204,7 @@ namespace Raster {
             isItemEdited = isItemEdited || ImGui::IsItemEdited();
             
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Size", ICON_FA_SCALE_BALANCED);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
@@ -224,12 +226,14 @@ namespace Raster {
                 }
             }
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Anchor", ICON_FA_ANCHOR);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
             ImGui::DragFloat2("##dragAnchor", glm::value_ptr(transform.anchor), 0.05f);
             isItemEdited = isItemEdited || ImGui::IsItemEdited();
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Rotation", ICON_FA_ROTATE);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
