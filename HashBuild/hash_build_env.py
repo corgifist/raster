@@ -204,9 +204,22 @@ def dump_compilation_commands():
     global dump_compilation_process
     dump_compilation_process = True
 
+def to_str(s):
+    return str(s)
+
+def _slice(list, begin, end):
+    return list[begin:end]
+
+def _slice_begin(list, begin):
+    return list[begin:]
+
+def _slice_end(list, end):
+    return list[:end]
+
 functions = {
     "print": print,
     'cat': cat,
+    'str': to_str,
     "object_compile": object_compile,
     "object_add_compile_options": lambda x: compile_options.append("-" + x),
     "dump_compilation_commands": dump_compilation_commands,
@@ -236,7 +249,10 @@ functions = {
     "mv": shutil.move,
     "load_module": load_module,
     'exit': sys.exit,
-    "custom_arg": create_custom_arg
+    "custom_arg": create_custom_arg,
+    'slice': _slice,
+    'slice_begin': _slice_begin,
+    'slice_end': _slice_end
 }
 
 def arg_wrapper(func, args):

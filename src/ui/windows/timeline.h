@@ -40,6 +40,8 @@ namespace Raster {
         static void ProcessPasteAction();
         static void ProcessDeleteAction();
 
+        static void ProcessResizeToMatchContentDurationAction();
+
         static void ProcessShortcuts();
 
         static void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);

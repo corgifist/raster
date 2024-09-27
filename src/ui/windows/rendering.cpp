@@ -286,6 +286,7 @@ namespace Raster {
                     ImGui::SameLine();
                     if (ImGui::Button(ICON_FA_BACKWARD)) {
                         project.currentFrame -= 1;
+                        project.OnTimelineSeek();
                     }
                     ImGui::SameLine();
                     if (ImGui::Button(project.playing ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
@@ -295,6 +296,9 @@ namespace Raster {
                     static float forwardSeekSize = 20;
                     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - forwardSeekSize);
                         ImGui::SliderFloat("##timelineSlider", &project.currentFrame, 0, project.GetProjectLength(), firstTimestampText.c_str());
+                        if (ImGui::IsItemEdited()) {
+                            project.OnTimelineSeek();
+                        }
                     ImGui::PopItemWidth();
                     ImGui::SameLine();
                     float firstForwardSeekCursor = ImGui::GetCursorPosX();
@@ -308,6 +312,7 @@ namespace Raster {
                     ImGui::SameLine();
                     if (ImGui::Button(ICON_FA_FORWARD)) {
                         project.currentFrame += 1;
+                        project.OnTimelineSeek();
                     }
                     ImGui::SetItemTooltip("%s %s", ICON_FA_CIRCLE_NOTCH, Localization::GetString("LOOP_PLAYBACK").c_str());
                     ImGui::SameLine();

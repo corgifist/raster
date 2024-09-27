@@ -7,6 +7,7 @@ namespace Raster {
     struct Composition;
 
     using AbstractPinMap = std::unordered_map<int, std::any>;
+    using ContextData = std::unordered_map<std::string, std::any>;
 
     using PropertyDispatcherFunction = std::function<void(NodeBase*, std::string, std::any&, bool)>;
     using PropertyDispatchersCollection = std::unordered_map<std::type_index, PropertyDispatcherFunction>;

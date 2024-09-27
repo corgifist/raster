@@ -9,6 +9,7 @@ namespace Raster {
     std::unordered_map<NodeCategory, std::string> NodeCategoryUtils::s_iconMap;
     std::unordered_map<NodeCategory, std::string> NodeCategoryUtils::s_nameMap;
 
+    NodeCategory DefaultNodeCategories::s_audio;
     NodeCategory DefaultNodeCategories::s_resources;
     NodeCategory DefaultNodeCategories::s_attributes;
     NodeCategory DefaultNodeCategories::s_math;
@@ -17,6 +18,7 @@ namespace Raster {
     NodeCategory DefaultNodeCategories::s_other;
 
     void DefaultNodeCategories::Initialize() {
+        s_audio = NodeCategoryUtils::RegisterCategory(ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO"));
         s_resources = NodeCategoryUtils::RegisterCategory(ICON_FA_FOLDER, Localization::GetString("RESOURCES"));
         s_utilities = NodeCategoryUtils::RegisterCategory(ICON_FA_SCREWDRIVER, Localization::GetString("UTILITIES"));
         s_attributes = NodeCategoryUtils::RegisterCategory(ICON_FA_LINK, Localization::GetString("ATTRIBUTES"));

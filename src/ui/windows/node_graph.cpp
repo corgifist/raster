@@ -1151,25 +1151,33 @@ namespace Raster {
                         }
                     }
                     ImGui::PushFont(Font::s_normalFont);
+                    static bool s_navigateToNodeSearchFocused = false;
                     if (ImGui::BeginPopup("##navigateToNodePopup")) {
+                        if ((ImGui::IsKeyPressed(ImGuiKey_Escape) || ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) && !ImGui::IsWindowAppearing()) ImGui::CloseCurrentPopup();
                         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO_NODE").c_str()).c_str());
                         static std::string s_nodeFilter = "";
+                        if (!s_navigateToNodeSearchFocused) {
+                            ImGui::SetKeyboardFocusHere();
+                            s_navigateToNodeSearchFocused = true;
+                        }
                         ImGui::InputTextWithHint("##nodeSearchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_nodeFilter);
                         if (ImGui::BeginChild("##nodeCandidates", ImVec2(250, 300))) {
+                            bool first = true;
                             for (auto& node : s_currentComposition->nodes) {
                                 if (!s_nodeFilter.empty() && LowerCase(node->Header()).find(LowerCase(s_nodeFilter)) == std::string::npos) continue;
                                 ImGui::PushID(node->nodeID);
-                                    if (ImGui::MenuItem(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str())) {
+                                    if ((ImGui::MenuItem(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str())) || (first && ImGui::IsKeyPressed(ImGuiKey_Enter))) {
                                         Nodes::SelectNode(node->nodeID);
                                         s_mustNavigateToSelection = true;
                                         ImGui::CloseCurrentPopup();
                                     }
                                 ImGui::PopID();
+                                first = false;
                             }
                         }
                         ImGui::EndChild();
                         ImGui::EndPopup();
-                    }
+                    } else s_navigateToNodeSearchFocused = false;
                     ImGui::PopFont();
                     Nodes::Resume();
                     if (Workspace::IsProjectLoaded()) {

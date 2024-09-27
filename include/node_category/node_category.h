@@ -18,6 +18,7 @@ namespace Raster {
     };
 
     struct DefaultNodeCategories {
+        static NodeCategory s_audio;
         static NodeCategory s_resources;
         static NodeCategory s_attributes;
         static NodeCategory s_math;

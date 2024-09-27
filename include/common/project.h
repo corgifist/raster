@@ -1,7 +1,9 @@
 #pragma once
+
 #include "raster.h"
 #include "typedefs.h"
 #include "assets.h"
+#include "audio_bus.h"
 
 namespace Raster {
     struct Project {
@@ -24,6 +26,9 @@ namespace Raster {
         std::vector<int> selectedKeyframes;
         std::vector<int> selectedAssets;
 
+        std::vector<AudioBus> audioBuses;
+        std::shared_ptr<std::mutex> audioBusesMutex;
+
         Json customData;
 
         Project();
@@ -35,8 +40,14 @@ namespace Raster {
         float GetCorrectCurrentTime();
 
         void TimeTravel(float t_offset);
+        float GetTimeTravelOffset();
+
         void ResetTimeTravel();
+
         std::string FormatFrameToTime(float frame);
+
+        void Traverse(ContextData t_data = {});
+        void OnTimelineSeek();
 
         glm::mat4 GetProjectionMatrix(bool inverted = false);
 

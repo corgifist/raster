@@ -27,24 +27,33 @@ if eq(get_platform(), windows) {
 } else {
     shared_lib_prefix = "libraster_"
     shared_lib_ext = ".so"
+    nfd_deps = custom_arg(pkg_config("gtk+-3.0", "--libs"))
 }
 
 # dump_compilation_commands()
+
+ui_deps = [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category, raster_font, nfd]
+
+if eq(get_platform(), linux) {
+    list_append($ui_deps, $nfd_deps)
+    object_add_compile_options(pkg_config("gtk+-3.0"))
+    print($ui_deps)
+}
 
 build_modules = [
     [ImGui, shared, [freetype]],
     [avcpp, shared, [pkg_config($ffmpeg_libraries_list, "--libs")]],
     [font, shared],
     [common, shared, [raster_ImGui, raster_font]],
-    [dispatchers_installer, shared, [raster_common, raster_ImGui, raster_font]],
+    [audio, shared, [raster_common]],
+    [dispatchers_installer, shared, [raster_common, raster_ImGui, raster_font, raster_audio]],
     [node_category, shared, [raster_common]],
     [dynamic_math, shared, [raster_common]],
-    [traverser, shared, [raster_common]],
     [image, shared, [raster_common, pkg_config("OpenImageIO", "--libs")]],
     [gpu, shared, [ternary(eq(get_platform(), windows), glfw3, glfw), raster_common, raster_ImGui, raster_image]],
     [compositor, shared, [raster_gpu, raster_common]],
-    [ui, shared, [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_node_category, raster_font, nfd]],
-    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_traverser, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd, raster_avcpp]],
+    [ui, shared, $ui_deps],
+    [app, shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_compositor, raster_node_category, raster_dispatchers_installer, nfd, raster_avcpp, pkg_config($ffmpeg_libraries_list, "--libs"), raster_audio]],
     [sampler_constants_base, shared, [raster_common]],
     [core, binary, [raster_common, raster_app, bfd, unwind]],
     
@@ -62,6 +71,11 @@ build_modules = [
     ["color4_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec3_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec2_attribute", attribute, [raster_common, raster_ImGui]],
+
+    ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, raster_node_category, pkg_config($ffmpeg_libraries_list, "--libs")]],
+    ["audio/export_to_audio_bus", node, [raster_common, raster_node_category, raster_audio]],
+    ["audio/bass_treble_effect", node, [raster_common, raster_node_category, raster_audio]],
+    ["audio/reverb_effect", node, [raster_common, raster_node_category, raster_audio]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category, raster_image]],
     ["resources/get_asset_id", node, [raster_common, raster_node_category, raster_ImGui]],
@@ -125,7 +139,8 @@ build_modules = [
     ["sdf_shapes/sdf_mix", node, [raster_common, raster_node_category, raster_gpu]],
     ["sdf_shapes/sdf_annular", node, [raster_common, raster_node_category, raster_gpu]],
 
-    ["other/debug_print", node, [raster_common, raster_node_category, raster_ImGui]]
+    ["other/debug_print", node, [raster_common, raster_node_category, raster_ImGui]],
+    ["other/dummy_audio_mixer", node, [raster_common, raster_node_category]]
 ]
 
 required_folders = [
@@ -274,6 +289,11 @@ scenario execute_dispatch_error {
 scenario clean {
     call_scenario(clean_required_folders)
     object_clean()
+}
+
+scenario full_rebuild {
+    call_scenario(clean)
+    call_scenario(build_master)
 }
 
 scenario clean_required_folders {

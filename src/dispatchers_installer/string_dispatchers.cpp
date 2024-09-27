@@ -7,6 +7,8 @@
 #include "overlay_dispatchers.h"
 #include "string_dispatchers.h"
 #include "common/transform2d.h"
+#include "common/audio_samples.h"
+#include "audio/audio.h"
 
 namespace Raster {
 
@@ -111,5 +113,26 @@ namespace Raster {
     void StringDispatchers::DispatchBoolValue(std::any& t_attribute) {
         bool value = std::any_cast<bool>(t_attribute);
         ImGui::Text("%s %s", ICON_FA_CIRCLE_INFO, value ? "true" : "false");
+    }
+
+    void StringDispatchers::DispatchAudioSamplesValue(std::any& t_attribute) {
+        auto value = std::any_cast<AudioSamples>(t_attribute);
+        if (value.attachedPicture.has_value()) {
+            auto attachedPicture = value.attachedPicture.value();
+            std::any dynamicPicture = attachedPicture;
+            DispatchTextureValue(dynamicPicture);
+        }
+        ImGui::Text("%s %s: %i", ICON_FA_WAVE_SQUARE, Localization::GetString("SAMPLE_RATE").c_str(), value.sampleRate);
+#define WAVEFORM_PRECISION 100
+        for (int channel = 0; channel < Audio::GetChannelCount(); channel++) {
+            ImGui::PushID(channel);
+                std::vector<float> constructedWaveform(WAVEFORM_PRECISION);
+                int waveformIndex = 0;
+                for (int i = Audio::s_globalAudioOffset + Audio::GetChannelCount() - 1; i < Audio::s_globalAudioOffset + WAVEFORM_PRECISION * Audio::GetChannelCount(); i += Audio::GetChannelCount()) {
+                    constructedWaveform[waveformIndex++] = value.samples->data()[Audio::ClampAudioIndex(i)];
+                }
+                ImGui::PlotLines("##waveform", constructedWaveform.data(), WAVEFORM_PRECISION, 0, FormatString("%s %s %i", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNEL").c_str(), channel).c_str(), -1, 1, {0, 80});
+            ImGui::PopID();
+        }
     }
 };

@@ -22,6 +22,23 @@
 using namespace av;
 
 namespace Raster {
+
+    struct AudioStreamInfo {
+        int sampleRate;
+        std::string sampleFormatName;
+        std::string codecName;
+        int bitrate;
+    };
+
+    struct VideoStreamInfo {
+        int width, height;
+        std::string codecName;
+        std::string pixelFormatName;
+        int bitrate;
+    };
+
+    using StreamInfo = std::variant<AudioStreamInfo, VideoStreamInfo>;
+
     struct MediaAsset : public AssetBase {
     public:
         MediaAsset();
@@ -49,6 +66,8 @@ namespace Raster {
 
         bool m_formatCtxWasOpened;
         std::optional<Texture> m_attachedPicTexture;
+        std::vector<StreamInfo> m_streamInfos;
+        std::vector<std::pair<std::string, std::string>> m_metadata;
         std::optional<std::future<bool>> m_copyFuture;
     };
 };

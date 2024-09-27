@@ -23,6 +23,9 @@ namespace Raster {
 
         float GetOpacity(bool* attributeOpacityUsed = nullptr, bool* correctOpacityTypeUsed = nullptr);
 
+        void Traverse(ContextData t_context = {});
+        void OnTimelineSeek();
+
         Json Serialize();
     };
 };

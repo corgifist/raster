@@ -19,6 +19,7 @@ namespace Raster {
 
     AbstractPinMap DebugPrintNode::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
+        auto contextData = GetContextData();
         std::optional<std::string> inputAttribute = GetAttribute<std::string>("ArbitraryValue");
         TryAppendAbstractPinMap(result, "ExposedOutput", std::string("Exposed Output Works!"));
         return result;

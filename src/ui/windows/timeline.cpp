@@ -337,6 +337,9 @@ namespace Raster {
             ProcessCopyAction();
             ProcessPasteAction();
         }
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_R) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+            ProcessResizeToMatchContentDurationAction();
+        }
     }
 
     void TimelineUI::RenderCompositionsEditor() {
@@ -875,6 +878,9 @@ namespace Raster {
                 }
             }
         }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
+            ProcessResizeToMatchContentDurationAction();
+        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+C")) {
             ProcessCopyAction();
         }
@@ -961,6 +967,34 @@ namespace Raster {
         }
     }
 
+    void TimelineUI::ProcessResizeToMatchContentDurationAction() {
+        auto& project = Workspace::GetProject();
+        for (auto& compositionID : project.selectedCompositions) {
+            auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+            if (compositionCandidate.value()) {
+                auto& composition = compositionCandidate.value();
+                std::optional<float> contentDuration = std::nullopt;
+                for (auto& node : composition->nodes) {
+                    auto durationCandidate = node->GetContentDuration();
+                    if (!contentDuration.has_value() && durationCandidate.has_value()) {
+                        contentDuration = durationCandidate;
+                    }
+                    if (contentDuration.has_value() && durationCandidate.has_value()) {
+                        auto& duration = durationCandidate.value();
+                        auto& currentDuration = contentDuration.value();
+                        if (duration > currentDuration) {
+                            duration = currentDuration;
+                        }
+                    }
+                }
+                if (contentDuration.has_value()) {
+                    auto duration = contentDuration.value();
+                    composition->endFrame = composition->beginFrame + duration;
+                }
+            }
+        }
+    }
+
     void TimelineUI::UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements) {
         int originalID = pin.pinID;
         pin.pinID = Randomizer::GetRandomInteger();
@@ -1033,6 +1067,7 @@ namespace Raster {
         float timelineDragDistance;
         if (s_timelineDrag.GetDragDistance(timelineDragDistance) && ImGui::IsWindowFocused() && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             project.currentFrame = GetRelativeMousePos().x / s_pixelsPerFrame;
+            project.OnTimelineSeek();
         } else s_timelineDrag.Deactivate();
     }
 
@@ -1172,6 +1207,7 @@ namespace Raster {
                 if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
                     project.currentFrame += ImGui::GetIO().MouseDelta.x / s_pixelsPerFrame;
                     project.currentFrame = std::clamp(project.currentFrame, 0.0f, project.GetProjectLength());
+                    project.OnTimelineSeek();
                     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
                     timestampDragged = true;
                 } else timestampDragged = false;

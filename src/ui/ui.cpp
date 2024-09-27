@@ -6,6 +6,7 @@
 #include "windows/asset_manager.h"
 #include "windows/easing_editor.h"
 #include "windows/dockspace.h"
+#include "windows/audio_buses.h"
 
 namespace Raster {
     AbstractUI UIFactory::SpawnNodeGraphUI() {
@@ -34,5 +35,9 @@ namespace Raster {
 
     AbstractUI UIFactory::SpawnDockspaceUI() {
         return (AbstractUI) std::make_unique<DockspaceUI>();
+    }
+
+    AbstractUI UIFactory::SpawnAudioBusesUI() {
+        return (AbstractUI) std::make_unique<AudioBusesUI>();
     }
 }

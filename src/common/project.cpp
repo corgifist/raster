@@ -34,6 +34,12 @@ namespace Raster {
                 assets.push_back(assetCandidate.value());
             }
         }
+
+        for (auto& bus : data["AudioBuses"]) {
+            audioBuses.push_back(AudioBus(bus));
+        }
+        
+        this->audioBusesMutex = std::make_shared<std::mutex>();
     }
 
     Project::Project() {
@@ -47,6 +53,17 @@ namespace Raster {
         this->playing = false;
         this->looping = false;
         this->backgroundColor = {0, 0, 0, 1};
+        this->customData = {
+            {"Placeholder", true}
+        };
+
+        AudioBus mainBus;
+        mainBus.main = true;
+        mainBus.name = "Main Audio Bus";
+
+        audioBuses.push_back(mainBus);
+
+        this->audioBusesMutex = std::make_shared<std::mutex>();
     }
 
     float Project::GetProjectLength() {
@@ -62,9 +79,9 @@ namespace Raster {
     std::string Project::FormatFrameToTime(float frame) {
         frame = std::floor(frame);
         framerate = std::floor(framerate);
-        auto transformedFrame = frame / framerate;
-        float minutes = std::floor(transformedFrame / 60);
-        float seconds = std::floor(remainder(transformedFrame, 60.0f));
+        int transformedFrame = frame / framerate;
+        float minutes = transformedFrame / 60;
+        float seconds = transformedFrame % 60;
         return FormatString("%02i:%02i", (int) minutes, (int) seconds);
     }
 
@@ -74,7 +91,11 @@ namespace Raster {
     }
 
     float Project::GetCorrectCurrentTime() {
-        return currentFrame + std::reduce(timeTravelStack.begin(), timeTravelStack.end());
+        return currentFrame + GetTimeTravelOffset();
+    }
+
+    float Project::GetTimeTravelOffset() {
+        return std::reduce(timeTravelStack.begin(), timeTravelStack.end());
     }
 
     void Project::TimeTravel(float t_offset) {
@@ -83,6 +104,18 @@ namespace Raster {
 
     void Project::ResetTimeTravel() {
         timeTravelStack.pop_back();
+    }
+
+    void Project::Traverse(ContextData t_data) {
+        for (auto& composition : compositions) {
+            composition.Traverse(t_data);
+        }
+    }
+
+    void Project::OnTimelineSeek() {
+        for (auto& composition : compositions) {
+            composition.OnTimelineSeek();
+        }
     }
 
     Json Project::Serialize() {
@@ -115,6 +148,11 @@ namespace Raster {
         data["Assets"] = {};
         for (auto& asset : assets) {
             data["Assets"].push_back(asset->Serialize());
+        }
+
+        data["AudioBuses"] = {};
+        for (auto& bus : audioBuses) {
+            data["AudioBuses"].push_back(bus.Serialize());
         }
 
         return data;

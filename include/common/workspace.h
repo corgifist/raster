@@ -62,6 +62,8 @@ namespace Raster {
         static std::optional<AbstractAsset> GetAssetByAssetID(int t_assetID);
         static std::optional<int> GetAssetIndexByAssetID(int t_assetID);
 
+        static std::optional<AudioBus*> GetAudioBusByID(int t_busID);
+
         static std::string GetTypeName(std::any& t_value);
 
         static Project& GetProject();

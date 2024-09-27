@@ -6,6 +6,7 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
 #include "common/dispatchers.h"
+#include "common/audio_samples.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -34,17 +35,19 @@ namespace Raster {
         this->enabled = true;
         this->bypassed = false;
         this->executionsPerFrame = 0;
+        this->m_contextMutex = std::make_unique<std::mutex>();
     }
 
-    AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator) {
+    AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator, ContextData t_contextData) {
         this->m_accumulator = t_accumulator;
         if (!enabled) return {};
+        MergeContextDatas(t_contextData);
         if (bypassed) {
             auto outputPin = flowOutputPin.value();
             if (outputPin.connectedPinID > 0) {
                 auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
                 if (connectedNode.has_value()) {
-                    connectedNode.value()->Execute({});
+                    connectedNode.value()->Execute({}, t_contextData);
                     return {};
                 }
             }
@@ -58,7 +61,7 @@ namespace Raster {
         if (outputPin.connectedPinID > 0) {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value() && connectedNode.value()->enabled) {
-                auto newPinMap = connectedNode.value()->Execute(pinMap);
+                auto newPinMap = connectedNode.value()->Execute(pinMap, t_contextData);
                 Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
@@ -261,6 +264,7 @@ namespace Raster {
 
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value() && targetNode.value()->enabled) {
+            targetNode.value()->MergeContextDatas(GetContextData());
             auto pinMap = targetNode.value()->AbstractExecute();
             Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
@@ -356,6 +360,47 @@ namespace Raster {
         this->outputPins.push_back(GenericPin(t_attribute, PinType::Output));
     }
 
+    ContextData NodeBase::GetContextData() {
+        m_contextMutex->lock();
+            auto threadID = std::this_thread::get_id();
+            if (m_contextDatas.find(threadID) == m_contextDatas.end()) {
+                m_contextDatas[threadID] = {};
+            }
+            auto contextData = m_contextDatas[threadID];
+        m_contextMutex->unlock();
+        return contextData;
+    }
+
+    void NodeBase::UpdateContextData(std::string t_key, std::any t_value) {
+        auto oldContextData = GetContextData();
+        oldContextData[t_key] = t_value;
+        m_contextMutex->lock();
+            m_contextDatas[std::this_thread::get_id()] = oldContextData;
+        m_contextMutex->unlock();
+    }
+
+    void NodeBase::MergeContextDatas(ContextData t_data) {
+        auto currentContextData = GetContextData();
+        auto id = std::this_thread::get_id();
+        m_contextMutex->lock();
+            for (auto& pair : t_data) {
+                m_contextDatas[id][pair.first] = pair.second;
+            }
+        m_contextMutex->unlock();
+    }
+
+    bool NodeBase::DoesAudioMixing() {
+        return AbstractDoesAudioMixing();
+    }
+
+    void NodeBase::OnTimelineSeek() {
+        return AbstractOnTimelineSeek();
+    }
+
+    std::optional<float> NodeBase::GetContentDuration() {
+        return AbstractGetContentDuration();
+    }
+
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(float);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(int);
@@ -368,4 +413,5 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Transform2D);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(SamplerSettings);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(bool);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(AudioSamples);
 };

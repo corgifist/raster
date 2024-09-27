@@ -5,6 +5,7 @@
 #include "string_dispatchers.h"
 #include "common/common.h"
 #include "common/transform2d.h"
+#include "common/audio_samples.h"
 
 
 namespace Raster {
@@ -32,7 +33,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Framebuffer), StringDispatchers::DispatchFramebufferValue},
             {ATTRIBUTE_TYPE(SamplerSettings), StringDispatchers::DispatchSamplerSettingsValue},
             {ATTRIBUTE_TYPE(Transform2D), StringDispatchers::DispatchTransform2DValue},
-            {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue}
+            {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue},
+            {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue}
         };
 
         Dispatchers::s_previewDispatchers = {
@@ -44,7 +46,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(glm::vec3), PreviewDispatchers::DispatchVector3Value},
             {ATTRIBUTE_TYPE(glm::vec2), PreviewDispatchers::DispatchVector2Value},
             {ATTRIBUTE_TYPE(Framebuffer), PreviewDispatchers::DispatchFramebufferValue}, 
-            {ATTRIBUTE_TYPE(bool), PreviewDispatchers::DispatchBoolValue}
+            {ATTRIBUTE_TYPE(bool), PreviewDispatchers::DispatchBoolValue},
+            {ATTRIBUTE_TYPE(AudioSamples), PreviewDispatchers::DispatchAudioSamplesValue}
         };
 
         Dispatchers::s_overlayDispatchers = {

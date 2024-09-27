@@ -206,5 +206,20 @@
     "REMOVE_PARENT_ASSET": "Remove Parent Asset",
     "SELECT_PARENT_ASSET": "Select Parent Asset",
     "USE_EXISTING_ATTRIBUTE": "Use Existing Attribute",
-    "NAVIGATE_TO_NODE": "Navigate to Node"
+    "NAVIGATE_TO_NODE": "Navigate to Node",
+    "NO_STREAMS_FOUND": "No Streams Found",
+    "METADATA": "Metadata",
+    "OPEN_METADATA": "Open Metadata",
+    "ENTRIES": "Entries",
+    "CLICK_TO_COPY": "Click to Copy",
+    "PIXEL_FORMAT": "Pixel Format",
+    "BITRATE": "Bitrate",
+    "VIDEO_STREAM": "Video Stream",
+    "AUDIO_STREAM": "Audio Stream",
+    "SAMPLE_RATE": "Sample Rate",
+    "CODEC_NAME": "Codec Name",
+    "OPEN_STREAMS_INFO": "Open Streams Info",
+    "SAMPLE_FORMAT": "Sample Format",
+    "AUDIO_CHANNEL": "Audio Channel",
+    "RESIZE_TO_MATCH_CONTENT_DURATION": "Resize to Match Content Duration"
 }

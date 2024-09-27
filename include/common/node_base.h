@@ -36,9 +36,6 @@ namespace Raster {
     };
 
     struct NodeBase {
-
-        friend struct Dispatchers;
-
         int nodeID;
         int executionsPerFrame;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
@@ -49,7 +46,7 @@ namespace Raster {
 
         void SetAttributeValue(std::string t_attribute, std::any t_value);
 
-        AbstractPinMap Execute(AbstractPinMap accumulator = {});
+        AbstractPinMap Execute(AbstractPinMap accumulator = {}, ContextData t_contextData = {});
         std::string Header();
 
         bool DetailsAvailable();
@@ -81,8 +78,20 @@ namespace Raster {
         template <typename T>
         std::optional<T> GetAttribute(std::string t_attribute);
 
+        bool DoesAudioMixing();
+
+        std::optional<float> GetContentDuration();
+
+        void OnTimelineSeek();
+
         protected:
         std::unordered_map<std::string, std::any> m_attributes;
+
+        virtual bool AbstractDoesAudioMixing() { return false; };
+
+        virtual void AbstractOnTimelineSeek() { };
+
+        virtual std::optional<float> AbstractGetContentDuration() { return std::nullopt; }
 
         virtual std::string AbstractHeader() = 0;
 
@@ -90,7 +99,9 @@ namespace Raster {
         virtual void AbstractRenderDetails() {}
 
         virtual Json AbstractSerialize() { return SerializeAllAttributes(); };
-        virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) = 0;
+        virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) {
+            return {};
+        }
         void GenerateFlowPins();
 
         void SetupAttribute(std::string t_attribute, std::any t_defaultValue);
@@ -106,9 +117,15 @@ namespace Raster {
 
         void Initialize();
 
+        ContextData GetContextData();
+        void UpdateContextData(std::string t_key, std::any t_value);
+        void MergeContextDatas(ContextData t_data);
+
         private:
         std::unordered_map<std::string, std::any> m_attributesCache;
         std::vector<std::string> m_attributesOrder;
+        std::unique_ptr<std::mutex> m_contextMutex;
+        std::unordered_map<std::thread::id, ContextData> m_contextDatas;
 
         AbstractPinMap m_accumulator;
     };

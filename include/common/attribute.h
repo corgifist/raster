@@ -38,13 +38,13 @@ namespace Raster {
         AttributeBase();
 
         std::any Get(float t_frame, Composition* composition);
-        virtual void RenderKeyframes() = 0;
+        virtual void RenderKeyframes() {};
         void RenderLegend(Composition* t_composition);
         void RenderAttributePopup(Composition* t_composition);
         virtual void Load(Json t_data) {};
         
-        virtual Json SerializeKeyframeValue(std::any t_value) = 0;
-        virtual std::any LoadKeyframeValue(Json t_value) = 0;
+        virtual Json SerializeKeyframeValue(std::any t_value) { return {}; };
+        virtual std::any LoadKeyframeValue(Json t_value) { return std::nullopt; };
 
         virtual void AbstractRenderDetails() {};
 
@@ -65,8 +65,8 @@ namespace Raster {
 
         virtual void AbstractRenderPopup() {}
 
-        virtual std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) = 0;
-        virtual std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) = 0;
+        virtual std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) { return std::nullopt; };
+        virtual std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) { return std::nullopt; };
 
         void RenderKeyframe(AttributeKeyframe& t_keyframe);
 

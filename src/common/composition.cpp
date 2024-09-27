@@ -61,6 +61,41 @@ namespace Raster {
         return opacity;
     }
 
+    void Composition::Traverse(ContextData t_data) {
+        auto& project = Workspace::GetProject();
+        bool audioMixing = t_data.find("AUDIO_PASS") != t_data.end();
+        for (auto& node : nodes) {
+            if (audioMixing) break;
+            node->executionsPerFrame = 0;
+            node->ClearAttributesCache();
+        }
+        if (!IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) return;
+        if (!enabled) return;
+        AbstractPinMap accumulator;
+        for (auto& node : nodes) {
+            if (node->flowInputPin.has_value()) {
+                auto& flowInputPin = node->flowInputPin.value();
+                bool anyPinConnected = false;
+                for (auto& nodeCandidate : nodes) {
+                    if (nodeCandidate->flowOutputPin.has_value() && nodeCandidate->flowOutputPin.value().connectedPinID == flowInputPin.pinID) {
+                        anyPinConnected = true;
+                        break;
+                    }
+                }
+                if (!anyPinConnected) {
+                    if (audioMixing && !node->DoesAudioMixing()) continue;
+                    accumulator = node->Execute(accumulator, t_data);
+                }
+            }
+        }
+    }
+
+    void Composition::OnTimelineSeek() {
+        for (auto& node : nodes) {
+            node->OnTimelineSeek();
+        }
+    }
+
     Json Composition::Serialize() {
         Json data = {};
         data["ID"] = id;

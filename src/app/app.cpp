@@ -3,7 +3,6 @@
 #include "gpu/async_upload.h"
 #include "font/font.h"
 #include "common/common.h"
-#include "traverser/traverser.h"
 #include "build_number.h"
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
@@ -14,6 +13,7 @@
 #include "../avcpp/av.h"
 #include "../avcpp/ffmpeg.h"
 #include "../avcpp/avutils.h"
+#include "audio/audio.h"
 
 using namespace av;
 
@@ -27,6 +27,9 @@ namespace Raster {
         av::set_logging_level(AV_LOG_ERROR);
         std::cout << "ffmpeg version: " << av::getversion() << std::endl;
 
+        Audio::Initialize(2, 48000);
+        DUMP_VAR(Audio::s_backendInfo.name);
+        DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
         AsyncUpload::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
@@ -184,6 +187,7 @@ namespace Raster {
         s_windows.push_back(UIFactory::SpawnTimelineUI());
         s_windows.push_back(UIFactory::SpawnAssetManagerUI());
         s_windows.push_back(UIFactory::SpawnEasingEditor());
+        s_windows.push_back(UIFactory::SpawnAudioBusesUI());
     }
 
     void App::RenderLoop() {
@@ -208,6 +212,7 @@ namespace Raster {
                         if (project.currentFrame >= projectLength) {
                             if (project.looping) {
                                 project.currentFrame = 0;
+                                project.OnTimelineSeek();
                             } else project.playing = false;
                         } else {
                             if (project.currentFrame < projectLength) {
@@ -223,8 +228,8 @@ namespace Raster {
                     auto& project = Workspace::s_project.value();
                     project.currentFrame = std::max(project.currentFrame, 0.0f);
                     project.currentFrame = std::min(project.currentFrame, project.GetProjectLength());
+                    project.Traverse();
                 }
-                Traverser::TraverseAll();
 
                 for (const auto& window : s_windows) {
                     window->Render();
@@ -235,6 +240,11 @@ namespace Raster {
                 Compositor::PerformComposition();
                 GPU::BindFramebuffer(std::nullopt);
             GPU::EndFrame();
+
+            if (Workspace::IsProjectLoaded()) {
+                auto& project = Workspace::GetProject();
+                Audio::s_globalAudioOffset = std::fmod(project.currentFrame / project.framerate * Audio::GetSampleRate(), Audio::s_samplesCount);
+            }
         }
     }
 

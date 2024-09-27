@@ -19,8 +19,11 @@
 #include <cmath>
 #include <codecvt>
 #include <locale>
+#include <variant>
 
 #define GLM_ENABLE_EXPERIMENTAL
+
+#define AUDIO_PASS_PIN_ID -100
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -34,7 +37,22 @@
 
 #define print(expr) std::cout << expr << std::endl
 
-#define DUMP_VAR(var) print(#var << " = " << (var))
+#ifdef __PRETTY_FUNCTION__
+    #define RASTER_FUNCTION_MACRO __PRETTY_FUNCTION__
+#elif defined(__func__)
+    #define RASTER_FUNCTION_MACRO __func__
+#elif defined(__FUNCTION__)
+    #define RASTER_FUNCTION_MACRO __FUNCTION__
+#else
+    #define RASTER_FUNCTION_MACRO "RASTER_FUNCTION_MACRO is not supported"
+#endif
+
+#define RASTER_STRINGIFY(x) #x
+
+#define RASTER_SOURCE_LOCATION __FILE__ ":" RASTER_STRINGIFY((__LINE__)) ":  " RASTER_FUNCTION_MACRO
+
+
+#define DUMP_VAR(var) print(RASTER_SOURCE_LOCATION << " -> " << #var << " = " << (var))
 
 #if defined(UNIX) && !defined(WIN32)
     #define RASTER_DL_EXPORT
@@ -167,5 +185,13 @@ namespace Raster {
     static std::string GetExtension(std::string t_path) {
         return t_path.substr(t_path.find_last_of("."));
     }
+
+	static float DecibelToLinear(float p_db) {
+		return std::exp(p_db * (float)0.11512925464970228420089957273422);
+	}
+
+	static float LinearToDecibel(float p_linear) {
+		return std::log(p_linear) * (float)8.6858896380650365530225783783321;
+	}
 
 }
