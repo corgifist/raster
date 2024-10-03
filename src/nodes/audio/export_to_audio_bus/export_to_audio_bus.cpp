@@ -23,7 +23,7 @@ namespace Raster {
         auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
         
         if (contextData.find("AUDIO_PASS") == contextData.end()) return {};
-        if (busIDCandidate.has_value() && samplesCandidate.has_value() && samplesCandidate.value().samples) {
+        if (busIDCandidate.has_value() && samplesCandidate.has_value() && samplesCandidate.value().samples && project.playing) {
             auto busID = busIDCandidate.value();
             for (auto& bus : project.audioBuses) {
                 if (bus.main) {

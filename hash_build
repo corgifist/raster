@@ -75,7 +75,10 @@ build_modules = [
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, raster_node_category, pkg_config($ffmpeg_libraries_list, "--libs")]],
     ["audio/export_to_audio_bus", node, [raster_common, raster_node_category, raster_audio]],
     ["audio/bass_treble_effect", node, [raster_common, raster_node_category, raster_audio]],
+    ["audio/echo_effect", node, [raster_common, raster_node_category, raster_audio]],
     ["audio/reverb_effect", node, [raster_common, raster_node_category, raster_audio]],
+    ["audio/mix_audio_samples", node, [raster_common, raster_node_category, raster_audio]],
+    ["audio/audio_waveform_sine", node, [raster_common, raster_node_category, raster_audio]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_node_category, raster_image]],
     ["resources/get_asset_id", node, [raster_common, raster_node_category, raster_ImGui]],

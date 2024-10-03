@@ -204,7 +204,8 @@ namespace Raster {
         std::lock_guard<std::mutex> decodingGuard(*m_decodingMutex);
         auto& project = Workspace::GetProject();
         for (auto& decodingPair : m_decoderContexts) {
-            SeekDecoder(decodingPair.second);
+            decodingPair.second->needsSeeking = true;
+            decodingPair.second->cacheValid = false;
         }
     }
 

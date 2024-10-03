@@ -221,5 +221,9 @@
     "OPEN_STREAMS_INFO": "Open Streams Info",
     "SAMPLE_FORMAT": "Sample Format",
     "AUDIO_CHANNEL": "Audio Channel",
-    "RESIZE_TO_MATCH_CONTENT_DURATION": "Resize to Match Content Duration"
+    "RESIZE_TO_MATCH_CONTENT_DURATION": "Resize to Match Content Duration",
+    "AUDIO": "Audio",
+    "AUDIO_BUSES": "Audio Buses",
+    "MAIN": "Main",
+    "REDIRECT_TO_BUS": "Redirect to Bus"
 }

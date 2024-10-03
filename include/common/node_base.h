@@ -122,6 +122,7 @@ namespace Raster {
         void MergeContextDatas(ContextData t_data);
 
         private:
+        std::shared_ptr<std::mutex> m_attributesCacheMutex;
         std::unordered_map<std::string, std::any> m_attributesCache;
         std::vector<std::string> m_attributesOrder;
         std::unique_ptr<std::mutex> m_contextMutex;

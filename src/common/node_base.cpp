@@ -36,6 +36,7 @@ namespace Raster {
         this->bypassed = false;
         this->executionsPerFrame = 0;
         this->m_contextMutex = std::make_unique<std::mutex>();
+        this->m_attributesCacheMutex = std::make_unique<std::mutex>();
     }
 
     AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator, ContextData t_contextData) {
@@ -74,11 +75,13 @@ namespace Raster {
         std::any& dynamicCandidate = placeholder;
         bool candidateWasFound = false;
         bool usingCachedAttribute = false;
+        m_attributesCacheMutex->lock();
         if (m_attributesCache.find(t_attribute) != m_attributesCache.end()) {
             dynamicCandidate = m_attributesCache[t_attribute];
             candidateWasFound = true;
             usingCachedAttribute = true;
         }
+        m_attributesCacheMutex->unlock();
         if (m_attributes.find(t_attribute) != m_attributes.end() && !candidateWasFound) {
             dynamicCandidate = m_attributes[t_attribute];
             candidateWasFound = true;
@@ -242,12 +245,6 @@ namespace Raster {
         if (!enabled || bypassed) return std::nullopt;
         auto attributePinCandidate = GetAttributePin(t_attribute);
         auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
-/*         if (this->m_accumulator.find(attributePin.connectedPinID) != this->m_accumulator.end()) {
-            auto dynamicAttribute = this->m_accumulator.at(attributePin.connectedPinID);
-            m_attributesCache[t_attribute] = dynamicAttribute;
-            return dynamicAttribute;
-        } */
-
         std::string exposedPinAttributeName = FormatString("<%i>.%s", nodeID, t_attribute.c_str());
         auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
         if (compositionCandidate.has_value()) {
@@ -256,7 +253,9 @@ namespace Raster {
             for (auto& attribute : composition->attributes) {
                 if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
                     auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
+                    m_attributesCacheMutex->lock();
                     m_attributesCache[t_attribute] = attributeValue;
+                    m_attributesCacheMutex->unlock();
                     return attributeValue;
                 }
             }
@@ -269,7 +268,9 @@ namespace Raster {
             Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
             targetNode.value()->executionsPerFrame++;
+            m_attributesCacheMutex->lock();
             m_attributesCache[t_attribute] = dynamicAttribute;
+            m_attributesCacheMutex->unlock();
             return dynamicAttribute;
         }
 
@@ -313,8 +314,10 @@ namespace Raster {
     }
 
     void NodeBase::ClearAttributesCache() {
-        this->m_attributesCache.clear();
-        this->m_accumulator.clear();
+        m_attributesCacheMutex->lock();
+            this->m_attributesCache.clear();
+            this->m_accumulator.clear();
+        m_attributesCacheMutex->unlock();
     }
 
     std::vector<std::string> NodeBase::GetAttributesList() {

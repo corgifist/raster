@@ -1,23 +1,45 @@
 #pragma once
-
 #include "raster.h"
 #include "common/common.h"
-
 #include "common/audio_samples.h"
 #include "audio/audio.h"
+#include "Reverb_libSoX.h"
 
-#define MAX_BUFFER_LIFESPAN 300
+#define MAX_BUFFER_LIFESPAN 100
 
 namespace Raster {
 
-    struct ReverbBuffer {
-        SharedRawAudioSamples samples;
-        SharedRawAudioSamples outputBuffer;
-        int health;
-        int pos;
-        int len;
+    struct ReverbPrivate {
+        reverb_t reverb;
+        float* dry;
+        std::vector<float*> wet;
+        bool initialized;
 
-        ReverbBuffer();
+        float wetGain;
+        float roomSize;
+        float reverberance;
+        float hfDamping;
+        float stereoWidth;
+        float preDelay;
+        float toneLow;
+        float toneHigh;
+
+        ReverbPrivate();
+    };
+
+    struct ManagedReverbPrivate : ReverbPrivate {
+        ManagedReverbPrivate() : ReverbPrivate() {}
+        ~ManagedReverbPrivate() {
+            reverb_delete(&reverb);
+        }
+    };
+
+    struct ReverbContext {
+        std::vector<std::shared_ptr<ManagedReverbPrivate>> m_reverbs;
+        SharedRawAudioSamples m_cachedSamples;
+        int health;
+
+        ReverbContext();
     };
 
     struct ReverbEffect : public NodeBase {
@@ -35,8 +57,7 @@ namespace Raster {
         std::optional<std::string> Footer();
 
     private:
-        ReverbBuffer& GetReverbBuffer(float t_delay);
-
-        std::unordered_map<float, ReverbBuffer> m_reverbBuffers;
+        ReverbContext& GetReverbContext();
+        std::unordered_map<float, ReverbContext> m_reverbContexts;
     };
 };
