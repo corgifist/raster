@@ -4,11 +4,11 @@
 #include "common/common.h"
 #include "dylib.hpp"
 #include "font/IconsFontAwesome5.h"
+#include "attribute_metadata.h"
 
 #include "common/typedefs.h"
 
 namespace Raster {
-
     struct Dispatchers {
         static PropertyDispatchersCollection s_propertyDispatchers;
         static StringDispatchersCollection s_stringDispatchers;
@@ -17,9 +17,20 @@ namespace Raster {
 
         static bool s_enableOverlays;
 
-        static void DispatchProperty(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed);
+        // Used in `Node Properties` window to generate a UI to change some attribute's value
+        // Pass metadata objects to modify the behaviour of sliders & drags
+        // Possible metadata object types:
+        //   SliderRangeMetadata, FormatStringMetadata, SliderStepMetadata, Vec4ColorPickerMetadata
+        static void DispatchProperty(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata = {});
+
+        // Used to display a preview of some value in tooltip
         static void DispatchString(std::any& t_attribute);
+
+        // Used in `Rendering` window to display a preview of some value
         static void DispatchPreview(std::any& t_attribute);
+
+        // Generates an overlay over a `DispatchPreview` UI
+        // Can be useful for rendering some sorts of gizmos and bounds of objects
         static bool DispatchOverlay(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize);
     };
 };

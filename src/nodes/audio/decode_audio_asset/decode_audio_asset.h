@@ -1,6 +1,7 @@
 #pragma once
 #include "raster.h"
 #include "common/common.h"
+#include "common/audio_cache.h"
 
 #include "../../../avcpp/av.h"
 #include "../../../avcpp/ffmpeg.h"
@@ -35,6 +36,7 @@ namespace Raster {
         int resamplerSamplesCount;
         SharedRawAudioSamples cachedSamples;
         bool cacheValid;
+        AudioCache cache;
 
         bool wasOpened;
         int lastAudioPassID;
@@ -50,6 +52,7 @@ namespace Raster {
 
     struct DecodeAudioAsset : public NodeBase {
         DecodeAudioAsset();
+        ~DecodeAudioAsset();
         
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
         void AbstractRenderProperties();

@@ -4,7 +4,6 @@ namespace Raster {
 
     EchoBuffer::EchoBuffer() {
         this->samples = nullptr;
-        this->outputBuffer = nullptr;
         this->health = MAX_BUFFER_LIFESPAN;
         this->pos = 0;
         this->len = 0;
@@ -22,11 +21,26 @@ namespace Raster {
     }
 
     AbstractPinMap EchoEffect::AbstractExecute(AbstractPinMap t_accumulator) {
+        SharedLockGuard echoGuard(m_mutex);
         AbstractPinMap result = {};
 
         auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
         auto delayCandidate = GetAttribute<float>("Delay");
         auto decayCandidate = GetAttribute<float>("Decay");
+
+        auto contextData = GetContextData();
+
+        auto& project = Workspace::GetProject();
+        if (contextData.find("AUDIO_PASS") == contextData.end() && delayCandidate.has_value()) {
+            auto delay = (1 + delayCandidate.value());
+            auto echoBuffer = GetEchoBuffer(delay);
+            auto cacheCandidate = echoBuffer.cache.GetCachedSamples();
+            if (cacheCandidate.has_value()) {
+                TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
+            }
+            return result;
+        }
+        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
 
         if (samplesCandidate.has_value() && delayCandidate.has_value() && decayCandidate.has_value() && samplesCandidate.value().samples) {
             auto& samples = samplesCandidate.value();
@@ -35,7 +49,8 @@ namespace Raster {
             auto& reverbBuffer = GetEchoBuffer(delay);
 
             auto inputBuffer = samples.samples->data();
-            auto outputBuffer = reverbBuffer.outputBuffer->data();
+            auto rawAudioSamples = Audio::MakeRawAudioSamples();
+            auto outputBuffer = rawAudioSamples->data();
             auto historyBuffer = reverbBuffer.samples->data();
             auto& pos = reverbBuffer.pos;
             for (int i = 0; i < Audio::s_samplesCount * Audio::GetChannelCount(); i++, pos++) {
@@ -46,7 +61,8 @@ namespace Raster {
             }
 
             AudioSamples resultSamples = samples;
-            resultSamples.samples = reverbBuffer.outputBuffer;
+            resultSamples.samples = rawAudioSamples;
+            reverbBuffer.cache.SetCachedSamples(resultSamples);
             TryAppendAbstractPinMap(result, "Output", resultSamples);
         } 
 
@@ -54,8 +70,15 @@ namespace Raster {
     }
 
     void EchoEffect::AbstractRenderProperties() {
-        RenderAttributeProperty("Delay");
-        RenderAttributeProperty("Decay");
+        RenderAttributeProperty("Delay", {
+            FormatStringMetadata("seconds"),
+            SliderStepMetadata(0.1),
+            SliderRangeMetadata(0, 3)
+        });
+        RenderAttributeProperty("Decay", {
+            SliderStepMetadata(0.1),
+            SliderRangeMetadata(0, 1)
+        });
     }
 
     EchoBuffer& EchoEffect::GetEchoBuffer(float t_delay) {
@@ -79,7 +102,6 @@ namespace Raster {
 
         EchoBuffer buffer;
         buffer.samples = std::make_shared<std::vector<float>>(Audio::GetSampleRate() * Audio::GetChannelCount() * t_delay);
-        buffer.outputBuffer = std::make_shared<std::vector<float>>(4096 * Audio::GetChannelCount());
         buffer.pos = 0;
         buffer.len = Audio::GetSampleRate() * Audio::GetChannelCount() * t_delay;
         buffer.health = MAX_BUFFER_LIFESPAN;

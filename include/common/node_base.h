@@ -6,6 +6,7 @@
 #include "typedefs.h"
 #include "node_category/node_category.h"
 #include "dynamic_serialization.h"
+#include "attribute_metadata.h"
 
 #define RASTER_ATTRIBUTE_CAST(t_type, t_name) \
     std::any_cast<t_type>(m_attributes[t_name])
@@ -58,7 +59,7 @@ namespace Raster {
         void AddOutputPin(std::string t_attribute);
         void AddInputPin(std::string t_attribute);
 
-        void RenderAttributeProperty(std::string t_attribute);
+        void RenderAttributeProperty(std::string t_attribute, std::vector<std::any> t_metadata = {});
 
         void ClearAttributesCache();
 
@@ -116,6 +117,9 @@ namespace Raster {
         void DeserializeAllAttributes(Json& t_data);
 
         void Initialize();
+
+        void MakePinPersistent(std::string t_attribute);
+        void DestroyPersistentPins();
 
         ContextData GetContextData();
         void UpdateContextData(std::string t_key, std::any t_value);

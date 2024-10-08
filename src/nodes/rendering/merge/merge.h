@@ -20,7 +20,7 @@ namespace Raster {
         void AbstractLoadSerialized(Json t_data);
         Json AbstractSerialize();
 
-        static void DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed);
+        static void DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata);
 
         std::string AbstractHeader();
         std::string Icon();

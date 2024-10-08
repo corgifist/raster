@@ -9,7 +9,7 @@ namespace Raster {
     using AbstractPinMap = std::unordered_map<int, std::any>;
     using ContextData = std::unordered_map<std::string, std::any>;
 
-    using PropertyDispatcherFunction = std::function<void(NodeBase*, std::string, std::any&, bool)>;
+    using PropertyDispatcherFunction = std::function<void(NodeBase*, std::string, std::any&, bool, std::vector<std::any>)>;
     using PropertyDispatchersCollection = std::unordered_map<std::type_index, PropertyDispatcherFunction>;
 
     using StringDispatcherFunction = std::function<void(std::any&)>;

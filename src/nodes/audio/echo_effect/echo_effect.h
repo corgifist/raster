@@ -5,6 +5,8 @@
 
 #include "common/audio_samples.h"
 #include "audio/audio.h"
+#include "common/audio_cache.h"
+#include "common/shared_mutex.h"
 
 #define MAX_BUFFER_LIFESPAN 300
 
@@ -12,7 +14,7 @@ namespace Raster {
 
     struct EchoBuffer {
         SharedRawAudioSamples samples;
-        SharedRawAudioSamples outputBuffer;
+        AudioCache cache;
         int health;
         int pos;
         int len;
@@ -38,5 +40,7 @@ namespace Raster {
         EchoBuffer& GetEchoBuffer(float t_delay);
 
         std::unordered_map<float, EchoBuffer> m_reverbBuffers;
+
+        SharedMutex m_mutex;
     };
 };

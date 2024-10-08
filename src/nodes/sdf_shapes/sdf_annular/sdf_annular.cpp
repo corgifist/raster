@@ -88,7 +88,9 @@ namespace Raster {
     }
 
     void SDFAnnular::AbstractRenderProperties() {
-        RenderAttributeProperty("Intensity");
+        RenderAttributeProperty("Intensity", {
+            SliderStepMetadata(0.01f)
+        });
     }
 
     void SDFAnnular::AbstractLoadSerialized(Json t_data) {

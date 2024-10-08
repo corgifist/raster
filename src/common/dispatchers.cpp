@@ -16,10 +16,10 @@ namespace Raster {
     bool Dispatchers::s_enableOverlays = true;
 
 
-    void Dispatchers::DispatchProperty(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void Dispatchers::DispatchProperty(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         for (auto& dispatcher : s_propertyDispatchers) {
             if (std::type_index(t_value.type()) == dispatcher.first) {
-                dispatcher.second(t_owner, t_attribute, t_value, t_isAttributeExposed);
+                dispatcher.second(t_owner, t_attribute, t_value, t_isAttributeExposed, t_metadata);
             }
         }
     }

@@ -78,8 +78,11 @@ namespace Raster {
     void NodeGraphUI::RenderInputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
         std::any cachedValue = std::nullopt;
-        if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-            cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+        {
+            RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+            if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
+                cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+            }
         }
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
             Nodes::PinPivotAlignment({-0.45f, 0.5});
@@ -139,8 +142,11 @@ namespace Raster {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
 
         std::any cachedValue = std::nullopt;
-        if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end()) {
-            cachedValue = Workspace::s_pinCache[pin.pinID];
+        {
+            RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+            if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end()) {
+                cachedValue = Workspace::s_pinCache[pin.pinID];
+            }
         }
 
         float maximumOffset = s_maxRuntimeInputPinX + s_maxOutputPinX;
@@ -607,8 +613,11 @@ namespace Raster {
                                 for (auto& pin : node->inputPins) {
                                     if (pin.connectedPinID > 0) {
                                         std::any cachedValue = std::nullopt;
-                                        if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                            cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                                        {
+                                            RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+                                            if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                                cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                                            }
                                         }
                                         ImVec4 linkColor = ImVec4(1, 1, 1, 1);
                                         auto colorCandidate = GetColorByDynamicValue(cachedValue);
@@ -702,19 +711,22 @@ namespace Raster {
 
                             if (Nodes::BeginDelete()) {
                                 Nodes::NodeId nodeID = 0;
-                                while (Nodes::QueryDeletedNode(&nodeID)) {
-                                    int rawNodeID = (int) nodeID.Get();
-                                    if (Nodes::AcceptDeletedItem()) {
-                                        int targetNodeDelete = -1;
-                                        int nodeIndex = 0;
-                                        for (auto& node : s_currentComposition->nodes) {
-                                            if (node->nodeID == rawNodeID) {
-                                                targetNodeDelete = nodeIndex;
-                                                break; 
+                                {
+                                    RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+                                    while (Nodes::QueryDeletedNode(&nodeID)) {
+                                        int rawNodeID = (int) nodeID.Get();
+                                        if (Nodes::AcceptDeletedItem()) {
+                                            int targetNodeDelete = -1;
+                                            int nodeIndex = 0;
+                                            for (auto& node : s_currentComposition->nodes) {
+                                                if (node->nodeID == rawNodeID) {
+                                                    targetNodeDelete = nodeIndex;
+                                                    break; 
+                                                }
+                                                nodeIndex++;
                                             }
-                                            nodeIndex++;
+                                            s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                                         }
-                                        s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                                     }
                                 }
 
@@ -786,8 +798,11 @@ namespace Raster {
                                     for (auto& inputPin : node->inputPins) {
                                         if (inputPin.linkedAttribute == attribute) {
                                             isAttributeExposed = true;
-                                            if (Workspace::s_pinCache.find(inputPin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                                attributeValue = Workspace::s_pinCache[inputPin.connectedPinID];
+                                            {
+                                                RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+                                                if (Workspace::s_pinCache.find(inputPin.connectedPinID) != Workspace::s_pinCache.end()) {
+                                                    attributeValue = Workspace::s_pinCache[inputPin.connectedPinID];
+                                                }
                                             }
                                             break;
                                         }

@@ -4,6 +4,8 @@
 #include "common/audio_samples.h"
 #include "audio/audio.h"
 #include "Reverb_libSoX.h"
+#include "common/audio_cache.h"
+#include "common/shared_mutex.h"
 
 #define MAX_BUFFER_LIFESPAN 100
 
@@ -36,7 +38,7 @@ namespace Raster {
 
     struct ReverbContext {
         std::vector<std::shared_ptr<ManagedReverbPrivate>> m_reverbs;
-        SharedRawAudioSamples m_cachedSamples;
+        AudioCache cache;
         int health;
 
         ReverbContext();
@@ -59,5 +61,6 @@ namespace Raster {
     private:
         ReverbContext& GetReverbContext();
         std::unordered_map<float, ReverbContext> m_reverbContexts;
+        SharedMutex m_mutex;
     };
 };

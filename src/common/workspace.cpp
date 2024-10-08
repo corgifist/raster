@@ -6,9 +6,12 @@
 namespace Raster {
 
     std::optional<Project> Workspace::s_project;
+    std::mutex Workspace::s_projectMutex;
+
     std::vector<NodeImplementation> Workspace::s_nodeImplementations;
     Configuration Workspace::s_configuration;
 
+    std::mutex Workspace::s_pinCacheMutex;
     std::unordered_map<int, std::any> Workspace::s_pinCache;
 
     std::vector<int> Workspace::s_targetSelectNodes;
@@ -38,7 +41,8 @@ namespace Raster {
         RASTER_TYPE_NAME(Framebuffer),
         RASTER_TYPE_NAME(Transform2D),
         RASTER_TYPE_NAME(SamplerSettings),
-        RASTER_TYPE_NAME(AudioSamples)
+        RASTER_TYPE_NAME(AudioSamples),
+        RASTER_TYPE_NAME(bool)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {
@@ -54,6 +58,8 @@ namespace Raster {
         {"Green", RASTER_COLOR32(84, 172, 88, 255)},
         {"Light Green", RASTER_COLOR32(143, 192, 87, 255)}
     };
+
+    std::vector<int> Workspace::s_persistentPins = {};
 
     std::string Workspace::s_defaultColorMark = "Teal";
 
@@ -119,6 +125,7 @@ namespace Raster {
     std::optional<Composition*> Workspace::GetCompositionByNodeID(int t_nodeID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& project = s_project.value();
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : project.compositions) {
             for (auto& node : composition.nodes) {
                 if (node->nodeID == t_nodeID) return &composition;
@@ -130,6 +137,7 @@ namespace Raster {
     std::optional<Composition*> Workspace::GetCompositionByAttributeID(int t_attributeID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& project = s_project.value();
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : project.compositions) {
             for (auto& attribute : composition.attributes) {
                 if (attribute->id == t_attributeID) return &composition;
@@ -139,6 +147,7 @@ namespace Raster {
     }
 
     void Workspace::UpdatePinCache(AbstractPinMap& t_pinMap) {
+        RASTER_SYNCHRONIZED(s_pinCacheMutex);
         for (auto& pair : t_pinMap) {
             s_pinCache[pair.first] = pair.second;
         }
@@ -272,6 +281,7 @@ namespace Raster {
     std::optional<AbstractNode> Workspace::GetNodeByNodeID(int nodeID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node->nodeID == nodeID) return node;
@@ -283,6 +293,7 @@ namespace Raster {
     std::optional<AbstractNode> Workspace::GetNodeByPinID(int pinID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
@@ -309,6 +320,7 @@ namespace Raster {
     std::optional<GenericPin> Workspace::GetPinByLinkID(int linkID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
@@ -335,6 +347,7 @@ namespace Raster {
     std::optional<GenericPin> Workspace::GetPinByPinID(int pinID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
@@ -361,6 +374,7 @@ namespace Raster {
     void Workspace::UpdatePinByID(GenericPin pin, int pinID) {
         if (!s_project.has_value()) return;
         auto& compositions = s_project.value().compositions;
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node->flowInputPin.has_value()) {
@@ -390,6 +404,7 @@ namespace Raster {
     std::optional<AbstractAttribute> Workspace::GetAttributeByKeyframeID(int t_keyframeID) {
         if (s_project.has_value()) {
             auto& project = s_project.value();
+            RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& composition : project.compositions) {
                 for (auto& attribute : composition.attributes) {
                     for (auto& keyframe : attribute->keyframes) {
@@ -406,6 +421,7 @@ namespace Raster {
     std::optional<AbstractAttribute> Workspace::GetAttributeByAttributeID(int t_attributeID) {
         if (s_project.has_value()) {
             auto& project = s_project.value();
+            RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& composition : project.compositions) {
                 for (auto& attribute : composition.attributes) {
                     if (attribute->id == t_attributeID) return attribute;
@@ -416,6 +432,7 @@ namespace Raster {
     }
 
     std::optional<AbstractAttribute> Workspace::GetAttributeByName(Composition* t_composition, std::string t_name) {
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& attribute : t_composition->attributes) {
             if (attribute->name == t_name) return attribute;
         }
@@ -425,6 +442,7 @@ namespace Raster {
     std::optional<AttributeKeyframe*> Workspace::GetKeyframeByKeyframeID(int t_keyframeID) {
         if (s_project.has_value()) {
             auto& project = s_project.value();
+            RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& composition : project.compositions) {
                 for (auto& attribute : composition.attributes) {
                     for (auto& keyframe : attribute->keyframes) {
@@ -441,6 +459,7 @@ namespace Raster {
     std::optional<AbstractAsset> Workspace::GetAssetByAssetID(int t_assetID) {
         if (Workspace::IsProjectLoaded()) {
             auto& project = Workspace::GetProject();
+            RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& asset : project.assets) {
                 if (asset->id == t_assetID) return asset;
             }
@@ -451,6 +470,7 @@ namespace Raster {
     std::optional<int> Workspace::GetAssetIndexByAssetID(int t_assetID) {
         int index = 0;
         if (Workspace::IsProjectLoaded()) {
+            RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             auto& project = Workspace::GetProject();
             for (auto& asset : project.assets) {
                 if (asset->id == t_assetID) return index;

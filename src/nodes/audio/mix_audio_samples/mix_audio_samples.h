@@ -4,6 +4,8 @@
 
 #include "common/audio_samples.h"
 #include "audio/audio.h"
+#include "common/audio_cache.h"
+#include "common/shared_mutex.h"
 
 namespace Raster {
     struct MixAudioSamples : public NodeBase {
@@ -19,5 +21,8 @@ namespace Raster {
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();
+    private:
+        AudioCache m_cache;
+        SharedMutex m_mutex;
     };
 };

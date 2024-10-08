@@ -91,6 +91,9 @@
 
 #define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
 
+#define RASTER_SYNCHRONIZED(MUTEX) \
+    std::lock_guard<std::mutex> __sync((MUTEX)); \
+
 namespace Raster {
 
     using Json = nlohmann::json;

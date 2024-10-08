@@ -35,7 +35,11 @@ namespace Raster {
     void Mix::AbstractRenderProperties() {
         RenderAttributeProperty("A");
         RenderAttributeProperty("B");
-        RenderAttributeProperty("Phase");
+        RenderAttributeProperty("Phase", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 1),
+            SliderBaseMetadata(100)
+        });
     }
 
     void Mix::AbstractLoadSerialized(Json t_data) {

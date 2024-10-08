@@ -11,15 +11,13 @@ namespace Raster {
     AudioBackendInfo Audio::s_backendInfo;
     int Audio::s_samplesCount = 0;
     int Audio::s_globalAudioOffset = 0;
-
+    std::mutex Audio::s_audioMutex;
 
     static int s_channelCount, s_sampleRate;
     static ma_device s_device;
 
     static void raster_data_callback(ma_device* t_device, void* t_output, const void* t_input, ma_uint32 t_frameCount) {
-        static std::mutex s_dataCallbackMutex;
-
-        s_dataCallbackMutex.lock();
+        Audio::s_audioMutex.lock();
         Audio::s_samplesCount = t_frameCount;
         float* fOutput = (float*) t_output;
         static int s_audioPassID = 0;
@@ -76,7 +74,7 @@ namespace Raster {
 
             project.audioBusesMutex->unlock();
         }
-        s_dataCallbackMutex.unlock();
+        Audio::s_audioMutex.unlock();
     }
 
     void Audio::Initialize(int t_channelCount, int t_sampleRate) {
@@ -115,5 +113,9 @@ namespace Raster {
     int Audio::ClampAudioIndex(int t_index) {
         if (t_index >= s_samplesCount) return ClampAudioIndex(t_index - s_samplesCount);
         return t_index;
+    }
+
+    SharedRawAudioSamples Audio::MakeRawAudioSamples() {
+        return std::make_shared<std::vector<float>>(Audio::s_samplesCount * Audio::GetChannelCount());
     }
 };

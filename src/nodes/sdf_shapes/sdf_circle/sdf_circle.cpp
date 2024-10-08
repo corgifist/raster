@@ -33,7 +33,9 @@ namespace Raster {
     }
 
     void SDFCircle::AbstractRenderProperties() {
-        RenderAttributeProperty("Radius");
+        RenderAttributeProperty("Radius", {
+            SliderStepMetadata(0.01f)
+        });
     }
 
     void SDFCircle::AbstractLoadSerialized(Json t_data) {

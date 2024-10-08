@@ -15,6 +15,7 @@
 namespace Raster {
     struct Workspace {
         static std::optional<Project> s_project;
+        static std::mutex s_projectMutex;
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 
@@ -23,7 +24,9 @@ namespace Raster {
 
         static std::vector<int> s_targetSelectNodes;
 
+        static std::mutex s_pinCacheMutex;
         static std::unordered_map<int, std::any> s_pinCache;
+        static std::vector<int> s_persistentPins;
         static std::unordered_map<std::type_index, std::string> s_typeNames;
         static std::unordered_map<std::type_index, uint32_t> s_typeColors;
 

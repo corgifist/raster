@@ -18,6 +18,7 @@ namespace Raster {
     }
 
     AbstractPinMap AudioWaveformSine::AbstractExecute(AbstractPinMap t_accumulator) {
+        SharedLockGuard waveformGuard(m_mutex);
         AbstractPinMap result = {};
         
         auto lengthCandidate = GetAttribute<float>("Length");
@@ -28,6 +29,14 @@ namespace Raster {
         auto& project = Workspace::GetProject();
 
         auto contextData = GetContextData();
+
+        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+            auto cacheCandidate = m_cache.GetCachedSamples();
+            if (cacheCandidate.has_value()) {
+                TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
+            }
+            return result;
+        }
         if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
 
         if (lengthCandidate.has_value() && amplitudeCandidate.has_value() && phaseCandidate.has_value() && advanceCandidate.has_value()) {
@@ -51,6 +60,7 @@ namespace Raster {
             AudioSamples samples;
             samples.sampleRate = Audio::GetSampleRate();
             samples.samples = resultSamples;
+            m_cache.SetCachedSamples(samples);
             TryAppendAbstractPinMap(result, "Output", samples);
         }
 
@@ -58,10 +68,18 @@ namespace Raster {
     }
 
     void AudioWaveformSine::AbstractRenderProperties() {
-        RenderAttributeProperty("Length");
-        RenderAttributeProperty("Amplitude");
-        RenderAttributeProperty("Phase");
-        RenderAttributeProperty("Advance");
+        RenderAttributeProperty("Length", {
+            SliderStepMetadata(0.05f)
+        });
+        RenderAttributeProperty("Amplitude", {
+            SliderRangeMetadata(0, 1)
+        });
+        RenderAttributeProperty("Phase", {
+            SliderStepMetadata(0.1f)
+        });
+        RenderAttributeProperty("Advance", {
+            SliderStepMetadata(0.1f)
+        });
     }
 
     void AudioWaveformSine::AbstractLoadSerialized(Json t_data) {

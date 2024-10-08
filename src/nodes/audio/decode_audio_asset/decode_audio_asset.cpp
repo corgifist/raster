@@ -23,6 +23,12 @@ namespace Raster {
         this->m_decodingMutex = std::make_shared<std::mutex>();
 
         AddOutputPin("Samples");
+
+        MakePinPersistent("Samples");
+    }
+
+    DecodeAudioAsset::~DecodeAudioAsset() {
+        DestroyPersistentPins();
     }
 
     AbstractPinMap DecodeAudioAsset::AbstractExecute(AbstractPinMap t_accumulator) {
@@ -33,6 +39,14 @@ namespace Raster {
         auto volumeCandidate = GetAttribute<float>("Volume");
 
         auto& project = Workspace::GetProject();
+        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+            auto decoderContext = GetDecoderContext();
+            auto cacheCandidate = decoderContext->cache.GetCachedSamples();
+            if (cacheCandidate.has_value()) {
+                TryAppendAbstractPinMap(result, "Samples", cacheCandidate.value());
+            }
+            return result;
+        }
         if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
         auto audioPassID = std::any_cast<int>(contextData["AUDIO_PASS_ID"]);
 
@@ -117,6 +131,7 @@ namespace Raster {
             samples.sampleRate = resampledSamples.sampleRate();
             samples.samples = decoderContext->cachedSamples;
             samples.attachedPicture = attachedPicCandidate;
+            decoderContext->cache.SetCachedSamples(samples);
 
             decoderContext->cacheValid = true;
             decoderContext->lastAudioPassID = audioPassID;
@@ -222,7 +237,11 @@ namespace Raster {
 
     void DecodeAudioAsset::AbstractRenderProperties() {
         RenderAttributeProperty("Asset");
-        RenderAttributeProperty("Volume");
+        RenderAttributeProperty("Volume", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 150),
+            SliderBaseMetadata(100)
+        });
     }
 
     void DecodeAudioAsset::AbstractLoadSerialized(Json t_data) {

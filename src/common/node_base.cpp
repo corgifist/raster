@@ -70,7 +70,7 @@ namespace Raster {
         return pinMap;
     }
 
-    void NodeBase::RenderAttributeProperty(std::string t_attribute) {
+    void NodeBase::RenderAttributeProperty(std::string t_attribute, std::vector<std::any> t_metadata) {
         static std::any placeholder = nullptr;
         std::any& dynamicCandidate = placeholder;
         bool candidateWasFound = false;
@@ -150,7 +150,7 @@ namespace Raster {
                             ImGui::SetCursorPosX(originalCursorX);
                         }
                         dispatcherWasFound = true;
-                        dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed);
+                        dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed, t_metadata);
                         if (!usingCachedAttribute) m_attributes[t_attribute] = dynamicCandidate;
                     } 
                 }
@@ -253,9 +253,8 @@ namespace Raster {
             for (auto& attribute : composition->attributes) {
                 if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
                     auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
-                    m_attributesCacheMutex->lock();
+                    RASTER_SYNCHRONIZED(*m_attributesCacheMutex);
                     m_attributesCache[t_attribute] = attributeValue;
-                    m_attributesCacheMutex->unlock();
                     return attributeValue;
                 }
             }
@@ -268,9 +267,8 @@ namespace Raster {
             Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
             targetNode.value()->executionsPerFrame++;
-            m_attributesCacheMutex->lock();
+            RASTER_SYNCHRONIZED(*m_attributesCacheMutex);
             m_attributesCache[t_attribute] = dynamicAttribute;
-            m_attributesCacheMutex->unlock();
             return dynamicAttribute;
         }
 
@@ -390,6 +388,33 @@ namespace Raster {
                 m_contextDatas[id][pair.first] = pair.second;
             }
         m_contextMutex->unlock();
+    }
+
+    void NodeBase::MakePinPersistent(std::string t_pin) {
+        auto& persistentPins = Workspace::s_persistentPins;
+        auto pinCandidate = GetAttributePin(t_pin);
+        if (pinCandidate.has_value()) {
+            auto& pin = pinCandidate.value();
+            if (std::find(persistentPins.begin(), persistentPins.end(), pin.pinID) == persistentPins.end()) {
+                persistentPins.push_back(pin.pinID);
+            }
+        }
+    }
+
+    void NodeBase::DestroyPersistentPins() {
+        auto& persistentPins = Workspace::s_persistentPins;
+        for (auto& pin : inputPins) {
+            auto pinIterator = std::find(persistentPins.begin(), persistentPins.end(), pin.pinID);
+            if (pinIterator != persistentPins.end()) {
+                persistentPins.erase(pinIterator);
+            }
+        }
+        for (auto& pin : outputPins) {
+            auto pinIterator = std::find(persistentPins.begin(), persistentPins.end(), pin.pinID);
+            if (pinIterator != persistentPins.end()) {
+                persistentPins.erase(pinIterator);
+            }
+        }
     }
 
     bool NodeBase::DoesAudioMixing() {

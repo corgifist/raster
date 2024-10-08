@@ -6,6 +6,7 @@
 #include "overlay_dispatchers.h"
 #include "common/transform2d.h"
 #include "../ImGui/imgui_stripes.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
 
@@ -14,7 +15,63 @@ namespace Raster {
         return glm::vec2{src.x * scale, src.y * scale};
     }
 
-    void AttributeDispatchers::DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    struct ParsedMetadata {
+        bool isSlider;
+        float sliderMin, sliderMax;
+        float sliderStep;
+        std::string sliderFormat;
+        float base;
+
+        ParsedMetadata() {
+            this->isSlider = false;
+            this->sliderFormat = "%0.2f";
+            this->base = 1.0f;
+        }
+    };
+
+    static ParsedMetadata ParseMetadata(std::optional<std::vector<std::any>> t_metadata) {
+        bool isSlider = false;
+        float sliderMin, sliderMax;
+        std::string format = "";
+        float step = FLT_MAX;
+        float base = 1.0f;
+        if (t_metadata.has_value()) {
+            auto& metadata = t_metadata.value();
+            for (auto& info : metadata) {
+                if (info.type() == typeid(SliderRangeMetadata)) {
+                    auto sliderInfo = std::any_cast<SliderRangeMetadata>(info);
+                    isSlider = true;
+                    sliderMin = sliderInfo.min;
+                    sliderMax = sliderInfo.max;
+                }
+                if (info.type() == typeid(FormatStringMetadata)) {
+                    auto formatString = std::any_cast<FormatStringMetadata>(info);
+                    format = " " + formatString.format;
+                }
+                if (info.type() == typeid(SliderStepMetadata)) {
+                    step = std::any_cast<SliderStepMetadata>(info).step;
+                }
+                if (info.type() == typeid(SliderBaseMetadata)) {
+                    base = std::any_cast<SliderBaseMetadata>(info).base;
+                }
+            }
+        }
+
+        ParsedMetadata result;
+        result.isSlider = isSlider;
+        result.sliderMin = sliderMin;
+        result.sliderMax = sliderMax;
+        result.sliderStep = step == FLT_MAX ? 1.0f : step;
+        result.sliderFormat = format;
+        result.base = base;
+        return result;
+    }
+
+    static std::string GetMetadataFormat(ParsedMetadata t_metadata, std::string t_type = "0.2f") {
+        return FormatString("%%%s%s", t_type.c_str(), ReplaceString(t_metadata.sliderFormat, "\\%", "%%").c_str());
+    }
+
+    void AttributeDispatchers::DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         std::string string = std::any_cast<std::string>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
@@ -22,15 +79,23 @@ namespace Raster {
         t_value = string;
     }
 
-    void AttributeDispatchers::DispatchFloatAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchFloatAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         float f = std::any_cast<float>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
-        ImGui::DragFloat(FormatString("##%s", t_attribute.c_str()).c_str(), &f);
+        auto metadata = ParseMetadata(t_metadata);
+        std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
+        f *= metadata.base;
+        if (!metadata.isSlider) {
+            ImGui::DragFloat(formattedAttribute.c_str(), &f, metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+        } else {
+            ImGui::SliderFloat(formattedAttribute.c_str(), &f, metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
+        }
+        f /= metadata.base;
         t_value = f;
     }
 
-    void AttributeDispatchers::DispatchIntAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchIntAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto& project = Workspace::GetProject();
         int i = std::any_cast<int>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
@@ -39,7 +104,14 @@ namespace Raster {
             ImGui::OpenPopup(FormatString("##insertValue%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
         }
         ImGui::SameLine();
-        ImGui::DragInt(FormatString("##%s", t_attribute.c_str()).c_str(), &i);
+
+        auto metadata = ParseMetadata(t_metadata);
+        std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
+        if (!metadata.isSlider) {
+            ImGui::DragInt(formattedAttribute.c_str(), &i, metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+        } else {
+            ImGui::SliderInt(formattedAttribute.c_str(), &i, metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata, "i").c_str());
+        }
 
         bool openAssetIDPopup = false;
         bool openAttributesPopup = false;
@@ -156,7 +228,7 @@ namespace Raster {
         t_value = i;
     }
 
-    void AttributeDispatchers::DispatchVec4Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchVec4Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto& project = Workspace::GetProject();
         if (!project.customData.contains("Vec4AttributeDispatcherData")) {
             project.customData["Vec4AttributeDispatcherData"] = {
@@ -178,20 +250,27 @@ namespace Raster {
         }
         ImGui::SetItemTooltip("%s %s", interpretAsColor ? ICON_FA_DROPLET : ICON_FA_EXPAND, Localization::GetString("VECTOR_INTERPRETATION_MODE").c_str());
         ImGui::SameLine();
+        auto metadata = ParseMetadata(t_metadata);
+        v *= metadata.base;
         if (!interpretAsColor) {
-            ImGui::DragFloat4(FormatString("##%s", t_attribute.c_str()).c_str(), glm::value_ptr(v));
+            std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
+            if (!metadata.isSlider) {
+                ImGui::DragFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+            } else {
+                ImGui::SliderFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
+            }
         } else {
             ImGui::PushItemWidth(200);
                 ImGui::ColorPicker4("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
             ImGui::PopItemWidth();
         }
-
+        v /= metadata.base;
         t_value = v;
 
         interpretAsColorDict[id] = interpretAsColor;
     }
 
-    void AttributeDispatchers::DispatchVec3Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchVec3Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto& project = Workspace::GetProject();
         if (!project.customData.contains("Vec3AttributeDispatcherData")) {
             project.customData["Vec3AttributeDispatcherData"] = {
@@ -213,20 +292,27 @@ namespace Raster {
         }
         ImGui::SetItemTooltip("%s %s", interpretAsColor ? ICON_FA_DROPLET : ICON_FA_EXPAND, Localization::GetString("VECTOR_INTERPRETATION_MODE").c_str());
         ImGui::SameLine();
+        auto metadata = ParseMetadata(t_metadata);
+        v *= metadata.base;
         if (!interpretAsColor) {
-            ImGui::DragFloat3(FormatString("##%s", t_attribute.c_str()).c_str(), glm::value_ptr(v));
+            std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
+            if (!metadata.isSlider) {
+                ImGui::DragFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+            } else {
+                ImGui::SliderFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
+            }
         } else {
             ImGui::PushItemWidth(200);
                 ImGui::ColorPicker3("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
             ImGui::PopItemWidth();
         }
-
+        v /= metadata.base;
         t_value = v;
 
         interpretAsColorDict[id] = interpretAsColor;
     }
 
-    void AttributeDispatchers::DispatchVec2Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchVec2Attribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto& project = Workspace::GetProject();
 
         if (!project.customData.contains("Vec2AttributeDispatcherData")) {
@@ -249,7 +335,15 @@ namespace Raster {
             linkedSize = !linkedSize;
         }
         ImGui::SameLine();
-        ImGui::DragFloat2(FormatString("##%s", t_attribute.c_str()).c_str(), glm::value_ptr(v));
+        auto metadata = ParseMetadata(t_metadata);
+        v *= metadata.base;
+        std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
+        if (!metadata.isSlider) {
+            ImGui::DragFloat2(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+        } else {
+            ImGui::SliderFloat2(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
+        }
+        v /= metadata.base;
         if (linkedSize) {
             if (reservedVector.x != v.x) {
                 v.y = v.x;
@@ -264,7 +358,7 @@ namespace Raster {
 
     }
 
-    void AttributeDispatchers::DispatchTransform2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchTransform2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto fitSize = FitRectInRect({ImGui::GetWindowSize().x, 256}, Workspace::s_project.value().preferredResolution);
         ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
@@ -336,7 +430,7 @@ namespace Raster {
         t_value = transform;
     }
 
-    void AttributeDispatchers::DispatchSamplerSettingsAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchSamplerSettingsAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto samplerSettings = std::any_cast<SamplerSettings>(t_value);
         static std::vector<TextureWrappingMode> wrappingModes = {
             TextureWrappingMode::Repeat,
@@ -395,7 +489,7 @@ namespace Raster {
         t_value = samplerSettings;
     }
 
-    void AttributeDispatchers::DispatchBoolAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void AttributeDispatchers::DispatchBoolAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         bool value = std::any_cast<bool>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();

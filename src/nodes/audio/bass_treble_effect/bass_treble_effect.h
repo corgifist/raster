@@ -6,6 +6,9 @@
 #include "common/audio_samples.h"
 #include "audio/audio.h"
 
+#include "common/audio_cache.h"
+#include "common/shared_mutex.h"
+
 namespace Raster {
 
     struct BassTrebleCachedData
@@ -47,6 +50,7 @@ namespace Raster {
                                    double& b0, double& b1, double& b2);
 
         BassTrebleCachedData m_data;
-        SharedRawAudioSamples m_cachedSamples;
+        AudioCache m_cache;
+        SharedMutex m_mutex;
     };
 };

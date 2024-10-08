@@ -33,7 +33,9 @@ namespace Raster {
     }
 
     void SDFRoundedRect::AbstractRenderProperties() {
-        RenderAttributeProperty("Rounding");
+        RenderAttributeProperty("Rounding", {
+            SliderStepMetadata(0.01f)
+        });
     }
 
     void SDFRoundedRect::AbstractLoadSerialized(Json t_data) {

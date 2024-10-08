@@ -55,8 +55,6 @@ namespace Raster {
 
         AddInputPin("Samples");
         AddOutputPin("Output");
-
-        this->m_cachedSamples = std::make_shared<std::vector<float>>(4096 * Audio::GetChannelCount());
     }
 
     AbstractPinMap BassTrebleEffect::AbstractExecute(AbstractPinMap t_accumulator) {
@@ -66,6 +64,17 @@ namespace Raster {
         auto bassCandidate = GetAttribute<float>("Bass");
         auto trebleCandidate = GetAttribute<float>("Treble");
         auto gainCandidate = GetAttribute<float>("Gain");
+
+        auto& project = Workspace::GetProject();
+        auto contextData = GetContextData();
+        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+            auto cacheCandidate = m_cache.GetCachedSamples();
+            if (cacheCandidate.has_value()) {
+                TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
+            }
+            return result;
+        }
+        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
         if (samplesCandidate.has_value() && bassCandidate.has_value() && trebleCandidate.has_value() && gainCandidate.has_value()) {
             auto& samples = samplesCandidate.value();
             auto& bass = bassCandidate.value();
@@ -91,7 +100,8 @@ namespace Raster {
                 }
 
                 auto rawSamples = samples.samples->data();
-                auto rawCachedSamples = m_cachedSamples->data();
+                auto rawSamplesVector = Audio::MakeRawAudioSamples();
+                auto rawCachedSamples = rawSamplesVector->data();
                 for (int i = 0; i < Audio::s_samplesCount * Audio::GetChannelCount(); i++) {
                     float in = rawSamples[i];
                     // Bass filter
@@ -115,7 +125,8 @@ namespace Raster {
                 }
                 
                 AudioSamples resultSamples = samples;
-                resultSamples.samples = m_cachedSamples;
+                resultSamples.samples = rawSamplesVector;
+                m_cache.SetCachedSamples(resultSamples);
                 TryAppendAbstractPinMap(result, "Output", resultSamples);
             }
         }
@@ -124,9 +135,18 @@ namespace Raster {
     }
 
     void BassTrebleEffect::AbstractRenderProperties() {
-        RenderAttributeProperty("Bass");
-        RenderAttributeProperty("Treble");
-        RenderAttributeProperty("Gain");
+        RenderAttributeProperty("Bass", {
+            FormatStringMetadata("dB"),
+            SliderRangeMetadata(-30, 30)
+        });
+        RenderAttributeProperty("Treble", {
+            FormatStringMetadata("dB"),
+            SliderRangeMetadata(-30, 30)
+        });
+        RenderAttributeProperty("Gain", {
+            FormatStringMetadata("dB"),
+            SliderRangeMetadata(-30, 30)
+        });
     }
 
     void BassTrebleEffect::BassCoefficients(double hz, double slope, double gain, double samplerate,

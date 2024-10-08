@@ -229,6 +229,7 @@ namespace Raster {
             UIShared::s_timelineDragged = s_timelineRulerDragged;
 
             RenderLegend();
+            if (s_anyLayerDragged) project.OnTimelineSeek();
             RenderCompositionsEditor();
             RenderSplitter();
             s_legendOffsets.clear();
@@ -725,6 +726,7 @@ namespace Raster {
             if (composition->id == iterationComposition.id) break;
             targetCompositionIndex++;
         }
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
     }
 

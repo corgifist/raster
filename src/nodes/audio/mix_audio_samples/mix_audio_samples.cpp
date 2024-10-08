@@ -1,4 +1,5 @@
 #include "mix_audio_samples.h"
+#include "common/attribute_metadata.h"
 
 namespace Raster {
 
@@ -16,11 +17,24 @@ namespace Raster {
     }
 
     AbstractPinMap MixAudioSamples::AbstractExecute(AbstractPinMap t_accumulator) {
+        SharedLockGuard mixerGuard(m_mutex);
         AbstractPinMap result = {};
         
         auto aCandidate = GetAttribute<AudioSamples>("A");
         auto bCandidate = GetAttribute<AudioSamples>("B");
         auto phaseCandidate = GetAttribute<float>("Phase");
+        auto contextData = GetContextData();
+        auto& project = Workspace::GetProject();
+
+        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+            auto cacheCandidate = m_cache.GetCachedSamples();
+            if (cacheCandidate.has_value()) {
+                TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
+            }
+            return result;
+        }
+        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+        
         if (aCandidate.has_value() && bCandidate.has_value() && phaseCandidate.has_value()) {
             auto& a = aCandidate.value();
             auto& b = bCandidate.value();
@@ -36,6 +50,7 @@ namespace Raster {
 
                 AudioSamples resultSamples = a;
                 resultSamples.samples = rawSamples;
+                m_cache.SetCachedSamples(resultSamples);
                 TryAppendAbstractPinMap(result, "Output", resultSamples);
             }
         }
@@ -44,7 +59,11 @@ namespace Raster {
     }
 
     void MixAudioSamples::AbstractRenderProperties() {
-        RenderAttributeProperty("Phase");
+        RenderAttributeProperty("Phase", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100),
+            SliderBaseMetadata(100)
+        });
     }
 
     void MixAudioSamples::AbstractLoadSerialized(Json t_data) {

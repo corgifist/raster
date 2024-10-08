@@ -63,7 +63,11 @@ namespace Raster {
     }
 
     void Merge::AbstractRenderProperties() {
-        RenderAttributeProperty("Opacity");
+        RenderAttributeProperty("Opacity", {
+            SliderRangeMetadata(0, 1),
+            SliderBaseMetadata(100),
+            FormatStringMetadata("%")
+        });
 
         auto reservedPropertyDispatcher = Dispatchers::s_propertyDispatchers[typeid(std::string)];
         Dispatchers::s_propertyDispatchers[typeid(std::string)] = Merge::DispatchStringAttribute;
@@ -71,7 +75,7 @@ namespace Raster {
         Dispatchers::s_propertyDispatchers[typeid(std::string)] = reservedPropertyDispatcher;
     }
 
-    void Merge::DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed) {
+    void Merge::DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto& blending = Compositor::s_blending;
 
         std::string blendMode = std::any_cast<std::string>(t_value);

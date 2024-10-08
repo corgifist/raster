@@ -1,6 +1,7 @@
 #include "reverb_effect.h"
+#include "common/attribute_metadata.h"
 
- #define REVERB_BLOCK_SIZE 8192
+#define REVERB_BLOCK_SIZE 16384
 
 namespace Raster {
 
@@ -13,7 +14,6 @@ namespace Raster {
     }
 
     ReverbContext::ReverbContext() {
-        this->m_cachedSamples = std::make_shared<std::vector<float>>(4096 * Audio::GetChannelCount());
         this->health = MAX_BUFFER_LIFESPAN;
     }
 
@@ -38,6 +38,7 @@ namespace Raster {
 
     AbstractPinMap ReverbEffect::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
+        SharedLockGuard reverbGuard(m_mutex);
 
         auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
         auto roomSizeCandidate = GetAttribute<float>("RoomSize");
@@ -50,6 +51,20 @@ namespace Raster {
         auto dryGainCandidate = GetAttribute<float>("DryGain");
         auto stereoWidthCandidate = GetAttribute<float>("StereoWidth");
         auto wetOnlyCandidate = GetAttribute<bool>("WetOnly");
+        
+        auto contextData = GetContextData();
+
+        auto& project = Workspace::GetProject();
+        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+            auto reverbBuffer = GetReverbContext();
+            auto cacheCandidate = reverbBuffer.cache.GetCachedSamples();
+            if (cacheCandidate.has_value()) {
+                TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
+            }
+            return result;
+        }
+        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+
         if (samplesCandidate.has_value() && samplesCandidate.value().samples && roomSizeCandidate.has_value() 
             && preDelayCandidate.has_value() && reverberanceCandidate.has_value() && hfDampingCandidate.has_value()
             && toneLowCandidate.has_value() && toneHighCandidate.has_value() && wetGainCandidate.has_value() 
@@ -109,9 +124,10 @@ namespace Raster {
             std::vector<float*> ichans(Audio::GetChannelCount());
             std::vector<float*> ochans(Audio::GetChannelCount());
 
+            SharedRawAudioSamples outputSamples = Audio::MakeRawAudioSamples();
             for (int i = 0; i < Audio::GetChannelCount(); i++) {
                 ichans[i] = samples.samples->data() + i;
-                ochans[i] = reverbBuffer.m_cachedSamples->data() + i;
+                ochans[i] = outputSamples->data() + i;
             }
 
             float dryMult = wetOnly ? 0 : DecibelToLinear(dryGain);
@@ -146,7 +162,9 @@ namespace Raster {
             }
 
             AudioSamples reverbSamples = samples;
-            reverbSamples.samples = reverbBuffer.m_cachedSamples;
+            reverbSamples.samples = outputSamples;
+
+            reverbBuffer.cache.SetCachedSamples(reverbSamples);
             TryAppendAbstractPinMap(result, "Output", reverbSamples);
         }
 
@@ -180,16 +198,53 @@ namespace Raster {
     }
 
     void ReverbEffect::AbstractRenderProperties() {
-        RenderAttributeProperty("RoomSize");
-        RenderAttributeProperty("PreDelay");
-        RenderAttributeProperty("Reverb");
-        RenderAttributeProperty("HfDamping");
-        RenderAttributeProperty("ToneLow");
-        RenderAttributeProperty("ToneHigh");
-        RenderAttributeProperty("WetGain");
-        RenderAttributeProperty("DryGain");
-        RenderAttributeProperty("StereoWidth");
+        RenderAttributeProperty("RoomSize", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100)
+        });
+
+        RenderAttributeProperty("PreDelay", {
+            FormatStringMetadata("ms"),
+            SliderRangeMetadata(0, 100)
+        });
+
+        RenderAttributeProperty("Reverb", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100)
+        });
+
+        RenderAttributeProperty("HfDamping", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100)
+        });
+
+        RenderAttributeProperty("ToneLow", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100)
+        });
+
+        RenderAttributeProperty("ToneHigh", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100)
+        });
+
+        RenderAttributeProperty("WetGain", {
+            FormatStringMetadata("dB"),
+            SliderRangeMetadata(-60, 30)
+        });
+
+        RenderAttributeProperty("DryGain", {
+            FormatStringMetadata("dB"),
+            SliderRangeMetadata(-60, 30)
+        });
+
+        RenderAttributeProperty("StereoWidth", {
+            FormatStringMetadata("%"),
+            SliderRangeMetadata(0, 100)
+        });
+
         RenderAttributeProperty("WetOnly");
+
     }
 
     void ReverbEffect::AbstractLoadSerialized(Json t_data) {

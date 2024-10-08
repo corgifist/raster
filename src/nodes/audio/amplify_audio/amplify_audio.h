@@ -3,14 +3,13 @@
 #include "common/common.h"
 
 #include "common/audio_samples.h"
-#include "audio/audio.h"
-
 #include "common/audio_cache.h"
 #include "common/shared_mutex.h"
+#include "audio/audio.h"
 
 namespace Raster {
-    struct AudioWaveformSine : public NodeBase {
-        AudioWaveformSine();
+    struct AmplifyAudio : public NodeBase {
+        AmplifyAudio();
         
         AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
         void AbstractRenderProperties();

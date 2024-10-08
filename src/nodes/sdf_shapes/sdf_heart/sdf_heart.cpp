@@ -33,7 +33,9 @@ namespace Raster {
     }
 
     void SDFHeart::AbstractRenderProperties() {
-        RenderAttributeProperty("Size");
+        RenderAttributeProperty("Size", {
+            SliderStepMetadata(0.01f)
+        });
     }
 
     void SDFHeart::AbstractLoadSerialized(Json t_data) {

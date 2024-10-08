@@ -110,7 +110,11 @@ namespace Raster {
     }
 
     void SDFMix::AbstractRenderProperties() {
-        RenderAttributeProperty("Phase");
+        RenderAttributeProperty("Phase", {
+            SliderRangeMetadata(0, 1), 
+            SliderBaseMetadata(100),
+            FormatStringMetadata("%")
+        });
     }
 
     bool SDFMix::AbstractDetailsAvailable() {
