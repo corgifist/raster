@@ -23,7 +23,7 @@ namespace Raster {
         std::optional<std::string> Footer();
     
     private:
-        Framebuffer m_framebuffer;
+        DoubleBufferedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
     };

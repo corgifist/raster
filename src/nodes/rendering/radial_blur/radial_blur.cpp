@@ -14,18 +14,11 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Output");
-
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "radial_blur/shader")
-            );
-        }
     }
 
     RadialBlur::~RadialBlur() {
-        if (m_framebuffer.handle) {
-            GPU::DestroyFramebufferWithAttachments(m_framebuffer);
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
         }
     }
 
@@ -37,6 +30,13 @@ namespace Raster {
         auto centerCandidate = GetAttribute<glm::vec2>("Center");
         auto samplesCandidate = GetAttribute<int>("Samples");
         
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "radial_blur/shader")
+            );
+        }
+
         if (s_pipeline.has_value() && baseCandidate.has_value() && intensityCandidate.has_value() && centerCandidate.has_value() && samplesCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
@@ -49,7 +49,8 @@ namespace Raster {
             intensity *= 0.1f;
             intensity *= glm::vec2(m_framebuffer.width, m_framebuffer.height);
 
-            GPU::BindFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
             GPU::ClearFramebuffer(0, 0, 0, 0);
 
@@ -62,7 +63,7 @@ namespace Raster {
             
             GPU::DrawArrays(3);
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
 
 

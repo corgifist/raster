@@ -238,10 +238,12 @@ namespace Raster {
                                 ImGui::EndTooltip();
                             }
                             ImGui::SameLine();
+                            ImGui::AlignTextToFramePadding();
                             if (ImGui::Button(FormatString("%s %s", !node->enabled ? ICON_FA_XMARK : ICON_FA_CHECK, Localization::GetString("ENABLED").c_str()).c_str())) {
                                 node->enabled = !node->enabled;
                             }
                             ImGui::SameLine();
+                            ImGui::AlignTextToFramePadding();
                             if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str())) {
                                 node->bypassed = !node->bypassed;
                             }
