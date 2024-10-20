@@ -8,12 +8,12 @@ namespace Raster {
         NodeBase::Initialize();
 
         SetupAttribute("Base", Framebuffer());
-        SetupAttribute("K1", 1.2f);
-        SetupAttribute("K2", 1.0f);
-        SetupAttribute("K3", -3.2f);
+        SetupAttribute("K1", 1.0f);
+        SetupAttribute("K2", 0.0f);
+        SetupAttribute("K3", 0.0f);
         SetupAttribute("Edge", 0.7f);
         SetupAttribute("Dispersion", 0.03f);
-        SetupAttribute("DarkEdges", true);
+        SetupAttribute("DarkEdges", false);
 
         AddOutputPin("Output");
     }

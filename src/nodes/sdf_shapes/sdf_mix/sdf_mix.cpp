@@ -111,7 +111,7 @@ namespace Raster {
 
     void SDFMix::AbstractRenderProperties() {
         RenderAttributeProperty("Phase", {
-            SliderRangeMetadata(0, 1), 
+            SliderRangeMetadata(0, 100), 
             SliderBaseMetadata(100),
             FormatStringMetadata("%")
         });

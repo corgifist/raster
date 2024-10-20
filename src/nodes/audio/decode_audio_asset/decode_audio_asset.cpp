@@ -178,8 +178,10 @@ namespace Raster {
 
     void DecodeAudioAsset::PushMoreSamples(SharedDecoderContext t_context) {
         av::AudioSamples decodedSamples = DecodeOneFrame(t_context);
-        t_context->audioResampler.push(decodedSamples);
-        t_context->resamplerSamplesCount += decodedSamples.samplesCount();
+        if (decodedSamples) {
+            t_context->audioResampler.push(decodedSamples);
+        t_context->resamplerSamplesCount += decodedSamples.samplesCount();  
+        }
     }
 
     av::AudioSamples DecodeAudioAsset::DecodeOneFrame(SharedDecoderContext t_context) {

@@ -10,14 +10,12 @@ namespace Raster {
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("Gamma", 1.0f);
 
-        this->m_framebuffer = Framebuffer();
-
         AddOutputPin("Output");
     }
 
     GammaCorrection::~GammaCorrection() {
-        if (m_framebuffer.handle) {
-            GPU::DestroyFramebufferWithAttachments(m_framebuffer);
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
         }
     }
 
@@ -35,17 +33,18 @@ namespace Raster {
         auto gammaCandidate = GetAttribute<float>("Gamma");
         if (s_pipeline.has_value() && gammaCandidate.has_value() && framebufferCandidate.has_value()) {
             auto& gamma = gammaCandidate.value();
-            auto& framebuffer = framebufferCandidate.value();
+            auto& base = framebufferCandidate.value();
             auto& pipeline = s_pipeline.value();
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
 
             GPU::BindPipeline(pipeline);
-            GPU::BindFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            GPU::BindFramebuffer(framebuffer);
             GPU::ClearFramebuffer(0, 0, 0, 0);
 
-            GPU::BindTextureToShader(pipeline.fragment, "uColor", framebuffer.attachments.at(0), 0);
-            if (framebuffer.attachments.size() > 1) {
-                GPU::BindTextureToShader(pipeline.fragment, "uUV", framebuffer.attachments.at(1), 1);
+            GPU::BindTextureToShader(pipeline.fragment, "uColor", base.attachments.at(0), 0);
+            if (base.attachments.size() > 1) {
+                GPU::BindTextureToShader(pipeline.fragment, "uUV", base.attachments.at(1), 1);
                 GPU::SetShaderUniform(pipeline.fragment, "uUVAvailable", 1);
             } else {
                 GPU::SetShaderUniform(pipeline.fragment, "uUVAvailable", 0);
@@ -55,14 +54,16 @@ namespace Raster {
 
             GPU::DrawArrays(3);
             
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
 
         return result;
     }
 
     void GammaCorrection::AbstractRenderProperties() {
-        RenderAttributeProperty("Gamma");
+        RenderAttributeProperty("Gamma", {
+            SliderStepMetadata(0.05f)
+        });
     }
 
     void GammaCorrection::AbstractLoadSerialized(Json t_data) {
