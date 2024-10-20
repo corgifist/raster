@@ -13,7 +13,7 @@ namespace Raster {
     }
 
     void AsyncUpload::Initialize() {
-        std::cout << "booting up async uploader" << std::endl;
+        RASTER_LOG("booting up async uploader");
         m_running = true;
         m_context = GPU::ReserveContext();
         m_uploader = std::thread(AsyncUpload::UploaderLogic);
@@ -85,6 +85,7 @@ namespace Raster {
 
             auto generatedTexture = GPU::GenerateTexture(info.image->width, info.image->height, info.image->channels, precision);
             GPU::UpdateTexture(generatedTexture, 0, 0, info.image->width, info.image->height, info.image->channels, info.image->data.data());
+            GPU::GenerateMipmaps(generatedTexture);
             GPU::Flush();
 
             info.texture = generatedTexture;

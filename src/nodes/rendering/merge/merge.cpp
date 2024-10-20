@@ -17,11 +17,8 @@ namespace Raster {
     }
 
     Merge::~Merge() {
-        if (m_framebuffer.handle) {
-            for (auto& attachment : m_framebuffer.attachments) {
-                GPU::DestroyTexture(attachment);
-            }
-            GPU::DestroyFramebuffer(m_framebuffer);
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
         }
     }
 
@@ -54,9 +51,9 @@ namespace Raster {
                 .blendMode = blendingMode,
                 .compositionID = -1
             });
-            Compositor::PerformManualComposition(targets, m_framebuffer, glm::vec4(0));
+            Compositor::PerformManualComposition(targets, m_framebuffer.Get(), glm::vec4(0));
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", m_framebuffer.GetFrontFramebuffer());
         }
 
         return result;
@@ -64,7 +61,7 @@ namespace Raster {
 
     void Merge::AbstractRenderProperties() {
         RenderAttributeProperty("Opacity", {
-            SliderRangeMetadata(0, 1),
+            SliderRangeMetadata(0, 100),
             SliderBaseMetadata(100),
             FormatStringMetadata("%")
         });

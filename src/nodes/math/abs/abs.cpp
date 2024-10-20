@@ -40,7 +40,6 @@ namespace Raster {
                     float f = std::any_cast<float>(sine);
                     ImGui::PlotVar(FormatString("%s %s", ICON_FA_PLUS, "Abs").c_str(), f);
                 } else {
-                    if (sine.has_value()) std::cout << sine.type().name() << std::endl;
                     ImGui::Text("%s", Localization::GetString("NO_ABS_PREVIEW").c_str());
                 }
             }

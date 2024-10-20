@@ -13,6 +13,16 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
+    }
+
+    Echo::~Echo() {
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
+        }
+    }
+
+    AbstractPinMap Echo::AbstractExecute(AbstractPinMap t_accumulator) {
+        AbstractPinMap result = {};
 
         if (!s_echoPipeline.has_value()) {
             s_echoPipeline = GPU::GeneratePipeline(
@@ -20,19 +30,7 @@ namespace Raster {
                 GPU::GenerateShader(ShaderType::Fragment, "echo/shader")
             );
         }
-    }
 
-    Echo::~Echo() {
-        if (m_framebuffer.handle) {
-            for (auto& attachment : m_framebuffer.attachments) {
-                GPU::DestroyTexture(attachment);
-            }
-            GPU::DestroyFramebuffer(m_framebuffer);
-        }
-    }
-
-    AbstractPinMap Echo::AbstractExecute(AbstractPinMap t_accumulator) {
-        AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
         auto requiredResolution = Compositor::GetRequiredResolution();
         
@@ -40,7 +38,8 @@ namespace Raster {
         auto frameStepCandidate = GetAttribute<int>("FrameStep");
         if (stepsCandidate.has_value() && s_echoPipeline.has_value()) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
-            GPU::BindFramebuffer(m_framebuffer);
+            auto framebuffer = m_framebuffer.GetFrontFramebuffer();
+            GPU::BindFramebuffer(framebuffer);
             GPU::ClearFramebuffer(0, 0, 0, 0);
             auto steps = stepsCandidate.value();
             auto& frameStep = frameStepCandidate.value();
@@ -58,19 +57,21 @@ namespace Raster {
                         continue;
                     }
                     auto& base = baseCandidate.value();
-                    GPU::BindPipeline(pipeline);
-                    GPU::BindFramebuffer(m_framebuffer);
-                    GPU::SetShaderUniform(pipeline.fragment, "uResolution", requiredResolution);
-                    GPU::SetShaderUniform(pipeline.fragment, "uOpacity", std::clamp(opacityStep * (i + 1), 0.0f, 1.0f));
-                    GPU::BindTextureToShader(pipeline.fragment, "uColorTexture", base.attachments.at(0), 0);
-                    GPU::BindTextureToShader(pipeline.fragment, "uUVTexture", base.attachments.at(1), 1);
+                    if (base.attachments.size() <= 2 || !base.handle) {
+                        GPU::BindPipeline(pipeline);
+                        GPU::BindFramebuffer(framebuffer);
+                        GPU::SetShaderUniform(pipeline.fragment, "uResolution", requiredResolution);
+                        GPU::SetShaderUniform(pipeline.fragment, "uOpacity", std::clamp(opacityStep * (i + 1), 0.0f, 1.0f));
+                        GPU::BindTextureToShader(pipeline.fragment, "uColorTexture", base.attachments.at(0), 0);
+                        GPU::BindTextureToShader(pipeline.fragment, "uUVTexture", base.attachments.at(1), 1);
 
-                    GPU::DrawArrays(3);
+                        GPU::DrawArrays(3);
+                    }
 
                     project.TimeTravel(frameStep);
                 }
             }
-            TryAppendAbstractPinMap(result, "Framebuffer", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Framebuffer", framebuffer);
             project.ResetTimeTravel();
         }
 

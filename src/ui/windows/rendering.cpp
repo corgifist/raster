@@ -74,7 +74,7 @@ namespace Raster {
 
                     if (selectedPin.empty() || compositionLock) {
                         if (Compositor::primaryFramebuffer.has_value()) {
-                            dispatcherTarget = Compositor::primaryFramebuffer.value();
+                            dispatcherTarget = Compositor::primaryFramebuffer.value().GetFrontFramebufferWithoutSwapping();
                             mustDispatchOverlay = true;
                         }
                     }
@@ -212,11 +212,11 @@ namespace Raster {
                             if (pinCandidate.has_value()) {
                                 auto& pin = pinCandidate.value();
                                 RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
-                                if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                    dispatcherTarget = Workspace::s_pinCache[pin.connectedPinID];
+                                if (Workspace::s_pinCache.GetFrontValue().find(pin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
+                                    dispatcherTarget = Workspace::s_pinCache.GetFrontValue()[pin.connectedPinID];
                                 }
-                                if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end()) {
-                                    dispatcherTarget = Workspace::s_pinCache[pin.pinID];
+                                if (Workspace::s_pinCache.GetFrontValue().find(pin.pinID) != Workspace::s_pinCache.GetFrontValue().end()) {
+                                    dispatcherTarget = Workspace::s_pinCache.GetFrontValue()[pin.pinID];
                                 }
                             } else {
                                 dispatcherTarget = node->GetDynamicAttribute(selectedPin);

@@ -14,18 +14,11 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Output");
-
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "hashed_blur/shader")
-            );
-        }
     }
 
     HashedBlur::~HashedBlur() {
-        if (m_framebuffer.handle) {
-            GPU::DestroyFramebufferWithAttachments(m_framebuffer);
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
         }
     }
 
@@ -36,6 +29,14 @@ namespace Raster {
         auto radiusCandidate = GetAttribute<float>("Radius");
         auto hashOffsetCandidate = GetAttribute<glm::vec2>("HashOffset");
         auto iterationsCandidate = GetAttribute<int>("Iterations");
+
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "hashed_blur/shader")
+            );
+        }
+
         if (s_pipeline.has_value() && baseCandidate.has_value() && radiusCandidate.has_value() && hashOffsetCandidate.has_value() && iterationsCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
@@ -45,7 +46,8 @@ namespace Raster {
 
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
 
-            GPU::BindFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
             GPU::ClearFramebuffer(0, 0, 0, 0);
             
@@ -58,7 +60,7 @@ namespace Raster {
 
             GPU::DrawArrays(3);
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
 
 

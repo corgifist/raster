@@ -108,7 +108,7 @@ namespace Raster {
         auto metadata = ParseMetadata(t_metadata);
         std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
         if (!metadata.isSlider) {
-            ImGui::DragInt(formattedAttribute.c_str(), &i, metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+            ImGui::DragInt(formattedAttribute.c_str(), &i, metadata.sliderStep, 0, 0, GetMetadataFormat(metadata, "i").c_str());
         } else {
             ImGui::SliderInt(formattedAttribute.c_str(), &i, metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata, "i").c_str());
         }

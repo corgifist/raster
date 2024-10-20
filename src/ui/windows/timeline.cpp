@@ -402,7 +402,6 @@ namespace Raster {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && project.selectedCompositions.size() > 1 && !s_anyCompositionWasPressed && ImGui::IsWindowFocused()) {
                 project.selectedCompositions = {project.selectedCompositions[0]};
                 UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
-                std::cout << "overriding compositions" << std::endl;
             }
             
             RenderTimelinePopup();
@@ -534,7 +533,7 @@ namespace Raster {
             DrawRect(forwardBoundsDrag, forwardDragColor);
             DrawRect(backwardBoundsDrag, backwardDragColor);
 
-            auto& bundles = Compositor::s_bundles;
+            auto& bundles = Compositor::s_bundles.GetFrontValue();
             if (bundles.find(t_id) != bundles.end()) {
                 auto& bundle = bundles[t_id];
                 if (bundle.primaryFramebuffer.handle) {
@@ -815,10 +814,10 @@ namespace Raster {
                     }
                     if (ImGui::BeginItemTooltip()) {
                         auto& bundles = Compositor::s_bundles;
-                        if (!IsInBounds(project.currentFrame, t_composition->beginFrame, t_composition->endFrame) || bundles.find(t_composition->id) == bundles.end()) {
+                        if (!IsInBounds(project.currentFrame, t_composition->beginFrame, t_composition->endFrame) || bundles.GetFrontValue().find(t_composition->id) == bundles.GetFrontValue().end()) {
                             ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
                         } else {
-                            auto& bundle = bundles[t_composition->id];
+/*                             auto& bundle = bundles[t_composition->id];
                             auto& primaryFramebuffer = Compositor::primaryFramebuffer.value();
                             auto requiredResolution = Compositor::GetRequiredResolution();
                             static Framebuffer previewFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
@@ -850,8 +849,7 @@ namespace Raster {
                             ImGui::Text("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());
                             auto previewSize = FitRectInRect({128, 128}, {previewFramebuffer.width, previewFramebuffer.height});
                             ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - previewSize.x / 2.0f);
-                            ImGui::Image(previewFramebuffer.attachments[0].handle, {previewSize.x, previewSize.y});
-
+                            ImGui::Image(previewFramebuffer.attachments[0].handle, {previewSize.x, previewSize.y}); */
                         }
                         ImGui::EndTooltip();
                     }
@@ -912,7 +910,8 @@ namespace Raster {
                     attribute = Attributes::CopyAttribute(attribute).value();
                 }
                 std::unordered_map<int, int> idReplacements;
-                for (auto& node : copiedComposition.nodes) {
+                for (auto& pair : copiedComposition.nodes) {
+                    auto& node = pair.second;
                     int originalID = node->nodeID;
                     node->nodeID = Randomizer::GetRandomInteger();
                     idReplacements[originalID] = node->nodeID;
@@ -931,7 +930,8 @@ namespace Raster {
                     }
                 }
                 
-                for (auto& node : copiedComposition.nodes) {
+                for (auto& pair : copiedComposition.nodes) {
+                    auto& node = pair.second;
                     if (node->flowInputPin.has_value()) {
                         ReplaceCopyPin(node->flowInputPin.value(), idReplacements);
                     }
@@ -977,7 +977,7 @@ namespace Raster {
                 auto& composition = compositionCandidate.value();
                 std::optional<float> contentDuration = std::nullopt;
                 for (auto& node : composition->nodes) {
-                    auto durationCandidate = node->GetContentDuration();
+                    auto durationCandidate = node.second->GetContentDuration();
                     if (!contentDuration.has_value() && durationCandidate.has_value()) {
                         contentDuration = durationCandidate;
                     }

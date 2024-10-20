@@ -14,18 +14,11 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Output");
-
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "linear_blur/shader")
-            );
-        }
     }
 
     LinearBlur::~LinearBlur() {
-        if (m_framebuffer.handle) {
-            GPU::DestroyFramebufferWithAttachments(m_framebuffer);
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
         }
     }
 
@@ -36,6 +29,13 @@ namespace Raster {
         auto angleCandidate = GetAttribute<float>("Angle");
         auto intensityCandidate = GetAttribute<float>("Intensity");
         auto samplesCandidate = GetAttribute<int>("Samples");
+
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "linear_blur/shader")
+            );
+        }
         
         if (s_pipeline.has_value() && baseCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
@@ -48,8 +48,9 @@ namespace Raster {
             glm::vec2 direction = glm::vec2(glm::cos(angle), glm::sin(angle));
             direction *= 0.1f * intensity;
             direction *= glm::vec2(m_framebuffer.width, m_framebuffer.height);
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
 
-            GPU::BindFramebuffer(m_framebuffer);
+            GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
             GPU::ClearFramebuffer(0, 0, 0, 0);
 
@@ -61,7 +62,7 @@ namespace Raster {
             
             GPU::DrawArrays(3);
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
 
 

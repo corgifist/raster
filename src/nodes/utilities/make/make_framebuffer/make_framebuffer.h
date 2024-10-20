@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
+#include "compositor/double_buffered_framebuffer.h"
 
 namespace Raster {
     struct MakeFramebuffer : public NodeBase {
@@ -21,7 +22,7 @@ namespace Raster {
         Json AbstractSerialize();
 
         private:
-        std::optional<Framebuffer> m_internalFramebuffer;
+        std::optional<DoubleBufferedFramebuffer> m_internalFramebuffer;
 
         static std::optional<Pipeline> s_pipeline;
     };

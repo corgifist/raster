@@ -12,9 +12,6 @@ namespace Raster {
 
         AddOutputPin("Value");
 
-        this->m_attributes["TextureFiltering"] = static_cast<int>(TextureFilteringMode::Linear);
-        this->m_attributes["TextureWrapping"] = static_cast<int>(TextureWrappingMode::Repeat);
-
         SetupAttribute("TextureFiltering", static_cast<int>(TextureFilteringMode::Linear));
         SetupAttribute("TextureWrapping", static_cast<int>(TextureWrappingMode::Repeat));
     }
@@ -43,12 +40,14 @@ namespace Raster {
             settings.filteringMode = static_cast<TextureFilteringMode>(textureFilteringCandidate.value());
             settings.wrappingMode = static_cast<TextureWrappingMode>(textureWrappingCandidate.value());
 
-            this->m_attributes["SamplerSettings"] = settings;
+            // TODO: fix this regression
+            
+            /* this->m_attributes.GetFrontValue()["SamplerSettings"] = settings;
             RenderAttributeProperty("SamplerSettings");
-            auto modifiedSettings = std::any_cast<SamplerSettings>(this->m_attributes["SamplerSettings"]);
-            this->m_attributes.erase("SamplerSettings");
-            this->m_attributes["TextureFiltering"] = static_cast<int>(modifiedSettings.filteringMode);
-            this->m_attributes["TextureWrapping"] = static_cast<int>(modifiedSettings.wrappingMode);
+            auto modifiedSettings = std::any_cast<SamplerSettings>(this->m_attributes.GetFrontValue()["SamplerSettings"]);
+            this->m_attributes.GetFrontValue().erase("SamplerSettings");
+            this->m_attributes.GetFrontValue()["TextureFiltering"] = static_cast<int>(modifiedSettings.filteringMode);
+            this->m_attributes.GetFrontValue()["TextureWrapping"] = static_cast<int>(modifiedSettings.wrappingMode); */
         }
     }
 

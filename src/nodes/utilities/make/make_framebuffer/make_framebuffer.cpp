@@ -27,10 +27,7 @@ namespace Raster {
     MakeFramebuffer::~MakeFramebuffer() {
         if (m_internalFramebuffer.has_value()) {
             auto& framebuffer = m_internalFramebuffer.value();
-            for (auto& attachment : framebuffer.attachments) {
-                GPU::DestroyTexture(attachment);
-            }
-            GPU::DestroyFramebuffer(framebuffer);
+            framebuffer.Destroy();
         }
     }
 
@@ -44,18 +41,15 @@ namespace Raster {
             if (!m_internalFramebuffer.has_value() || m_internalFramebuffer.value().width != (int) requiredResolution.x || m_internalFramebuffer.value().height != (int) requiredResolution.y) {
                 if (m_internalFramebuffer.has_value()) {
                     auto& framebuffer = m_internalFramebuffer.value();
-                    for (auto& attachment : framebuffer.attachments) {
-                        GPU::DestroyTexture(attachment);
-                    }
-                    GPU::DestroyFramebuffer(framebuffer);
+                    framebuffer.Destroy();
                 }
-                m_internalFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
+                m_internalFramebuffer = Compositor::GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution);
             }
 
             if (m_internalFramebuffer.has_value() && s_pipeline.has_value()) {
                 auto backgroundTextureCandidate = GetAttribute<Texture>("BackgroundTexture");
                 auto& framebuffer = m_internalFramebuffer.value();
-                GPU::BindFramebuffer(framebuffer);
+                GPU::BindFramebuffer(framebuffer.Get());
                 GPU::ClearFramebuffer(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
                 if (backgroundTextureCandidate.has_value() && backgroundTextureCandidate.value().handle) {
                     auto& pipeline = s_pipeline.value();
@@ -66,7 +60,7 @@ namespace Raster {
                     GPU::BindTextureToShader(pipeline.fragment, "uTexture", texture, 0);
                     GPU::DrawArrays(3);
                 }
-                TryAppendAbstractPinMap(result, "Value", framebuffer);
+                TryAppendAbstractPinMap(result, "Value", framebuffer.GetFrontFramebuffer());
             }
         }
 

@@ -3,6 +3,7 @@
 #include "raster.h"
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
+#include "double_buffered_framebuffer.h"
 
 namespace Raster {
     struct ManagedFramebuffer {
@@ -11,6 +12,7 @@ namespace Raster {
         ~ManagedFramebuffer();
 
         Framebuffer& Get(std::optional<Framebuffer> t_framebuffer);
+        Framebuffer& GetReadyFramebuffer();
         void Destroy();
 
     private:
@@ -18,6 +20,6 @@ namespace Raster {
         void InstantiateInternalFramebuffer(uint32_t width, uint32_t height);
         void DestroyInternalFramebuffer();
 
-        Framebuffer m_internalFramebuffer;
+        DoubleBufferedFramebuffer m_internalFramebuffer;
     };
 };

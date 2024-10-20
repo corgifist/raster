@@ -21,7 +21,7 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
 
-        Framebuffer m_framebuffer;
+        DoubleBufferedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
     };

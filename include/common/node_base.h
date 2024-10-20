@@ -7,6 +7,8 @@
 #include "node_category/node_category.h"
 #include "dynamic_serialization.h"
 #include "attribute_metadata.h"
+#include "double_buffered_value.h"
+#include "synchronized_value.h"
 
 #define RASTER_ATTRIBUTE_CAST(t_type, t_name) \
     std::any_cast<t_type>(m_attributes[t_name])
@@ -38,7 +40,7 @@ namespace Raster {
 
     struct NodeBase {
         int nodeID;
-        int executionsPerFrame;
+        DoubleBufferedValue<int> executionsPerFrame;
         std::optional<GenericPin> flowInputPin, flowOutputPin;
         std::vector<GenericPin> inputPins, outputPins;
         std::string libraryName;
@@ -86,7 +88,7 @@ namespace Raster {
         void OnTimelineSeek();
 
         protected:
-        std::unordered_map<std::string, std::any> m_attributes;
+        SynchronizedValue<std::unordered_map<std::string, std::any>> m_attributes;
 
         virtual bool AbstractDoesAudioMixing() { return false; };
 
@@ -127,10 +129,12 @@ namespace Raster {
 
         private:
         std::shared_ptr<std::mutex> m_attributesCacheMutex;
-        std::unordered_map<std::string, std::any> m_attributesCache;
+        DoubleBufferedValue<std::unordered_map<std::string, std::any>> m_attributesCache;
         std::vector<std::string> m_attributesOrder;
         std::unique_ptr<std::mutex> m_contextMutex;
         std::unordered_map<std::thread::id, ContextData> m_contextDatas;
+
+        bool ExecutingInAudioContext();
 
         AbstractPinMap m_accumulator;
     };

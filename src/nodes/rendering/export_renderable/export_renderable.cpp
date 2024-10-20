@@ -24,11 +24,11 @@ namespace Raster {
             auto& renderable = renderableCandidate.value();
             auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
             auto& bundles = Compositor::s_bundles;
-            if (bundles.find(composition->id) == bundles.end()) {
-                bundles[composition->id] = {};
+            if (bundles.Get().find(composition->id) == bundles.Get().end()) {
+                bundles.Get()[composition->id] = {};
             }
 
-            auto& bundle = bundles[composition->id];
+            auto& bundle = bundles.Get()[composition->id];
             bundle.primaryFramebuffer = renderable;
 
             auto& targets = Compositor::s_targets;

@@ -57,6 +57,8 @@ namespace Raster {
                         info.codecName = videoDecoder.codec().longName();
                         info.bitrate = videoDecoder.bitRate();
                         info.pixelFormatName = videoDecoder.pixelFormat().name();
+                        info.attachedPic = attachedPic;
+                        
                         m_streamInfos.push_back(info);
 
                         if (attachedPic) {
@@ -87,7 +89,6 @@ namespace Raster {
                         info.codecName = audioDecoder.codec().longName();
                         info.bitrate = audioDecoder.bitRate();
                         
-                        
                         m_streamInfos.push_back(info);
                     }
 
@@ -117,7 +118,18 @@ namespace Raster {
             }
             streamIndex++;
         }
-        return std::nullopt;
+        if (acc.empty()) acc = "-";
+        return acc;
+    }
+
+    std::optional<std::string> MediaAsset::AbstractGetDuration() {
+        std::string acc = "";
+        if (m_formatCtx.isOpened()) {
+            auto duration = m_formatCtx.duration().seconds();
+            acc = FormatString("%i:%i", (int) (duration / 60), (int) ((int) duration % 60));
+        }
+        if (acc.empty()) acc = "-";
+        return acc;
     }
 
     std::optional<std::uintmax_t> MediaAsset::AbstractGetSize() {

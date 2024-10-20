@@ -31,32 +31,27 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "json.hpp"
 
-#include <nfd.hpp>
+#include "source_location.h"
+
+#include "nfd/nfd.hpp"
 
 #define RASTER_PACKAGED "packaged.raster."
 
 #define print(expr) std::cout << expr << std::endl
 
-#ifdef __PRETTY_FUNCTION__
-    #define RASTER_FUNCTION_MACRO __PRETTY_FUNCTION__
-#elif defined(__func__)
-    #define RASTER_FUNCTION_MACRO __func__
-#elif defined(__FUNCTION__)
-    #define RASTER_FUNCTION_MACRO __FUNCTION__
-#else
-    #define RASTER_FUNCTION_MACRO "RASTER_FUNCTION_MACRO is not supported"
-#endif
+#define RASTER_FUNCTION_MACRO BOOST_CURRENT_LOCATION
 
 #define RASTER_STRINGIFY(x) #x
 
-#define RASTER_SOURCE_LOCATION __FILE__ ":" RASTER_STRINGIFY((__LINE__)) ":  " RASTER_FUNCTION_MACRO
+#define RASTER_SOURCE_LOCATION RASTER_FUNCTION_MACRO
 
+#define RASTER_LOG(x) print(RASTER_SOURCE_LOCATION << ": " << x)
 
-#define DUMP_VAR(var) print(RASTER_SOURCE_LOCATION << " -> " << #var << " = " << (var))
+#define DUMP_VAR(var) RASTER_LOG(#var << " = " << (var))
 
-#if defined(UNIX) && !defined(WIN32)
+#if defined(UNIX) || defined(__linux__)
     #define RASTER_DL_EXPORT
-#else
+#elif #defined(_WIN32)
     #define RASTER_DL_EXPORT __declspec(dllexport)
 #endif
 
@@ -72,17 +67,20 @@
 
 #if defined(__GNUC__)
     #if defined(__clang__)
-        #define COMPILER_FMT "Clang: %s"
+        #define RASTER_COMPILER_NAME "clang"
     #else
-        #define COMPILER_FMT "GNUC: %s"
+        #define RASTER_COMPILER_NAME "gcc/g++"
     #endif
-    #define COMPILER_VERSION __VERSION__
+    #define RASTER_COMPILER_VERSION __VERSION__
 #elif defined(_MSC_VER)
-    #define COMPILER_FMT "MSVC: %d"
-    #define COMPILER_VERSION _MSC_FULL_VER
+    #define RASTER_COMPILER_NAME "msvc"
+    #define RASTER_COMPILER_VERSION _MSC_FULL_VER
 #else
     #error Cannot determine valid COMPILER_FMT / COMPILER_VERSION implementation for your compiler :(
 #endif
+
+// use this macro to get info about the compiler
+#define RASTER_COMPILER_VERSION_STRING RASTER_COMPILER_NAME ": " RASTER_COMPILER_VERSION
 
 #define ATTRIBUTE_TYPE(T) \
     std::type_index(typeid(T))
@@ -91,6 +89,7 @@
 
 #define RASTER_TYPE_NAME(T) {std::type_index(typeid(T)), #T}
 
+// wrapper for std::lock_guard
 #define RASTER_SYNCHRONIZED(MUTEX) \
     std::lock_guard<std::mutex> __sync((MUTEX)); \
 
@@ -196,5 +195,39 @@ namespace Raster {
 	static float LinearToDecibel(float p_linear) {
 		return std::log(p_linear) * (float)8.6858896380650365530225783783321;
 	}
+
+    // Precise implementation of sleeping for some amount of seconds
+    // ExperimentalSleepFor combines inaccurate c++'s sleep_for function and resource-intensive spin-locking
+    // to achieve precise sleep_for function without burdening the CPU
+    // Taken from: https://blat-blatnik.github.io/computerBear/making-accurate-sleep-function/
+    static void ExperimentalSleepFor(double seconds) {
+        using namespace std;
+        using namespace std::chrono;
+
+        static double estimate = 5e-3;
+        static double mean = 5e-3;
+        static double m2 = 0;
+        static int64_t count = 1;
+
+        while (seconds > estimate) {
+            auto start = high_resolution_clock::now();
+            this_thread::sleep_for(milliseconds(1));
+            auto end = high_resolution_clock::now();
+
+            double observed = (end - start).count() / 1e9;
+            seconds -= observed;
+
+            ++count;
+            double delta = observed - mean;
+            mean += delta / count;
+            m2   += delta * (observed - mean);
+            double stddev = sqrt(m2 / (count - 1));
+            estimate = mean + stddev;
+        }
+
+        // spin lock
+        auto start = high_resolution_clock::now();
+        while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
+    }
 
 }

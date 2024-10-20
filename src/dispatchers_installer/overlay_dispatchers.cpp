@@ -144,7 +144,7 @@ namespace Raster {
         if (attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
             if (attribute->packageName == RASTER_PACKAGED "transform2d_attribute") {
-                auto transform2dAttribute = std::dynamic_pointer_cast<Transform2DAttribute>(attribute);
+                auto transform2dAttribute = (Transform2DAttribute*) attribute.get();
                 if (transform2dAttribute->m_parentAssetID > 0 && transform.parentTransform) {
                     transform = *transform.parentTransform;
                 }
@@ -442,7 +442,7 @@ namespace Raster {
         if (attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
             if (attribute->packageName == RASTER_PACKAGED "transform2d_attribute") {
-                auto transform2dAttribute = std::dynamic_pointer_cast<Transform2DAttribute>(attribute);
+                auto transform2dAttribute = (Transform2DAttribute*) attribute.get();
                 if (transform2dAttribute->m_parentAssetID > 0 && transform.parentTransform) {
                     Transform2D correctedTransform = reservedTransform;
                     correctedTransform.parentTransform = std::make_shared<Transform2D>(transform);

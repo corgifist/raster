@@ -132,12 +132,16 @@ namespace Raster {
         static void EndFrame();
 
         static void* ReserveContext();
+        static void SetupContextState();
         static void SetCurrentContext(void* context);
 
         static void Flush();
+        
+        static double GetTime();
 
         static Texture ImportTexture(const char* path);
         static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual);
+        static void GenerateMipmaps(Texture texture);
         static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels);
         static void DestroyTexture(Texture texture);
         static void BindTextureToShader(Shader shader, std::string name, Texture texture, int unit);

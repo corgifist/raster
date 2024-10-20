@@ -15,6 +15,16 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Output");
+    }
+
+    Halftone::~Halftone() {
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
+        }
+    }
+
+    AbstractPinMap Halftone::AbstractExecute(AbstractPinMap t_accumulator) {
+        AbstractPinMap result = {};
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -22,16 +32,6 @@ namespace Raster {
                 GPU::GenerateShader(ShaderType::Fragment, "halftone/shader")
             );
         }
-    }
-
-    Halftone::~Halftone() {
-        if (m_framebuffer.handle) {
-            GPU::DestroyFramebufferWithAttachments(m_framebuffer);
-        }
-    }
-
-    AbstractPinMap Halftone::AbstractExecute(AbstractPinMap t_accumulator) {
-        AbstractPinMap result = {};
 
         auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base"));
         auto angleCandidate = GetAttribute<float>("Angle");
@@ -48,7 +48,8 @@ namespace Raster {
 
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
 
-            GPU::BindFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
             GPU::ClearFramebuffer(0, 0, 0, 0);
             
@@ -62,7 +63,7 @@ namespace Raster {
 
             GPU::DrawArrays(3);
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
 
 

@@ -7,12 +7,11 @@
 //   publish, and distribute this file as you see fit.
 //
 // CREDITS
-//   Written by Michal Cichon
+//   Written by Michal Cichon  
 //------------------------------------------------------------------------------
 # ifndef __IMGUI_BEZIER_MATH_H__
 # define __IMGUI_BEZIER_MATH_H__
 # pragma once
-
 
 //------------------------------------------------------------------------------
 # include "imgui_extra_math.h"

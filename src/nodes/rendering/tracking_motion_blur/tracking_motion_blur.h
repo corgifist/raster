@@ -4,6 +4,7 @@
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
 #include "common/transform2d.h"
+#include "compositor/double_buffered_framebuffer.h"
 
 namespace Raster {
     struct TrackingMotionBlur : public NodeBase {
@@ -22,7 +23,7 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
     private:
-        Framebuffer m_framebuffer, m_temporalFramebuffer;
+        DoubleBufferedFramebuffer m_framebuffer, m_temporalFramebuffer;
 
         static std::optional<Pipeline> s_pipeline;
         static std::optional<Sampler> s_sampler;

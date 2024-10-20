@@ -3,9 +3,6 @@
 #define GLAD_GLES2_IMPLEMENTATION
 #include "gles2.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include <GLFW/glfw3.h>
 
 #include "../ImGui/imgui.h"
@@ -14,7 +11,7 @@
 
 #include "image/image.h"
 
-#include <nfd_glfw3.h>
+#include "nfd/nfd_glfw3.h"
 
 #define HANDLE_TO_GLUINT(x) ((uint32_t) (uint64_t) (x))
 #define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
@@ -64,8 +61,8 @@ namespace Raster {
 
     static GLint InterpretTextureFilteringMode(TextureFilteringMode t_mode) {
         switch (t_mode) {
-            case TextureFilteringMode::Linear: return GL_LINEAR;
-            default: return GL_NEAREST;
+            case TextureFilteringMode::Linear: return GL_LINEAR_MIPMAP_LINEAR;
+            default: return GL_NEAREST_MIPMAP_NEAREST;
         }
     }
 
@@ -171,7 +168,7 @@ namespace Raster {
             throw std::runtime_error("cannot create raster window!");
         }
         glfwMakeContextCurrent(display);
-        glfwSwapInterval(1);
+        glfwSwapInterval(0);
 
         if (!gladLoadGLES2((GLADloadfunc) glfwGetProcAddress)) {
             throw std::runtime_error("cannot initialize opengl es pointers!");
@@ -181,19 +178,12 @@ namespace Raster {
         ImGui::CreateContext();
 
         ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         ImGui_ImplOpenGL3_Init();
         ImGui_ImplGlfw_InitForOpenGL(display, true);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-        glEnable              ( GL_DEBUG_OUTPUT );
-        glDebugMessageCallback( MessageCallback, 0 );
-
-        glEnable(GL_DITHER);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+        SetupContextState();
 
         glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
             glViewport(0, 0, width, height);
@@ -228,8 +218,24 @@ namespace Raster {
         return newContext;
     }
 
+    void GPU::SetupContextState() {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        glEnable              ( GL_DEBUG_OUTPUT );
+        glDebugMessageCallback( MessageCallback, 0 );
+
+        glEnable(GL_DITHER);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+    }
+
     void GPU::SetCurrentContext(void* context) {
         glfwMakeContextCurrent((GLFWwindow*) context);
+        SetupContextState();
+    }
+
+    double GPU::GetTime() {
+        return glfwGetTime();
     }
 
     bool GPU::MustTerminate() {
@@ -272,7 +278,7 @@ namespace Raster {
         glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Texture texture;
@@ -282,6 +288,12 @@ namespace Raster {
         texture.channels = channels;
         texture.handle = GLUINT_TO_HANDLE(textureHandle);
         return texture;
+    }
+
+    void GPU::GenerateMipmaps(Texture texture) {
+        GLuint textureHandle = HANDLE_TO_GLUINT(texture.handle);
+        glBindTexture(GL_TEXTURE_2D, textureHandle);
+        glGenerateMipmap(GL_TEXTURE_2D);
     }
 
     void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels) {

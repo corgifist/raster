@@ -35,6 +35,7 @@ namespace Raster {
         std::string codecName;
         std::string pixelFormatName;
         int bitrate;
+        bool attachedPic;
     };
 
     using StreamInfo = std::variant<AudioStreamInfo, VideoStreamInfo>;
@@ -57,6 +58,7 @@ namespace Raster {
 
         std::optional<std::string> AbstractGetResolution();
         std::optional<std::string> AbstractGetPath();
+        std::optional<std::string> AbstractGetDuration();
         std::optional<uintmax_t> AbstractGetSize();
 
         std::string m_relativePath;

@@ -14,7 +14,7 @@ namespace Raster {
     std::optional<Image> ImageLoader::Load(std::string t_path) {
         auto input = OIIO::ImageInput::open(t_path);
         if (!input) {
-            std::cout << OIIO::geterror() << std::endl;
+            RASTER_LOG(OIIO::geterror());
             return std::nullopt;
         }
         const OIIO::ImageSpec& spec = input->spec();

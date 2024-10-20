@@ -35,7 +35,7 @@ namespace Raster {
         std::string internalAttributeName;
         std::vector<AttributeKeyframe> keyframes;
 
-        AttributeBase();
+        AttributeBase() {}
 
         std::any Get(float t_frame, Composition* composition);
         virtual void RenderKeyframes() {};

@@ -47,10 +47,6 @@ namespace Raster {
         this->value = t_value;
     }
 
-    AttributeBase::AttributeBase() {
-        
-    }
-
     void AttributeBase::Initialize() {
         this->name = "New Attribute";
         this->internalAttributeName = "";

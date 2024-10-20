@@ -23,7 +23,9 @@ namespace Raster {
     };
 
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
-        this->m_attributes[t_attribute] = t_value;
+        m_attributes.Lock();
+            m_attributes.GetReference()[t_attribute] = t_value;
+        m_attributes.Unlock();
     }
 
     void NodeBase::SetupAttribute(std::string t_attribute, std::any t_value) {
@@ -34,7 +36,7 @@ namespace Raster {
     void NodeBase::Initialize() {
         this->enabled = true;
         this->bypassed = false;
-        this->executionsPerFrame = 0;
+        this->executionsPerFrame.Set(0);
         this->m_contextMutex = std::make_unique<std::mutex>();
         this->m_attributesCacheMutex = std::make_unique<std::mutex>();
     }
@@ -54,8 +56,8 @@ namespace Raster {
             }
             return {};
         }
-        Workspace::UpdatePinCache(t_accumulator);
-        executionsPerFrame++;
+        Workspace::UpdatePinCache(t_accumulator); 
+        if (!ExecutingInAudioContext()) executionsPerFrame.SetBackValue(executionsPerFrame.Get() + 1); 
         auto pinMap = AbstractExecute(t_accumulator);
         Workspace::UpdatePinCache(pinMap);
         auto outputPin = flowOutputPin.value_or(GenericPin());
@@ -76,14 +78,16 @@ namespace Raster {
         bool candidateWasFound = false;
         bool usingCachedAttribute = false;
         m_attributesCacheMutex->lock();
-        if (m_attributesCache.find(t_attribute) != m_attributesCache.end()) {
-            dynamicCandidate = m_attributesCache[t_attribute];
+        if (m_attributesCache.GetFrontValue().find(t_attribute) != m_attributesCache.GetFrontValue().end()) {
+            dynamicCandidate = m_attributesCache.GetFrontValue()[t_attribute];
             candidateWasFound = true;
             usingCachedAttribute = true;
         }
         m_attributesCacheMutex->unlock();
-        if (m_attributes.find(t_attribute) != m_attributes.end() && !candidateWasFound) {
-            dynamicCandidate = m_attributes[t_attribute];
+        m_attributes.Lock();
+        auto& attributes = m_attributes.GetReference();
+        if (attributes.find(t_attribute) != attributes.end() && !candidateWasFound) {
+            dynamicCandidate = attributes[t_attribute];
             candidateWasFound = true;
         }
         bool isAttributeExposed = false;
@@ -128,7 +132,7 @@ namespace Raster {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str()).c_str());
                 for (auto& defaultValue : s_defaultValues) {
                     if (ImGui::MenuItem(FormatString("%s", defaultValue.first.c_str()).c_str())) {
-                        m_attributes[t_attribute] = defaultValue.second;
+                        attributes[t_attribute] = defaultValue.second;
                         dynamicCandidate = defaultValue.second;
                     }
                     if (ImGui::BeginItemTooltip()) {
@@ -151,7 +155,7 @@ namespace Raster {
                         }
                         dispatcherWasFound = true;
                         dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed, t_metadata);
-                        if (!usingCachedAttribute) m_attributes[t_attribute] = dynamicCandidate;
+                        if (!usingCachedAttribute) attributes[t_attribute] = dynamicCandidate;
                     } 
                 }
                 if (!dispatcherWasFound) {
@@ -160,16 +164,20 @@ namespace Raster {
                 ImGui::TreePop();
             }
         }
+        m_attributes.Unlock();
     }
 
     void NodeBase::SerializeAttribute(Json& t_data, std::string t_attribute) {
-        if (m_attributes.find(t_attribute) != m_attributes.end()) {
-            auto& attribute = m_attributes[t_attribute];
+        m_attributes.Lock();
+        auto& attributes = m_attributes.GetReference();
+        if (attributes.find(t_attribute) != attributes.end()) {
+            auto& attribute = attributes[t_attribute];
             auto serializedAttribute = DynamicSerialization::Serialize(attribute);
             if (serializedAttribute.has_value()) {
                 t_data[t_attribute] = serializedAttribute.value();
             }
         }
+        m_attributes.Unlock();
     }
 
     Json NodeBase::SerializeAttributes(std::vector<std::string> t_attributes) {
@@ -185,14 +193,17 @@ namespace Raster {
             auto serializedAttribute = t_data[t_attribute];
             auto deserializedAttribute = DynamicSerialization::Deserialize(serializedAttribute);
             if (deserializedAttribute.has_value()) {
-                m_attributes[t_attribute] = deserializedAttribute.value();
+                m_attributes.Lock();
+                m_attributes.GetReference()[t_attribute] = deserializedAttribute.value();
+                m_attributes.Unlock();
             }
         }
     }
 
     Json NodeBase::SerializeAllAttributes() {
         Json result;
-        for (auto& attribute : m_attributes) {
+        auto attributes = m_attributes.Get();
+        for (auto& attribute : attributes) {
             SerializeAttribute(result, attribute.first);
         }
         return result;
@@ -254,7 +265,7 @@ namespace Raster {
                 if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
                     auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
                     RASTER_SYNCHRONIZED(*m_attributesCacheMutex);
-                    m_attributesCache[t_attribute] = attributeValue;
+                    m_attributesCache.Get()[t_attribute] = attributeValue;
                     return attributeValue;
                 }
             }
@@ -266,14 +277,14 @@ namespace Raster {
             auto pinMap = targetNode.value()->AbstractExecute();
             Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
-            targetNode.value()->executionsPerFrame++;
+            if (!ExecutingInAudioContext()) targetNode.value()->executionsPerFrame.SetBackValue(targetNode.value()->executionsPerFrame.Get() + 1); 
             RASTER_SYNCHRONIZED(*m_attributesCacheMutex);
-            m_attributesCache[t_attribute] = dynamicAttribute;
+            m_attributesCache.Get()[t_attribute] = dynamicAttribute;
             return dynamicAttribute;
         }
 
-        if (m_attributes.find(t_attribute) != m_attributes.end()) {
-            auto dynamicAttribute = m_attributes[t_attribute];
+        if (m_attributes.Get().find(t_attribute) != m_attributes.Get().end()) {
+            auto dynamicAttribute = m_attributes.Get()[t_attribute];
             return dynamicAttribute;
         }
 
@@ -313,7 +324,7 @@ namespace Raster {
 
     void NodeBase::ClearAttributesCache() {
         m_attributesCacheMutex->lock();
-            this->m_attributesCache.clear();
+            this->m_attributesCache.Get().clear();
             this->m_accumulator.clear();
         m_attributesCacheMutex->unlock();
     }
@@ -427,6 +438,11 @@ namespace Raster {
 
     std::optional<float> NodeBase::GetContentDuration() {
         return AbstractGetContentDuration();
+    }
+
+    bool NodeBase::ExecutingInAudioContext() {
+        auto contextData = GetContextData();
+        return contextData.find("AUDIO_PASS") != contextData.end();
     }
 
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);

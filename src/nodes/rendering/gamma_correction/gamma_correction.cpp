@@ -12,13 +12,6 @@ namespace Raster {
 
         this->m_framebuffer = Framebuffer();
 
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "gamma_correction/shader")
-            );
-        }
-
         AddOutputPin("Output");
     }
 
@@ -30,6 +23,13 @@ namespace Raster {
 
     AbstractPinMap GammaCorrection::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
+
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "gamma_correction/shader")
+            );
+        }
         
         auto framebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base"));
         auto gammaCandidate = GetAttribute<float>("Gamma");

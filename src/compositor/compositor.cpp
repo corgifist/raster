@@ -1,10 +1,10 @@
 #include "compositor/compositor.h"
 
 namespace Raster {
-    std::optional<Framebuffer> Compositor::primaryFramebuffer;
+    std::optional<DoubleBufferedFramebuffer> Compositor::primaryFramebuffer;
     float Compositor::previewResolutionScale = 1.0f;
 
-    std::unordered_map<int, RenderableBundle> Compositor::s_bundles;
+    DoubleBufferedValue<std::unordered_map<int, RenderableBundle>> Compositor::s_bundles;
     std::vector<CompositorTarget> Compositor::s_targets;
     Blending Compositor::s_blending;
     Pipeline Compositor::s_pipeline;
@@ -22,7 +22,8 @@ namespace Raster {
     void Compositor::PerformComposition(std::vector<int> t_allowedCompositions) {
         if (!primaryFramebuffer.has_value()) return;
         if (t_allowedCompositions.empty()) {
-            PerformManualComposition(s_targets, primaryFramebuffer.value());
+            PerformManualComposition(s_targets, primaryFramebuffer.value().Get());
+            primaryFramebuffer.value().SwapBuffers();
             return;
         }
 
@@ -33,7 +34,8 @@ namespace Raster {
             }
         }
 
-        PerformManualComposition(filteredTargets, primaryFramebuffer.value());
+        PerformManualComposition(filteredTargets, primaryFramebuffer.value().Get());
+        primaryFramebuffer.value().SwapBuffers();
     }
 
     void Compositor::PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor) {
@@ -67,12 +69,10 @@ namespace Raster {
     void Compositor::ResizePrimaryFramebuffer(glm::vec2 t_resolution) {
         if (primaryFramebuffer.has_value()) {
             auto& framebuffer = primaryFramebuffer.value();
-            GPU::DestroyTexture(framebuffer.attachments[0]);
-            GPU::DestroyFramebuffer(framebuffer);
+            framebuffer.Destroy();
         }
 
-        primaryFramebuffer = GenerateCompatibleFramebuffer(t_resolution);
-        std::cout << "resized primary framebuffer " << t_resolution.x << "x" << t_resolution.y << std::endl;
+        primaryFramebuffer = GenerateCompatibleDoubleBufferedFramebuffer(t_resolution);
     }
 
     void Compositor::EnsureResolutionConstraints() {
@@ -82,7 +82,7 @@ namespace Raster {
             }
             auto requiredResolution = GetRequiredResolution();
             auto framebuffer = primaryFramebuffer.value();
-            if (requiredResolution.x != framebuffer.width || requiredResolution.y != framebuffer.height) {
+            if (requiredResolution.x != framebuffer.Get().width || requiredResolution.y != framebuffer.Get().height) {
                 ResizePrimaryFramebuffer(requiredResolution);
             }
             s_targets.clear();
@@ -96,6 +96,10 @@ namespace Raster {
         });
     }
 
+    DoubleBufferedFramebuffer Compositor::GenerateCompatibleDoubleBufferedFramebuffer(glm::vec2 t_resolution) {
+        return DoubleBufferedFramebuffer(t_resolution.x, t_resolution.y);
+    }
+
     void Compositor::EnsureResolutionConstraintsForFramebuffer(Framebuffer& t_fbo) {
         auto requiredResolution = GetRequiredResolution();
         if (!t_fbo.handle) {
@@ -103,11 +107,20 @@ namespace Raster {
             return;
         }
         if (t_fbo.width != requiredResolution.x || t_fbo.height != requiredResolution.y) {
-            for (auto& attachment : t_fbo.attachments) {
-                GPU::DestroyTexture(attachment);
-            }
-            GPU::DestroyFramebuffer(t_fbo);
+            GPU::DestroyFramebufferWithAttachments(t_fbo);
             t_fbo = GenerateCompatibleFramebuffer(requiredResolution);
+        }
+    }
+
+    void Compositor::EnsureResolutionConstraintsForFramebuffer(DoubleBufferedFramebuffer& t_fbo) {
+        auto requiredResolution = GetRequiredResolution();
+        if (!t_fbo.Get().handle) {
+            t_fbo = GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution);
+            return;
+        }
+        if (t_fbo.Get().width != requiredResolution.x || t_fbo.Get().height != requiredResolution.y) {
+            t_fbo.Destroy();
+            t_fbo = GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution);
         }
     }
 

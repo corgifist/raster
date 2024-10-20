@@ -9,7 +9,7 @@ namespace Raster {
     struct Composition {
         int id;
         std::string name, description;
-        std::vector<AbstractNode> nodes;
+        std::unordered_map<int, AbstractNode> nodes;
         std::vector<AbstractAttribute> attributes;
         float beginFrame, endFrame;
         std::string blendMode;

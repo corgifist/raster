@@ -54,7 +54,6 @@ namespace Raster {
         if (decoderContext->lastAudioPassID + 1 != audioPassID) {
             decoderContext->needsSeeking = true;
             decoderContext->cacheValid = false;
-            print("pass mismatch seek");
         }
         if (decoderContext->lastAudioPassID != audioPassID) decoderContext->cacheValid = false;
         if (decoderContext->cacheValid) {

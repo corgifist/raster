@@ -5,6 +5,7 @@
 #include "compositor/compositor.h"
 #include "compositor/texture_interoperability.h"
 #include "gpu/gpu.h"
+#include "compositor/double_buffered_framebuffer.h"
 
 namespace Raster {
     struct LinearBlur : public NodeBase {
@@ -23,7 +24,7 @@ namespace Raster {
         std::optional<std::string> Footer();
     
     private:
-        Framebuffer m_framebuffer;
+        DoubleBufferedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
     };

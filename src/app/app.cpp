@@ -14,6 +14,7 @@
 #include "../avcpp/ffmpeg.h"
 #include "../avcpp/avutils.h"
 #include "audio/audio.h"
+#include "compositor/async_rendering.h"
 
 using namespace av;
 
@@ -22,16 +23,18 @@ namespace Raster {
     std::vector<AbstractUI> App::s_windows{};
 
     void App::Initialize() {
+        print(RASTER_COMPILER_VERSION_STRING);
         static NFD::Guard s_guard;
         av::init();
         av::set_logging_level(AV_LOG_ERROR);
-        std::cout << "ffmpeg version: " << av::getversion() << std::endl;
+        RASTER_LOG("ffmpeg version: " << av::getversion());
 
         Audio::Initialize(2, 48000);
         DUMP_VAR(Audio::s_backendInfo.name);
         DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
         AsyncUpload::Initialize();
+        AsyncRendering::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
 
         Workspace::s_configuration = Configuration(ReadJson("misc/config.json"));
@@ -80,7 +83,6 @@ namespace Raster {
         ); 
 
         DispatchersInstaller::Initialize();
-        Compositor::Initialize();
 
         auto& style = ImGui::GetStyle();
         // style.CurveTessellationTol = 0.01f;
@@ -222,13 +224,10 @@ namespace Raster {
                     }
                 }
                 GPU::BindFramebuffer(std::nullopt);
-                Compositor::s_bundles.clear();
-                Compositor::EnsureResolutionConstraints();
                 if (Workspace::s_project.has_value()) {
                     auto& project = Workspace::s_project.value();
                     project.currentFrame = std::max(project.currentFrame, 0.0f);
                     project.currentFrame = std::min(project.currentFrame, project.GetProjectLength());
-                    project.Traverse();
                 }
 
                 for (const auto& window : s_windows) {
@@ -236,10 +235,10 @@ namespace Raster {
                 }
 
                 ImGui::ShowDemoWindow();
-
-                Compositor::PerformComposition();
                 GPU::BindFramebuffer(std::nullopt);
             GPU::EndFrame();
+            AsyncRendering::AllowRendering();
+
 
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
@@ -249,10 +248,11 @@ namespace Raster {
     }
 
     void App::Terminate() {
+        AsyncRendering::Terminate();
+        AsyncUpload::Terminate();
         if (Workspace::s_project.has_value()) {
             Workspace::GetProject().compositions.clear();
         }
-        AsyncUpload::Terminate();
         GPU::Terminate();
     }
 }

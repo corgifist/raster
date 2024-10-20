@@ -15,6 +15,21 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
+    }
+
+    TrackingMotionBlur::~TrackingMotionBlur() {
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
+        }
+
+        if (m_temporalFramebuffer.Get().handle) {
+            m_temporalFramebuffer.Destroy();
+        }
+    }
+
+    AbstractPinMap TrackingMotionBlur::AbstractExecute(AbstractPinMap t_accumulator) {
+        AbstractPinMap result = {};
+        auto& project = Workspace::GetProject();
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -26,27 +41,6 @@ namespace Raster {
             GPU::SetSamplerTextureWrappingMode(s_sampler.value(), TextureWrappingAxis::S, TextureWrappingMode::MirroredRepeat);
             GPU::SetSamplerTextureWrappingMode(s_sampler.value(), TextureWrappingAxis::T, TextureWrappingMode::MirroredRepeat);
         }
-    }
-
-    TrackingMotionBlur::~TrackingMotionBlur() {
-        if (m_framebuffer.handle) {
-            for (auto& attachment : m_framebuffer.attachments) {
-                GPU::DestroyTexture(attachment);
-            }
-            GPU::DestroyFramebuffer(m_framebuffer);
-        }
-
-        if (m_temporalFramebuffer.handle) {
-            for (auto& attachment : m_temporalFramebuffer.attachments) {
-                GPU::DestroyTexture(attachment);
-            }
-            GPU::DestroyFramebuffer(m_temporalFramebuffer);
-        }
-    }
-
-    AbstractPinMap TrackingMotionBlur::AbstractExecute(AbstractPinMap t_accumulator) {
-        AbstractPinMap result = {};
-        auto& project = Workspace::GetProject();
 
         auto baseCandidate = GetAttribute<Framebuffer>("Base");
         auto baseTransformCandidate = GetAttribute<Transform2D>("Transform");
@@ -93,7 +87,10 @@ namespace Raster {
                 angleDifference *= blurIntensity;
                 sizeDifference *= blurIntensity;
 
-                GPU::BindFramebuffer(m_framebuffer);
+                auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+                auto& temporalFramebuffer = m_temporalFramebuffer.GetFrontFramebuffer(); 
+
+                GPU::BindFramebuffer(framebuffer);
                 GPU::BindPipeline(pipeline);
                 GPU::BindSampler(sampler, 0);
 
@@ -111,25 +108,25 @@ namespace Raster {
                 GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
                 GPU::DrawArrays(3);
 
-                GPU::BindFramebuffer(m_temporalFramebuffer);
+                GPU::BindFramebuffer(temporalFramebuffer);
                 GPU::ClearFramebuffer(0, 0, 0, 0);
 
                 GPU::SetShaderUniform(pipeline.fragment, "uStage", 1);
-                GPU::BindTextureToShader(pipeline.fragment, "uTexture", m_framebuffer.attachments.at(0), 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", framebuffer.attachments.at(0), 0);
 
                 GPU::DrawArrays(3);
 
-                GPU::BindFramebuffer(m_framebuffer);
+                GPU::BindFramebuffer(framebuffer);
                 GPU::ClearFramebuffer(0, 0, 0, 0);
 
                 GPU::SetShaderUniform(pipeline.fragment, "uStage", 0);
-                GPU::BindTextureToShader(pipeline.fragment, "uTexture", m_temporalFramebuffer.attachments.at(0), 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", temporalFramebuffer.attachments.at(0), 0);
 
                 GPU::DrawArrays(3);
 
                 GPU::BindSampler(std::nullopt, 0);
 
-                TryAppendAbstractPinMap(result, "Framebuffer", m_framebuffer);
+                TryAppendAbstractPinMap(result, "Framebuffer", framebuffer);
 
             }
 

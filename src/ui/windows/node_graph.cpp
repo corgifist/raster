@@ -80,8 +80,8 @@ namespace Raster {
         std::any cachedValue = std::nullopt;
         {
             RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
-            if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-                cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+            if (Workspace::s_pinCache.GetFrontValue().find(pin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
+                cachedValue = Workspace::s_pinCache.GetFrontValue()[pin.connectedPinID];
             }
         }
         Nodes::BeginPin(pin.pinID, Nodes::PinKind::Input);
@@ -90,7 +90,8 @@ namespace Raster {
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
             if (pin.flow) {
-                for (auto& node : s_currentComposition->nodes) {
+                for (auto& pair : s_currentComposition->nodes) {
+                    auto& node = pair.second;
                     if (node->flowInputPin.has_value()) {
                         if (node->flowInputPin.value().connectedPinID == pin.pinID) isConnected = true;
                     }
@@ -144,8 +145,8 @@ namespace Raster {
         std::any cachedValue = std::nullopt;
         {
             RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
-            if (Workspace::s_pinCache.find(pin.pinID) != Workspace::s_pinCache.end()) {
-                cachedValue = Workspace::s_pinCache[pin.pinID];
+            if (Workspace::s_pinCache.GetFrontValue().find(pin.pinID) != Workspace::s_pinCache.GetFrontValue().end()) {
+                cachedValue = Workspace::s_pinCache.GetFrontValue()[pin.pinID];
             }
         }
 
@@ -162,7 +163,8 @@ namespace Raster {
 
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
-            for (auto& node : s_currentComposition->nodes) {
+            for (auto& pair : s_currentComposition->nodes) {
+                auto& node = pair.second;
                 for (auto& inputPin : node->inputPins) {
                     if (inputPin.connectedPinID == pin.pinID) isConnected = true;
                 }
@@ -280,8 +282,9 @@ namespace Raster {
     }
 
     void NodeGraphUI::ProcessPasteAction() {
+        RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
         for (auto& accumulatedNode : s_copyAccumulator) {
-            s_currentComposition->nodes.push_back(accumulatedNode.node);
+            s_currentComposition->nodes[accumulatedNode.node->nodeID] = accumulatedNode.node;
             Nodes::BeginNode(accumulatedNode.node->nodeID);
                 Nodes::SetNodePosition(accumulatedNode.node->nodeID, s_mousePos + accumulatedNode.relativeNodeOffset);
             Nodes::EndNode();
@@ -420,7 +423,8 @@ namespace Raster {
                         s_positioningTasks.clear();
 
                         if (s_currentComposition) {
-                            for (auto& node : s_currentComposition->nodes) {
+                            for (auto& nodePair : s_currentComposition->nodes) {
+                                auto& node = nodePair.second;
                                 s_currentNode = node;
                                 float maxInputXCandidate = 0;
                                 std::vector<std::string> attributesList;
@@ -589,7 +593,7 @@ namespace Raster {
                                     ImGui::SetWindowFontScale(1.0f);
                                 Nodes::EndNode();
 
-                                if (node->bypassed || !node->enabled || node->executionsPerFrame == 0) {
+                                if (node->bypassed || !node->enabled || node->executionsPerFrame.GetFrontValue() == 0) {  
                                     auto& style = Nodes::GetStyle();
                                     ImDrawList* drawList = ImGui::GetWindowDrawList();
                                     ImVec2 padding = ImVec2(style.NodePadding.x, style.NodePadding.y);
@@ -600,7 +604,8 @@ namespace Raster {
 
                             s_deferredNodeCreations.clear();
 
-                            for (auto& node : s_currentComposition->nodes) {
+                            for (auto& pair : s_currentComposition->nodes) {
+                                auto& node = pair.second;
                                 if (node->flowInputPin.has_value() && node->flowInputPin.value().connectedPinID > 0) {
                                     auto sourcePin = node->flowInputPin.value();
                                     Nodes::Link(sourcePin.linkID, sourcePin.pinID, sourcePin.connectedPinID, ImVec4(1, 1, 1, 1), 2.0f);
@@ -615,8 +620,8 @@ namespace Raster {
                                         std::any cachedValue = std::nullopt;
                                         {
                                             RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
-                                            if (Workspace::s_pinCache.find(pin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                                cachedValue = Workspace::s_pinCache[pin.connectedPinID];
+                                            if (Workspace::s_pinCache.GetFrontValue().find(pin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
+                                                cachedValue = Workspace::s_pinCache.GetFrontValue()[pin.connectedPinID];
                                             }
                                         }
                                         ImVec4 linkColor = ImVec4(1, 1, 1, 1);
@@ -712,39 +717,36 @@ namespace Raster {
                             if (Nodes::BeginDelete()) {
                                 Nodes::NodeId nodeID = 0;
                                 {
-                                    RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+                                    RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
                                     while (Nodes::QueryDeletedNode(&nodeID)) {
                                         int rawNodeID = (int) nodeID.Get();
                                         if (Nodes::AcceptDeletedItem()) {
-                                            int targetNodeDelete = -1;
-                                            int nodeIndex = 0;
-                                            for (auto& node : s_currentComposition->nodes) {
-                                                if (node->nodeID == rawNodeID) {
-                                                    targetNodeDelete = nodeIndex;
-                                                    break; 
-                                                }
-                                                nodeIndex++;
+                                            auto nodeIterator = s_currentComposition->nodes.find(rawNodeID);
+                                            if (nodeIterator != s_currentComposition->nodes.end()) {
+                                                s_currentComposition->nodes.erase(nodeIterator);
                                             }
-                                            s_currentComposition->nodes.erase(s_currentComposition->nodes.begin() + targetNodeDelete);
                                         }
                                     }
                                 }
 
-                                Nodes::LinkId linkID = 0;
-                                while (Nodes::QueryDeletedLink(&linkID)) {
-                                    int rawLinkID = (int) linkID.Get();
-                                    auto pin = Workspace::GetPinByLinkID(rawLinkID);
-                                    if (pin.has_value()) {
-                                        auto correctedPin = pin.value();
-                                        correctedPin.connectedPinID = -1;
-                                        Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                                {
+                                    Nodes::LinkId linkID = 0;
+                                    while (Nodes::QueryDeletedLink(&linkID)) {
+                                        int rawLinkID = (int) linkID.Get();
+                                        auto pin = Workspace::GetPinByLinkID(rawLinkID);
+                                        if (pin.has_value()) {
+                                            auto correctedPin = pin.value();
+                                            correctedPin.connectedPinID = -1;
+                                            Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                                        }
                                     }
                                 }
                             }
                             Nodes::EndDelete();
 
                             Nodes::Suspend();
-                            for (auto& node : s_currentComposition->nodes) {
+                            for (auto& pair : s_currentComposition->nodes) {
+                                auto& node = pair.second;
                                 std::string popupID = FormatString("##descriptionRename%i", node->nodeID);
                                 if (openDescriptionRenamePopup.value_or(-1) == node->nodeID) {
                                     ImGui::OpenPopup(popupID.c_str());
@@ -781,7 +783,7 @@ namespace Raster {
                         if (nodeCandidate.has_value()) {
                             auto& node = nodeCandidate.value();
                             ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
-                            ImGui::Text("%s %s: %i", ICON_FA_GEARS, Localization::GetString("EXECUTIONS_PER_FRAME").c_str(), node->executionsPerFrame);
+                            ImGui::Text("%s %s: %i", ICON_FA_GEARS, Localization::GetString("EXECUTIONS_PER_FRAME").c_str(), node->executionsPerFrame.GetFrontValue());
                             if (ImGui::Button(FormatString("%s %s", node->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
                                 node->enabled = !node->enabled;
                             }
@@ -800,8 +802,8 @@ namespace Raster {
                                             isAttributeExposed = true;
                                             {
                                                 RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
-                                                if (Workspace::s_pinCache.find(inputPin.connectedPinID) != Workspace::s_pinCache.end()) {
-                                                    attributeValue = Workspace::s_pinCache[inputPin.connectedPinID];
+                                                if (Workspace::s_pinCache.GetFrontValue().find(inputPin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
+                                                    attributeValue = Workspace::s_pinCache.GetFrontValue()[inputPin.connectedPinID];
                                                 }
                                             }
                                             break;
@@ -970,7 +972,8 @@ namespace Raster {
                                         project.selectedAttributes = {attributeCandidate.value()->id};
                                         auto attributeNode = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value").value();
                                         attributeNode->SetAttributeValue("AttributeID", s_currentComposition->attributes.back()->id);
-                                        s_currentComposition->nodes.push_back(attributeNode);
+                                        RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                                        s_currentComposition->nodes[attributeNode->nodeID] = attributeNode;
                                         s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                             .nodeID = attributeNode->nodeID,
                                             .position = nodeSearchMousePos.value_or(s_mousePos),
@@ -1178,7 +1181,8 @@ namespace Raster {
                         ImGui::InputTextWithHint("##nodeSearchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_nodeFilter);
                         if (ImGui::BeginChild("##nodeCandidates", ImVec2(250, 300))) {
                             bool first = true;
-                            for (auto& node : s_currentComposition->nodes) {
+                            for (auto& pair : s_currentComposition->nodes) {
+                                auto& node = pair.second;
                                 if (!s_nodeFilter.empty() && LowerCase(node->Header()).find(LowerCase(s_nodeFilter)) == std::string::npos) continue;
                                 ImGui::PushID(node->nodeID);
                                     if ((ImGui::MenuItem(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str())) || (first && ImGui::IsKeyPressed(ImGuiKey_Enter))) {
@@ -1280,7 +1284,8 @@ namespace Raster {
                         if (attributeNodeCandidate.has_value()) {
                             auto& attributeNode = attributeNodeCandidate.value();
                             attributeNode->SetAttributeValue("AttributeID", attributePayload.attributeID);
-                            s_currentComposition->nodes.push_back(attributeNode);
+                            RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                            s_currentComposition->nodes[attributeNode->nodeID] = attributeNode;
                             s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = attributeNode->nodeID,
                                 .position = nodeSearchMousePos.value_or(s_mousePos),
@@ -1296,7 +1301,8 @@ namespace Raster {
                         if (assetHandleNodeCandidate.has_value()) {
                             auto& assetHandleNode = assetHandleNodeCandidate.value();
                             assetHandleNode->SetAttributeValue("AssetID", assetID);
-                            s_currentComposition->nodes.push_back(assetHandleNode);
+                            RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                            s_currentComposition->nodes[assetHandleNode->nodeID] = assetHandleNode;
                             s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = assetHandleNode->nodeID,
                                 .position = nodeSearchMousePos.value_or(s_mousePos),

@@ -22,7 +22,7 @@
 // - apt-get install binutils-dev ...
 // - g++/clang++ -lbfd ...
 
-#if defined(UNIX) && !defined(WIN32)
+#if defined(UNIX) || defined(__linux__)
     #define BACKWARD_HAS_BFD 1
     #define BACKWARD_HAS_LIBUNWIND 1
 #endif
@@ -37,12 +37,14 @@
 // - apt-get install libunwind-dev
 // - g++/clang++ -lunwind
 
+#if defined(UNIX) || defined(__linux__)
 #include "backward.hpp"
+#endif
 
 namespace backward {
 
-#if defined(UNIX) && !defined(WIN32)
-    backward::SignalHandling sh;
+#if defined(UNIX) || defined(__linux__)
+        backward::SignalHandling sh;
 #endif
 
 } // namespace backward

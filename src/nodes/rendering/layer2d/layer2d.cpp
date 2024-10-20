@@ -10,7 +10,7 @@
 
 namespace Raster {
 
-    std::optional<Pipeline> Layer2D::s_nullShapePipeline;
+    std::optional<Pipeline> Layer2D::s_nullShapePipeline; 
 
     Layer2D::Layer2D() {
         NodeBase::Initialize();
@@ -28,10 +28,6 @@ namespace Raster {
         SetupAttribute("MaintainUVRange", true);
         SetupAttribute("AspectRatioCorrection", false);
 
-        if (!s_nullShapePipeline.has_value()) {
-            s_nullShapePipeline = GeneratePipelineFromShape(SDFShape()).pipeline;
-        }
-
         this->m_sampler = GPU::GenerateSampler();
     }
 
@@ -41,6 +37,9 @@ namespace Raster {
 
     AbstractPinMap Layer2D::AbstractExecute(AbstractPinMap t_accumulator) {
         AbstractPinMap result = {};
+        if (!s_nullShapePipeline.has_value()) {
+            s_nullShapePipeline = GeneratePipelineFromShape(SDFShape()).pipeline;
+        }
 
         auto& project = Workspace::s_project.value();
 

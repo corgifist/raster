@@ -91,10 +91,10 @@ namespace Raster {
         deviceConfig.periodSizeInFrames = 1024;
     
         if (ma_device_init(nullptr, &deviceConfig, &s_device) != MA_SUCCESS) {
-            std::cout << "failed to create audio playback!" << std::endl;
+            RASTER_LOG("failed to create audio playback!");
         } else {
             if (ma_device_start(&s_device) != MA_SUCCESS) {
-                std::cout << "failed to start audio playback!" << std::endl;
+                RASTER_LOG("failed to start audio playback!");
             }
         }
 

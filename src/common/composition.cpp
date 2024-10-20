@@ -31,7 +31,7 @@ namespace Raster {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
                 auto node = nodeCandidate.value();
-                nodes.push_back(node);
+                nodes[node->nodeID] = node;
             }
         }
         for (auto& composition : data["Attributes"]) {
@@ -64,19 +64,23 @@ namespace Raster {
     void Composition::Traverse(ContextData t_data) {
         auto& project = Workspace::GetProject();
         bool audioMixing = t_data.find("AUDIO_PASS") != t_data.end();
-        for (auto& node : nodes) {
+        RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+        for (auto& pair : nodes) {
             if (audioMixing) break;
-            node->executionsPerFrame = 0;
+            auto& node = pair.second;
+            node->executionsPerFrame.SetBackValue(0);
             node->ClearAttributesCache();
         }
         if (!IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) return;
         if (!enabled) return;
         AbstractPinMap accumulator;
-        for (auto& node : nodes) {
+        for (auto& pair : nodes) {
+            auto& node = pair.second;
             if (node->flowInputPin.has_value()) {
                 auto& flowInputPin = node->flowInputPin.value();
                 bool anyPinConnected = false;
-                for (auto& nodeCandidate : nodes) {
+                for (auto& nodeCandidatePair : nodes) {
+                    auto& nodeCandidate = nodeCandidatePair.second;
                     if (nodeCandidate->flowOutputPin.has_value() && nodeCandidate->flowOutputPin.value().connectedPinID == flowInputPin.pinID) {
                         anyPinConnected = true;
                         break;
@@ -91,8 +95,8 @@ namespace Raster {
     }
 
     void Composition::OnTimelineSeek() {
-        for (auto& node : nodes) {
-            node->OnTimelineSeek();
+        for (auto& pair : nodes) {
+            pair.second->OnTimelineSeek();
         }
     }
 
@@ -109,8 +113,8 @@ namespace Raster {
         data["Enabled"] = enabled;
         data["ColorMark"] = colorMark;
         data["Nodes"] = {};
-        for (auto& node : nodes) {
-            data["Nodes"].push_back(node->Serialize());
+        for (auto& pair : nodes) {
+            data["Nodes"].push_back(pair.second->Serialize());
         }
         data["Attributes"] = {};
         for (auto& attribute : attributes) {

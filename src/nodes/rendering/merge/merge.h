@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "compositor/compositor.h"
 #include "compositor/texture_interoperability.h"
+#include "compositor/double_buffered_framebuffer.h"
 #include "font/font.h"
 #include "../../../ImGui/imgui.h"
 #include "../../../ImGui/imgui_stdlib.h"
@@ -27,6 +28,6 @@ namespace Raster {
         std::optional<std::string> Footer();
     
     private:
-        Framebuffer m_framebuffer;
+        DoubleBufferedFramebuffer m_framebuffer;
     };
 };

@@ -16,17 +16,12 @@ namespace Raster {
         SetupAttribute("DarkEdges", true);
 
         AddOutputPin("Output");
-
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "lens_distortion/shader")
-            );
-        }
     }
 
     LensDistortion::~LensDistortion() {
-        GPU::DestroyFramebufferWithAttachments(m_framebuffer);
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
+        }
     }
 
     AbstractPinMap LensDistortion::AbstractExecute(AbstractPinMap t_accumulator) {
@@ -40,6 +35,13 @@ namespace Raster {
         auto dispersionCandidate = GetAttribute<float>("Dispersion");
         auto darkEdgesCandidate = GetAttribute<bool>("DarkEdges");
 
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "lens_distortion/shader")
+            );
+        }
+
         if (s_pipeline.has_value() && baseCandidate.has_value() && k1Candidate.has_value() && k2Candidate.has_value() && k3Candidate.has_value() && darkEdgesCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
@@ -50,22 +52,25 @@ namespace Raster {
             auto& dispersion = dispersionCandidate.value();
             auto& darkEdges = darkEdgesCandidate.value();
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
-            GPU::BindFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
             GPU::ClearFramebuffer(0, 0, 0, 0);
 
-            GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
-            GPU::SetShaderUniform(pipeline.fragment, "uK1", k1);
-            GPU::SetShaderUniform(pipeline.fragment, "uK2", k2);
-            GPU::SetShaderUniform(pipeline.fragment, "uK3", k3);
-            GPU::SetShaderUniform(pipeline.fragment, "uEdge", edge);
-            GPU::SetShaderUniform(pipeline.fragment, "uDispersion", dispersion);
-            GPU::SetShaderUniform(pipeline.fragment, "uDarkEdges", darkEdges ? 1 : 0);
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
+            if (base.attachments.size() >= 1) {
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
+                GPU::SetShaderUniform(pipeline.fragment, "uK1", k1);
+                GPU::SetShaderUniform(pipeline.fragment, "uK2", k2);
+                GPU::SetShaderUniform(pipeline.fragment, "uK3", k3);
+                GPU::SetShaderUniform(pipeline.fragment, "uEdge", edge);
+                GPU::SetShaderUniform(pipeline.fragment, "uDispersion", dispersion);
+                GPU::SetShaderUniform(pipeline.fragment, "uDarkEdges", darkEdges ? 1 : 0);
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
+            }
 
             GPU::DrawArrays(3);
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer);
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
 
         }
 

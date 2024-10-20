@@ -63,7 +63,6 @@ namespace Raster {
                     if (!m_asyncUploadID) {
                         m_asyncUploadID = AsyncUpload::GenerateTextureFromImage(image);
                         m_loader = AsyncImageLoader();
-                        std::cout << "requesting async upload" << std::endl;
                     }
                 }
             }

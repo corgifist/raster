@@ -116,7 +116,6 @@ namespace Raster {
                         reverb->reverberance = reverberance; reverb->hfDamping = hfDamping;
                         reverb->preDelay = preDelay; reverb->stereoWidth = stereoWidth;
                         reverb->toneLow = toneLow; reverb->toneHigh = toneHigh;
-                        std::cout << "updating reverb" << std::endl;
                     }
                 }
             }

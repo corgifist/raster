@@ -109,7 +109,7 @@ namespace Raster {
     void Project::Traverse(ContextData t_data) {
         if (t_data.find("AUDIO_PASS") == t_data.end()) {
             RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
-            auto& pinCache = Workspace::s_pinCache;
+            auto& pinCache = Workspace::s_pinCache.Get();
             std::unordered_map<int, std::any> persistentCache;
             for (auto& id : Workspace::s_persistentPins) {
                 if (pinCache.find(id) != pinCache.end()) {
