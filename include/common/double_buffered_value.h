@@ -11,17 +11,14 @@ namespace Raster {
 
     public:
         T& GetWithOffset(int t_offset = 0) {
-            RASTER_SYNCHRONIZED(DoubleBufferingIndex::s_mutex);
-            return (DoubleBufferingIndex::s_index + t_offset) % 2 ? m_back : m_front;
+            return (DoubleBufferingIndex::s_index.Get() + t_offset) % 2 ? m_back : m_front;
         }
 
         T& Get() {
-            RASTER_SYNCHRONIZED(DoubleBufferingIndex::s_mutex);
-            return !DoubleBufferingIndex::s_index ? m_back : m_front;
+            return !DoubleBufferingIndex::s_index.Get() ? m_back : m_front;
         }
         T& GetFrontValue() {
-            RASTER_SYNCHRONIZED(DoubleBufferingIndex::s_mutex);
-            return DoubleBufferingIndex::s_index ? m_back : m_front;
+            return DoubleBufferingIndex::s_index.Get() ? m_back : m_front;
         }
 
         void SetBackValue(T t_back) {

@@ -15,13 +15,6 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
-
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "checkerboard/shader")
-            );
-        }
     }
 
     Checkerboard::~Checkerboard() {
@@ -36,6 +29,13 @@ namespace Raster {
         auto secondColorCandidate = GetAttribute<glm::vec4>("Color2");
         auto positionCandidate = GetAttribute<glm::vec2>("Position");
         auto sizeCandidate = GetAttribute<glm::vec2>("Size");
+
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "checkerboard/shader")
+            );
+        }
 
         auto framebuffer = m_framebuffer.Get(baseCandidate);
         auto& pipeline = s_pipeline.value();

@@ -471,6 +471,13 @@ namespace Raster {
                                     }
                                     if (node->Footer().has_value()) {
                                         auto footer = node->Footer().value();
+                                        auto immediateFooters = node->GetImmediateFooters();
+                                        if (!immediateFooters.empty()) {
+                                            footer += "\n";
+                                        }
+                                        for (auto& immediateFooter : immediateFooters) {
+                                            footer += immediateFooter + "\n";
+                                        }
                                         ImGui::SetWindowFontScale(0.8f);
                                         ImVec2 footerSize = ImGui::CalcTextSize(footer.c_str());
                                         ImGui::SetWindowFontScale(1.0f);
@@ -588,7 +595,15 @@ namespace Raster {
                                     auto footer = node->Footer();
                                     if (footer.has_value()) {
                                         ImGui::Spacing();
-                                        ImGui::Text(footer.value().c_str());
+                                        auto& actualFooter = footer.value();
+                                        auto immediateFooters = node->GetImmediateFooters();
+                                        if (!immediateFooters.empty()) {
+                                            actualFooter += "\n";
+                                        }
+                                        for (auto& immediateFooter : immediateFooters) {
+                                            actualFooter += immediateFooter + "\n";
+                                        }
+                                        ImGui::Text(actualFooter.c_str());
                                     }
                                     ImGui::SetWindowFontScale(1.0f);
                                 Nodes::EndNode();

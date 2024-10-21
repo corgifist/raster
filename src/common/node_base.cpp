@@ -445,6 +445,27 @@ namespace Raster {
         return contextData.find("AUDIO_PASS") != contextData.end();
     }
 
+    void NodeBase::PushImmediateFooter(std::string t_footer) {
+        m_immediateFooters.GetFrontValue().push_back(t_footer);
+    }
+
+    void NodeBase::ClearImmediateFooters() {
+        m_immediateFooters.Get().clear();
+    }
+
+    std::vector<std::string> NodeBase::GetImmediateFooters() {
+        return m_immediateFooters.GetFrontValue();
+    }
+
+    bool NodeBase::RequireRenderingContext() {
+        auto contextData = GetContextData();
+        bool executingInRenderingContext = contextData.find("RENDERING_PASS") == contextData.end();
+        if (!executingInRenderingContext) {
+            PushImmediateFooter(FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("REQUIRES_RENDERING_CONTEXT").c_str()));
+        }
+        return !executingInRenderingContext;
+    }
+
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(float);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(int);

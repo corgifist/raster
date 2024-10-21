@@ -14,15 +14,14 @@ namespace Raster {
         SetupAttribute("Vibrance", 1.0f);
         SetupAttribute("Hue", 0.0f);
 
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::s_basicShader,
-                GPU::GenerateShader(ShaderType::Fragment, "brightness_contrast_saturation_vibrance_hue/shader")
-            );
-        }
-
         AddInputPin("Input");
         AddOutputPin("Output");
+    }
+
+    BrightnessContrastSaturationVibranceHue::~BrightnessContrastSaturationVibranceHue() {
+        if (m_framebuffer.Get().handle) {
+            m_framebuffer.Destroy();
+        }
     }
 
     AbstractPinMap BrightnessContrastSaturationVibranceHue::AbstractExecute(AbstractPinMap t_accumulator) {
@@ -35,9 +34,16 @@ namespace Raster {
         auto vibranceCandidate = GetAttribute<float>("Vibrance");
         auto hueCandidate = GetAttribute<float>("Hue");
 
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "brightness_contrast_saturation_vibrance_hue/shader")
+            );
+        }
+
         Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
         if (s_pipeline.has_value() && inputCandidate.has_value() && brightnessCandidate.has_value() && contrastCandidate.has_value() && saturationCandidate.has_value() && vibranceCandidate.has_value() && hueCandidate.has_value()) {
-            auto& framebuffer = m_framebuffer;
+            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
             auto& input = inputCandidate.value();
             auto& pipeline = s_pipeline.value();
             auto& brightness = brightnessCandidate.value();

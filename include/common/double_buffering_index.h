@@ -1,9 +1,10 @@
 #pragma once
 
 #include "raster.h"
+#include "synchronized_value.h"
+
 namespace Raster {
     struct DoubleBufferingIndex {
-        static int s_index;
-        static std::mutex s_mutex;
+        static SynchronizedValue<int> s_index;
     };
 };

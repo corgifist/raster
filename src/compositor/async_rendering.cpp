@@ -16,6 +16,7 @@ namespace Raster {
     void AsyncRendering::RenderingLoop() {
         GPU::SetCurrentContext(s_context);
         Compositor::Initialize();
+        DoubleBufferingIndex::s_index.Set(0);
         while (m_running) {
             if (Workspace::IsProjectLoaded()) {
                 double firstTime = GPU::GetTime();
@@ -38,10 +39,7 @@ namespace Raster {
                 }
                 double finalTime = GPU::GetTime();
                 m_allowRendering = false;
-                {
-                    RASTER_SYNCHRONIZED(DoubleBufferingIndex::s_mutex);
-                    DoubleBufferingIndex::s_index = (DoubleBufferingIndex::s_index + 1) % 2;
-                }
+                DoubleBufferingIndex::s_index.Set((DoubleBufferingIndex::s_index.Get() + 1) % 2);
             }
         }
     }

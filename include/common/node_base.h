@@ -86,6 +86,8 @@ namespace Raster {
         std::optional<float> GetContentDuration();
 
         void OnTimelineSeek();
+        void ClearImmediateFooters();
+        std::vector<std::string> GetImmediateFooters();
 
         protected:
         SynchronizedValue<std::unordered_map<std::string, std::any>> m_attributes;
@@ -127,6 +129,10 @@ namespace Raster {
         void UpdateContextData(std::string t_key, std::any t_value);
         void MergeContextDatas(ContextData t_data);
 
+        void PushImmediateFooter(std::string t_footer);
+
+        bool RequireRenderingContext();
+
         private:
         std::shared_ptr<std::mutex> m_attributesCacheMutex;
         DoubleBufferedValue<std::unordered_map<std::string, std::any>> m_attributesCache;
@@ -136,6 +142,7 @@ namespace Raster {
 
         bool ExecutingInAudioContext();
 
+        DoubleBufferedValue<std::vector<std::string>> m_immediateFooters;
         AbstractPinMap m_accumulator;
     };
 

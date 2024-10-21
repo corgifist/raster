@@ -225,5 +225,6 @@
     "AUDIO": "Audio",
     "AUDIO_BUSES": "Audio Buses",
     "MAIN": "Main",
-    "REDIRECT_TO_BUS": "Redirect to Bus"
+    "REDIRECT_TO_BUS": "Redirect to Bus",
+    "REQUIRES_RENDERING_CONTEXT": "Node Requires Rendering Context"
 }

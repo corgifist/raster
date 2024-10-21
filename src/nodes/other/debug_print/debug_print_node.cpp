@@ -22,6 +22,8 @@ namespace Raster {
         auto contextData = GetContextData();
         std::optional<std::string> inputAttribute = GetAttribute<std::string>("ArbitraryValue");
         TryAppendAbstractPinMap(result, "ExposedOutput", std::string("Exposed Output Works!"));
+        PushImmediateFooter("Immediate Footer 1");
+        PushImmediateFooter("Immediate Footer 2");
         return result;
     }
 
