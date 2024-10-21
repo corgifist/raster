@@ -68,7 +68,6 @@ namespace Raster {
 
     void BoxBlur::AbstractRenderProperties() {
         RenderAttributeProperty("Intensity", {
-            SliderRangeMetadata(0, 10),
             SliderStepMetadata(0.01f)
         });
         RenderAttributeProperty("Samples");

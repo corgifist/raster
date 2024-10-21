@@ -94,6 +94,7 @@ build_modules = [
     ["audio/echo_effect", node, [raster_common, raster_node_category, raster_audio]],
     ["audio/reverb_effect", node, [raster_common, raster_node_category, raster_audio]],
     ["audio/mix_audio_samples", node, [raster_common, raster_node_category, raster_audio]],
+    ["audio/merge_audio_samples", node, [raster_common, raster_node_category, raster_audio]],
     ["audio/audio_waveform_sine", node, [raster_common, raster_node_category, raster_audio]],
     ["audio/amplify_audio", node, [raster_common, raster_node_category, raster_audio]],
 

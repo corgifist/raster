@@ -68,7 +68,9 @@ namespace Raster {
     }
 
     void HashedBlur::AbstractRenderProperties() {
-        RenderAttributeProperty("Radius");
+        RenderAttributeProperty("Radius", {
+            SliderStepMetadata(0.01f)
+        });
         RenderAttributeProperty("HashOffset");
         RenderAttributeProperty("Iterations");
     }
