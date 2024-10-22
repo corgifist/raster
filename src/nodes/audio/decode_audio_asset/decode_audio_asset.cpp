@@ -129,7 +129,9 @@ namespace Raster {
             AudioSamples samples;
             samples.sampleRate = resampledSamples.sampleRate();
             samples.samples = decoderContext->cachedSamples;
-            samples.attachedPicture = attachedPicCandidate;
+            if (attachedPicCandidate.has_value()) {
+                samples.attachedPictures.push_back(attachedPicCandidate.value());
+            }
             decoderContext->cache.SetCachedSamples(samples);
 
             decoderContext->cacheValid = true;
@@ -258,7 +260,7 @@ namespace Raster {
     }
 
     std::string DecodeAudioAsset::AbstractHeader() {
-        return "Decode Audio Data";
+        return "Decode Audio Asset";
     }
 
     std::string DecodeAudioAsset::Icon() {

@@ -61,7 +61,7 @@ namespace Raster {
 
     static GLint InterpretTextureFilteringMode(TextureFilteringMode t_mode) {
         switch (t_mode) {
-            case TextureFilteringMode::Linear: return GL_LINEAR_MIPMAP_LINEAR;
+            case TextureFilteringMode::Linear: return GL_LINEAR;
             default: return GL_NEAREST_MIPMAP_NEAREST;
         }
     }

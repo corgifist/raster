@@ -10,7 +10,7 @@ namespace Raster {
     struct AudioSamples {
         int sampleRate;
         SharedRawAudioSamples samples;
-        std::optional<Texture> attachedPicture;
+        std::vector<Texture> attachedPictures;
 
         AudioSamples();
     };

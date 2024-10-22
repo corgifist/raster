@@ -117,10 +117,23 @@ namespace Raster {
 
     void StringDispatchers::DispatchAudioSamplesValue(std::any& t_attribute) {
         auto value = std::any_cast<AudioSamples>(t_attribute);
-        if (value.attachedPicture.has_value()) {
-            auto attachedPicture = value.attachedPicture.value();
-            std::any dynamicPicture = attachedPicture;
-            DispatchTextureValue(dynamicPicture);
+        if (!value.attachedPictures.empty()) {
+            static ImVec2 coversChildSize = ImVec2{100, 50};
+            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - coversChildSize.x / 2.0f);
+            if (ImGui::BeginChild("##childContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                int pictureIndex = 0;
+                for (auto& picture : value.attachedPictures) {
+                    if (ImGui::BeginChild(FormatString("##cover%i", pictureIndex).c_str(), ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                        std::any dynamicPicture = picture;
+                        DispatchTextureValue(dynamicPicture);
+                        ImGui::SameLine();
+                    }
+                    ImGui::EndChild();
+                    ImGui::SameLine();
+                }
+            }
+            coversChildSize = ImGui::GetWindowSize();
+            ImGui::EndChild();   
         }
         ImGui::Text("%s %s: %i", ICON_FA_WAVE_SQUARE, Localization::GetString("SAMPLE_RATE").c_str(), value.sampleRate);
 #define WAVEFORM_PRECISION 100

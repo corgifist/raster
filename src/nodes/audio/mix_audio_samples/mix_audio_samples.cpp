@@ -50,6 +50,9 @@ namespace Raster {
 
                 AudioSamples resultSamples = a;
                 resultSamples.samples = rawSamples;
+                for (auto& picture : b.attachedPictures) {
+                    resultSamples.attachedPictures.push_back(picture);
+                }
                 m_cache.SetCachedSamples(resultSamples);
                 TryAppendAbstractPinMap(result, "Output", resultSamples);
             }
