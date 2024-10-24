@@ -145,8 +145,12 @@ namespace Raster {
     }
 
     void TrackingMotionBlur::AbstractRenderProperties() {
-        RenderAttributeProperty("BlurIntensity");
-        RenderAttributeProperty("Samples");
+        RenderAttributeProperty("BlurIntensity", {
+            IconMetadata(ICON_FA_PERCENT)
+        });
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_GEARS)
+        });
     }
 
     bool TrackingMotionBlur::AbstractDetailsAvailable() {

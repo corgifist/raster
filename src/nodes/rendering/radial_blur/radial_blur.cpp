@@ -71,9 +71,15 @@ namespace Raster {
     }
 
     void RadialBlur::AbstractRenderProperties() {
-        RenderAttributeProperty("Intensity");
-        RenderAttributeProperty("Center");
-        RenderAttributeProperty("Samples");
+        RenderAttributeProperty("Intensity", {
+            IconMetadata(ICON_FA_PERCENT)
+        });
+        RenderAttributeProperty("Center", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT)
+        });
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_GEARS)
+        });
     }
 
     void RadialBlur::AbstractLoadSerialized(Json t_data) {

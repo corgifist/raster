@@ -17,4 +17,8 @@ namespace Raster {
     SliderBaseMetadata::SliderBaseMetadata(float t_base) {
         this->base = t_base;
     }
+
+    IconMetadata::IconMetadata(std::string t_icon) {
+        this->icon = t_icon;
+    }
 };

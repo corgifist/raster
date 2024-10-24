@@ -64,8 +64,12 @@ namespace Raster {
     }
 
     void Solid2D::AbstractRenderProperties() {
-        RenderAttributeProperty("Transform");
-        RenderAttributeProperty("Color");
+        RenderAttributeProperty("Transform", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT)
+        });
+        RenderAttributeProperty("Color", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
     }
 
     bool Solid2D::AbstractDetailsAvailable() {

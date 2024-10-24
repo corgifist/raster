@@ -103,7 +103,13 @@ namespace Raster {
             std::string typeText = FormatString("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str(), Workspace::GetTypeName(dynamicCandidate).c_str());
             ImGui::PushFont(Font::s_denseFont);
                 ImGui::SetWindowFontScale(1.2f);
-                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_LIST, t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+                    std::string icon = ICON_FA_LIST;
+                    for (auto& metadata : t_metadata) {
+                        if (metadata.type() == typeid(IconMetadata)) {
+                            icon = std::any_cast<IconMetadata>(metadata).icon;
+                        }
+                    }
+                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", icon.c_str(), t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
                 ImGui::SetWindowFontScale(1.0f);
             ImGui::PopFont();
             ImGui::SameLine();

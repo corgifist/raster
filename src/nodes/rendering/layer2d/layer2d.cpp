@@ -145,12 +145,24 @@ namespace Raster {
     }
 
     void Layer2D::AbstractRenderProperties() {
-        RenderAttributeProperty("Transform");
-        RenderAttributeProperty("UVTransform");
-        RenderAttributeProperty("Color");
-        RenderAttributeProperty("MaintainUVRange");
-        RenderAttributeProperty("AspectRatioCorrection");
-        RenderAttributeProperty("SamplerSettings");
+        RenderAttributeProperty("Transform", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT)
+        });
+        RenderAttributeProperty("UVTransform", {
+            IconMetadata(ICON_FA_IMAGE " " ICON_FA_UP_DOWN_LEFT_RIGHT)
+        });
+        RenderAttributeProperty("Color", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
+        RenderAttributeProperty("MaintainUVRange", {
+            IconMetadata(ICON_FA_EXPAND)
+        });
+        RenderAttributeProperty("AspectRatioCorrection", {
+            IconMetadata(ICON_FA_EXPAND)
+        });
+        RenderAttributeProperty("SamplerSettings", {
+            IconMetadata(ICON_FA_GEARS)
+        });
     }
 
     std::optional<Pipeline> Layer2D::GetPipeline() {

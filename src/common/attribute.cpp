@@ -648,6 +648,7 @@ namespace Raster {
 
     void AttributeBase::RenderKeyframePopup(AttributeKeyframe& t_keyframe) {
         auto& selectedKeyframes = Workspace::GetProject().selectedKeyframes;
+        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_STOPWATCH, name.c_str()).c_str());
         RenderPopup();
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("KEYFRAME_EASING").c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, Localization::GetString("KEYFRAME_EASING").c_str()).c_str());

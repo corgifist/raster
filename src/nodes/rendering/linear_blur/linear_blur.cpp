@@ -70,9 +70,16 @@ namespace Raster {
     }
 
     void LinearBlur::AbstractRenderProperties() {
-        RenderAttributeProperty("Angle");
-        RenderAttributeProperty("Intensity");
-        RenderAttributeProperty("Samples");
+        RenderAttributeProperty("Angle", {
+            IconMetadata(ICON_FA_ROTATE)
+        });
+        RenderAttributeProperty("Intensity", {
+            IconMetadata(ICON_FA_PERCENT),
+            SliderStepMetadata(0.01f)
+        });
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_GEARS)
+        });
     }
 
     void LinearBlur::AbstractLoadSerialized(Json t_data) {

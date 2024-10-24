@@ -26,7 +26,15 @@ namespace Raster {
         SliderBaseMetadata(float t_step);
     };
 
+    // TODO: this must make vector4 appear as a color4
     struct Vec4ColorPickerMetadata {
 
     };  
+
+    // Replaces standard ICON_FA_LIST icon with the specified icon in the `Node Properties` window
+    struct IconMetadata {
+        std::string icon;
+
+        IconMetadata(std::string t_icon);
+    };
 };

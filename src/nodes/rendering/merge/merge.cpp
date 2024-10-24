@@ -68,7 +68,9 @@ namespace Raster {
 
         auto reservedPropertyDispatcher = Dispatchers::s_propertyDispatchers[typeid(std::string)];
         Dispatchers::s_propertyDispatchers[typeid(std::string)] = Merge::DispatchStringAttribute;
-        RenderAttributeProperty("BlendingMode");
+        RenderAttributeProperty("BlendingMode", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
         Dispatchers::s_propertyDispatchers[typeid(std::string)] = reservedPropertyDispatcher;
     }
 
