@@ -1,4 +1,4 @@
-#include "node_category/node_category.h"
+#include "common/node_category.h"
 #include "common/localization.h"
 #include "common/randomizer.h"
 #include "font/font.h"

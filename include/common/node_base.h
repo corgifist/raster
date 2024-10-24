@@ -4,7 +4,7 @@
 #include "dylib.hpp"
 #include "font/IconsFontAwesome5.h"
 #include "typedefs.h"
-#include "node_category/node_category.h"
+#include "common/node_category.h"
 #include "dynamic_serialization.h"
 #include "attribute_metadata.h"
 #include "double_buffered_value.h"

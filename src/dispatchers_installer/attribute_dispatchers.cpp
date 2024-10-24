@@ -7,6 +7,7 @@
 #include "common/transform2d.h"
 #include "../ImGui/imgui_stripes.h"
 #include "common/dispatchers.h"
+#include "common/ui_helpers.h"
 
 namespace Raster {
 
@@ -97,6 +98,7 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchIntAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto& project = Workspace::GetProject();
+        auto composition = Workspace::GetCompositionByNodeID(t_owner->nodeID).value();
         int i = std::any_cast<int>(t_value);
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
@@ -130,101 +132,31 @@ namespace Raster {
             ImGui::OpenPopup(FormatString("##selectAsset%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
         }
 
-        if (ImGui::BeginPopup(FormatString("##selectAsset%i%s", t_owner->nodeID, t_attribute.c_str()).c_str())) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ASSET_ID").c_str()).c_str());
-            static std::string s_assetFilter = "";
-            ImGui::InputTextWithHint("##assetFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_assetFilter);
-            for (auto& asset : project.assets) {
-                auto description = Assets::GetAssetImplementation(asset->packageName).value();
-                if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
-                if (ImGui::MenuItem(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
-                    i = asset->id;
-                }
+        static std::string attributesSearchFilter = "";
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(i);
+        ImGui::PushID(t_owner->nodeID);
+        ImGui::PushID(composition->id);
+            if (openAttributesPopup) {
+                UIHelpers::OpenSelectAttributePopup();
             }
-            ImGui::EndPopup();
-        }
 
-        if (openAttributesPopup) {
-            ImGui::OpenPopup(FormatString("%i%s", t_owner->nodeID, t_attribute.c_str()).c_str());
-        }
-        bool openMoreAttributesPopup = false;
-        if (ImGui::BeginPopup(FormatString("%i%s", t_owner->nodeID, t_attribute.c_str()).c_str())) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ATTRIBUTE_ID").c_str()).c_str());
-            auto parentComposition = Workspace::GetCompositionByNodeID(t_owner->nodeID).value();
-            static std::string attributeFilter = "";
-            ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
-            bool mustShowByID = false;
-            for (auto& attribute : parentComposition->attributes) {
-                if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
-                    mustShowByID = true;
-                    break;
-                }
-            }
-            for (auto& attribute : parentComposition->attributes) {
-                if (!mustShowByID) {
-                    if (!attributeFilter.empty() && LowerCase(ReplaceString(attribute->name, " ", "")).find(LowerCase(ReplaceString(attributeFilter, " ", ""))) == std::string::npos) continue;
-                } else {
-                    if (!attributeFilter.empty() && std::to_string(attribute->id) != ReplaceString(attributeFilter, " ", "")) continue;
-                }
-                ImGui::PushID(attribute->id);
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
-                    i = attribute->id;
-                }
-                ImGui::PopID();
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_GLOBE, ICON_FA_LINK, Localization::GetString("MORE_ATTRIBUTES").c_str()).c_str())) {
-                openMoreAttributesPopup = true;
-            }
-            ImGui::EndPopup();
-        }
-        if (openMoreAttributesPopup) {
-            ImGui::OpenPopup(FormatString("%i%smoreAttributes", t_owner->nodeID, t_attribute.c_str()).c_str());
-        }
-        if (ImGui::BeginPopup(FormatString("%i%smoreAttributes", t_owner->nodeID, t_attribute.c_str()).c_str())) {
-            ImGui::SeparatorText(FormatString("%s %s %s", ICON_FA_GLOBE, ICON_FA_LINK, Localization::GetString("INSERT_EXTERNAL_ATTRIBUTE_ID").c_str()).c_str());
-            static std::string attributeFilter = "";
-            ImGui::InputText("##attributeFilter", &attributeFilter);
-            ImGui::SetItemTooltip("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str());
+            UIHelpers::SelectAttribute(composition, i, attributeCandidate.has_value() ? attributeCandidate.value()->name : "", &attributesSearchFilter);
+        ImGui::PopID();
+        ImGui::PopID();
 
-            auto& project = Workspace::s_project.value();
-            for (auto& composition : project.compositions) {
-                if (composition.attributes.empty()) continue;
-                bool skip = !attributeFilter.empty();
-                bool mustShowByID = false;
-                for (auto& attribute : composition.attributes) {
-                    if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
-                        mustShowByID = true;
-                        skip = false;
-                        break;
-                    }
-                    if (!attributeFilter.empty() && attribute->name.find(attributeFilter) != std::string::npos) {
-                        skip = false;
-                        break;
-                    }
-                }
-                if (skip) continue;
-                ImGui::PushID(composition.id);
-                if (ImGui::TreeNode(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str()).c_str())) {
-                    for (auto& attribute : composition.attributes) {
-                        if (mustShowByID && ReplaceString(attributeFilter, " ", "") != std::to_string(attribute->id)) continue;
-                        if (!mustShowByID && LowerCase(attribute->name).find(ReplaceString(LowerCase(attributeFilter), " ", "")) == std::string::npos) continue;
-                        ImGui::PushID(attribute->id);
-                        std::string attributeIcon = ICON_FA_GLOBE " " ICON_FA_LINK;
-                        if (Workspace::GetCompositionByNodeID(t_owner->nodeID).value()->id == composition.id) {
-                            attributeIcon = ICON_FA_LINK;
-                        }
-                        if (ImGui::MenuItem(FormatString("%s %s", attributeIcon.c_str(), attribute->name.c_str()).c_str())) {
-                            i = attribute->id;
-                        }
-                        ImGui::PopID();
-                    }
-                    ImGui::TreePop();
-                }
-                ImGui::PopID();
+        static std::string assetsSearchFilter = "";
+        auto assetCandidate = Workspace::GetAssetByAssetID(i);
+        ImGui::PushID(t_owner->nodeID);
+        ImGui::PushID(composition->id);
+            if (openAssetIDPopup) {
+                UIHelpers::OpenSelectAssetPopup();
             }
-            ImGui::EndPopup();
-        }
+
+            UIHelpers::SelectAsset(i, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetsSearchFilter);
+        ImGui::PopID();
+        ImGui::PopID();
+
+
         t_value = i;
     }
 

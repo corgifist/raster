@@ -1062,7 +1062,7 @@ namespace Raster {
                                 }
                                 ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
                                 if (allCategoryTotalNodes == 0) ImGui::BeginDisabled();
-                                if (ImGui::ButtonEx(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("ALL_NODES").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                                if (ImGui::ButtonEx(FormatString("%s %s (%i)", ICON_FA_LIST, Localization::GetString("ALL_NODES").c_str(), allCategoryTotalNodes).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
                                     targetCategory = 0;
                                 }
                                 if (allCategoryTotalNodes == 0) ImGui::EndDisabled();
@@ -1089,7 +1089,7 @@ namespace Raster {
                             }
                             ImGui::EndChild();
                             ImGui::SameLine(0, 6);
-                            if (ImGui::BeginChild("##nodeCandidates", ImVec2(200, ImGui::GetContentRegionAvail().y))) {
+                            if (ImGui::BeginChild("##nodeCandidates", ImVec2(350, ImGui::GetContentRegionAvail().y))) {
                                 bool hasCandidates = false;
                                 std::string categoryText = NodeCategoryUtils::ToString(targetCategory);
                                 if (targetCategory == 0) {

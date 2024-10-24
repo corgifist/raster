@@ -230,4 +230,9 @@ namespace Raster {
         while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
     }
 
+    template< typename T >
+    std::string NumberToHexadecimal( T i ) {
+        return FormatString("%X", i);
+    }
+
 }

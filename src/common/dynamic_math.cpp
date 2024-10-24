@@ -1,4 +1,4 @@
-#include "dynamic_math/dynamic_math.h"
+#include "common/dynamic_math.h"
 
 /*       IF IT WORKS, DON'T TOUCH IT        */
 /* HIGHLY CONFUSING PREPROCESSOR CODE AHEAD */

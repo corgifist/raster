@@ -1,4 +1,5 @@
 #include "asset_attribute.h"
+#include "common/ui_helpers.h"
 
 namespace Raster {
     AssetAttribute::AssetAttribute() {
@@ -40,10 +41,11 @@ namespace Raster {
             assetChooserButtonText = assetCandidate.value()->name;
         }
         std::string popupID = FormatString("##assetChooserPopup%i", id);
+        bool openAssetPopup = false;
         if (ImGui::Button(FormatString("%s %s", 
                 assetDescriptionCandidate.has_value() ? assetDescriptionCandidate.value().description.icon.c_str() 
                 : ICON_FA_XMARK, assetChooserButtonText.c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
-            ImGui::OpenPopup(popupID.c_str());
+            openAssetPopup = true;
         }
 
         if (ImGui::BeginDragDropSource()) {
@@ -60,29 +62,13 @@ namespace Raster {
             ImGui::EndDragDropTarget();
         }
 
-        if (ImGui::BeginPopup(popupID.c_str())) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("SELECT_ASSET").c_str()).c_str());
-            static std::string s_assetFilter = "";
-            ImGui::InputTextWithHint("##assetFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SELECT_ASSET").c_str()).c_str(), &s_assetFilter);
-            if (ImGui::BeginChild("##assetCandidates", ImVec2(ImGui::GetContentRegionAvail().x, 300))) {
-                for (auto& asset : project.assets) {
-                    if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
-                    auto implementationCandidate = Assets::GetAssetImplementation(asset->packageName);
-                    if (implementationCandidate.has_value()) {
-                        auto& implementation = implementationCandidate.value();
-                        ImGui::PushID(asset->id);
-                            if (ImGui::Selectable(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
-                                assetID = asset->id;
-                                isItemEdited = true;
-                                ImGui::CloseCurrentPopup();
-                            }
-                        ImGui::PopID();
-                    }
-                }
+        ImGui::PushID(id);
+            static std::string assetSearchFilter = "";
+            if (openAssetPopup) {
+                UIHelpers::OpenSelectAssetPopup();
             }
-            ImGui::EndChild();
-            ImGui::EndPopup();
-        }
+            UIHelpers::SelectAsset(assetID, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetSearchFilter);
+        ImGui::PopID();
         return assetID;
     }
 

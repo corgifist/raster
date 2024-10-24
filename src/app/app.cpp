@@ -6,7 +6,7 @@
 #include "build_number.h"
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
-#include "node_category/node_category.h"
+#include "common/node_category.h"
 #include "dispatchers_installer/dispatchers_installer.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_freetype.h"
@@ -196,7 +196,7 @@ namespace Raster {
         while (!GPU::MustTerminate()) {
             UIShared::s_timelineAnykeyframeDragged = false;
 
-            std::string constructedTitle = "Raster - Build Number " + std::to_string(BUILD_NUMBER);
+            std::string constructedTitle = std::string("Raster - Build Number ") + NumberToHexadecimal(BUILD_NUMBER) + " (" + std::to_string(BUILD_NUMBER) + ")";
             if (Workspace::s_project.has_value()) {
                 auto& project = Workspace::s_project.value();
                 constructedTitle += " - " + project.name;

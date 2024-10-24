@@ -1,5 +1,5 @@
 #include "sdf_heart.h"
-#include "node_category/node_category.h"
+#include "common/node_category.h"
 #include "common/workspace.h"
 
 namespace Raster {

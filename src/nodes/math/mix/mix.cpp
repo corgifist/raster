@@ -1,6 +1,6 @@
 #include "mix.h"
 #include "../../../ImGui/imgui.h"
-#include "dynamic_math/dynamic_math.h"
+#include "common/dynamic_math.h"
 
 namespace Raster {
 
