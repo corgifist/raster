@@ -3,10 +3,13 @@
 #include "overlay_dispatchers.h"
 #include "preview_dispatchers.h"
 #include "string_dispatchers.h"
+#include "conversion_dispatchers.h"
 #include "common/common.h"
 #include "common/transform2d.h"
 #include "common/audio_samples.h"
+#include "common/asset_id.h"
 
+#define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
 namespace Raster {
     void DispatchersInstaller::Initialize() {
@@ -52,6 +55,13 @@ namespace Raster {
 
         Dispatchers::s_overlayDispatchers = {
             {ATTRIBUTE_TYPE(Transform2D), OverlayDispatchers::DispatchTransform2DValue}
+        };
+
+        Dispatchers::s_conversionDispatchers = {
+            {TYPE_PAIR(AssetID, int), ConversionDispatchers::ConvertAssetIDToInt},
+            {TYPE_PAIR(float, int), ConversionDispatchers::ConvertFloatToInt},
+            {TYPE_PAIR(int, float), ConversionDispatchers::ConvertIntToFloat},
+            {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4}
         };
     }
 };

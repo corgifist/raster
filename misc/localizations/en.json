@@ -226,5 +226,6 @@
     "AUDIO_BUSES": "Audio Buses",
     "MAIN": "Main",
     "REDIRECT_TO_BUS": "Redirect to Bus",
-    "REQUIRES_RENDERING_CONTEXT": "Node Requires Rendering Context"
+    "REQUIRES_RENDERING_CONTEXT": "Node Requires Rendering Context",
+    "SEARCH_BY_NAME_OR_ID": "Search by Name or ID"
 }

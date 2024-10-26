@@ -20,4 +20,17 @@ namespace Raster {
 
     using OverlayDispatcherFunction = std::function<bool(std::any&, Composition*, int, float, glm::vec2)>;
     using OverlayDispatchersCollection = std::unordered_map<std::type_index, OverlayDispatcherFunction>;
+
+    using ConversionDispatcherFunction = std::function<std::optional<std::any>(std::any&)>;
+
+    struct ConversionDispatcherPair {
+        std::type_index from;
+        std::type_index to;
+        ConversionDispatcherFunction function;
+
+        ConversionDispatcherPair(std::type_index t_from, std::type_index t_to, ConversionDispatcherFunction t_function) :
+            from(t_from), to(t_to), function(t_function) {}
+    };
+
+    using ConversionDispatchersCollection = std::vector<ConversionDispatcherPair>;
 };

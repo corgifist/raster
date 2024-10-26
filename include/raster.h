@@ -23,8 +23,6 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
-#define AUDIO_PASS_PIN_ID -100
-
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
@@ -37,6 +35,9 @@
 
 #define RASTER_PACKAGED "packaged.raster."
 
+// TODO: replace this macro with RASTER_PRINT
+//       cause currently print() can cause problems with third-party libraries
+
 #define print(expr) std::cout << expr << std::endl
 
 #define RASTER_FUNCTION_MACRO BOOST_CURRENT_LOCATION
@@ -48,6 +49,9 @@
 #define RASTER_LOG(x) print(RASTER_SOURCE_LOCATION << ": " << x)
 
 #define DUMP_VAR(var) RASTER_LOG(#var << " = " << (var))
+
+#define RASTER_PREFERRED_POPUP_WIDTH  180
+#define RASTER_PREFERRED_POPUP_HEIGHT 200
 
 #if defined(UNIX) || defined(__linux__)
     #define RASTER_DL_EXPORT

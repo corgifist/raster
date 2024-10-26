@@ -14,6 +14,7 @@ namespace Raster {
         static StringDispatchersCollection s_stringDispatchers;
         static PreviewDispatchersCollection s_previewDispatchers;
         static OverlayDispatchersCollection s_overlayDispatchers;
+        static ConversionDispatchersCollection s_conversionDispatchers;
 
         static bool s_enableOverlays;
 
@@ -23,7 +24,7 @@ namespace Raster {
         //   SliderRangeMetadata, FormatStringMetadata, SliderStepMetadata, Vec4ColorPickerMetadata
         static void DispatchProperty(NodeBase* t_owner, std::string t_attrbute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata = {});
 
-        // Used to display a preview of some value in tooltip
+        // Used to display a preview of some value in a tooltip
         static void DispatchString(std::any& t_attribute);
 
         // Used in `Rendering` window to display a preview of some value
@@ -32,5 +33,8 @@ namespace Raster {
         // Generates an overlay over a `DispatchPreview` UI
         // Can be useful for rendering some sorts of gizmos and bounds of objects
         static bool DispatchOverlay(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize);
+
+        // Converts one std::any into another std::any (e.g float -> int; AttributeID -> int; AssetID -> int)
+        static std::optional<std::any> DispatchConversion(std::any& t_value, std::type_index t_targetType);
     };
 };

@@ -302,16 +302,11 @@ namespace Raster {
         auto dynamicAttributeCandidate = GetDynamicAttribute(t_attribute);
         if (dynamicAttributeCandidate.has_value()) {
             auto& dynamicAttribute = dynamicAttributeCandidate.value();
-            if (typeid(T) == typeid(glm::vec4) && dynamicAttribute.type() == typeid(glm::vec3)) {
-                glm::vec3 vec3 = std::any_cast<glm::vec3>(dynamicAttribute);
-                glm::vec4 vec4 = glm::vec4(vec3, 1.0f);
-                dynamicAttribute = vec4;
-            }
-            if (typeid(T) == typeid(float) && dynamicAttribute.type() == typeid(int)) {
-                dynamicAttribute = (float) std::any_cast<int>(dynamicAttribute);
-            }
-            if (typeid(T) == typeid(int) && dynamicAttribute.type() == typeid(float)) {
-                dynamicAttribute = (int) std::any_cast<float>(dynamicAttribute);
+            if (dynamicAttribute.type() != typeid(T)) {
+                auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, std::type_index(typeid(T)));
+                if (conversionCandidate.has_value()) {
+                    return std::any_cast<T>(conversionCandidate.value());
+                }
             }
             if (dynamicAttribute.type() == typeid(T)) {
                 return std::any_cast<T>(dynamicAttribute);

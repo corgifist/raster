@@ -12,6 +12,7 @@ namespace Raster {
     StringDispatchersCollection Dispatchers::s_stringDispatchers;
     PreviewDispatchersCollection Dispatchers::s_previewDispatchers;
     OverlayDispatchersCollection Dispatchers::s_overlayDispatchers;
+    ConversionDispatchersCollection Dispatchers::s_conversionDispatchers;
 
     bool Dispatchers::s_enableOverlays = true;
 
@@ -52,6 +53,15 @@ namespace Raster {
             }
         }
         return true;
+    }
+
+    std::optional<std::any> Dispatchers::DispatchConversion(std::any& t_value, std::type_index t_targetType) {
+        for (auto& dispatcher : s_conversionDispatchers) {
+            if (dispatcher.from == t_value.type() && dispatcher.to == t_targetType) {
+                return dispatcher.function(t_value);
+            }
+        }
+        return std::nullopt;
     }
 
 };

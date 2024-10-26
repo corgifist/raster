@@ -10,5 +10,7 @@ namespace Raster {
 
         static void SelectAsset(int& t_assetID, std::string t_headerText, std::string* t_customAttributeFilter = nullptr);
         static void OpenSelectAssetPopup();
+
+        static bool CustomTreeNode(std::string t_id);
     };
 };
