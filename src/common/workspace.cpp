@@ -2,6 +2,7 @@
 #include "gpu/gpu.h"
 #include "common/transform2d.h"
 #include "common/audio_samples.h"
+#include "common/asset_id.h"
 
 namespace Raster {
 
@@ -28,7 +29,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(Transform2D), RASTER_COLOR32(120, 66, 245, 255)},
         {ATTRIBUTE_TYPE(SamplerSettings), RASTER_COLOR32(124, 186, 53, 255)},
         {ATTRIBUTE_TYPE(int), RASTER_COLOR32(50, 168, 82, 255)},
-        {ATTRIBUTE_TYPE(AudioSamples), RASTER_COLOR32(139, 95, 239, 255)}
+        {ATTRIBUTE_TYPE(AudioSamples), RASTER_COLOR32(139, 95, 239, 255)},
+        {ATTRIBUTE_TYPE(AssetID), RASTER_COLOR32(50, 168, 82, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
@@ -43,7 +45,8 @@ namespace Raster {
         RASTER_TYPE_NAME(Transform2D),
         RASTER_TYPE_NAME(SamplerSettings),
         RASTER_TYPE_NAME(AudioSamples),
-        RASTER_TYPE_NAME(bool)
+        RASTER_TYPE_NAME(bool),
+        RASTER_TYPE_NAME(AssetID)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {
@@ -61,7 +64,6 @@ namespace Raster {
     };
 
     std::vector<int> Workspace::s_persistentPins = {};
-
     std::string Workspace::s_defaultColorMark = "Teal";
 
     void Workspace::Initialize() {

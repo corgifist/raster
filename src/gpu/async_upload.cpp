@@ -83,7 +83,7 @@ namespace Raster {
             if (info.image->precision == ImagePrecision::Half) precision = TexturePrecision::Half;
             if (info.image->precision == ImagePrecision::Full) precision = TexturePrecision::Full;
 
-            auto generatedTexture = GPU::GenerateTexture(info.image->width, info.image->height, info.image->channels, precision);
+            auto generatedTexture = GPU::GenerateTexture(info.image->width, info.image->height, info.image->channels, precision, true);
             GPU::UpdateTexture(generatedTexture, 0, 0, info.image->width, info.image->height, info.image->channels, info.image->data.data());
             GPU::GenerateMipmaps(generatedTexture);
             GPU::Flush();

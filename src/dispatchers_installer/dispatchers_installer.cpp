@@ -22,7 +22,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(glm::vec2), AttributeDispatchers::DispatchVec2Attribute},
             {ATTRIBUTE_TYPE(Transform2D), AttributeDispatchers::DispatchTransform2DAttribute},
             {ATTRIBUTE_TYPE(SamplerSettings), AttributeDispatchers::DispatchSamplerSettingsAttribute},
-            {ATTRIBUTE_TYPE(bool), AttributeDispatchers::DispatchBoolAttribute}
+            {ATTRIBUTE_TYPE(bool), AttributeDispatchers::DispatchBoolAttribute},
+            {ATTRIBUTE_TYPE(AssetID), AttributeDispatchers::DispatchAssetIDAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -37,7 +38,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(SamplerSettings), StringDispatchers::DispatchSamplerSettingsValue},
             {ATTRIBUTE_TYPE(Transform2D), StringDispatchers::DispatchTransform2DValue},
             {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue},
-            {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue}
+            {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue},
+            {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetID}
         };
 
         Dispatchers::s_previewDispatchers = {
@@ -61,7 +63,8 @@ namespace Raster {
             {TYPE_PAIR(AssetID, int), ConversionDispatchers::ConvertAssetIDToInt},
             {TYPE_PAIR(float, int), ConversionDispatchers::ConvertFloatToInt},
             {TYPE_PAIR(int, float), ConversionDispatchers::ConvertIntToFloat},
-            {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4}
+            {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4},
+            {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture}
         };
     }
 };

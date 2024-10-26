@@ -1,9 +1,14 @@
 #include "compositor/texture_interoperability.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
     std::optional<Framebuffer> TextureInteroperability::GetFramebuffer(std::optional<std::any> t_value) {
         if (!t_value.has_value()) return std::nullopt;
-        auto& value = t_value.value();
+        auto value = t_value.value();
+        auto conversionCandidate = Dispatchers::DispatchConversion(value, typeid(Texture));
+        if (conversionCandidate.has_value()) {
+            value = conversionCandidate.value();
+        }
 
         if (value.type() == typeid(Framebuffer)) {
             return std::any_cast<Framebuffer>(value);
@@ -21,7 +26,11 @@ namespace Raster {
 
     std::optional<Texture> TextureInteroperability::GetTexture(std::optional<std::any> t_value) {
         if (!t_value.has_value()) return std::nullopt;
-        auto& value = t_value.value();
+        auto value = t_value.value();
+        auto conversionCandidate = Dispatchers::DispatchConversion(value, typeid(Texture));
+        if (conversionCandidate.has_value()) {
+            value = conversionCandidate.value();
+        }
         if (value.type() == typeid(Texture)) {
             return std::any_cast<Texture>(value);
         }

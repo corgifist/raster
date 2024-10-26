@@ -9,6 +9,7 @@
 #include "common/transform2d.h"
 #include "common/audio_samples.h"
 #include "audio/audio.h"
+#include "common/asset_id.h"
 
 namespace Raster {
 
@@ -148,4 +149,35 @@ namespace Raster {
             ImGui::PopID();
         }
     }
+
+    void StringDispatchers::DispatchAssetID(std::any& t_attribute) {
+        auto id = std::any_cast<AssetID>(t_attribute).id;
+        auto assetCandidate = Workspace::GetAssetByAssetID(id);
+        if (!assetCandidate.has_value()) {
+            ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("ASSET_NOT_FOUND").c_str());
+        } else {
+            if (ImGui::BeginChild("##assetDetailsContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                auto& asset = assetCandidate.value();
+                auto textureCandidate = asset->GetPreviewTexture();
+                if (textureCandidate.has_value()) {
+                    if (ImGui::BeginChild("##textureChild", ImVec2(0, ImGui::GetWindowSize().y), ImGuiChildFlags_AutoResizeX)) {
+                        auto& texture = textureCandidate.value();
+                        ImVec2 fitSize = FitRectInRect(ImVec2(150, 150), ImVec2(texture.width, texture.height));
+                        ImGui::SetCursorPos(ImGui::GetWindowSize() / 2 - fitSize / 2);
+                        ImGui::Image(texture.handle, fitSize);
+                    }
+                    ImGui::EndChild();
+                    ImGui::SameLine();
+                } else {
+                    ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("ASSET_HAS_NO_PREVIEW_TEXTURE").c_str());
+                }
+                if (ImGui::BeginChild("##assetInfo", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                    asset->RenderDetails();
+                }
+                ImGui::EndChild();
+            }
+            ImGui::EndChild();
+        }
+    }
+
 };

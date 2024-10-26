@@ -34,6 +34,7 @@ namespace Raster {
                     hasCandidates = true;
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
                         t_attributeID = attribute->id;
+                        ImGui::CloseCurrentPopup();
                     }
                     ImGui::PopID();
                 }
@@ -95,6 +96,7 @@ namespace Raster {
                             hasCandidates = true;
                             if (ImGui::MenuItem(FormatString("%s %s", attributeIcon.c_str(), attribute->name.c_str()).c_str())) {
                                 t_attributeID = attribute->id;
+                                ImGui::CloseCurrentPopup();
                             }
                             ImGui::PopID();
                         }
@@ -134,6 +136,7 @@ namespace Raster {
                         hasCandidates = true;
                         if (ImGui::MenuItem(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
                             t_assetID = asset->id;
+                            ImGui::CloseCurrentPopup();
                         }
                     }
                     if (!hasCandidates) {

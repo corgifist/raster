@@ -7,6 +7,7 @@
 #include "../ImGui/imgui_stdlib.h"
 #include "common/dispatchers.h"
 #include "common/audio_samples.h"
+#include "common/asset_id.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -19,7 +20,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER, glm::vec3), glm::vec3()},
         {TYPE_NAME(ICON_FA_EXPAND, glm::vec4), glm::vec4()},
         {TYPE_NAME(ICON_FA_UP_DOWN_LEFT_RIGHT, Transform2D), Transform2D()},
-        {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()}
+        {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()},
+        {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), AssetID()}
     };
 
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
@@ -56,16 +58,16 @@ namespace Raster {
             }
             return {};
         }
-        Workspace::UpdatePinCache(t_accumulator); 
+        if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(t_accumulator); 
         if (!ExecutingInAudioContext()) executionsPerFrame.SetBackValue(executionsPerFrame.Get() + 1); 
         auto pinMap = AbstractExecute(t_accumulator);
-        Workspace::UpdatePinCache(pinMap);
+        if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(pinMap);
         auto outputPin = flowOutputPin.value_or(GenericPin());
         if (outputPin.connectedPinID > 0) {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value() && connectedNode.value()->enabled) {
                 auto newPinMap = connectedNode.value()->Execute(pinMap, t_contextData);
-                Workspace::UpdatePinCache(newPinMap);
+                if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
         }
@@ -155,6 +157,7 @@ namespace Raster {
                         if (isAttributeExposed) {
                             float originalCursorX = ImGui::GetCursorPosX();
                             ImGui::SetCursorPosX(originalCursorX - ImGui::CalcTextSize(ICON_FA_LINK).x - 5);
+                            ImGui::AlignTextToFramePadding();
                             ImGui::Text("%s ", ICON_FA_LINK);
                             ImGui::SameLine();
                             ImGui::SetCursorPosX(originalCursorX);
@@ -281,11 +284,12 @@ namespace Raster {
         if (targetNode.has_value() && targetNode.value()->enabled) {
             targetNode.value()->MergeContextDatas(GetContextData());
             auto pinMap = targetNode.value()->AbstractExecute();
-            Workspace::UpdatePinCache(pinMap);
+            if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
             if (!ExecutingInAudioContext()) targetNode.value()->executionsPerFrame.SetBackValue(targetNode.value()->executionsPerFrame.Get() + 1); 
-            RASTER_SYNCHRONIZED(*m_attributesCacheMutex);
-            m_attributesCache.Get()[t_attribute] = dynamicAttribute;
+            if (!ExecutingInAudioContext()) {
+                m_attributesCache.Get()[t_attribute] = dynamicAttribute;
+            }
             return dynamicAttribute;
         }
 
@@ -303,7 +307,7 @@ namespace Raster {
         if (dynamicAttributeCandidate.has_value()) {
             auto& dynamicAttribute = dynamicAttributeCandidate.value();
             if (dynamicAttribute.type() != typeid(T)) {
-                auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, std::type_index(typeid(T)));
+                auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, typeid(T));
                 if (conversionCandidate.has_value()) {
                     return std::any_cast<T>(conversionCandidate.value());
                 }

@@ -1,4 +1,5 @@
 #include "decode_audio_asset.h"
+#include "common/asset_id.h"
 
 namespace Raster {
 
@@ -16,7 +17,7 @@ namespace Raster {
     DecodeAudioAsset::DecodeAudioAsset() {
         NodeBase::Initialize();
 
-        SetupAttribute("Asset", 0);
+        SetupAttribute("Asset", AssetID());
         SetupAttribute("Volume", 1.0f);
 
         this->m_forceSeek = false;

@@ -8,6 +8,7 @@
 #include "../ImGui/imgui_stripes.h"
 #include "common/dispatchers.h"
 #include "common/ui_helpers.h"
+#include "common/asset_id.h"
 
 namespace Raster {
 
@@ -74,6 +75,7 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         std::string string = std::any_cast<std::string>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         ImGui::InputText(FormatString("##%s", t_attribute.c_str()).c_str(), &string, 0);
@@ -82,6 +84,7 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchFloatAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         float f = std::any_cast<float>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         auto metadata = ParseMetadata(t_metadata);
@@ -100,6 +103,7 @@ namespace Raster {
         auto& project = Workspace::GetProject();
         auto composition = Workspace::GetCompositionByNodeID(t_owner->nodeID).value();
         int i = std::any_cast<int>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_GEARS)) {
@@ -175,6 +179,7 @@ namespace Raster {
         bool interpretAsColor = interpretAsColorDict[id];
 
         glm::vec4 v = std::any_cast<glm::vec4>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         if (ImGui::Button(interpretAsColor ? ICON_FA_DROPLET : ICON_FA_EXPAND)) {
@@ -217,6 +222,7 @@ namespace Raster {
         bool interpretAsColor = interpretAsColorDict[id];
 
         auto v = std::any_cast<glm::vec3>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         if (ImGui::Button(interpretAsColor ? ICON_FA_DROPLET : ICON_FA_EXPAND)) {
@@ -261,6 +267,7 @@ namespace Raster {
 
         auto v = std::any_cast<glm::vec2>(t_value);
         auto reservedVector = v;
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         if (ImGui::Button(linkedSize ? ICON_FA_LINK : ICON_FA_LINK_SLASH)) {
@@ -316,6 +323,7 @@ namespace Raster {
         bool linkedSize = customData[stringID];
         
         ImGui::BeginChild("##transformDrags", ImVec2(ImGui::GetWindowSize().x, 0));
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
             ImGui::SameLine();
             float cursorX = ImGui::GetCursorPosX();
@@ -324,6 +332,7 @@ namespace Raster {
             float dragWidth = ImGui::GetCursorPosX() - cursorX;
             ImGui::NewLine();
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Size", ICON_FA_SCALE_BALANCED);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
@@ -348,11 +357,13 @@ namespace Raster {
             }
             customData[stringID] = linkedSize;
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Anchor", ICON_FA_ANCHOR);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
             ImGui::DragFloat2("##dragAnchor", glm::value_ptr(transform.anchor), 0.05f);
 
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Rotation", ICON_FA_ROTATE);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
@@ -386,6 +397,7 @@ namespace Raster {
             wrappingRawStringModes.push_back(stringMode.c_str());
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s %s: ", ICON_FA_IMAGE, Localization::GetString("WRAPPING_MODE").c_str());
         ImGui::SameLine();
         ImGui::Combo("##wrappingModes", &selectedWrappingMode, wrappingRawStringModes.data(), wrappingRawStringModes.size());
@@ -423,9 +435,25 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchBoolAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         bool value = std::any_cast<bool>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         ImGui::Checkbox(FormatString("##%s", t_attribute.c_str()).c_str(), &value);
+        t_value = value;
+    }
+
+    void AttributeDispatchers::DispatchAssetIDAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<AssetID>(t_value);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+        auto assetCandidate = Workspace::GetAssetByAssetID(value.id);
+        std::string buttonText = FormatString("%s %s", assetCandidate.has_value() ? ICON_FA_FOLDER_OPEN : ICON_FA_FOLDER_CLOSED, assetCandidate.has_value() ? assetCandidate.value()->name.c_str() : Localization::GetString("NONE").c_str() );
+        if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+            UIHelpers::OpenSelectAssetPopup();
+        }
+        static std::string assetFilter = "";
+        UIHelpers::SelectAsset(value.id, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetFilter);
         t_value = value;
     }
 };

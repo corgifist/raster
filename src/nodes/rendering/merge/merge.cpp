@@ -78,6 +78,7 @@ namespace Raster {
         auto& blending = Compositor::s_blending;
 
         std::string blendMode = std::any_cast<std::string>(t_value);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         

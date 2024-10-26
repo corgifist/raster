@@ -140,7 +140,7 @@ namespace Raster {
         static double GetTime();
 
         static Texture ImportTexture(const char* path);
-        static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual);
+        static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual, bool mipmapped = false);
         static void GenerateMipmaps(Texture texture);
         static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels);
         static void DestroyTexture(Texture texture);

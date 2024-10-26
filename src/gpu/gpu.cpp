@@ -268,14 +268,14 @@ namespace Raster {
         glfwSwapBuffers((GLFWwindow*) info.display);
     }
 
-    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision) {
+    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision, bool mipmapped) {
         GLuint textureHandle;
         glGenTextures(1, &textureHandle);
         glBindTexture(GL_TEXTURE_2D, textureHandle);
         
         auto format = InterpretTextureInfo(channels, precision);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+        glTexStorage2D(GL_TEXTURE_2D, mipmapped ? 8 : 1, format, width, height);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);

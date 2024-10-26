@@ -1,4 +1,5 @@
 #include "get_asset_id.h"
+#include "common/asset_id.h"
 #include "../../../ImGui/imgui.h"
 
 namespace Raster {
@@ -18,7 +19,8 @@ namespace Raster {
             auto& assetID = assetIDCandidate.value();
             auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
             if (assetCandidate.has_value()) {
-                TryAppendAbstractPinMap(result, "ID", assetID);
+                AssetID wrappedAssetID(assetID);
+                TryAppendAbstractPinMap(result, "ID", wrappedAssetID);
             }
         }
         return result;
