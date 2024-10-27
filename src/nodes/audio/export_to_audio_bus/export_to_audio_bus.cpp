@@ -1,6 +1,8 @@
 #include "export_to_audio_bus.h"
 #include "common/audio_samples.h"
 #include "audio/audio.h"
+#include "common/generic_audio_decoder.h"
+#include "common/audio_info.h"
 
 namespace Raster {
 
@@ -9,7 +11,7 @@ namespace Raster {
         NodeBase::GenerateFlowPins();
 
         SetupAttribute("BusID", -1);
-        SetupAttribute("Samples", AudioSamples());
+        SetupAttribute("Samples", GenericAudioDecoder());
 
         AddInputPin("Samples");
     }
@@ -35,11 +37,11 @@ namespace Raster {
             auto busCandidate = Workspace::GetAudioBusByID(busID);
             if (busCandidate.has_value()) {
                 auto& bus = busCandidate.value();
-                if (bus->samples.size() != 4096 * Audio::GetChannelCount()) {
-                    bus->samples.resize(4096 * Audio::GetChannelCount());
+                if (bus->samples.size() != 4096 * AudioInfo::s_channels) {
+                    bus->samples.resize(4096 * AudioInfo::s_channels);
                 }
                 auto rawSamples = samples.samples->data();
-                memcpy(bus->samples.data(), rawSamples, sizeof(float) * Audio::s_samplesCount * Audio::GetChannelCount());
+                memcpy(bus->samples.data(), rawSamples, sizeof(float) * AudioInfo::s_periodSize * AudioInfo::s_channels);
             }
 
         }
@@ -52,7 +54,9 @@ namespace Raster {
     }
 
     void ExportToAudioBus::AbstractRenderProperties() {
-        
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
     }
 
     void ExportToAudioBus::AbstractLoadSerialized(Json t_data) {

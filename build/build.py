@@ -58,7 +58,7 @@ build_modules = [
     ["ImGui", shared, [get_library("freetype2")]],
     ["avcpp", shared, [get_library(ffmpeg_libraries_list)]],
     ["font", shared],
-    ["common", shared, [raster_ImGui, raster_font]],
+    ["common", shared, [raster_ImGui, raster_font, raster_avcpp, get_library(ffmpeg_libraries_list)]],
     ["audio", shared, [raster_common]],
     ["dispatchers_installer", shared, [raster_common, raster_ImGui, raster_font, raster_audio]],
     ["image", shared, [raster_common, get_library("OpenImageIO")]],

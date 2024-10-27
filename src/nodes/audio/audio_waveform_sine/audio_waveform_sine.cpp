@@ -3,6 +3,7 @@
 #ifndef TAU_D
     #define TAU_D   6.28318530717958647693
 #endif
+#include "common/audio_info.h"
 
 namespace Raster {
 
@@ -47,18 +48,18 @@ namespace Raster {
 
             float currentTime = (project.GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame + phase) / project.framerate;
 
-            SharedRawAudioSamples resultSamples = std::make_shared<std::vector<float>>(Audio::s_samplesCount * Audio::GetChannelCount());
+            SharedRawAudioSamples resultSamples = AudioInfo::MakeRawAudioSamples();
             auto samplesPtr = resultSamples->data();
-            for (int i = 0; i < Audio::s_samplesCount * Audio::GetChannelCount(); i += Audio::GetChannelCount()) {
+            for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i += AudioInfo::s_channels) {
                 float s = (float)(sin(TAU_D * currentTime) * amplitude);
-                currentTime += (1.0f / (float) Audio::GetSampleRate()) * length + advance * Audio::GetSampleRate();
-                for (int channel = 0; channel < Audio::GetChannelCount(); channel++) {
+                currentTime += (1.0f / (float) AudioInfo::s_sampleRate) * length + advance * AudioInfo::s_sampleRate;
+                for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
                     samplesPtr[i + channel] = s;
                 }
             }
 
             AudioSamples samples;
-            samples.sampleRate = Audio::GetSampleRate();
+            samples.sampleRate = AudioInfo::s_sampleRate;
             samples.samples = resultSamples;
             m_cache.SetCachedSamples(samples);
             TryAppendAbstractPinMap(result, "Output", samples);

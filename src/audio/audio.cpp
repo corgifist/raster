@@ -5,23 +5,21 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 #include "common/workspace.h"
+#include "common/audio_info.h"
+#include "common/threads.h"
 
 namespace Raster {
 
     AudioBackendInfo Audio::s_backendInfo;
-    int Audio::s_samplesCount = 0;
-    int Audio::s_globalAudioOffset = 0;
     std::mutex Audio::s_audioMutex;
 
     static int s_channelCount, s_sampleRate;
     static ma_device s_device;
 
     static void raster_data_callback(ma_device* t_device, void* t_output, const void* t_input, ma_uint32 t_frameCount) {
+        Threads::s_audioThreadID = std::this_thread::get_id();
         Audio::s_audioMutex.lock();
-        Audio::s_samplesCount = t_frameCount;
         float* fOutput = (float*) t_output;
-        static int s_audioPassID = 0;
-        s_audioPassID++;
 
         if (Workspace::IsProjectLoaded()) {
             auto& project = Workspace::GetProject();
@@ -32,20 +30,21 @@ namespace Raster {
             for (auto& bus : buses) {
                 if (bus.main) {
                     mainBusID = bus.id;
-                    if (bus.samples.size() != 4096 * Audio::GetChannelCount()) {
-                        bus.samples.resize(4096 * Audio::GetChannelCount());
+                    if (bus.samples.size() != 4096 * AudioInfo::s_channels) {
+                        bus.samples.resize(4096 * AudioInfo::s_channels);
                     }
-                    for (int i = 0; i < t_frameCount * Audio::GetChannelCount(); i++) {
+                    for (int i = 0; i < t_frameCount * AudioInfo::s_channels; i++) {
                         bus.samples[i] = 0.0f;
                     }
                     break;
                 }
             }
 
+            AudioInfo::s_audioPassID++;
 
             ContextData context;
             context["AUDIO_PASS"] = true;
-            context["AUDIO_PASS_ID"] = s_audioPassID;
+            context["AUDIO_PASS_ID"] = AudioInfo::s_audioPassID;
 
             project.Traverse(context);
 
@@ -57,7 +56,7 @@ namespace Raster {
                     auto redirectBusCandidate = Workspace::GetAudioBusByID(bus.redirectID);
                     if (redirectBusCandidate.has_value()) {
                         auto& redirectBus = redirectBusCandidate.value();
-                        for (int i = 0; i < t_frameCount * Audio::GetChannelCount(); i++) {
+                        for (int i = 0; i < t_frameCount * AudioInfo::s_channels; i++) {
                             redirectBus->samples[i] += bus.samples[i];
                         }
                     }
@@ -67,7 +66,7 @@ namespace Raster {
             // copying samples from the main bus to the audio backend
             for (auto& bus : buses) {
                 if (bus.main) {
-                    memcpy(fOutput, bus.samples.data(), t_frameCount * Audio::GetChannelCount() * sizeof(float));
+                    memcpy(fOutput, bus.samples.data(), t_frameCount * AudioInfo::s_channels * sizeof(float));
                     break;
                 }
             }
@@ -88,7 +87,11 @@ namespace Raster {
         deviceConfig.dataCallback = raster_data_callback;
         deviceConfig.pUserData = nullptr;
         deviceConfig.noPreSilencedOutputBuffer = true;
-        deviceConfig.periodSizeInFrames = 1024;
+        deviceConfig.periodSizeInFrames = 4096;
+
+        AudioInfo::s_channels = t_channelCount;
+        AudioInfo::s_sampleRate = t_sampleRate;
+        AudioInfo::s_periodSize = deviceConfig.periodSizeInFrames;
     
         if (ma_device_init(nullptr, &deviceConfig, &s_device) != MA_SUCCESS) {
             RASTER_LOG("failed to create audio playback!");
@@ -100,22 +103,5 @@ namespace Raster {
 
         s_backendInfo.name = "miniaudio";
         s_backendInfo.version = MA_VERSION_STRING;
-    }
-
-    int Audio::GetChannelCount() {
-        return s_channelCount;
-    }
-    
-    int Audio::GetSampleRate() {
-        return s_sampleRate;
-    }
-
-    int Audio::ClampAudioIndex(int t_index) {
-        if (t_index >= s_samplesCount) return ClampAudioIndex(t_index - s_samplesCount);
-        return t_index;
-    }
-
-    SharedRawAudioSamples Audio::MakeRawAudioSamples() {
-        return std::make_shared<std::vector<float>>(Audio::s_samplesCount * Audio::GetChannelCount());
     }
 };

@@ -1,6 +1,8 @@
 #include "decode_audio_asset.h"
 #include "common/asset_id.h"
 
+#include "common/audio_info.h"
+
 namespace Raster {
 
     AudioDecoderContext::AudioDecoderContext() {
@@ -10,7 +12,7 @@ namespace Raster {
         this->wasOpened = false;
         this->health = MAX_DECODER_LIFESPAN;
         this->cacheValid = false;
-        this->cachedSamples = std::make_shared<std::vector<float>>(4096 * Audio::GetChannelCount());
+        this->cachedSamples = AudioInfo::MakeRawAudioSamples();
         this->resamplerSamplesCount = 0;
     }
 
@@ -59,7 +61,7 @@ namespace Raster {
         if (decoderContext->lastAudioPassID != audioPassID) decoderContext->cacheValid = false;
         if (decoderContext->cacheValid) {
             AudioSamples samples;
-            samples.sampleRate = Audio::GetSampleRate();
+            samples.sampleRate = AudioInfo::s_sampleRate;
             samples.samples = decoderContext->cachedSamples;
             decoderContext->lastAudioPassID = audioPassID;
             TryAppendAbstractPinMap(result, "Samples", samples);
@@ -103,7 +105,7 @@ namespace Raster {
                     }
                     decoderContext->audioDecoderCtx = av::AudioDecoderContext(decoderContext->targetAudioStream);
                     decoderContext->audioDecoderCtx.open(Codec());
-                    decoderContext->audioResampler.init(av::ChannelLayout(Audio::GetChannelCount()).layout(), Audio::GetSampleRate(), AV_SAMPLE_FMT_FLT,
+                    decoderContext->audioResampler.init(av::ChannelLayout(AudioInfo::s_channels).layout(), AudioInfo::s_sampleRate, AV_SAMPLE_FMT_FLT,
                                                             decoderContext->audioDecoderCtx.channelLayout(), decoderContext->audioDecoderCtx.sampleRate(), decoderContext->audioDecoderCtx.sampleFormat());
                     decoderContext->needsSeeking = true;
                 }
@@ -170,12 +172,12 @@ namespace Raster {
     }
 
     av::AudioSamples DecodeAudioAsset::PopResampler(SharedDecoderContext t_context) {
-        if (t_context->resamplerSamplesCount < Audio::s_samplesCount) {
+        if (t_context->resamplerSamplesCount < AudioInfo::s_periodSize) {
             PushMoreSamples(t_context);
             return PopResampler(t_context);
         }
-        av::AudioSamples result = t_context->audioResampler.pop(Audio::s_samplesCount);
-        t_context->resamplerSamplesCount -= Audio::s_samplesCount;
+        av::AudioSamples result = t_context->audioResampler.pop(AudioInfo::s_periodSize);
+        t_context->resamplerSamplesCount -= AudioInfo::s_periodSize;
         return result;
     }
 
@@ -183,7 +185,7 @@ namespace Raster {
         av::AudioSamples decodedSamples = DecodeOneFrame(t_context);
         if (decodedSamples) {
             t_context->audioResampler.push(decodedSamples);
-        t_context->resamplerSamplesCount += decodedSamples.samplesCount();  
+            t_context->resamplerSamplesCount += decodedSamples.samplesCount();  
         }
     }
 

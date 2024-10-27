@@ -30,7 +30,7 @@ namespace Raster {
             auto& samples = samplesCandidate.value();
             auto& intensity = intensityCandidate.value();
 
-            auto resultSamplesVector = Audio::MakeRawAudioSamples();
+            auto resultSamplesVector = AudioInfo::MakeRawAudioSamples();
             auto resultSamplesPtr = resultSamplesVector->data();
             auto originalSamplesPtr = samples.samples->data();
             for (int i = 0; i < resultSamplesVector->size(); i++) {

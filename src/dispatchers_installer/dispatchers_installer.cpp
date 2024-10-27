@@ -8,6 +8,7 @@
 #include "common/transform2d.h"
 #include "common/audio_samples.h"
 #include "common/asset_id.h"
+#include "common/generic_audio_decoder.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -23,7 +24,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Transform2D), AttributeDispatchers::DispatchTransform2DAttribute},
             {ATTRIBUTE_TYPE(SamplerSettings), AttributeDispatchers::DispatchSamplerSettingsAttribute},
             {ATTRIBUTE_TYPE(bool), AttributeDispatchers::DispatchBoolAttribute},
-            {ATTRIBUTE_TYPE(AssetID), AttributeDispatchers::DispatchAssetIDAttribute}
+            {ATTRIBUTE_TYPE(AssetID), AttributeDispatchers::DispatchAssetIDAttribute},
+            {ATTRIBUTE_TYPE(GenericAudioDecoder), AttributeDispatchers::DispatchGenericAudioDecoderAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -65,7 +67,8 @@ namespace Raster {
             {TYPE_PAIR(float, int), ConversionDispatchers::ConvertFloatToInt},
             {TYPE_PAIR(int, float), ConversionDispatchers::ConvertIntToFloat},
             {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4},
-            {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture}
+            {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture},
+            {TYPE_PAIR(GenericAudioDecoder, AudioSamples), ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples}
         };
     }
 };

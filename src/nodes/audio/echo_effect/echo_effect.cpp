@@ -49,11 +49,11 @@ namespace Raster {
             auto& reverbBuffer = GetEchoBuffer(delay);
 
             auto inputBuffer = samples.samples->data();
-            auto rawAudioSamples = Audio::MakeRawAudioSamples();
+            auto rawAudioSamples = AudioInfo::MakeRawAudioSamples();
             auto outputBuffer = rawAudioSamples->data();
             auto historyBuffer = reverbBuffer.samples->data();
             auto& pos = reverbBuffer.pos;
-            for (int i = 0; i < Audio::s_samplesCount * Audio::GetChannelCount(); i++, pos++) {
+            for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++, pos++) {
                 if (pos == reverbBuffer.len) {
                     pos = 0;
                 }
@@ -101,9 +101,9 @@ namespace Raster {
         }
 
         EchoBuffer buffer;
-        buffer.samples = std::make_shared<std::vector<float>>(Audio::GetSampleRate() * Audio::GetChannelCount() * t_delay);
+        buffer.samples = std::make_shared<std::vector<float>>(AudioInfo::s_sampleRate * AudioInfo::s_channels * t_delay);
         buffer.pos = 0;
-        buffer.len = Audio::GetSampleRate() * Audio::GetChannelCount() * t_delay;
+        buffer.len = AudioInfo::s_sampleRate * AudioInfo::s_channels * t_delay;
         buffer.health = MAX_BUFFER_LIFESPAN;
         m_reverbBuffers[t_delay] = buffer;
         return m_reverbBuffers[t_delay];

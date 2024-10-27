@@ -11,7 +11,7 @@
 namespace Raster {
 
     BassTrebleCachedData::BassTrebleCachedData() {
-        samplerate = Audio::GetSampleRate();
+        samplerate = AudioInfo::s_sampleRate;
         slope = 0.4f;   // same slope for both filters
         hzBass = 250.0f;   // could be tunable in a more advanced version
         hzTreble = 4000.0f;   // could be tunable in a more advanced version
@@ -100,9 +100,9 @@ namespace Raster {
                 }
 
                 auto rawSamples = samples.samples->data();
-                auto rawSamplesVector = Audio::MakeRawAudioSamples();
+                auto rawSamplesVector = AudioInfo::MakeRawAudioSamples();
                 auto rawCachedSamples = rawSamplesVector->data();
-                for (int i = 0; i < Audio::s_samplesCount * Audio::GetChannelCount(); i++) {
+                for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
                     float in = rawSamples[i];
                     // Bass filter
                     float out = (m_data.b0Bass * in + m_data.b1Bass * m_data.xn1Bass + m_data.b2Bass * m_data.xn2Bass -

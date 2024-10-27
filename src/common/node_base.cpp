@@ -8,6 +8,7 @@
 #include "common/dispatchers.h"
 #include "common/audio_samples.h"
 #include "common/asset_id.h"
+#include "common/generic_audio_decoder.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -21,7 +22,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_EXPAND, glm::vec4), glm::vec4()},
         {TYPE_NAME(ICON_FA_UP_DOWN_LEFT_RIGHT, Transform2D), Transform2D()},
         {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()},
-        {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), AssetID()}
+        {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), AssetID()},
+        {TYPE_NAME(ICON_FA_VOLUME_HIGH " " ICON_FA_GEARS, GenericAudioDecoder), GenericAudioDecoder()}
     };
 
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
@@ -307,6 +309,11 @@ namespace Raster {
         if (dynamicAttributeCandidate.has_value()) {
             auto& dynamicAttribute = dynamicAttributeCandidate.value();
             if (dynamicAttribute.type() != typeid(T)) {
+                if (dynamicAttribute.type() == typeid(GenericAudioDecoder)) {
+                    auto& project = Workspace::GetProject();
+                    auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
+                    *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.currentFrame - composition->beginFrame) / project.framerate;
+                }
                 auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, typeid(T));
                 if (conversionCandidate.has_value()) {
                     return std::any_cast<T>(conversionCandidate.value());
@@ -438,6 +445,17 @@ namespace Raster {
     }
 
     void NodeBase::OnTimelineSeek() {
+        m_attributes.Lock();
+            for (auto& attribute : m_attributes.GetReference()) {
+                if (attribute.second.type() == typeid(GenericAudioDecoder)) {
+                    auto decoder = std::any_cast<GenericAudioDecoder>(attribute.second);
+                    auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
+                    auto project = Workspace::GetProject();
+                    decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
+                    attribute.second = decoder;
+                }
+            }
+        m_attributes.Unlock();
         return AbstractOnTimelineSeek();
     }
 

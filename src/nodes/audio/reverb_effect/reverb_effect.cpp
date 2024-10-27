@@ -83,12 +83,12 @@ namespace Raster {
 
             auto& reverbBuffer = GetReverbContext();
             if (reverbBuffer.m_reverbs.empty()) {
-                for (int i = 0; i < Audio::GetChannelCount(); i++) {
+                for (int i = 0; i < AudioInfo::s_channels; i++) {
                     reverbBuffer.m_reverbs.push_back(std::make_shared<ManagedReverbPrivate>());
 
                     auto& reverb = reverbBuffer.m_reverbs[i];
                     reverb_create(&reverb.get()->reverb,
-                        Audio::GetSampleRate(),
+                        AudioInfo::s_sampleRate,
                         wetGain, roomSize, reverberance,
                         hfDamping, preDelay, stereoWidth,
                         toneLow, toneHigh, REVERB_BLOCK_SIZE, reverb->wet.data()
@@ -102,7 +102,7 @@ namespace Raster {
             }
 
             // making sure reverbs are up-to-date
-            for (int channel = 0; channel < Audio::GetChannelCount(); channel++) {
+            for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
                 auto& reverb = reverbBuffer.m_reverbs[channel];
                 if (reverb->initialized) {
                     auto& r = reverb->reverb;
@@ -110,7 +110,7 @@ namespace Raster {
                        || reverb->reverberance != reverberance || reverb->hfDamping != hfDamping
                        || reverb->preDelay != preDelay || reverb->stereoWidth != stereoWidth
                        || reverb->toneLow != toneLow || reverb->toneHigh != toneHigh) {
-                        reverb_init(&r, Audio::GetSampleRate(), wetGain, roomSize, reverberance, hfDamping, preDelay, stereoWidth, toneLow, toneHigh);
+                        reverb_init(&r, AudioInfo::s_sampleRate, wetGain, roomSize, reverberance, hfDamping, preDelay, stereoWidth, toneLow, toneHigh);
                         
                         reverb->wetGain = wetGain; reverb->roomSize = roomSize;
                         reverb->reverberance = reverberance; reverb->hfDamping = hfDamping;
@@ -120,26 +120,26 @@ namespace Raster {
                 }
             }
 
-            std::vector<float*> ichans(Audio::GetChannelCount());
-            std::vector<float*> ochans(Audio::GetChannelCount());
+            std::vector<float*> ichans(AudioInfo::s_channels);
+            std::vector<float*> ochans(AudioInfo::s_channels);
 
-            SharedRawAudioSamples outputSamples = Audio::MakeRawAudioSamples();
-            for (int i = 0; i < Audio::GetChannelCount(); i++) {
+            SharedRawAudioSamples outputSamples = AudioInfo::MakeRawAudioSamples();
+            for (int i = 0; i < AudioInfo::s_channels; i++) {
                 ichans[i] = samples.samples->data() + i;
                 ochans[i] = outputSamples->data() + i;
             }
 
             float dryMult = wetOnly ? 0 : DecibelToLinear(dryGain);
-            int remaining = Audio::s_samplesCount * Audio::GetChannelCount();
+            int remaining = AudioInfo::s_periodSize * AudioInfo::s_channels;
             while (remaining > 0) {
                 int len = std::min(remaining, REVERB_BLOCK_SIZE);
-                for (int c = 0; c < Audio::GetChannelCount(); c++) {
+                for (int c = 0; c < AudioInfo::s_channels; c++) {
                     auto& reverb = reverbBuffer.m_reverbs[c];
                     reverb->dry = (float*) fifo_write(&reverb->reverb.input_fifo, len, ichans[c]);
                     reverb_process(&reverb->reverb, len);
                 }
 
-                if (Audio::GetChannelCount() == 2) {
+                if (AudioInfo::s_channels == 2) {
                     for (int i = 0; i < len; i++) {
                         for (int w = 0; w < 2; w++) {
                             auto& reverb = reverbBuffer.m_reverbs[w];
@@ -154,7 +154,7 @@ namespace Raster {
 
                 remaining -= len;
 
-                for (int c = 0; c < Audio::GetChannelCount(); c++) {
+                for (int c = 0; c < AudioInfo::s_channels; c++) {
                     ichans[c] += len;
                     ochans[c] += len;
                 }

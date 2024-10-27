@@ -26,6 +26,7 @@ namespace Raster {
         static Json SerializeVec4(std::any& t_value);
         static Json SerializeTransform2D(std::any& t_value);
         static Json SerializeSamplerSettings(std::any& t_value);
+        static Json SerializeGenericAudioDecoder(std::any& t_value);
 
         static std::any DeserializeInt(Json t_data);
         static std::any DeserializeFloat(Json t_data);
@@ -35,5 +36,6 @@ namespace Raster {
         static std::any DeserializeVec4(Json t_data);
         static std::any DeserializeTransform2D(Json t_data);
         static std::any DeserializeSamplerSettings(Json t_data);
+        static std::any DeserializeGenericAudioDecoder(Json t_data);
     };
 };

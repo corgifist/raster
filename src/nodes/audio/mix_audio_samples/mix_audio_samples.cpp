@@ -40,11 +40,11 @@ namespace Raster {
             auto& b = bCandidate.value();
             auto& phase = phaseCandidate.value();
             if (a.samples && b.samples) {
-                SharedRawAudioSamples rawSamples = std::make_shared<std::vector<float>>(Audio::s_samplesCount * Audio::GetChannelCount());
+                SharedRawAudioSamples rawSamples = std::make_shared<std::vector<float>>(AudioInfo::s_periodSize * AudioInfo::s_channels);
                 auto ptr = rawSamples->data();
                 auto aPtr = a.samples->data();
                 auto bPtr = b.samples->data();
-                for (int i = 0; i < Audio::GetChannelCount() * Audio::s_samplesCount; i++) {
+                for (int i = 0; i < AudioInfo::s_channels * AudioInfo::s_periodSize; i++) {
                     ptr[i] = glm::mix(aPtr[i], bPtr[i], phase);
                 }
 

@@ -10,6 +10,7 @@
 #include "common/ui_helpers.h"
 #include "common/asset_id.h"
 #include "string_dispatchers.h"
+#include "common/generic_audio_decoder.h"
 
 namespace Raster {
 
@@ -456,6 +457,24 @@ namespace Raster {
         }
         static std::string assetFilter = "";
         UIHelpers::SelectAsset(value.id, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetFilter);
+        t_value = value;
+    }
+
+    void AttributeDispatchers::DispatchGenericAudioDecoderAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<GenericAudioDecoder>(t_value);
+        auto assetIDWrapper = AssetID(value.assetID);
+        std::any dynamicWrapper = assetIDWrapper;
+        auto assetCandidate = Workspace::GetAssetByAssetID(value.assetID);
+        StringDispatchers::DispatchAssetIDValue(dynamicWrapper);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+        std::string buttonText = FormatString("%s %s", assetCandidate.has_value() ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_XMARK, assetCandidate.has_value() ? assetCandidate.value()->name.c_str() : Localization::GetString("NONE").c_str() );
+        if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+            UIHelpers::OpenSelectAssetPopup();
+        }
+        static std::string assetFilter = "";
+        UIHelpers::SelectAsset(value.assetID, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetFilter);
         t_value = value;
     }
 };

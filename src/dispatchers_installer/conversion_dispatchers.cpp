@@ -2,6 +2,7 @@
 #include "common/asset_id.h"
 #include "gpu/gpu.h"
 #include "common/workspace.h"
+#include "common/generic_audio_decoder.h"
 
 namespace Raster {
     std::optional<std::any> ConversionDispatchers::ConvertAssetIDToInt(std::any& t_value) {
@@ -31,6 +32,15 @@ namespace Raster {
             if (textureCandidate.has_value()) {
                 return textureCandidate.value();
             }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::any> ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples(std::any& t_value) {
+        auto decoder = std::any_cast<GenericAudioDecoder>(t_value);
+        auto samplesCandidate = decoder.DecodeSamples();
+        if (samplesCandidate.has_value()) {
+            return samplesCandidate.value();
         }
         return std::nullopt;
     }

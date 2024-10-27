@@ -15,6 +15,7 @@
 #include "../avcpp/avutils.h"
 #include "audio/audio.h"
 #include "compositor/async_rendering.h"
+#include "common/audio_info.h"
 
 using namespace av;
 
@@ -242,7 +243,7 @@ namespace Raster {
 
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
-                Audio::s_globalAudioOffset = std::fmod(project.currentFrame / project.framerate * Audio::GetSampleRate(), Audio::s_samplesCount);
+                AudioInfo::s_globalAudioOffset = std::fmod(project.currentFrame / project.framerate * AudioInfo::s_sampleRate, AudioInfo::s_periodSize);
             }
         }
     }

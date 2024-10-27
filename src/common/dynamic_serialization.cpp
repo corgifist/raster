@@ -1,4 +1,5 @@
 #include "common/dynamic_serialization.h"
+#include "common/generic_audio_decoder.h"
 
 #define TYPE_CONTAINER(type) std::type_index(typeid(type))
 #define TYPE_NAME(type) #type
@@ -15,6 +16,7 @@ namespace Raster {
         RASTER_TYPE_NAME(glm::vec4),
         RASTER_TYPE_NAME(Transform2D),
         RASTER_TYPE_NAME(SamplerSettings),
+        RASTER_TYPE_NAME(GenericAudioDecoder)
     };
 
     std::unordered_map<std::type_index, SerializationFunction> DynamicSerialization::s_serializers = {
@@ -25,7 +27,8 @@ namespace Raster {
         {TYPE_CONTAINER(glm::vec3), DynamicSerialization::SerializeVec3},
         {TYPE_CONTAINER(glm::vec4), DynamicSerialization::SerializeVec4},
         {TYPE_CONTAINER(Transform2D), DynamicSerialization::SerializeTransform2D},
-        {TYPE_CONTAINER(SamplerSettings), DynamicSerialization::SerializeSamplerSettings}
+        {TYPE_CONTAINER(SamplerSettings), DynamicSerialization::SerializeSamplerSettings},
+        {TYPE_CONTAINER(GenericAudioDecoder), DynamicSerialization::SerializeGenericAudioDecoder}
     };
 
     std::unordered_map<std::string, DeserializationFunction> DynamicSerialization::s_deserializers = {
@@ -36,7 +39,8 @@ namespace Raster {
         {TYPE_NAME(glm::vec3), DynamicSerialization::DeserializeVec3},
         {TYPE_NAME(glm::vec4), DynamicSerialization::DeserializeVec4},
         {TYPE_NAME(Transform2D), DynamicSerialization::DeserializeTransform2D},
-        {TYPE_NAME(SamplerSettings), DynamicSerialization::DeserializeSamplerSettings}
+        {TYPE_NAME(SamplerSettings), DynamicSerialization::DeserializeSamplerSettings},
+        {TYPE_NAME(GenericAudioDecoder), DynamicSerialization::DeserializeGenericAudioDecoder}
     };
 
     Json DynamicSerialization::SerializeInt(std::any& t_value) {
@@ -82,6 +86,10 @@ namespace Raster {
         return samplerSettings.Serialize();
     }
 
+    Json DynamicSerialization::SerializeGenericAudioDecoder(std::any& t_value) {
+        return std::any_cast<GenericAudioDecoder>(t_value).assetID;
+    }
+
     std::any DynamicSerialization::DeserializeInt(Json t_data) {
         return t_data.get<int>();
     }
@@ -112,6 +120,12 @@ namespace Raster {
 
     std::any DynamicSerialization::DeserializeSamplerSettings(Json t_data) {
         return SamplerSettings(t_data);
+    }
+
+    std::any DynamicSerialization::DeserializeGenericAudioDecoder(Json t_data) {
+        GenericAudioDecoder decoder;
+        decoder.assetID = t_data;
+        return decoder;
     }
 
     std::optional<Json> DynamicSerialization::Serialize(std::any& t_value) {
