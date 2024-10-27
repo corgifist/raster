@@ -229,5 +229,6 @@
     "REQUIRES_RENDERING_CONTEXT": "Node Requires Rendering Context",
     "SEARCH_BY_NAME_OR_ID": "Search by Name or ID",
     "ASSET_NOT_FOUND": "Asset not Found",
-    "ASSET_HAS_NO_PREVIEW_TEXTURE": "Asset has no Preview Texture"
+    "ASSET_HAS_NO_PREVIEW_TEXTURE": "Asset has no Preview Texture",
+    "ASSET_IMPLEMENTATION_NOT_FOUND": "Asset Implementation not Found"
 }

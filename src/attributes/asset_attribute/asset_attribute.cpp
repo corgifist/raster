@@ -1,5 +1,6 @@
 #include "asset_attribute.h"
 #include "common/ui_helpers.h"
+#include "common/asset_id.h"
 
 namespace Raster {
     AssetAttribute::AssetAttribute() {
@@ -8,13 +9,13 @@ namespace Raster {
         keyframes.push_back(
             AttributeKeyframe(
                 0,
-                (int) 0
+                AssetID(0)
             )
         );
     }
 
     std::any AssetAttribute::AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) {
-        return t_percentage > 0.97f ? std::any_cast<int>(t_endValue) : std::any_cast<int>(t_beginValue);
+        return t_percentage > 0.97f ? t_endValue : t_beginValue;
     }
 
     void AssetAttribute::RenderKeyframes() {
@@ -24,15 +25,15 @@ namespace Raster {
     }
 
     Json AssetAttribute::SerializeKeyframeValue(std::any t_value) {
-        return std::any_cast<int>(t_value);
+        return std::any_cast<AssetID>(t_value).id;
     }  
 
     std::any AssetAttribute::LoadKeyframeValue(Json t_value) {
-        return t_value.get<int>();
+        return AssetID(t_value.get<int>());
     }
 
     std::any AssetAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
-        int assetID = std::any_cast<int>(t_originalValue);
+        int assetID = std::any_cast<AssetID>(t_originalValue).id;
         auto& project = Workspace::GetProject();
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
         auto assetDescriptionCandidate = Assets::GetAssetImplementation(assetCandidate.has_value() ? assetCandidate.value()->packageName : "");
@@ -67,13 +68,23 @@ namespace Raster {
             if (openAssetPopup) {
                 UIHelpers::OpenSelectAssetPopup();
             }
+            int reservedAssetID = assetID;
             UIHelpers::SelectAsset(assetID, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetSearchFilter);
+            if (reservedAssetID != assetID) {
+                isItemEdited = true;
+            }
         ImGui::PopID();
-        return assetID;
+        return AssetID(assetID);
     }
 
     void AssetAttribute::AbstractRenderDetails() {
-
+        auto& project = Workspace::s_project.value();
+        auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
+        auto assetID = std::any_cast<AssetID>(Get(project.currentFrame - parentComposition->beginFrame, parentComposition));
+        auto assetCandidate = Workspace::GetAssetByAssetID(assetID.id);
+        if (assetCandidate.has_value()) {
+            assetCandidate.value()->RenderDetails();
+        }
     }
 }
 

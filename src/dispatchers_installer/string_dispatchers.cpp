@@ -150,7 +150,7 @@ namespace Raster {
         }
     }
 
-    void StringDispatchers::DispatchAssetID(std::any& t_attribute) {
+    void StringDispatchers::DispatchAssetIDValue(std::any& t_attribute) {
         auto id = std::any_cast<AssetID>(t_attribute).id;
         auto assetCandidate = Workspace::GetAssetByAssetID(id);
         if (!assetCandidate.has_value()) {
@@ -172,7 +172,13 @@ namespace Raster {
                     ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("ASSET_HAS_NO_PREVIEW_TEXTURE").c_str());
                 }
                 if (ImGui::BeginChild("##assetInfo", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
-                    asset->RenderDetails();
+                    auto implementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                    if (implementationCandidate.has_value()) {
+                        ImGui::SeparatorText(FormatString("%s %s", implementationCandidate.value().description.icon.c_str(), asset->name.c_str()).c_str());
+                        asset->RenderDetails();
+                    } else {
+                        ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("ASSET_IMPLEMENTATION_NOT_FOUND").c_str());
+                    }
                 }
                 ImGui::EndChild();
             }

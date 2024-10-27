@@ -1089,7 +1089,7 @@ namespace Raster {
                             }
                             ImGui::EndChild();
                             ImGui::SameLine(0, 6);
-                            if (ImGui::BeginChild("##nodeCandidates", ImVec2(350, ImGui::GetContentRegionAvail().y))) {
+                            if (ImGui::BeginChild("##nodeCandidates", ImVec2(0, ImGui::GetContentRegionAvail().y), ImGuiChildFlags_AutoResizeX)) {
                                 bool hasCandidates = false;
                                 std::string categoryText = NodeCategoryUtils::ToString(targetCategory);
                                 if (targetCategory == 0) {

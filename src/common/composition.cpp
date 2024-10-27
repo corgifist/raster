@@ -69,8 +69,10 @@ namespace Raster {
             if (audioMixing) break;
             auto& node = pair.second;
             node->executionsPerFrame.SetBackValue(0);
-            node->ClearAttributesCache();
-            node->ClearImmediateFooters();
+            if (IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) {
+                node->ClearAttributesCache();
+                node->ClearImmediateFooters();
+            }
         }
         if (!IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) return;
         if (!enabled) return;

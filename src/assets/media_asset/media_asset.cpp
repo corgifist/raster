@@ -75,8 +75,9 @@ namespace Raster {
                                 if (m_attachedPicTexture.has_value()) {
                                     GPU::DestroyTexture(m_attachedPicTexture.value());
                                 }
-                                auto attachedPicTexture = GPU::GenerateTexture(rescaledFrame.width(), rescaledFrame.height(), 4);
+                                auto attachedPicTexture = GPU::GenerateTexture(rescaledFrame.width(), rescaledFrame.height(), 4, TexturePrecision::Usual, true);
                                 GPU::UpdateTexture(attachedPicTexture, 0, 0, rescaledFrame.width(), rescaledFrame.height(), 4, rescaledFrame.data());
+                                GPU::GenerateMipmaps(attachedPicTexture);
 
                                 m_attachedPicTexture = attachedPicTexture;
                             }

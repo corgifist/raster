@@ -9,6 +9,7 @@
 #include "common/dispatchers.h"
 #include "common/ui_helpers.h"
 #include "common/asset_id.h"
+#include "string_dispatchers.h"
 
 namespace Raster {
 
@@ -444,10 +445,11 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchAssetIDAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<AssetID>(t_value);
+        auto assetCandidate = Workspace::GetAssetByAssetID(value.id);
+        StringDispatchers::DispatchAssetIDValue(t_value);
         ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
-        auto assetCandidate = Workspace::GetAssetByAssetID(value.id);
         std::string buttonText = FormatString("%s %s", assetCandidate.has_value() ? ICON_FA_FOLDER_OPEN : ICON_FA_FOLDER_CLOSED, assetCandidate.has_value() ? assetCandidate.value()->name.c_str() : Localization::GetString("NONE").c_str() );
         if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
             UIHelpers::OpenSelectAssetPopup();

@@ -489,4 +489,15 @@ namespace Raster {
         }
         ImGui::EndChild();
     }
+
+    void PreviewDispatchers::DispatchAssetIDValue(std::any& t_attribute) {
+        static ImVec2 s_childSize = ImVec2(300, 300);
+
+        ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - s_childSize / 2.0f);
+        if (ImGui::BeginChild("##assetIDContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+            StringDispatchers::DispatchAssetIDValue(t_attribute);
+            s_childSize = ImGui::GetWindowSize();
+        }
+        ImGui::EndChild();
+    }
 };

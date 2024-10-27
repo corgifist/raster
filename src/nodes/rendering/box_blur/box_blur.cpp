@@ -47,17 +47,19 @@ namespace Raster {
             intensity *= glm::vec2(m_framebuffer.width, m_framebuffer.height);
 
             auto framebuffer = m_framebuffer.GetFrontFramebuffer();
-            GPU::BindFramebuffer(framebuffer);
-            GPU::BindPipeline(pipeline);
-            GPU::ClearFramebuffer(0, 0, 0, 0);
+            if (base.attachments.size() >= 1) {
+                GPU::BindFramebuffer(framebuffer);
+                GPU::BindPipeline(pipeline);
+                GPU::ClearFramebuffer(0, 0, 0, 0);
 
-            GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
-            GPU::SetShaderUniform(pipeline.fragment, "uBoxBlurIntensity", intensity);
-            GPU::SetShaderUniform(pipeline.fragment, "uSamples", samples);
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
+                GPU::SetShaderUniform(pipeline.fragment, "uBoxBlurIntensity", intensity);
+                GPU::SetShaderUniform(pipeline.fragment, "uSamples", samples);
 
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
-            
-            GPU::DrawArrays(3);
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
+                
+                GPU::DrawArrays(3);
+            }
 
             TryAppendAbstractPinMap(result, "Output", framebuffer);
         }

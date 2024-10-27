@@ -39,7 +39,7 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Transform2D), StringDispatchers::DispatchTransform2DValue},
             {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue},
             {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue},
-            {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetID}
+            {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetIDValue}
         };
 
         Dispatchers::s_previewDispatchers = {
@@ -52,7 +52,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(glm::vec2), PreviewDispatchers::DispatchVector2Value},
             {ATTRIBUTE_TYPE(Framebuffer), PreviewDispatchers::DispatchFramebufferValue}, 
             {ATTRIBUTE_TYPE(bool), PreviewDispatchers::DispatchBoolValue},
-            {ATTRIBUTE_TYPE(AudioSamples), PreviewDispatchers::DispatchAudioSamplesValue}
+            {ATTRIBUTE_TYPE(AudioSamples), PreviewDispatchers::DispatchAudioSamplesValue},
+            {ATTRIBUTE_TYPE(AssetID), PreviewDispatchers::DispatchAssetIDValue}
         };
 
         Dispatchers::s_overlayDispatchers = {
