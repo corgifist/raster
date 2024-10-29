@@ -2,6 +2,7 @@
 
 #include "raster.h"
 #include "workspace.h"
+#include "audio_samples.h"
 
 namespace Raster {
     struct UIHelpers {
@@ -12,5 +13,7 @@ namespace Raster {
         static void OpenSelectAssetPopup();
 
         static bool CustomTreeNode(std::string t_id);
+
+        static void RenderAudioSamplesWaveform(AudioSamples& t_samples);
     };
 };

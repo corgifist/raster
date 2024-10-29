@@ -462,10 +462,12 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchGenericAudioDecoderAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<GenericAudioDecoder>(t_value);
-        auto assetIDWrapper = AssetID(value.assetID);
-        std::any dynamicWrapper = assetIDWrapper;
         auto assetCandidate = Workspace::GetAssetByAssetID(value.assetID);
-        StringDispatchers::DispatchAssetIDValue(dynamicWrapper);
+        auto cachedSamplesCandidate = value.GetCachedSamples();
+        if (cachedSamplesCandidate.has_value()) {
+            std::any dynamicSamples = cachedSamplesCandidate.value();
+            StringDispatchers::DispatchAudioSamplesValue(dynamicSamples);
+        }
         ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
@@ -475,6 +477,29 @@ namespace Raster {
         }
         static std::string assetFilter = "";
         UIHelpers::SelectAsset(value.assetID, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetFilter);
+        t_value = value;
+    }
+
+
+    void AttributeDispatchers::DispatchAudioSamplesAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<AudioSamples>(t_value);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s", t_attribute.c_str());
+        if (ImGui::BeginChild("##waveformContainer", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
+            if (ImGui::BeginChild("##attachedPicturesContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                for (auto& picture : value.attachedPictures) {
+                    std::any dynamicPicture = picture;
+                    StringDispatchers::DispatchTextureValue(dynamicPicture);
+                }
+            }
+            ImGui::EndChild();
+            ImGui::SameLine();
+            if (ImGui::BeginChild("##waveform", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                UIHelpers::RenderAudioSamplesWaveform(value);
+            }
+            ImGui::EndChild();
+        }
+        ImGui::EndChild();
         t_value = value;
     }
 };

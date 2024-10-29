@@ -21,7 +21,7 @@ namespace Raster {
         Audio::s_audioMutex.lock();
         float* fOutput = (float*) t_output;
 
-        if (Workspace::IsProjectLoaded()) {
+        if (Workspace::IsProjectLoaded() && Workspace::GetProject().playing ) {
             auto& project = Workspace::GetProject();
             auto& buses = project.audioBuses;
             int mainBusID = -1;
@@ -86,7 +86,6 @@ namespace Raster {
         deviceConfig.sampleRate = t_sampleRate;
         deviceConfig.dataCallback = raster_data_callback;
         deviceConfig.pUserData = nullptr;
-        deviceConfig.noPreSilencedOutputBuffer = true;
         deviceConfig.periodSizeInFrames = 4096;
 
         AudioInfo::s_channels = t_channelCount;

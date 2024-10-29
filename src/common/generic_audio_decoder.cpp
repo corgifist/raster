@@ -163,8 +163,18 @@ namespace Raster {
         DecodeOneFrame(t_ga, t_decoderID);
     }
 
+    std::optional<AudioSamples> GenericAudioDecoder::GetCachedSamples() {
+        SharedLockGuard guard(m_decodingMutex);
+        auto& project = Workspace::GetProject();
+
+        auto decoder = GetDecoderContext(this);
+        if (decoder->cacheValid) return decoder->cache.GetCachedSamples();
+        return std::nullopt;
+    }
+
     std::optional<AudioSamples> GenericAudioDecoder::DecodeSamples() {
         if (std::this_thread::get_id() != Threads::s_audioThreadID) return std::nullopt;
+        print("decoding");
         SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
 

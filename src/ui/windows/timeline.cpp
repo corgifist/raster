@@ -817,6 +817,7 @@ namespace Raster {
                         if (!IsInBounds(project.currentFrame, t_composition->beginFrame, t_composition->endFrame) || bundles.GetFrontValue().find(t_composition->id) == bundles.GetFrontValue().end()) {
                             ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
                         } else {
+                            // FIXME: restore blending preview
 /*                             auto& bundle = bundles[t_composition->id];
                             auto& primaryFramebuffer = Compositor::primaryFramebuffer.value();
                             auto requiredResolution = Compositor::GetRequiredResolution();

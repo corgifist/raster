@@ -40,7 +40,7 @@ namespace Raster {
             settings.filteringMode = static_cast<TextureFilteringMode>(textureFilteringCandidate.value());
             settings.wrappingMode = static_cast<TextureWrappingMode>(textureWrappingCandidate.value());
 
-            // TODO: fix this regression
+            // FIXME: restore this functionallity
             
             /* this->m_attributes.GetFrontValue()["SamplerSettings"] = settings;
             RenderAttributeProperty("SamplerSettings");

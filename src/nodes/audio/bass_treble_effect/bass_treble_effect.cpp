@@ -1,4 +1,5 @@
 #include "bass_treble_effect.h"
+#include "common/generic_audio_decoder.h"
 
 #define SLOPE 0.4f
 #define BASS_HZ 250.0f
@@ -48,7 +49,7 @@ namespace Raster {
     BassTrebleEffect::BassTrebleEffect() {
         NodeBase::Initialize();
 
-        SetupAttribute("Samples", AudioSamples());
+        SetupAttribute("Samples", GenericAudioDecoder());
         SetupAttribute("Bass", 0.0f);
         SetupAttribute("Treble", 0.0f);
         SetupAttribute("Gain", 0.0f);
@@ -135,17 +136,20 @@ namespace Raster {
     }
 
     void BassTrebleEffect::AbstractRenderProperties() {
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
         RenderAttributeProperty("Bass", {
             FormatStringMetadata("dB"),
-            SliderRangeMetadata(-30, 30)
+            SliderStepMetadata(0.05f)
         });
         RenderAttributeProperty("Treble", {
             FormatStringMetadata("dB"),
-            SliderRangeMetadata(-30, 30)
+            SliderStepMetadata(0.05f)
         });
         RenderAttributeProperty("Gain", {
             FormatStringMetadata("dB"),
-            SliderRangeMetadata(-30, 30)
+            SliderStepMetadata(0.05f)
         });
     }
 

@@ -1,6 +1,7 @@
 #include "common/ui_helpers.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
+#include "common/audio_info.h"
 
 namespace Raster {
     void UIHelpers::SelectAttribute(Composition* t_composition, int& t_attributeID, std::string t_headerText, std::string* t_customAttributeFilter) {
@@ -179,5 +180,19 @@ namespace Raster {
 
         if (ImGui::IsItemClicked()) data.opened = !data.opened;
         return data.opened;
+    }
+
+    void UIHelpers::RenderAudioSamplesWaveform(AudioSamples& t_samples) {
+#define WAVEFORM_PRECISION 100
+        for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
+            ImGui::PushID(channel);
+                std::vector<float> constructedWaveform(WAVEFORM_PRECISION);
+                int waveformIndex = 0;
+                for (int i = AudioInfo::s_globalAudioOffset + AudioInfo::s_channels - 1; i < AudioInfo::s_globalAudioOffset + WAVEFORM_PRECISION * AudioInfo::s_channels; i += AudioInfo::s_channels) {
+                    constructedWaveform[waveformIndex++] = t_samples.samples->data()[i % AudioInfo::s_periodSize];
+                }
+                ImGui::PlotLines("##waveform", constructedWaveform.data(), WAVEFORM_PRECISION, 0, FormatString("%s %s %i", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNEL").c_str(), channel).c_str(), -1, 1, {0, 80});
+            ImGui::PopID();
+        }
     }
 };

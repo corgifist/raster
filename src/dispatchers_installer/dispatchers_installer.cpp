@@ -25,7 +25,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(SamplerSettings), AttributeDispatchers::DispatchSamplerSettingsAttribute},
             {ATTRIBUTE_TYPE(bool), AttributeDispatchers::DispatchBoolAttribute},
             {ATTRIBUTE_TYPE(AssetID), AttributeDispatchers::DispatchAssetIDAttribute},
-            {ATTRIBUTE_TYPE(GenericAudioDecoder), AttributeDispatchers::DispatchGenericAudioDecoderAttribute}
+            {ATTRIBUTE_TYPE(GenericAudioDecoder), AttributeDispatchers::DispatchGenericAudioDecoderAttribute},
+            {ATTRIBUTE_TYPE(AudioSamples), AttributeDispatchers::DispatchAudioSamplesAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {

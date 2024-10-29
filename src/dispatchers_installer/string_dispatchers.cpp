@@ -10,6 +10,7 @@
 #include "common/audio_samples.h"
 #include "audio/audio.h"
 #include "common/asset_id.h"
+#include "common/ui_helpers.h"
 
 namespace Raster {
 
@@ -32,7 +33,10 @@ namespace Raster {
         auto footerText = FormatString("%ix%i; %s (%s)", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str());
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);
         ImGui::Text("%s", footerText.c_str());
-        ImGui::Text("%s %s: %0.3f", ICON_FA_IMAGE, Localization::GetString("ASPECT_RATIO").c_str(), (float) texture.width / (float) texture.height);
+        
+        auto aspectRatioText = FormatString("%s %s: %0.3f", ICON_FA_IMAGE, Localization::GetString("ASPECT_RATIO").c_str(), (float) texture.width / (float) texture.height);
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(aspectRatioText.c_str()).x / 2.0f);
+        ImGui::Text("%s", aspectRatioText.c_str());
     }
 
     void StringDispatchers::DispatchFloatValue(std::any& t_attribute) {
@@ -137,17 +141,7 @@ namespace Raster {
             ImGui::EndChild();   
         }
         ImGui::Text("%s %s: %i", ICON_FA_WAVE_SQUARE, Localization::GetString("SAMPLE_RATE").c_str(), value.sampleRate);
-#define WAVEFORM_PRECISION 100
-        for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
-            ImGui::PushID(channel);
-                std::vector<float> constructedWaveform(WAVEFORM_PRECISION);
-                int waveformIndex = 0;
-                for (int i = AudioInfo::s_globalAudioOffset + AudioInfo::s_channels - 1; i < AudioInfo::s_globalAudioOffset + WAVEFORM_PRECISION * AudioInfo::s_channels; i += AudioInfo::s_channels) {
-                    constructedWaveform[waveformIndex++] = value.samples->data()[i % AudioInfo::s_periodSize];
-                }
-                ImGui::PlotLines("##waveform", constructedWaveform.data(), WAVEFORM_PRECISION, 0, FormatString("%s %s %i", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNEL").c_str(), channel).c_str(), -1, 1, {0, 80});
-            ImGui::PopID();
-        }
+        UIHelpers::RenderAudioSamplesWaveform(value);
     }
 
     void StringDispatchers::DispatchAssetIDValue(std::any& t_attribute) {

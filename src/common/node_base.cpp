@@ -23,7 +23,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_UP_DOWN_LEFT_RIGHT, Transform2D), Transform2D()},
         {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()},
         {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), AssetID()},
-        {TYPE_NAME(ICON_FA_VOLUME_HIGH " " ICON_FA_GEARS, GenericAudioDecoder), GenericAudioDecoder()}
+        {TYPE_NAME(ICON_FA_VOLUME_HIGH " " ICON_FA_GEARS, GenericAudioDecoder), GenericAudioDecoder()},
+        {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), AudioSamples()}
     };
 
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
