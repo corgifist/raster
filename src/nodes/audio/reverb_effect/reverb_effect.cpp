@@ -1,5 +1,6 @@
 #include "reverb_effect.h"
 #include "common/attribute_metadata.h"
+#include "common/generic_audio_decoder.h"
 
 #define REVERB_BLOCK_SIZE 16384
 
@@ -20,7 +21,7 @@ namespace Raster {
     ReverbEffect::ReverbEffect() {
         NodeBase::Initialize();
 
-        SetupAttribute("Samples", AudioSamples());
+        SetupAttribute("Samples", GenericAudioDecoder());
         SetupAttribute("RoomSize", 70.0f);
         SetupAttribute("PreDelay", 20.0f);
         SetupAttribute("Reverb", 40.0f);
@@ -197,6 +198,10 @@ namespace Raster {
     }
 
     void ReverbEffect::AbstractRenderProperties() {
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
+        
         RenderAttributeProperty("RoomSize", {
             FormatStringMetadata("%"),
             SliderRangeMetadata(0, 100)

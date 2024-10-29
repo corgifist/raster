@@ -1,11 +1,12 @@
 #include "amplify_audio.h"
+#include "common/generic_audio_decoder.h"
 
 namespace Raster {
 
     AmplifyAudio::AmplifyAudio() {
         NodeBase::Initialize();
 
-        SetupAttribute("Samples", AudioSamples());
+        SetupAttribute("Samples", GenericAudioDecoder());
         SetupAttribute("Intensity", 1.0f);
 
         AddOutputPin("Output");
@@ -47,6 +48,9 @@ namespace Raster {
     }
 
     void AmplifyAudio::AbstractRenderProperties() {
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
         RenderAttributeProperty("Intensity", {
             FormatStringMetadata("%"),
             SliderBaseMetadata(100),

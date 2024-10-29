@@ -465,8 +465,29 @@ namespace Raster {
         auto assetCandidate = Workspace::GetAssetByAssetID(value.assetID);
         auto cachedSamplesCandidate = value.GetCachedSamples();
         if (cachedSamplesCandidate.has_value()) {
-            std::any dynamicSamples = cachedSamplesCandidate.value();
-            StringDispatchers::DispatchAudioSamplesValue(dynamicSamples);
+            auto& samples = cachedSamplesCandidate.value();
+            if (ImGui::BeginChild("##waveformContainer", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
+                ImVec2 picturesChildSize(0, 0);
+                if (ImGui::BeginChild("##attachedPicturesContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+                    for (auto& picture : samples.attachedPictures) {
+                        std::any dynamicPicture = picture;
+                        StringDispatchers::DispatchTextureValue(dynamicPicture);
+                    }
+                    picturesChildSize = ImGui::GetWindowSize();
+                }
+                ImGui::EndChild();
+                ImGui::SameLine();
+                if (ImGui::BeginChild("##waveform", ImVec2(0, picturesChildSize.y), ImGuiChildFlags_AutoResizeX)) {
+                    ImGui::SetCursorPosY(ImGui::GetWindowSize().y / 2.0f - picturesChildSize.y / 2.0f);
+                    UIHelpers::RenderAudioSamplesWaveform(samples);
+                }
+                ImGui::EndChild();
+            }
+            ImGui::EndChild();
+        } else {
+            std::string message = FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("WAVEFORM_PREVIEW_IS_NOT_AVAILABLE").c_str());
+            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(message.c_str()).x / 2.0f);
+            ImGui::Text("%s", message.c_str());
         }
         ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
@@ -483,8 +504,6 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchAudioSamplesAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<AudioSamples>(t_value);
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("%s", t_attribute.c_str());
         if (ImGui::BeginChild("##waveformContainer", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
             if (ImGui::BeginChild("##attachedPicturesContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
                 for (auto& picture : value.attachedPictures) {

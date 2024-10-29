@@ -1,4 +1,5 @@
 #include "echo_effect.h"
+#include "common/generic_audio_decoder.h"
 
 namespace Raster {
 
@@ -12,7 +13,7 @@ namespace Raster {
     EchoEffect::EchoEffect() {
         NodeBase::Initialize();
 
-        SetupAttribute("Samples", AudioSamples());
+        SetupAttribute("Samples", GenericAudioDecoder());
         SetupAttribute("Delay", 0.5f);
         SetupAttribute("Decay", 0.5f);
 
@@ -70,6 +71,9 @@ namespace Raster {
     }
 
     void EchoEffect::AbstractRenderProperties() {
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
         RenderAttributeProperty("Delay", {
             FormatStringMetadata("seconds"),
             SliderStepMetadata(0.1),

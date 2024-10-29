@@ -1,13 +1,14 @@
 #include "merge_audio_samples.h"
 #include "common/attribute_metadata.h"
+#include "common/generic_audio_decoder.h"
 
 namespace Raster {
 
     MergeAudioSamples::MergeAudioSamples() {
         NodeBase::Initialize();
 
-        SetupAttribute("A", AudioSamples());
-        SetupAttribute("B", AudioSamples());
+        SetupAttribute("A", GenericAudioDecoder());
+        SetupAttribute("B", GenericAudioDecoder());
 
         AddInputPin("A");
         AddInputPin("B");
@@ -59,6 +60,12 @@ namespace Raster {
     }
 
     void MergeAudioSamples::AbstractRenderProperties() {
+        RenderAttributeProperty("A", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
+        RenderAttributeProperty("B", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
     }
 
     void MergeAudioSamples::AbstractLoadSerialized(Json t_data) {

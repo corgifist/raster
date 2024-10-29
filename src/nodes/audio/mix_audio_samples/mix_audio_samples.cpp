@@ -1,13 +1,14 @@
 #include "mix_audio_samples.h"
 #include "common/attribute_metadata.h"
+#include "common/generic_audio_decoder.h"
 
 namespace Raster {
 
     MixAudioSamples::MixAudioSamples() {
         NodeBase::Initialize();
 
-        SetupAttribute("A", AudioSamples());
-        SetupAttribute("B", AudioSamples());
+        SetupAttribute("A", GenericAudioDecoder());
+        SetupAttribute("B", GenericAudioDecoder());
         SetupAttribute("Phase", 0.5f);
 
         AddInputPin("A");
@@ -62,6 +63,12 @@ namespace Raster {
     }
 
     void MixAudioSamples::AbstractRenderProperties() {
+        RenderAttributeProperty("A", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
+        RenderAttributeProperty("B", {
+            IconMetadata(ICON_FA_WAVE_SQUARE)
+        });
         RenderAttributeProperty("Phase", {
             FormatStringMetadata("%"),
             SliderRangeMetadata(0, 100),
