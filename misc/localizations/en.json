@@ -231,5 +231,9 @@
     "ASSET_NOT_FOUND": "Asset not Found",
     "ASSET_HAS_NO_PREVIEW_TEXTURE": "Asset has no Preview Texture",
     "ASSET_IMPLEMENTATION_NOT_FOUND": "Asset Implementation not Found",
-    "WAVEFORM_PREVIEW_IS_NOT_AVAILABLE": "Waveform Preview is not Available"
+    "WAVEFORM_PREVIEW_IS_NOT_AVAILABLE": "Waveform Preview is not Available",
+    "COMPILER_VERSION": "Compiler Version",
+    "GRAPHICS_API": "Graphics API",
+    "ABOUT": "About",
+    "BUILD_NUMBER": "Build Number"
 }
