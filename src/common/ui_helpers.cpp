@@ -3,8 +3,15 @@
 #include "../ImGui/imgui_stdlib.h"
 #include "common/audio_info.h"
 #include "../ImGui/imgui_internal.h"
+#include "common/dispatchers.h"
 
 namespace Raster {
+
+    static ImVec2 FitRectInRect(ImVec2 dst, ImVec2 src) {
+        float scale = std::min(dst.x / src.x, dst.y / src.y);
+        return ImVec2{src.x * scale, src.y * scale};
+    }
+
     void UIHelpers::SelectAttribute(Composition* t_composition, int& t_attributeID, std::string t_headerText, std::string* t_customAttributeFilter) {
         int reservedID = t_attributeID;
         bool openMoreAttributesPopup = false;
@@ -130,7 +137,10 @@ namespace Raster {
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
                 ImGui::InputTextWithHint("##assetFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_assetFilter);
                 ImGui::PopItemWidth();
-                if (ImGui::BeginChild("##assetsChild", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                if (ImGui::BeginChild("##assetsChild", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize)) {
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
+                        t_assetID = -1;
+                    }
                     bool hasCandidates = false;
                     for (auto& asset : project.assets) {
                         auto description = Assets::GetAssetImplementation(asset->packageName).value();
@@ -145,6 +155,23 @@ namespace Raster {
                         std::string nothingToShowText = Localization::GetString("NOTHING_TO_SHOW");
                         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2 - ImGui::CalcTextSize(nothingToShowText.c_str()).x);
                         ImGui::Text("%s", nothingToShowText.c_str());
+                    }
+                }
+                ImGui::EndChild();
+                ImGui::SameLine();
+                if (ImGui::BeginChild("##assetDetailsChild", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize)) {
+                    auto assetCandidate = Workspace::GetAssetByAssetID(t_assetID);
+                    if (assetCandidate.has_value()) {
+                        auto& asset = assetCandidate.value();
+                        auto textureCandidate = asset->GetPreviewTexture();
+                        if (textureCandidate.has_value()) {
+                            auto& texture = textureCandidate.value();
+                            std::any dynamicTexture = texture;
+                            Dispatchers::DispatchString(dynamicTexture);
+                        }
+                        asset->RenderDetails();
+                    } else {
+                        ImGui::Text("%s", Localization::GetString("NOTHING_TO_SHOW").c_str());
                     }
                 }
                 ImGui::EndChild();
