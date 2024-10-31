@@ -15,5 +15,7 @@ namespace Raster {
         static bool CustomTreeNode(std::string t_id);
 
         static void RenderAudioSamplesWaveform(AudioSamples& t_samples);
+
+        static void RenderDecibelScale(float t_linear);
     };
 };

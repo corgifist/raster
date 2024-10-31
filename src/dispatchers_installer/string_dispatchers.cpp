@@ -28,7 +28,29 @@ namespace Raster {
         ImVec2 fitSize = FitRectInRect(ImVec2(128, 128), ImVec2(texture.width, texture.height));
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - fitSize.x / 2.0f);
         ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 12, 194, fitSize);
-        ImGui::Image(texture.handle, fitSize);
+
+        ImGuiID imageID = ImGui::GetID("##image");
+        static std::unordered_map<ImGuiID, bool> s_hoveredMap;
+
+        if (s_hoveredMap.find(imageID) == s_hoveredMap.end()) {
+            s_hoveredMap[imageID] = false;
+        }
+
+        bool& imageHovered = s_hoveredMap[imageID];
+
+        ImVec4 tint = ImVec4(1, 1, 1, imageHovered ? 0.7f : 1.0f);
+        ImGui::Image(texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), tint);
+        imageHovered = ImGui::IsItemHovered();
+
+        if (imageHovered && ImGui::IsItemClicked()) {
+            ImGui::OpenPopup("##imagePopup");
+        }
+
+        if (ImGui::BeginPopup("##imagePopup")) {
+            ImGui::Image((ImTextureID) texture.handle, FitRectInRect(ImGui::GetWindowViewport()->Size, ImVec2(texture.width, texture.height)) / 2);
+            ImGui::EndPopup();
+        }
+
         
         auto footerText = FormatString("%ix%i; %s (%s)", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str());
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(footerText.c_str()).x / 2.0f);
@@ -135,7 +157,9 @@ namespace Raster {
             }
             ImGui::EndChild();   
         }
-        ImGui::Text("%s %s: %i", ICON_FA_WAVE_SQUARE, Localization::GetString("SAMPLE_RATE").c_str(), value.sampleRate);
+        std::string sampleRateText = FormatString("%s %s: %i", ICON_FA_WAVE_SQUARE, Localization::GetString("SAMPLE_RATE").c_str(), value.sampleRate);
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(sampleRateText.c_str()).x / 2.0f);
+        ImGui::Text(sampleRateText.c_str());
         UIHelpers::RenderAudioSamplesWaveform(value);
     }
 
@@ -153,7 +177,27 @@ namespace Raster {
                         auto& texture = textureCandidate.value();
                         ImVec2 fitSize = FitRectInRect(ImVec2(150, 150), ImVec2(texture.width, texture.height));
                         ImGui::SetCursorPos(ImGui::GetWindowSize() / 2 - fitSize / 2);
-                        ImGui::Image(texture.handle, fitSize);
+                        ImGuiID imageID = ImGui::GetID("##image");
+                        static std::unordered_map<ImGuiID, bool> s_hoveredMap;
+
+                        if (s_hoveredMap.find(imageID) == s_hoveredMap.end()) {
+                            s_hoveredMap[imageID] = false;
+                        }
+
+                        bool& imageHovered = s_hoveredMap[imageID];
+
+                        ImVec4 tint = ImVec4(1, 1, 1, imageHovered ? 0.7f : 1.0f);
+                        ImGui::Image(texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), tint);
+                        imageHovered = ImGui::IsItemHovered();
+
+                        if (imageHovered && ImGui::IsItemClicked()) {
+                            ImGui::OpenPopup("##imagePopup");
+                        }
+
+                        if (ImGui::BeginPopup("##imagePopup")) {
+                            ImGui::Image((ImTextureID) texture.handle, FitRectInRect(ImGui::GetWindowViewport()->Size, ImVec2(texture.width, texture.height)) / 2);
+                            ImGui::EndPopup();
+                        }
                     }
                     ImGui::EndChild();
                     ImGui::SameLine();

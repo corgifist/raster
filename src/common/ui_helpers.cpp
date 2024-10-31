@@ -2,6 +2,7 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
 #include "common/audio_info.h"
+#include "../ImGui/imgui_internal.h"
 
 namespace Raster {
     void UIHelpers::SelectAttribute(Composition* t_composition, int& t_attributeID, std::string t_headerText, std::string* t_customAttributeFilter) {
@@ -191,8 +192,23 @@ namespace Raster {
                 for (int i = AudioInfo::s_globalAudioOffset + AudioInfo::s_channels - 1; i < AudioInfo::s_globalAudioOffset + WAVEFORM_PRECISION * AudioInfo::s_channels; i += AudioInfo::s_channels) {
                     constructedWaveform[waveformIndex++] = t_samples.samples->data()[i % AudioInfo::s_periodSize];
                 }
+                RenderDecibelScale(constructedWaveform[0]);
+                ImGui::SameLine();
                 ImGui::PlotLines("##waveform", constructedWaveform.data(), WAVEFORM_PRECISION, 0, FormatString("%s %s %i", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNEL").c_str(), channel).c_str(), -1, 1, {0, 80});
             ImGui::PopID();
         }
+    }
+
+    void UIHelpers::RenderDecibelScale(float t_linear) {
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+        float decibel = 60 - std::min(std::abs(LinearToDecibel(std::abs(t_linear))), 60.0f);
+        // DUMP_VAR(decibel);
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, IM_COL32(109, 130, 209, 255));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::PushItemWidth(10);
+            ImGui::PlotHistogram("##decibelHistogram", &decibel, 1, 0, nullptr, 0.0f, 60, {0, 80});
+        ImGui::PopItemWidth();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor();
     }
 };
