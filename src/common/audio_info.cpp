@@ -9,6 +9,8 @@ namespace Raster {
 
     int AudioInfo::s_audioPassID = 1;
 
+    SharedMutex AudioInfo::s_mutex;
+
     SharedRawAudioSamples AudioInfo::MakeRawAudioSamples() {
         return std::make_shared<std::vector<float>>(s_periodSize * s_channels);
     }

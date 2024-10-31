@@ -277,12 +277,15 @@ namespace Raster {
                 ImGui::EndChild();
 
                 if (ImGui::BeginChild("##miniTimeline", ImVec2(ImGui::GetContentRegionAvail().x, miniTimelineSize), ImGuiChildFlags_AutoResizeY)) {
+                    static bool usingDragTimeline = false;
                     float firstTimelineCursorY = ImGui::GetCursorPosY();
                     std::string firstTimestampText = project.FormatFrameToTime(project.currentFrame);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-                    ImGui::Button(firstTimestampText.c_str());
+                    if (ImGui::Button(firstTimestampText.c_str())) {
+                        usingDragTimeline = !usingDragTimeline;
+                    }
                     ImGui::PopStyleColor(3);
                     ImGui::SameLine();
                     if (ImGui::Button(ICON_FA_BACKWARD)) {
@@ -296,7 +299,11 @@ namespace Raster {
                     ImGui::SameLine();
                     static float forwardSeekSize = 20;
                     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - forwardSeekSize);
-                        ImGui::SliderFloat("##timelineSlider", &project.currentFrame, 0, project.GetProjectLength(), firstTimestampText.c_str());
+                        if (!usingDragTimeline) {
+                            ImGui::SliderFloat("##timelineSlider", &project.currentFrame, 0, project.GetProjectLength(), firstTimestampText.c_str());
+                        } else {
+                            ImGui::DragFloat("##timelineSlider", &project.currentFrame, 0.05f, 0, project.GetProjectLength(), FormatString("%s (%0.2f)", firstTimestampText.c_str(), project.currentFrame / project.framerate).c_str());
+                        }
                         if (ImGui::IsItemEdited()) {
                             project.OnTimelineSeek();
                         }
@@ -321,7 +328,9 @@ namespace Raster {
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-                    ImGui::Button(firstTimestampText.c_str());
+                    if (ImGui::Button(firstTimestampText.c_str())) {
+                        usingDragTimeline = !usingDragTimeline;
+                    }
                     miniTimelineSize = ImGui::GetCursorPosY() - firstTimelineCursorY;
                     ImGui::PopStyleColor(3);
                     ImGui::SameLine();

@@ -97,6 +97,19 @@ namespace Raster {
         }
     }
 
+    std::vector<int> Composition::GetUsedAudioBuses() {
+        std::vector<int> result;
+        for (auto& node : nodes) {
+            auto ids = node.second->GetUsedAudioBuses();
+            for (auto& id : ids) {
+                if (std::find(result.begin(), result.end(), id) == result.end()) {
+                    result.push_back(id);
+                }
+            }
+        }
+        return result;
+     }
+
     void Composition::OnTimelineSeek() {
         for (auto& pair : nodes) {
             pair.second->OnTimelineSeek();

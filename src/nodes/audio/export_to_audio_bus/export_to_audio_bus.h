@@ -15,8 +15,12 @@ namespace Raster {
         void AbstractLoadSerialized(Json t_data);
         Json AbstractSerialize();
 
+        std::vector<int> AbstractGetUsedAudioBuses();
+
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();
+    private:
+        int m_lastUsedAudioBusID;
     };
 };

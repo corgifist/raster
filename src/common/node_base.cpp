@@ -460,6 +460,10 @@ namespace Raster {
         return AbstractOnTimelineSeek();
     }
 
+    std::vector<int> NodeBase::GetUsedAudioBuses() {
+        return AbstractGetUsedAudioBuses();
+    }
+
     std::optional<float> NodeBase::GetContentDuration() {
         return AbstractGetContentDuration();
     }

@@ -26,6 +26,8 @@ namespace Raster {
         void Traverse(ContextData t_context = {});
         void OnTimelineSeek();
 
+        std::vector<int> GetUsedAudioBuses();
+
         Json Serialize();
     };
 };

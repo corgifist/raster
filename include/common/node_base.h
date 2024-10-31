@@ -83,6 +83,8 @@ namespace Raster {
 
         bool DoesAudioMixing();
 
+        std::vector<int> GetUsedAudioBuses();
+
         std::optional<float> GetContentDuration();
 
         void OnTimelineSeek();
@@ -102,6 +104,8 @@ namespace Raster {
 
         virtual bool AbstractDetailsAvailable() { return false; };
         virtual void AbstractRenderDetails() {}
+
+        virtual std::vector<int> AbstractGetUsedAudioBuses() { return {}; }
 
         virtual Json AbstractSerialize() { return SerializeAllAttributes(); };
         virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) {

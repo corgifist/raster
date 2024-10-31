@@ -226,6 +226,27 @@ namespace Raster {
         }
     }
 
+    void UIHelpers::RenderRawAudioSamplesWaveform(std::vector<float>* t_raw) {
+        if (!t_raw || t_raw->size() <= 0) {
+            std::string warningMessage = FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("WAVEFORM_PREVIEW_IS_NOT_AVAILABLE").c_str());
+            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(warningMessage.c_str()).x / 2.0f);
+            ImGui::Text("%s", warningMessage.c_str());
+            return;
+        }
+        for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
+            ImGui::PushID(channel);
+                std::vector<float> constructedWaveform(WAVEFORM_PRECISION);
+                int waveformIndex = 0;
+                for (int i = AudioInfo::s_globalAudioOffset + AudioInfo::s_channels - 1; i < AudioInfo::s_globalAudioOffset + WAVEFORM_PRECISION * AudioInfo::s_channels; i += AudioInfo::s_channels) {
+                    constructedWaveform[waveformIndex++] = t_raw->data()[i % AudioInfo::s_periodSize];
+                }
+                RenderDecibelScale(constructedWaveform[0]);
+                ImGui::SameLine();
+                ImGui::PlotLines("##waveform", constructedWaveform.data(), WAVEFORM_PRECISION, 0, FormatString("%s %s %i", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNEL").c_str(), channel).c_str(), -1, 1, {0, 80});
+            ImGui::PopID();
+        }
+    }
+
     void UIHelpers::RenderDecibelScale(float t_linear) {
         ImVec2 cursorPos = ImGui::GetCursorScreenPos();
         float decibel = 60 - std::min(std::abs(LinearToDecibel(std::abs(t_linear))), 60.0f);
@@ -237,5 +258,11 @@ namespace Raster {
         ImGui::PopItemWidth();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
+    }
+
+    void UIHelpers::RenderNothingToShowText() {
+        std::string nothingToShowText = Localization::GetString("NOTHING_TO_SHOW");
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2 - ImGui::CalcTextSize(nothingToShowText.c_str()).x / 2);
+        ImGui::Text("%s", nothingToShowText.c_str());
     }
 };

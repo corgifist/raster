@@ -11,14 +11,13 @@
 namespace Raster {
 
     AudioBackendInfo Audio::s_backendInfo;
-    std::mutex Audio::s_audioMutex;
 
     static int s_channelCount, s_sampleRate;
     static ma_device s_device;
 
     static void raster_data_callback(ma_device* t_device, void* t_output, const void* t_input, ma_uint32 t_frameCount) {
         Threads::s_audioThreadID = std::this_thread::get_id();
-        Audio::s_audioMutex.lock();
+        SharedLockGuard guard(AudioInfo::s_mutex);
         float* fOutput = (float*) t_output;
 
         if (Workspace::IsProjectLoaded() && Workspace::GetProject().playing ) {
@@ -27,18 +26,17 @@ namespace Raster {
             int mainBusID = -1;
 
             // restoring the main audio bus to the default value
+            project.audioBusesMutex->lock();
             for (auto& bus : buses) {
-                if (bus.main) {
-                    mainBusID = bus.id;
-                    if (bus.samples.size() != 4096 * AudioInfo::s_channels) {
-                        bus.samples.resize(4096 * AudioInfo::s_channels);
-                    }
-                    for (int i = 0; i < t_frameCount * AudioInfo::s_channels; i++) {
-                        bus.samples[i] = 0.0f;
-                    }
-                    break;
+                if (bus.samples.size() != 4096 * AudioInfo::s_channels) {
+                    bus.samples.resize(4096 * AudioInfo::s_channels);
+                }
+                if (bus.main) mainBusID = bus.id;
+                for (int i = 0; i < t_frameCount * AudioInfo::s_channels; i++) {
+                    bus.samples[i] = 0.0f;
                 }
             }
+            project.audioBusesMutex->unlock();
 
             AudioInfo::s_audioPassID++;
 
@@ -56,8 +54,10 @@ namespace Raster {
                     auto redirectBusCandidate = Workspace::GetAudioBusByID(bus.redirectID);
                     if (redirectBusCandidate.has_value()) {
                         auto& redirectBus = redirectBusCandidate.value();
-                        for (int i = 0; i < t_frameCount * AudioInfo::s_channels; i++) {
-                            redirectBus->samples[i] += bus.samples[i];
+                        if (redirectBus->samples.size() > 0 && bus.samples.size() > 0) {
+                            for (int i = 0; i < t_frameCount * AudioInfo::s_channels; i++) {
+                                redirectBus->samples[i] += bus.samples[i];
+                            }
                         }
                     }
                 }
@@ -73,7 +73,6 @@ namespace Raster {
 
             project.audioBusesMutex->unlock();
         }
-        Audio::s_audioMutex.unlock();
     }
 
     void Audio::Initialize(int t_channelCount, int t_sampleRate) {

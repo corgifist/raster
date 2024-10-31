@@ -13,6 +13,8 @@ namespace Raster {
         SetupAttribute("BusID", -1);
         SetupAttribute("Samples", GenericAudioDecoder());
 
+        this->m_lastUsedAudioBusID = -1;
+
         AddInputPin("Samples");
     }
 
@@ -27,14 +29,19 @@ namespace Raster {
         if (contextData.find("AUDIO_PASS") == contextData.end()) return {};
         if (busIDCandidate.has_value() && samplesCandidate.has_value() && samplesCandidate.value().samples && project.playing) {
             auto busID = busIDCandidate.value();
-            for (auto& bus : project.audioBuses) {
-                if (bus.main) {
-                    busID = bus.id;
-                    break;
-                }
-            }
-            auto& samples = samplesCandidate.value();
             auto busCandidate = Workspace::GetAudioBusByID(busID);
+            if (!busCandidate.has_value()) {
+                for (auto& bus : project.audioBuses) {
+                    if (bus.main) {
+                        busID = bus.id;
+                        break;
+                    }
+                }
+                busCandidate = Workspace::GetAudioBusByID(busID);
+            }
+            m_lastUsedAudioBusID = busID;
+            auto& samples = samplesCandidate.value();
+
             if (busCandidate.has_value()) {
                 auto& bus = busCandidate.value();
                 if (bus->samples.size() != 4096 * AudioInfo::s_channels) {
@@ -47,6 +54,13 @@ namespace Raster {
         }
 
         return result;
+    }
+
+    std::vector<int> ExportToAudioBus::AbstractGetUsedAudioBuses() {
+        if (m_lastUsedAudioBusID > 0) {
+            return {m_lastUsedAudioBusID};
+        }
+        return {};
     }
 
     bool ExportToAudioBus::AbstractDoesAudioMixing() {
