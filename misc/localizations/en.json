@@ -243,5 +243,7 @@
     "NEW_AUDIO_BUS": "New Audio Bus",
     "REMOVE_AUDIO_BUS": "Remove Audio Bus",
     "COPY_AUDIO_BUS_ID": "Copy Audio Bus ID",
-    "USED_IN_COMPOSITIONS": "Used in Compositions"
+    "USED_IN_COMPOSITIONS": "Used in Compositions",
+    "COPY_ATTRIBUTE_VALUE": "Copy Attribute Value",
+    "PASTE_ATTRIBUTE_VALUE": "Paste Attribute Value"
 }

@@ -118,6 +118,25 @@ namespace Raster {
                 ImGui::SetWindowFontScale(1.0f);
             ImGui::PopFont();
             ImGui::SameLine();
+            auto serializedContentCandidate = DynamicSerialization::Serialize(dynamicCandidate);
+            if (!serializedContentCandidate.has_value()) ImGui::BeginDisabled();
+                if (ImGui::Button(ICON_FA_COPY)) {
+                    ImGui::SetClipboardText(serializedContentCandidate.value().dump().c_str());
+                }
+                ImGui::SetItemTooltip("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_VALUE").c_str());
+            if (!serializedContentCandidate.has_value()) ImGui::EndDisabled();
+            ImGui::SameLine();
+            bool clipboardTextValid = ImGui::GetClipboardText() && Json::accept(ImGui::GetClipboardText());
+            if (!clipboardTextValid) ImGui::BeginDisabled();
+            if (ImGui::Button(ICON_FA_PASTE)) {
+                auto deserializedValueCandidate = DynamicSerialization::Deserialize(Json::parse(ImGui::GetClipboardText()));
+                if (deserializedValueCandidate.has_value()) {
+                    dynamicCandidate = deserializedValueCandidate.value();
+                }
+            }
+            ImGui::SetItemTooltip("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE_ATTRIBUTE_VALUE").c_str());
+            if (!clipboardTextValid) ImGui::EndDisabled(); 
+            ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Button) * ImVec4(isAttributeExposed ? 1.2f : 1.0f));
             if (ImGui::Button(exposeButtonTest.c_str())) {
                 if (isAttributeExposed) {
@@ -260,6 +279,7 @@ namespace Raster {
 
         data["Enabled"] = enabled;
         data["Bypassed"] = bypassed;
+        data["OverridenHeader"] = overridenHeader;
 
         return data;
     }

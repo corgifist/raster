@@ -199,6 +199,9 @@ namespace Raster {
                 node->libraryName = nodeImplementation.value().libraryName;
                 node->enabled = data["Enabled"];
                 node->bypassed = data["Bypassed"];
+                if (data.contains("OverridenHeader")) {
+                    node->overridenHeader = data["OverridenHeader"];
+                }
                 if (data.contains("NodeData") && !data["NodeData"].is_null()) {
                     node->AbstractLoadSerialized(data["NodeData"]);
                 }
