@@ -47,6 +47,7 @@ namespace Raster {
         }
 
         DefaultNodeCategories::Initialize();
+        DispatchersInstaller::Initialize();
         Workspace::Initialize();
 
         ImGuiIO& io = ImGui::GetIO();
@@ -82,8 +83,6 @@ namespace Raster {
             Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
             16.0f * 0.85f, &fontCfg, icons_ranges
         ); 
-
-        DispatchersInstaller::Initialize();
 
         auto& style = ImGui::GetStyle();
         // style.CurveTessellationTol = 0.01f;

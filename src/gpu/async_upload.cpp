@@ -66,7 +66,10 @@ namespace Raster {
 
         std::vector<int> skipID;
         while (m_running) {
-            if (SyncIsInfosEmpty()) continue;
+            if (SyncIsInfosEmpty()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
             // std::this_thread::sleep_for(std::chrono::milliseconds(10));
             auto pair = SyncGetFirstAsyncUploadInfo();
             auto& info = pair.second;

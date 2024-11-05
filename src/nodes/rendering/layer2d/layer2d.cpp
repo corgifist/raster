@@ -3,6 +3,7 @@
 #include "layer2d.h"
 
 #include "../../../ImGui/imgui.h"
+#include "../../../ImGui/imgui_stripes.h"
 #include "common/dispatchers.h"
 
 #define UNIFORM_CLAUSE(t_uniform, t_type) \
@@ -248,9 +249,121 @@ namespace Raster {
     }
 }
 
+using namespace Raster;
+
+static std::optional<Pipeline> s_nullShapePipeline;
+
 extern "C" {
     RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
         return (Raster::AbstractNode) std::make_shared<Raster::Layer2D>();
+    }
+
+    SDFShapePipeline GeneratePipelineFromShape(SDFShape t_shape) {
+        std::string uniformsResult = "";
+        for (auto& uniform : t_shape.uniforms) {
+            uniformsResult += "uniform " + uniform.type + " " + uniform.name + ";\n";
+        }
+
+        static std::optional<std::string> s_shaderBase;
+        if (!s_shaderBase.has_value()) {
+            s_shaderBase = ReadFile(GPU::GetShadersPath() + "shape_previewer/shader_base.frag");
+        }
+        std::string shaderBase = s_shaderBase.value_or("");
+        shaderBase = ReplaceString(shaderBase, "SDF_UNIFORMS_PLACEHOLDER", uniformsResult);
+        shaderBase = ReplaceString(shaderBase, "SDF_DISTANCE_FUNCTION_PLACEHOLDER", t_shape.distanceFunctionName);
+        shaderBase = ReplaceString(shaderBase, "SDF_DISTANCE_FUNCTIONS_PLACEHOLDER", t_shape.distanceFunctionCode);
+
+        std::string clearShaderFile = "shape_previewer/generated_shape_pipeline" + std::to_string(t_shape.id);
+        std::string shaderFile = GPU::GetShadersPath() + clearShaderFile + ".frag";
+        WriteFile(shaderFile, shaderBase);
+
+
+        Pipeline generatedPipeline = GPU::GeneratePipeline(
+            GPU::s_basicShader,
+            GPU::GenerateShader(ShaderType::Fragment, clearShaderFile, false)
+        );
+
+        std::filesystem::remove(shaderFile);
+
+        return SDFShapePipeline{
+            .shape = t_shape,
+            .pipeline = generatedPipeline,
+            .shaderCode = shaderBase
+        };
+    }
+
+    std::optional<Pipeline> GetPipeline(SDFShape shape, std::optional<SDFShapePipeline>& m_pipeline) {
+        if (shape.uniforms.empty()) {
+            if (m_pipeline.has_value()) {
+                GPU::DestroyPipeline(m_pipeline.value().pipeline);
+                m_pipeline = std::nullopt;
+            }
+            return s_nullShapePipeline;
+        }
+        if (!m_pipeline.has_value()) {
+            m_pipeline = GeneratePipelineFromShape(shape);
+        }
+
+        auto& pipeline = m_pipeline.value();
+        if (pipeline.shape.id != shape.id) {
+            GPU::DestroyPipeline(pipeline.pipeline);
+            m_pipeline = GeneratePipelineFromShape(shape);
+        }
+
+        return m_pipeline.value().pipeline;
+    }
+
+    static ImVec2 FitRectInRect(ImVec2 dst, ImVec2 src) {
+        float scale = std::min(dst.x / src.x, dst.y / src.y);
+        return ImVec2{src.x * scale, src.y * scale};
+    }
+
+    void SDFShapeStringDispatcher(std::any& t_value) {
+        auto shape = std::any_cast<SDFShape>(t_value);
+        static Framebuffer s_framebuffer;
+        static std::optional<SDFShapePipeline> s_pipeline;
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+        if (s_framebuffer.width != project.preferredResolution.x || s_framebuffer.height != project.preferredResolution.y || !s_framebuffer.handle) {
+            GPU::DestroyFramebufferWithAttachments(s_framebuffer);
+            s_framebuffer = Compositor::GenerateCompatibleFramebuffer(project.preferredResolution);
+        }
+
+        auto pipelineCandidate = GetPipeline(shape, s_pipeline);
+        auto& framebuffer = s_framebuffer;
+        
+        if (pipelineCandidate.has_value()) {
+            auto& pipeline = pipelineCandidate.value();
+            GPU::BindFramebuffer(framebuffer);
+            GPU::BindPipeline(pipeline);
+            GPU::ClearFramebuffer(0, 0, 0, 0);
+
+            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+            for (auto& uniform : shape.uniforms) {
+                UNIFORM_CLAUSE(uniform, float);
+                UNIFORM_CLAUSE(uniform, int);
+                UNIFORM_CLAUSE(uniform, bool);
+                UNIFORM_CLAUSE(uniform, glm::vec2);
+                UNIFORM_CLAUSE(uniform, glm::vec3);
+                UNIFORM_CLAUSE(uniform, glm::vec4);
+                UNIFORM_CLAUSE(uniform, glm::mat4);
+            }
+
+            GPU::DrawArrays(3);
+        }
+
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - 150 / 2.0f);
+        ImVec2 fitSize = FitRectInRect(ImVec2(150, 150), ImVec2(framebuffer.width, framebuffer.height));
+        ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 12, 5, fitSize);
+        ImGui::Image(framebuffer.attachments[0].handle, fitSize);
+        
+    }
+
+    RASTER_DL_EXPORT void OnStartup() {
+        Dispatchers::s_stringDispatchers[std::type_index(typeid(SDFShape))] = SDFShapeStringDispatcher;
+    }
+
+    RASTER_DL_EXPORT void OnTerminate() {
     }
 
     RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {

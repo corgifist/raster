@@ -542,7 +542,7 @@ namespace Raster {
     }
 
     void GPU::DestroyPipeline(Pipeline pipeline) {
-        DestroyShader(pipeline.vertex);
+        if (pipeline.vertex.handle != s_basicShader.handle) DestroyShader(pipeline.vertex);
         DestroyShader(pipeline.fragment);
         DestroyShader(pipeline.compute);
         GLuint handle = HANDLE_TO_GLUINT(pipeline.handle);

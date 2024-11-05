@@ -711,6 +711,7 @@ namespace Raster {
 
                                                             Workspace::UpdatePinByID(addedPin, addedPin.pinID);
                                                             InvalidatePinCache(addedPin.pinID);
+                                                            InvalidatePinCache(addedPin.connectedPinID);
                                                         }
                                                     }
                                                 }
@@ -750,7 +751,9 @@ namespace Raster {
                                                 Workspace::UpdatePinByID(startPin, startPin.pinID);
                                                 Workspace::UpdatePinByID(endPin, endPin.pinID);
                                                 InvalidatePinCache(startPin.pinID);
+                                                InvalidatePinCache(startPin.connectedPinID);
                                                 InvalidatePinCache(endPin.pinID);
+                                                InvalidatePinCache(endPin.connectedPinID);
                                         }
                                     }
                                 }
@@ -1176,13 +1179,16 @@ namespace Raster {
                                                             Workspace::UpdatePinByID(nodeInputPin, nodeInputPin.pinID);
                                                             Workspace::UpdatePinByID(lastLinePin, lastLinePin.pinID);
                                                             InvalidatePinCache(nodeInputPin.pinID);
+                                                            InvalidatePinCache(nodeInputPin.connectedPinID);
                                                             InvalidatePinCache(lastLinePin.pinID);
+                                                            InvalidatePinCache(lastLinePin.connectedPinID);
                                                         }
                                                     } else {
                                                         if (!lastLineNode->inputPins.empty() && !node->outputPins.empty()) {
                                                             lastLinePin.connectedPinID = node->outputPins[0].pinID;
                                                             Workspace::UpdatePinByID(lastLinePin, lastLinePin.pinID);
                                                             InvalidatePinCache(lastLinePin.pinID);
+                                                            InvalidatePinCache(lastLinePin.connectedPinID);
                                                         }
                                                     }
                                                 }
