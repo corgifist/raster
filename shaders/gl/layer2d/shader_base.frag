@@ -59,7 +59,7 @@ void main() {
     uv += 0.5;
 
     vec2 saturatedUV = saturateUV(uv);
-    float d = SDF_DISTANCE_FUNCTION_PLACEHOLDER(saturatedUV - 0.5);
+    float d = SDF_DISTANCE_FUNCTION_PLACEHOLDER(uv - 0.5);
     if (d > 0.0) gColor *= vec4(0);
 
     if (uTextureAvailable) gColor *= texture(uTexture, uv);

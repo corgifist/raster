@@ -27,7 +27,7 @@ namespace Raster {
             auto a = aCandidate.value();
             auto intensity = intensityCandidate.value();
 
-            TransformShapeUniforms(a, "Annular");
+            TransformShapeUniforms(a, "Annular" + std::to_string(a.id));
             if (m_firstShapeID != a.id) {
                 static std::optional<std::string> s_mixBase;
                 if (!s_mixBase.has_value()) {
@@ -40,7 +40,7 @@ namespace Raster {
 
                 m_mixedShape.distanceFunctionName = "fSDFAnnular";
                 m_mixedShape.distanceFunctionCode = "";
-                TransformShape(a, "Annular");
+                TransformShape(a, "Annular" + std::to_string(a.id));
                 m_mixedShape.distanceFunctionCode += a.distanceFunctionCode + "\n\n";
 
                 m_mixedShape.distanceFunctionCode += mixBase + "\n\n";
@@ -54,7 +54,7 @@ namespace Raster {
             }
 
             m_mixedShape.uniforms.push_back({
-                "float", "uSDFAnnularIntensity", intensity * 0.04f
+                "float", "uSDFAnnularIntensity", intensity * 0.05f
             });
 
             TryAppendAbstractPinMap(result, "Shape", m_mixedShape);

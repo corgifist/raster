@@ -1,74 +1,77 @@
-#include "sdf_mix.h"
+#include "sdf_transform.h"
 #include "common/node_category.h"
 #include "common/workspace.h"
+#include "common/transform2d.h"
 
 namespace Raster {
 
-    SDFMix::SDFMix() {
+    SDFTransform::SDFTransform() {
         NodeBase::Initialize();
 
         this->m_mixedShape = SDFShape();
         this->m_firstShapeID = -1;
-        this->m_secondShapeID = -1;
 
         SetupAttribute("A", SDFShape());
-        SetupAttribute("B", SDFShape());
-        SetupAttribute("Phase", 0.5f);
+        SetupAttribute("Transform", Transform2D());
 
         AddInputPin("A");
-        AddInputPin("B");
 
         AddOutputPin("Shape");
     }
 
-    AbstractPinMap SDFMix::AbstractExecute(ContextData& t_contextData) {
+    AbstractPinMap SDFTransform::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
         auto aCandidate = GetShape("A", t_contextData);
-        auto bCandidate = GetShape("B", t_contextData);
-        auto phaseCandidate = GetAttribute<float>("Phase", t_contextData);
-        if (aCandidate.has_value() && bCandidate.has_value() && phaseCandidate.has_value()) {
+        auto transformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
+        if (aCandidate.has_value() && transformCandidate.has_value()) {
             auto a = aCandidate.value();
-            auto b = bCandidate.value();
-            auto phase = phaseCandidate.value();
+            auto transform = transformCandidate.value();
+            transform.size = 1.0f / transform.size;
 
-            TransformShapeUniforms(a, "Mix" + std::to_string(a.id));
-            TransformShapeUniforms(b, "Mix" + std::to_string(b.id));
-            if (m_firstShapeID != a.id || m_secondShapeID != b.id) {
+            auto uvPosition = transform.DecomposePosition();
+            auto uvSize = transform.DecomposeSize();
+            auto uvAngle = transform.DecomposeRotation();
+
+            uvPosition.x *= -1;
+            uvPosition *= 0.5f;
+
+            TransformShapeUniforms(a, "Transform" + std::to_string(a.id));
+            if (m_firstShapeID != a.id) {
                 static std::optional<std::string> s_mixBase;
                 if (!s_mixBase.has_value()) {
-                    s_mixBase = ReadFile(GPU::GetShadersPath() + "sdf_shapes/sdf_mix.frag");
+                    s_mixBase = ReadFile(GPU::GetShadersPath() + "sdf_shapes/sdf_transform.frag");
                 }
                 std::string mixBase = s_mixBase.value_or("");
 
                 m_mixedShape.uniforms.clear();
                 m_mixedShape.id = Randomizer::GetRandomInteger();
 
-                m_mixedShape.distanceFunctionName = "fSDFMix";
+                m_mixedShape.distanceFunctionName = "fSDFTransform";
                 m_mixedShape.distanceFunctionCode = "";
-                TransformShape(a, "Mix" + std::to_string(a.id));
-                TransformShape(b, "Mix" + std::to_string(b.id));
+                TransformShape(a, "Transform" + std::to_string(a.id));
                 m_mixedShape.distanceFunctionCode += a.distanceFunctionCode + "\n\n";
-                m_mixedShape.distanceFunctionCode += b.distanceFunctionCode + "\n\n";
 
                 m_mixedShape.distanceFunctionCode += mixBase + "\n\n";
-                m_mixedShape.distanceFunctionCode = ReplaceString(m_mixedShape.distanceFunctionCode, "SDF_MIX_FIRST_FUNCTION_PLACEHOLDER", a.distanceFunctionName);
-                m_mixedShape.distanceFunctionCode = ReplaceString(m_mixedShape.distanceFunctionCode, "SDF_MIX_SECOND_FUNCTION_PLACEHOLDER", b.distanceFunctionName);
+                m_mixedShape.distanceFunctionCode = ReplaceString(m_mixedShape.distanceFunctionCode, "SDF_TRANSFORM_FUNCTION_PLACEHOLDER", a.distanceFunctionName);
 
                 m_firstShapeID = a.id;
-                m_secondShapeID = b.id;
             }
 
             for (auto& uniform : a.uniforms) {
                 m_mixedShape.uniforms.push_back(uniform);
             }
 
-            for (auto& uniform : b.uniforms) {
-                m_mixedShape.uniforms.push_back(uniform);
-            }
+            m_mixedShape.uniforms.push_back({
+                "vec2", "uSDFUvPosition", uvPosition
+            });
 
             m_mixedShape.uniforms.push_back({
-                "float", "uSDFMixPhase", phase
+                "vec2", "uSDFUvSize", uvSize
+            });
+
+            m_mixedShape.uniforms.push_back({
+                "float", "uSDFUvAngle", glm::radians(uvAngle)
             });
 
             TryAppendAbstractPinMap(result, "Shape", m_mixedShape);
@@ -79,12 +82,12 @@ namespace Raster {
         return result;
     }
 
-    void SDFMix::TransformShape(SDFShape& t_shape, std::string t_uniqueID) {
+    void SDFTransform::TransformShape(SDFShape& t_shape, std::string t_uniqueID) {
         t_shape.distanceFunctionCode = ReplaceString(t_shape.distanceFunctionCode, "\\b" + t_shape.distanceFunctionName + "\\b", t_shape.distanceFunctionName + t_uniqueID);
         t_shape.distanceFunctionName += t_uniqueID;
     }
 
-    void SDFMix::TransformShapeUniforms(SDFShape& t_shape, std::string t_uniqueID) {
+    void SDFTransform::TransformShapeUniforms(SDFShape& t_shape, std::string t_uniqueID) {
         for (auto& uniform : t_shape.uniforms) {
             t_shape.distanceFunctionCode = ReplaceString(t_shape.distanceFunctionCode, "\\b" + uniform.name + "\\b", uniform.name + t_uniqueID);
         }
@@ -93,7 +96,7 @@ namespace Raster {
         }
     }
 
-    std::optional<SDFShape> SDFMix::GetShape(std::string t_attribute, ContextData& t_contextData) {
+    std::optional<SDFShape> SDFTransform::GetShape(std::string t_attribute, ContextData& t_contextData) {
         auto candidate = GetDynamicAttribute(t_attribute, t_contextData);
         if (candidate.has_value() && candidate.value().type() == typeid(SDFShape)) {
             return std::any_cast<SDFShape>(candidate.value());
@@ -101,42 +104,38 @@ namespace Raster {
         return std::nullopt;
     }
 
-    void SDFMix::AbstractLoadSerialized(Json t_data) {
-        DeserializeAllAttributes(t_data); 
+    void SDFTransform::AbstractRenderProperties() {
+        RenderAttributeProperty("Transform");
     }
 
-    Json SDFMix::AbstractSerialize() {
+    void SDFTransform::AbstractLoadSerialized(Json t_data) {
+        DeserializeAllAttributes(t_data);
+    }
+
+    Json SDFTransform::AbstractSerialize() {
         return SerializeAllAttributes();
     }
 
-    void SDFMix::AbstractRenderProperties() {
-        RenderAttributeProperty("Phase", {
-            SliderRangeMetadata(0, 100), 
-            SliderBaseMetadata(100),
-            FormatStringMetadata("%")
-        });
-    }
-
-    bool SDFMix::AbstractDetailsAvailable() {
+    bool SDFTransform::AbstractDetailsAvailable() {
         return false;
     }
 
-    std::string SDFMix::AbstractHeader() {
-        return "SDF Mix";
+    std::string SDFTransform::AbstractHeader() {
+        return "SDF Transform";
     }
 
-    std::string SDFMix::Icon() {
-        return ICON_FA_DROPLET;
+    std::string SDFTransform::Icon() {
+        return ICON_FA_SHAPES " " ICON_FA_UP_DOWN_LEFT_RIGHT;
     }
 
-    std::optional<std::string> SDFMix::Footer() {
+    std::optional<std::string> SDFTransform::Footer() {
         return std::nullopt;
     }
 }
 
 extern "C" {
     RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
-        return (Raster::AbstractNode) std::make_shared<Raster::SDFMix>();
+        return (Raster::AbstractNode) std::make_shared<Raster::SDFTransform>();
     }
 
     RASTER_DL_EXPORT void OnStartup() {
@@ -148,8 +147,8 @@ extern "C" {
 
     RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
-            .prettyName = "SDF Mix",
-            .packageName = RASTER_PACKAGED "sdf_mix",
+            .prettyName = "SDF Transform",
+            .packageName = RASTER_PACKAGED "sdf_transform",
             .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_SHAPES, "Shapes")
         };
     }

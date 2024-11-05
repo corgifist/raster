@@ -49,8 +49,8 @@ namespace Raster {
 
                 m_mixedShape.distanceFunctionName = "fSDFUnion";
                 m_mixedShape.distanceFunctionCode = "";
-                TransformShape(a, "Union1");
-                TransformShape(b, "Union2");
+                TransformShape(a, "Union" + std::to_string(a.id));
+                TransformShape(b, "Union" + std::to_string(b.id));
                 m_mixedShape.distanceFunctionCode += a.distanceFunctionCode + "\n\n";
                 m_mixedShape.distanceFunctionCode += b.distanceFunctionCode + "\n\n";
 
@@ -117,7 +117,9 @@ namespace Raster {
 
     void SDFUnion::AbstractRenderProperties() {
         RenderAttributeProperty("Smooth");
-        RenderAttributeProperty("Smoothness");
+        RenderAttributeProperty("Smoothness", {
+            SliderRangeMetadata(0, 1)
+        });
     }
 
     bool SDFUnion::AbstractDetailsAvailable() {
