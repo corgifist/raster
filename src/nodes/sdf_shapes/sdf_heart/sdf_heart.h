@@ -7,7 +7,7 @@ namespace Raster {
     struct SDFHeart : public NodeBase {
         SDFHeart();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

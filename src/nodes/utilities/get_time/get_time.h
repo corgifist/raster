@@ -6,7 +6,7 @@ namespace Raster {
     struct GetTime : public NodeBase {
         GetTime();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 
@@ -16,5 +16,8 @@ namespace Raster {
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();
+
+    private:
+        std::optional<bool> m_lastRelativeTime;
     };
 };

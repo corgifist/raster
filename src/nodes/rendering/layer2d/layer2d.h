@@ -51,7 +51,7 @@ namespace Raster {
         Layer2D();
         ~Layer2D();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 
@@ -64,8 +64,8 @@ namespace Raster {
         Json AbstractSerialize();
 
     private:
-        std::optional<SDFShape> GetShape();
-        std::optional<Pipeline> GetPipeline();
+        std::optional<SDFShape> GetShape(ContextData& t_contextData);
+        std::optional<Pipeline> GetPipeline(ContextData& t_contextData);
 
         SDFShapePipeline GeneratePipelineFromShape(SDFShape t_shape);
 

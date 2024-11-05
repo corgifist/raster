@@ -16,23 +16,22 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap MergeAudioSamples::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap MergeAudioSamples::AbstractExecute(ContextData& t_contextData) {
         SharedLockGuard mixerGuard(m_mutex);
         AbstractPinMap result = {};
         
-        auto aCandidate = GetAttribute<AudioSamples>("A");
-        auto bCandidate = GetAttribute<AudioSamples>("B");
-        auto contextData = GetContextData();
+        auto aCandidate = GetAttribute<AudioSamples>("A", t_contextData);
+        auto bCandidate = GetAttribute<AudioSamples>("B", t_contextData);
         auto& project = Workspace::GetProject();
 
-        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
             }
             return result;
         }
-        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
         
         if (aCandidate.has_value() && bCandidate.has_value()) {
             auto& a = aCandidate.value();

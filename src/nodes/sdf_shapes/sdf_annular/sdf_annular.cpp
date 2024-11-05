@@ -18,11 +18,11 @@ namespace Raster {
         AddOutputPin("Shape");
     }
 
-    AbstractPinMap SDFAnnular::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SDFAnnular::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto aCandidate = GetShape("A");
-        auto intensityCandidate = GetAttribute<float>("Intensity");
+        auto aCandidate = GetShape("A", t_contextData);
+        auto intensityCandidate = GetAttribute<float>("Intensity", t_contextData);
         if (aCandidate.has_value() && intensityCandidate.has_value()) {
             auto a = aCandidate.value();
             auto intensity = intensityCandidate.value();
@@ -79,8 +79,8 @@ namespace Raster {
         }
     }
 
-    std::optional<SDFShape> SDFAnnular::GetShape(std::string t_attribute) {
-        auto candidate = GetDynamicAttribute(t_attribute);
+    std::optional<SDFShape> SDFAnnular::GetShape(std::string t_attribute, ContextData& t_contextData) {
+        auto candidate = GetDynamicAttribute(t_attribute, t_contextData);
         if (candidate.has_value() && candidate.value().type() == typeid(SDFShape)) {
             return std::any_cast<SDFShape>(candidate.value());
         }

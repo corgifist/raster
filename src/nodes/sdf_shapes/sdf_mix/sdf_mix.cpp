@@ -21,12 +21,12 @@ namespace Raster {
         AddOutputPin("Shape");
     }
 
-    AbstractPinMap SDFMix::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SDFMix::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto aCandidate = GetShape("A");
-        auto bCandidate = GetShape("B");
-        auto phaseCandidate = GetAttribute<float>("Phase");
+        auto aCandidate = GetShape("A", t_contextData);
+        auto bCandidate = GetShape("B", t_contextData);
+        auto phaseCandidate = GetAttribute<float>("Phase", t_contextData);
         if (aCandidate.has_value() && bCandidate.has_value() && phaseCandidate.has_value()) {
             auto a = aCandidate.value();
             auto b = bCandidate.value();
@@ -93,8 +93,8 @@ namespace Raster {
         }
     }
 
-    std::optional<SDFShape> SDFMix::GetShape(std::string t_attribute) {
-        auto candidate = GetDynamicAttribute(t_attribute);
+    std::optional<SDFShape> SDFMix::GetShape(std::string t_attribute, ContextData& t_contextData) {
+        auto candidate = GetDynamicAttribute(t_attribute, t_contextData);
         if (candidate.has_value() && candidate.value().type() == typeid(SDFShape)) {
             return std::any_cast<SDFShape>(candidate.value());
         }

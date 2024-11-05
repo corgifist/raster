@@ -11,9 +11,9 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap TransportValue::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap TransportValue::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto inputCandidate = GetDynamicAttribute("Input");
+        auto inputCandidate = GetDynamicAttribute("Input", t_contextData);
         if (inputCandidate.has_value() && inputCandidate.value().type() != typeid(std::nullopt)) {
             TryAppendAbstractPinMap(result, "Output", inputCandidate.value());
         }

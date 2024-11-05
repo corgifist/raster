@@ -24,15 +24,15 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap BrightnessContrastSaturationVibranceHue::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap BrightnessContrastSaturationVibranceHue::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         
-        auto inputCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Input"));
-        auto brightnessCandidate = GetAttribute<float>("Brightness");
-        auto contrastCandidate = GetAttribute<float>("Contrast");
-        auto saturationCandidate = GetAttribute<float>("Saturation");
-        auto vibranceCandidate = GetAttribute<float>("Vibrance");
-        auto hueCandidate = GetAttribute<float>("Hue");
+        auto inputCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Input", t_contextData));
+        auto brightnessCandidate = GetAttribute<float>("Brightness", t_contextData);
+        auto contrastCandidate = GetAttribute<float>("Contrast", t_contextData);
+        auto saturationCandidate = GetAttribute<float>("Saturation", t_contextData);
+        auto vibranceCandidate = GetAttribute<float>("Vibrance", t_contextData);
+        auto hueCandidate = GetAttribute<float>("Hue", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -51,6 +51,11 @@ namespace Raster {
             auto& saturation = saturationCandidate.value();
             auto& vibrance = vibranceCandidate.value();
             auto& hue = hueCandidate.value();
+            m_lastBrightness = brightness;
+            m_lastContrast = contrast;
+            m_lastSaturation = saturation;
+            m_lastVibrance = vibrance;
+            m_lastHue = hue;
 
             GPU::BindFramebuffer(framebuffer);
             GPU::ClearFramebuffer(0, 0, 0, 0);
@@ -96,24 +101,19 @@ namespace Raster {
     std::string BrightnessContrastSaturationVibranceHue::AbstractHeader() {
         std::vector<std::string> appliedEffectsList;
 
-        auto brightnessCandidate = GetAttribute<float>("Brightness");
-        auto contrastCandidate = GetAttribute<float>("Contrast");
-        auto saturationCandidate = GetAttribute<float>("Saturation");
-        auto vibranceCandidate = GetAttribute<float>("Vibrance");
-        auto hueCandidate = GetAttribute<float>("Hue");
-        if (brightnessCandidate.has_value() && brightnessCandidate.value() != 0.0f) {
+        if (m_lastBrightness.has_value() && m_lastBrightness.value() != 0.0f) {
             appliedEffectsList.push_back("Brightness");
         }
-        if (contrastCandidate.has_value() && contrastCandidate.value() != 1.0) {
+        if (m_lastContrast.has_value() && m_lastContrast.value() != 1.0) {
             appliedEffectsList.push_back("Contrast");
         }
-        if (saturationCandidate.has_value() && saturationCandidate.value() != 1.0) {
+        if (m_lastSaturation.has_value() && m_lastSaturation.value() != 1.0) {
             appliedEffectsList.push_back("Saturaton");
         }
-        if (vibranceCandidate.has_value() && vibranceCandidate.value() != 1.0) {
+        if (m_lastVibrance.has_value() && m_lastVibrance.value() != 1.0) {
             appliedEffectsList.push_back("Vibrance");
         }
-        if (hueCandidate.has_value() && hueCandidate.value() != 0.0) {
+        if (m_lastHue.has_value() && m_lastHue.value() != 0.0) {
             appliedEffectsList.push_back("Hue");
         }
 

@@ -16,11 +16,13 @@ namespace Raster {
         SetupAttribute("TextureWrapping", static_cast<int>(TextureWrappingMode::Repeat));
     }
 
-    AbstractPinMap MakeSamplerSettings::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap MakeSamplerSettings::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto textureFilteringCandidate = GetAttribute<int>("TextureFiltering");
-        auto textureWrappingCandidate = GetAttribute<int>("TextureWrapping");
+        auto textureFilteringCandidate = GetAttribute<int>("TextureFiltering", t_contextData);
+        auto textureWrappingCandidate = GetAttribute<int>("TextureWrapping", t_contextData);
+        m_lastTextureFiltering = textureFilteringCandidate;
+        m_lastTextureWrapping = textureWrappingCandidate;
         if (textureFilteringCandidate.has_value() && textureWrappingCandidate.has_value()) {
             SamplerSettings settings;
             settings.filteringMode = static_cast<TextureFilteringMode>(textureFilteringCandidate.value());
@@ -33,8 +35,8 @@ namespace Raster {
     }
 
     void MakeSamplerSettings::AbstractRenderProperties() {
-        auto textureFilteringCandidate = GetAttribute<int>("TextureFiltering");
-        auto textureWrappingCandidate = GetAttribute<int>("TextureWrapping");
+        auto textureFilteringCandidate = m_lastTextureFiltering;
+        auto textureWrappingCandidate = m_lastTextureWrapping;
         if (textureFilteringCandidate.has_value() && textureWrappingCandidate.has_value()) {
             SamplerSettings settings;
             settings.filteringMode = static_cast<TextureFilteringMode>(textureFilteringCandidate.value());

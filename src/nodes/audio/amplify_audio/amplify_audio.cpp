@@ -12,14 +12,13 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap AmplifyAudio::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap AmplifyAudio::AbstractExecute(ContextData& t_contextData) {
         SharedLockGuard amplifyGuard(m_mutex);
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
-        auto contextData = GetContextData();
-        auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
-        auto intensityCandidate = GetAttribute<float>("Intensity");
-        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
+        auto intensityCandidate = GetAttribute<float>("Intensity", t_contextData);
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());

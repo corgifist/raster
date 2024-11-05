@@ -7,7 +7,7 @@ namespace Raster {
     struct SDFMix : public NodeBase {
         SDFMix();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 
@@ -22,7 +22,7 @@ namespace Raster {
         void TransformShapeUniforms(SDFShape& t_shape, std::string t_uniqueID);
         void TransformShape(SDFShape& t_shape, std::string t_uniqueID);
 
-        std::optional<SDFShape> GetShape(std::string t_attribute);
+        std::optional<SDFShape> GetShape(std::string t_attribute, ContextData& t_contextData);
 
         SDFShape m_mixedShape;
         int m_firstShapeID, m_secondShapeID;

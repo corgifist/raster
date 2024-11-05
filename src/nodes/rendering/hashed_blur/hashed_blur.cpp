@@ -22,13 +22,13 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap HashedBlur::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap HashedBlur::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base"));
-        auto radiusCandidate = GetAttribute<float>("Radius");
-        auto hashOffsetCandidate = GetAttribute<glm::vec2>("HashOffset");
-        auto iterationsCandidate = GetAttribute<int>("Iterations");
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto radiusCandidate = GetAttribute<float>("Radius", t_contextData);
+        auto hashOffsetCandidate = GetAttribute<glm::vec2>("HashOffset", t_contextData);
+        auto iterationsCandidate = GetAttribute<int>("Iterations", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(

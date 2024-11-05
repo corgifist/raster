@@ -31,6 +31,7 @@ namespace Raster {
 
     bool MediaAsset::AbstractIsReady() {
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str());
+        if (m_copyFuture.has_value() && !IsFutureReady(m_copyFuture.value())) return false;
         if (std::filesystem::exists(absolutePath) && !std::filesystem::is_directory(absolutePath) && !m_formatCtx.isOpened() && !m_formatCtxWasOpened) {
             std::error_code ec;
             m_formatCtx.openInput(absolutePath, ec);

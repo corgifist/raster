@@ -42,35 +42,33 @@ namespace Raster {
         this->enabled = true;
         this->bypassed = false;
         this->executionsPerFrame.Set(0);
-        this->m_contextMutex = std::make_unique<std::mutex>();
-        this->m_attributesCacheMutex = std::make_unique<std::mutex>();
     }
 
-    AbstractPinMap NodeBase::Execute(AbstractPinMap t_accumulator, ContextData t_contextData) {
+    AbstractPinMap NodeBase::Execute(AbstractPinMap& t_accumulator, ContextData& t_contextData) {
         this->m_accumulator = t_accumulator;
         if (!enabled) return {};
-        MergeContextDatas(t_contextData);
         if (bypassed) {
             auto outputPin = flowOutputPin.value();
             if (outputPin.connectedPinID > 0) {
                 auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
                 if (connectedNode.has_value()) {
-                    connectedNode.value()->Execute({}, t_contextData);
+                    static AbstractPinMap s_placeholder = {};
+                    connectedNode.value()->Execute(s_placeholder, t_contextData);
                     return {};
                 }
             }
             return {};
         }
-        if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(t_accumulator); 
-        if (!ExecutingInAudioContext()) executionsPerFrame.SetBackValue(executionsPerFrame.Get() + 1); 
-        auto pinMap = AbstractExecute(t_accumulator);
-        if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(pinMap);
+        if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(t_accumulator); 
+        if (RASTER_GET_CONTEXT_VALUE(t_contextData, "INCREMENT_EPF", bool)) executionsPerFrame.SetBackValue(executionsPerFrame.Get() + 1); 
+        auto pinMap = AbstractExecute(t_contextData);
+        if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(pinMap);
         auto outputPin = flowOutputPin.value_or(GenericPin());
         if (outputPin.connectedPinID > 0) {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value() && connectedNode.value()->enabled) {
                 auto newPinMap = connectedNode.value()->Execute(pinMap, t_contextData);
-                if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(newPinMap);
+                if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
         }
@@ -82,13 +80,11 @@ namespace Raster {
         std::any& dynamicCandidate = placeholder;
         bool candidateWasFound = false;
         bool usingCachedAttribute = false;
-        m_attributesCacheMutex->lock();
         if (m_attributesCache.GetFrontValue().find(t_attribute) != m_attributesCache.GetFrontValue().end()) {
             dynamicCandidate = m_attributesCache.GetFrontValue()[t_attribute];
             candidateWasFound = true;
             usingCachedAttribute = true;
         }
-        m_attributesCacheMutex->unlock();
         m_attributes.Lock();
         auto& attributes = m_attributes.GetReference();
         if (attributes.find(t_attribute) != attributes.end() && !candidateWasFound) {
@@ -118,18 +114,19 @@ namespace Raster {
                 ImGui::SetWindowFontScale(1.0f);
             ImGui::PopFont();
             ImGui::SameLine();
+            static std::optional<Json> s_copiedAttributeData;
             auto serializedContentCandidate = DynamicSerialization::Serialize(dynamicCandidate);
             if (!serializedContentCandidate.has_value()) ImGui::BeginDisabled();
                 if (ImGui::Button(ICON_FA_COPY)) {
-                    ImGui::SetClipboardText(serializedContentCandidate.value().dump().c_str());
+                    s_copiedAttributeData = serializedContentCandidate.value();
                 }
                 ImGui::SetItemTooltip("%s %s", ICON_FA_COPY, Localization::GetString("COPY_ATTRIBUTE_VALUE").c_str());
             if (!serializedContentCandidate.has_value()) ImGui::EndDisabled();
             ImGui::SameLine();
-            bool clipboardTextValid = ImGui::GetClipboardText() && Json::accept(ImGui::GetClipboardText());
+            bool clipboardTextValid = s_copiedAttributeData.has_value();
             if (!clipboardTextValid) ImGui::BeginDisabled();
             if (ImGui::Button(ICON_FA_PASTE)) {
-                auto deserializedValueCandidate = DynamicSerialization::Deserialize(Json::parse(ImGui::GetClipboardText()));
+                auto deserializedValueCandidate = DynamicSerialization::Deserialize(s_copiedAttributeData.value());
                 if (deserializedValueCandidate.has_value()) {
                     dynamicCandidate = deserializedValueCandidate.value();
                 }
@@ -284,7 +281,7 @@ namespace Raster {
         return data;
     }
 
-    std::optional<std::any> NodeBase::GetDynamicAttribute(std::string t_attribute) {
+    std::optional<std::any> NodeBase::GetDynamicAttribute(std::string t_attribute, ContextData& t_contextData) {
         if (!enabled || bypassed) return std::nullopt;
         auto attributePinCandidate = GetAttributePin(t_attribute);
         auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
@@ -296,7 +293,6 @@ namespace Raster {
             for (auto& attribute : composition->attributes) {
                 if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
                     auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
-                    RASTER_SYNCHRONIZED(*m_attributesCacheMutex);
                     m_attributesCache.Get()[t_attribute] = attributeValue;
                     return attributeValue;
                 }
@@ -305,12 +301,11 @@ namespace Raster {
 
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);
         if (targetNode.has_value() && targetNode.value()->enabled) {
-            targetNode.value()->MergeContextDatas(GetContextData());
-            auto pinMap = targetNode.value()->AbstractExecute();
-            if (!ExecutingInAudioContext()) Workspace::UpdatePinCache(pinMap);
+            auto pinMap = targetNode.value()->AbstractExecute(t_contextData);
+            if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(pinMap);
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
-            if (!ExecutingInAudioContext()) targetNode.value()->executionsPerFrame.SetBackValue(targetNode.value()->executionsPerFrame.Get() + 1); 
-            if (!ExecutingInAudioContext()) {
+            if (RASTER_GET_CONTEXT_VALUE(t_contextData, "INCREMENT_EPF", bool)) targetNode.value()->executionsPerFrame.SetBackValue(targetNode.value()->executionsPerFrame.Get() + 1); 
+            if (!ExecutingInAudioContext(t_contextData)) {
                 m_attributesCache.Get()[t_attribute] = dynamicAttribute;
             }
             return dynamicAttribute;
@@ -325,8 +320,8 @@ namespace Raster {
     }
 
     template<typename T>
-    std::optional<T> NodeBase::GetAttribute(std::string t_attribute) {
-        auto dynamicAttributeCandidate = GetDynamicAttribute(t_attribute);
+    std::optional<T> NodeBase::GetAttribute(std::string t_attribute, ContextData& t_contextData) {
+        auto dynamicAttributeCandidate = GetDynamicAttribute(t_attribute, t_contextData);
         if (dynamicAttributeCandidate.has_value()) {
             auto& dynamicAttribute = dynamicAttributeCandidate.value();
             if (dynamicAttribute.type() != typeid(T)) {
@@ -335,9 +330,18 @@ namespace Raster {
                     auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
                     *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.currentFrame - composition->beginFrame) / project.framerate;
                 }
-                auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, typeid(T));
-                if (conversionCandidate.has_value()) {
-                    return std::any_cast<T>(conversionCandidate.value());
+                if (RASTER_GET_CONTEXT_VALUE(t_contextData, "ALLOW_MEDIA_DECODING", bool)) {
+                    auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, typeid(T));
+                    if (conversionCandidate.has_value()) {
+                        return std::any_cast<T>(conversionCandidate.value());
+                    }
+                } else if (dynamicAttribute.type() == typeid(GenericAudioDecoder)) {
+                    auto cachedSamplesCandidate = std::any_cast<GenericAudioDecoder>(dynamicAttribute).GetCachedSamples();
+                    if (cachedSamplesCandidate.has_value()) {
+                        dynamicAttribute = cachedSamplesCandidate.value();
+                    } else {
+                        dynamicAttribute = std::nullopt;
+                    }
                 }
             }
             if (dynamicAttribute.type() == typeid(T)) {
@@ -356,10 +360,8 @@ namespace Raster {
     }
 
     void NodeBase::ClearAttributesCache() {
-        m_attributesCacheMutex->lock();
-            this->m_attributesCache.Get().clear();
-            this->m_accumulator.clear();
-        m_attributesCacheMutex->unlock();
+        this->m_attributesCache.Get().clear();
+        this->m_accumulator.clear();
     }
 
     std::vector<std::string> NodeBase::GetAttributesList() {
@@ -405,35 +407,6 @@ namespace Raster {
         this->outputPins.push_back(GenericPin(t_attribute, PinType::Output));
     }
 
-    ContextData NodeBase::GetContextData() {
-        m_contextMutex->lock();
-            auto threadID = std::this_thread::get_id();
-            if (m_contextDatas.find(threadID) == m_contextDatas.end()) {
-                m_contextDatas[threadID] = {};
-            }
-            auto contextData = m_contextDatas[threadID];
-        m_contextMutex->unlock();
-        return contextData;
-    }
-
-    void NodeBase::UpdateContextData(std::string t_key, std::any t_value) {
-        auto oldContextData = GetContextData();
-        oldContextData[t_key] = t_value;
-        m_contextMutex->lock();
-            m_contextDatas[std::this_thread::get_id()] = oldContextData;
-        m_contextMutex->unlock();
-    }
-
-    void NodeBase::MergeContextDatas(ContextData t_data) {
-        auto currentContextData = GetContextData();
-        auto id = std::this_thread::get_id();
-        m_contextMutex->lock();
-            for (auto& pair : t_data) {
-                m_contextDatas[id][pair.first] = pair.second;
-            }
-        m_contextMutex->unlock();
-    }
-
     void NodeBase::MakePinPersistent(std::string t_pin) {
         auto& persistentPins = Workspace::s_persistentPins;
         auto pinCandidate = GetAttributePin(t_pin);
@@ -471,7 +444,7 @@ namespace Raster {
                 if (attribute.second.type() == typeid(GenericAudioDecoder)) {
                     auto decoder = std::any_cast<GenericAudioDecoder>(attribute.second);
                     auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
-                    auto project = Workspace::GetProject();
+                    auto& project = Workspace::GetProject();
                     decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
                     attribute.second = decoder;
                 }
@@ -488,9 +461,8 @@ namespace Raster {
         return AbstractGetContentDuration();
     }
 
-    bool NodeBase::ExecutingInAudioContext() {
-        auto contextData = GetContextData();
-        return contextData.find("AUDIO_PASS") != contextData.end();
+    bool NodeBase::ExecutingInAudioContext(ContextData& t_data) {
+        return t_data.find("AUDIO_PASS") != t_data.end();
     }
 
     void NodeBase::PushImmediateFooter(std::string t_footer) {
@@ -503,15 +475,6 @@ namespace Raster {
 
     std::vector<std::string> NodeBase::GetImmediateFooters() {
         return m_immediateFooters.GetFrontValue();
-    }
-
-    bool NodeBase::RequireRenderingContext() {
-        auto contextData = GetContextData();
-        bool executingInRenderingContext = contextData.find("RENDERING_PASS") == contextData.end();
-        if (!executingInRenderingContext) {
-            PushImmediateFooter(FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("REQUIRES_RENDERING_CONTEXT").c_str()));
-        }
-        return !executingInRenderingContext;
     }
 
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);

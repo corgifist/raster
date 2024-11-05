@@ -7,7 +7,7 @@ namespace Raster {
     struct MakeTransform2D : public NodeBase {
         MakeTransform2D();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

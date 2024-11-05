@@ -229,7 +229,6 @@ namespace Raster {
             UIShared::s_timelineDragged = s_timelineRulerDragged;
 
             RenderLegend();
-            if (s_anyLayerDragged) project.OnTimelineSeek();
             RenderCompositionsEditor();
             RenderSplitter();
             s_legendOffsets.clear();
@@ -574,6 +573,7 @@ namespace Raster {
                     auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                     if (selectedCompositionCandidate.has_value()) {
                         auto& selectedComposition = selectedCompositionCandidate.value();
+                        selectedComposition->OnTimelineSeek();
 
                         float boundsDragDistance;
                         if (s_forwardBoundsDrag.GetDragDistance(boundsDragDistance)) {
@@ -586,7 +586,7 @@ namespace Raster {
                 }
             }
 
-            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
+            if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 s_backwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
 
@@ -594,6 +594,7 @@ namespace Raster {
                     auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                     if (selectedCompositionCandidate.has_value()) {
                         auto& selectedComposition = selectedCompositionCandidate.value();
+                        selectedComposition->OnTimelineSeek();
                         float boundsDragDistance;
                         if (s_backwardBoundsDrag.GetDragDistance(boundsDragDistance)) {
                             selectedComposition->beginFrame += boundsDragDistance / s_pixelsPerFrame;
@@ -605,7 +606,7 @@ namespace Raster {
                 }
             }
  
-            if ((compositionHovered || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
+            if ((compositionHovered || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 s_layerDrag.Activate();
 
                 float layerDragDistance;
@@ -626,6 +627,7 @@ namespace Raster {
                         auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                         if (selectedCompositionCandidate.has_value() && ImGui::IsWindowFocused()) {
                             auto& selectedComposition = selectedCompositionCandidate.value();
+                            selectedComposition->OnTimelineSeek();
                             ImVec2 reservedBounds = ImVec2(selectedComposition->beginFrame, selectedComposition->endFrame);
 
                             selectedComposition->beginFrame += layerDragDistance / s_pixelsPerFrame;
@@ -1068,7 +1070,7 @@ namespace Raster {
         }
 
         float timelineDragDistance;
-        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && ImGui::IsWindowFocused() && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (s_timelineDrag.GetDragDistance(timelineDragDistance) && ImGui::IsWindowFocused() && !s_anyLayerDragged && !UIShared::s_timelineAnykeyframeDragged && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             project.currentFrame = GetRelativeMousePos().x / s_pixelsPerFrame;
             project.OnTimelineSeek();
         } else s_timelineDrag.Deactivate();
@@ -1207,7 +1209,7 @@ namespace Raster {
 
                 project.customData["TimelineTimestampFormat"] = static_cast<int>(timestampFormat);
                 static bool timestampDragged = false;
-                if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+                if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                     project.currentFrame += ImGui::GetIO().MouseDelta.x / s_pixelsPerFrame;
                     project.currentFrame = std::clamp(project.currentFrame, 0.0f, project.GetProjectLength());
                     project.OnTimelineSeek();

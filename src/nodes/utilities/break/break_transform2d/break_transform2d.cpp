@@ -14,9 +14,9 @@ namespace Raster {
         AddOutputPin("ParentTransform");
     }
 
-    AbstractPinMap BreakTransform2D::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap BreakTransform2D::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto transformCandidate = GetAttribute<Transform2D>("Transform");
+        auto transformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
         if (transformCandidate.has_value()) {
             auto& transform = transformCandidate.value();
             TryAppendAbstractPinMap(result, "Position", transform.position);

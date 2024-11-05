@@ -15,9 +15,9 @@ namespace Raster {
         AddOutputPin("RGB");
     }
 
-    AbstractPinMap HueToRGB::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap HueToRGB::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto hueCandidate = GetAttribute<float>("Hue");
+        auto hueCandidate = GetAttribute<float>("Hue", t_contextData);
         if (hueCandidate.has_value()) {
             auto hue = hueCandidate.value();
             

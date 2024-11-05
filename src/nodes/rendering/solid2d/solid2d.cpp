@@ -27,14 +27,14 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap Solid2D::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Solid2D::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
         auto& project = Workspace::s_project.value();
 
-        auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base"));
-        auto transformCandidate = GetAttribute<Transform2D>("Transform");
-        auto colorCandidate = GetAttribute<glm::vec4>("Color");
+        auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base", t_contextData));
+        auto transformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
+        auto colorCandidate = GetAttribute<glm::vec4>("Color", t_contextData);
 
         if (s_pipeline.has_value() && transformCandidate.has_value() && colorCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();

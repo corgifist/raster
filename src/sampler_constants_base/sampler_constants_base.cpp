@@ -13,7 +13,7 @@ namespace Raster {
         AddOutputPin("Value");
     }
 
-    AbstractPinMap SamplerConstantsBase::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SamplerConstantsBase::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         if (m_constant.type() == typeid(TextureFilteringMode)) {
             auto mode = std::any_cast<TextureFilteringMode>(m_constant);

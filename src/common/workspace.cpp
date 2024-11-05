@@ -15,7 +15,7 @@ namespace Raster {
     Configuration Workspace::s_configuration;
 
     std::mutex Workspace::s_pinCacheMutex;
-    DoubleBufferedValue<std::unordered_map<int, std::any>> Workspace::s_pinCache;
+    DoubleBufferedValue<unordered_dense::map<int, std::any>> Workspace::s_pinCache;
 
     std::vector<int> Workspace::s_targetSelectNodes;
 
@@ -67,6 +67,11 @@ namespace Raster {
 
     std::vector<int> Workspace::s_persistentPins = {};
     std::string Workspace::s_defaultColorMark = "Teal";
+
+    enum class PinLocationSpecification {
+        None, FlowInput, FlowOutput,
+        Input, Output
+    };
 
     void Workspace::Initialize() {
         if (!std::filesystem::exists("nodes/")) {
@@ -303,23 +308,35 @@ namespace Raster {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
         // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+        static unordered_dense::map<int, int> s_cache;
+        if (s_cache.find(pinID) != s_cache.end()) {
+            return Workspace::GetNodeByNodeID(s_cache[pinID]);
+        }
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node.second->flowInputPin.has_value()) {
                     if (node.second->flowInputPin.value().pinID == pinID) {
+                        s_cache[pinID] = node.second->nodeID;
                         return std::optional{node.second};
                     }
                 }
                 if (node.second->flowOutputPin.has_value()) {
                     if (node.second->flowOutputPin.value().pinID == pinID) {
+                        s_cache[pinID] = node.second->nodeID;
                         return std::optional{node.second};
                     }
                 }
                 for (auto& inputPin : node.second->inputPins) {
-                    if (inputPin.pinID == pinID) return std::optional{node.second};
+                    if (inputPin.pinID == pinID) {
+                        s_cache[pinID] = node.second->nodeID;
+                        return std::optional{node.second};
+                    }
                 }
                 for (auto& outputPin : node.second->outputPins) {
-                    if (outputPin.pinID == pinID) return std::optional{node.second};
+                    if (outputPin.pinID == pinID) {
+                        s_cache[pinID] = node.second->nodeID;
+                        return std::optional{node.second};
+                    }
                 }
             }
         }
@@ -330,50 +347,118 @@ namespace Raster {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
         // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+        static unordered_dense::map<int, int> s_cache;
+        if (s_cache.find(linkID) != s_cache.end()) {
+            return Workspace::GetPinByPinID(s_cache[linkID]);
+        }
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node.second->flowInputPin.has_value()) {
                     if (node.second->flowInputPin.value().linkID == linkID) {
+                        s_cache[linkID] = node.second->flowInputPin.value().pinID;
                         return node.second->flowInputPin.value();
                     }
                 }
                 if (node.second->flowOutputPin.has_value()) {
                     if (node.second->flowOutputPin.value().linkID== linkID) {
+                        s_cache[linkID] = node.second->flowOutputPin.value().pinID;
                         return node.second->flowOutputPin.value();
                     }
                 }
                 for (auto& inputPin : node.second->inputPins) {
-                    if (inputPin.linkID == linkID) return inputPin;
+                    if (inputPin.linkID == linkID) {
+                        s_cache[linkID] = inputPin.pinID;
+                        return inputPin;
+                    }
                 }
                 for (auto& outputPin : node.second->outputPins) {
-                    if (outputPin.linkID == linkID) return outputPin;
+                    if (outputPin.linkID == linkID) {
+                        s_cache[linkID] = outputPin.pinID;
+                        return outputPin;
+                    }
                 }
             }
         }
         return std::nullopt;
     }
 
+    struct PinByPinIDCache {
+        int nodeID;
+        PinLocationSpecification location;
+
+        PinByPinIDCache() : nodeID(0), location(PinLocationSpecification::None) {}
+        PinByPinIDCache(int t_nodeID, PinLocationSpecification t_location) : nodeID(t_nodeID), location(t_location) {}
+    };
+
     std::optional<GenericPin> Workspace::GetPinByPinID(int pinID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& compositions = s_project.value().compositions;
         // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+        static unordered_dense::map<int, PinByPinIDCache> s_cache;
+        if (s_cache.find(pinID) != s_cache.end()) {
+            auto& cache = s_cache[pinID];
+            auto nodeCandidate = Workspace::GetNodeByNodeID(cache.nodeID);
+            if (nodeCandidate.has_value()) {
+                auto& node = nodeCandidate.value();
+                switch (cache.location) {
+                    case PinLocationSpecification::FlowInput: {
+                        if (node->flowInputPin.has_value() && node->flowInputPin.value().pinID == pinID) {
+                            return node->flowInputPin.value();
+                        }
+                        break;
+                    }
+                    case PinLocationSpecification::FlowOutput: {
+                        if (node->flowOutputPin.has_value() && node->flowOutputPin.value().pinID == pinID) {
+                            return node->flowOutputPin.value();
+                        }
+                        break;
+                    }
+                    case PinLocationSpecification::Input: {
+                        for (auto& inputPin : node->inputPins) {
+                            if (inputPin.pinID == pinID) {
+                                return inputPin;
+                            }
+                        }
+                        break;
+                    }
+                    case PinLocationSpecification::Output: {
+                        for (auto& outputPin : node->outputPins) {
+                            if (outputPin.pinID == pinID) {
+                                return outputPin;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+
         for (auto& composition : compositions) {
             for (auto& node : composition.nodes) {
                 if (node.second->flowInputPin.has_value()) {
                     if (node.second->flowInputPin.value().pinID == pinID) {
+                        s_cache[pinID] = PinByPinIDCache(node.second->nodeID, PinLocationSpecification::FlowInput);
                         return node.second->flowInputPin;
                     }
                 }
                 if (node.second->flowOutputPin.has_value()) {
                     if (node.second->flowOutputPin.value().pinID == pinID) {
+                        s_cache[pinID] = PinByPinIDCache(node.second->nodeID, PinLocationSpecification::FlowOutput);
                         return node.second->flowOutputPin;
                     }
                 }
                 for (auto& inputPin : node.second->inputPins) {
-                    if (inputPin.pinID == pinID) return std::optional{inputPin};
+                    if (inputPin.pinID == pinID) {
+                        s_cache[pinID] = PinByPinIDCache(node.second->nodeID, PinLocationSpecification::Input);
+                        return std::optional{inputPin};
+                    }
                 }
                 for (auto& outputPin : node.second->outputPins) {
-                    if (outputPin.pinID == pinID) return std::optional{outputPin};
+                    if (outputPin.pinID == pinID) {
+                        s_cache[pinID] = PinByPinIDCache(node.second->nodeID, PinLocationSpecification::Output);
+                        return std::optional{outputPin};
+                    }
                 }
             }
         }

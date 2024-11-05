@@ -7,7 +7,7 @@ namespace Raster {
     struct DecomposeTransform2D : public NodeBase {
         DecomposeTransform2D();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

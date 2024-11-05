@@ -12,10 +12,10 @@ namespace Raster {
         AddOutputPin("Shape");
     }
 
-    AbstractPinMap SDFCircle::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SDFCircle::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto radiusCandidate = GetAttribute<float>("Radius");
+        auto radiusCandidate = GetAttribute<float>("Radius", t_contextData);
         if (radiusCandidate.has_value()) {
             auto& radius = radiusCandidate.value();
             static SDFShape s_circleShape;

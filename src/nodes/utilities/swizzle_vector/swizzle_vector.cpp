@@ -18,16 +18,17 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap SwizzleVector::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SwizzleVector::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto valueCandidate = GetDynamicAttribute("Value");
-        auto swizzleMaskCandidate = GetAttribute<std::string>("SwizzleMask");
+        auto valueCandidate = GetDynamicAttribute("Value", t_contextData);
+        auto swizzleMaskCandidate = GetAttribute<std::string>("SwizzleMask", t_contextData);
         if (valueCandidate.has_value() && swizzleMaskCandidate.has_value() && CanBeSwizzled(valueCandidate.value())) {
             auto& value = valueCandidate.value();
             auto& swizzleMask = swizzleMaskCandidate.value();
             int vectorSize = GetVectorSize(value);
             swizzleMask = LowerCase(swizzleMask);
             swizzleMask = ReplaceString(swizzleMask, "[^x|y|z|w|s|t|r|g|b|a]", "");
+            m_lastSwizzleMask = swizzleMask;
 
             static std::unordered_map<char, int> s_swizzleIndexes = {
                 {'x', 0},
@@ -113,7 +114,7 @@ namespace Raster {
     }
 
     std::string SwizzleVector::AbstractHeader() {
-        auto swizzleMaskCandidate = GetAttribute<std::string>("SwizzleMask");
+        auto swizzleMaskCandidate = m_lastSwizzleMask;
         return swizzleMaskCandidate.has_value() ? FormatString("Swizzle Vector: %s", swizzleMaskCandidate.value().c_str()) : "Swizzle Vector";
     }
 

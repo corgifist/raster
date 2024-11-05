@@ -12,9 +12,9 @@ namespace Raster {
         AddOutputPin("Value");
     }
 
-    AbstractPinMap Abs::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Abs::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto absCandidate = ComputeAbs();
+        auto absCandidate = ComputeAbs(t_contextData);
         if (absCandidate.has_value()) {
             auto sine = absCandidate.value();
             TryAppendAbstractPinMap(result, "Value", sine);
@@ -33,7 +33,7 @@ namespace Raster {
 
     void Abs::AbstractRenderDetails() {
         ImGui::PushID(nodeID);
-            auto absCandidate = ComputeAbs();
+            auto absCandidate = m_lastAbs;
             if (absCandidate.has_value()) {
                 auto& sine = absCandidate.value();
                 if (sine.has_value() && sine.type() == typeid(float)) {
@@ -46,12 +46,13 @@ namespace Raster {
         ImGui::PopID();
     }
 
-    std::optional<std::any> Abs::ComputeAbs() {
-        auto inputCandidate = GetDynamicAttribute("Input");
+    std::optional<std::any> Abs::ComputeAbs(ContextData& t_contextData) {
+        auto inputCandidate = GetDynamicAttribute("Input", t_contextData);
         if (inputCandidate.has_value()) {
             auto& input = inputCandidate.value();
             auto absCandidate = DynamicMath::Abs(input);
             if (absCandidate.has_value()) {
+                m_lastAbs = absCandidate.value();
                 return absCandidate.value();
             }
         }

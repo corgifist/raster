@@ -3,6 +3,7 @@
 #include "compositor/compositor.h"
 #include "common/transform2d.h"
 #include "common/dispatchers.h"
+#include "compositor/async_rendering.h"
 
 namespace Raster {
     void RenderingUI::Render() {
@@ -191,6 +192,11 @@ namespace Raster {
                         selectedPinsMap[selectedNodes[0]] = selectedPin;
                     }
 
+                    std::string timingText = FormatString("%s %0.1f ms", ICON_FA_STOPWATCH, AsyncRendering::s_renderTime);
+                    ImVec2 timingTextSize = ImGui::CalcTextSize(timingText.c_str());
+                    ImGui::SetCursorPosX(ImGui::GetWindowSize().x - ImGui::GetStyle().FramePadding.x - timingTextSize.x);
+                    ImGui::Text("%s", timingText.c_str());
+
                     ImGui::EndMenuBar();
                 }
 
@@ -219,7 +225,7 @@ namespace Raster {
                                     dispatcherTarget = Workspace::s_pinCache.GetFrontValue()[pin.pinID];
                                 }
                             } else {
-                                dispatcherTarget = node->GetDynamicAttribute(selectedPin);
+                                // dispatcherTarget = node->GetDynamicAttribute(selectedPin);
                             }
                         }
                     }

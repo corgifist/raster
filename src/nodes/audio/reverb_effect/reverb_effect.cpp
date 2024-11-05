@@ -37,26 +37,24 @@ namespace Raster {
         AddOutputPin("Output"); 
     }
 
-    AbstractPinMap ReverbEffect::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap ReverbEffect::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         SharedLockGuard reverbGuard(m_mutex);
 
-        auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
-        auto roomSizeCandidate = GetAttribute<float>("RoomSize");
-        auto preDelayCandidate = GetAttribute<float>("PreDelay");
-        auto reverberanceCandidate = GetAttribute<float>("Reverb");
-        auto hfDampingCandidate = GetAttribute<float>("HfDamping");
-        auto toneLowCandidate = GetAttribute<float>("ToneLow");
-        auto toneHighCandidate = GetAttribute<float>("ToneHigh");
-        auto wetGainCandidate = GetAttribute<float>("WetGain");
-        auto dryGainCandidate = GetAttribute<float>("DryGain");
-        auto stereoWidthCandidate = GetAttribute<float>("StereoWidth");
-        auto wetOnlyCandidate = GetAttribute<bool>("WetOnly");
-        
-        auto contextData = GetContextData();
+        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
+        auto roomSizeCandidate = GetAttribute<float>("RoomSize", t_contextData);
+        auto preDelayCandidate = GetAttribute<float>("PreDelay", t_contextData);
+        auto reverberanceCandidate = GetAttribute<float>("Reverb", t_contextData);
+        auto hfDampingCandidate = GetAttribute<float>("HfDamping", t_contextData);
+        auto toneLowCandidate = GetAttribute<float>("ToneLow", t_contextData);
+        auto toneHighCandidate = GetAttribute<float>("ToneHigh", t_contextData);
+        auto wetGainCandidate = GetAttribute<float>("WetGain", t_contextData);
+        auto dryGainCandidate = GetAttribute<float>("DryGain", t_contextData);
+        auto stereoWidthCandidate = GetAttribute<float>("StereoWidth", t_contextData);
+        auto wetOnlyCandidate = GetAttribute<bool>("WetOnly", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
             auto reverbBuffer = GetReverbContext();
             auto cacheCandidate = reverbBuffer.cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
@@ -64,7 +62,7 @@ namespace Raster {
             }
             return result;
         }
-        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (samplesCandidate.has_value() && samplesCandidate.value().samples && roomSizeCandidate.has_value() 
             && preDelayCandidate.has_value() && reverberanceCandidate.has_value() && hfDampingCandidate.has_value()

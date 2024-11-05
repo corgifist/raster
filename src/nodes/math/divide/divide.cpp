@@ -13,10 +13,10 @@ namespace Raster {
         AddOutputPin("Value");
     }
 
-    AbstractPinMap Divide::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Divide::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto aCandidate = GetDynamicAttribute("A");
-        auto bCandidate = GetDynamicAttribute("B");
+        auto aCandidate = GetDynamicAttribute("A", t_contextData);
+        auto bCandidate = GetDynamicAttribute("B", t_contextData);
         if (aCandidate.has_value() && bCandidate.has_value()) {
             auto& a = aCandidate.value();
             auto& b = bCandidate.value();

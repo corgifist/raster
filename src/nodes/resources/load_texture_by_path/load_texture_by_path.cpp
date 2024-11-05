@@ -24,15 +24,16 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap LoadTextureByPath::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap LoadTextureByPath::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        if (!archive.has_value()) UpdateTextureArchive();
+        if (!archive.has_value()) UpdateTextureArchive(t_contextData);
         
         if (archive.has_value()) {
             auto unpackedArchive = archive.value();
-            auto path = GetAttribute<std::string>("Path").value_or("");
-            if (path != unpackedArchive.path) UpdateTextureArchive();
+            auto path = GetAttribute<std::string>("Path", t_contextData).value_or("");
+            m_lastPath = path;
+            if (path != unpackedArchive.path) UpdateTextureArchive(t_contextData);
 
             TryAppendAbstractPinMap(result, "Texture", unpackedArchive.texture);
         }
@@ -40,8 +41,8 @@ namespace Raster {
         return result;
     }
 
-    void LoadTextureByPath::UpdateTextureArchive() {
-        std::string path = GetAttribute<std::string>("Path").value_or("");
+    void LoadTextureByPath::UpdateTextureArchive(ContextData& t_contextData) {
+        std::string path = GetAttribute<std::string>("Path", t_contextData).value_or("");
         if (std::filesystem::exists(path) && !std::filesystem::is_directory(path)) {
             if (!m_loader.IsInitialized() && !m_asyncUploadID) {
                 m_loader = AsyncImageLoader(path);
@@ -83,7 +84,7 @@ namespace Raster {
     }
 
     std::string LoadTextureByPath::AbstractHeader() {
-        std::string base = FormatString("Load Texture By Path: %s", GetAttribute<std::string>("Path").value_or("").c_str());
+        std::string base = FormatString("Load Texture By Path: %s", m_lastPath.value_or("").c_str());
         if (m_loader.IsInitialized() && !m_loader.IsReady()) {
             base = ICON_FA_SPINNER + (" " + base);
         }

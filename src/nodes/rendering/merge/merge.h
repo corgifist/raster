@@ -14,7 +14,7 @@ namespace Raster {
         Merge();
         ~Merge();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 
@@ -29,5 +29,6 @@ namespace Raster {
     
     private:
         DoubleBufferedFramebuffer m_framebuffer;
+        std::optional<std::string> m_lastBlendMode;
     };
 };

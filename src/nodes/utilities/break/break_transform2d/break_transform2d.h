@@ -7,7 +7,7 @@ namespace Raster {
     struct BreakTransform2D : public NodeBase {
         BreakTransform2D();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

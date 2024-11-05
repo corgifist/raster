@@ -16,10 +16,10 @@ namespace Raster {
         AddInputPin("Renderable");
     }
 
-    AbstractPinMap ExportRenderable::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap ExportRenderable::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto renderableCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Renderable"));
+        auto renderableCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Renderable", t_contextData));
         if (renderableCandidate.has_value() && renderableCandidate.value().handle) {
             auto& renderable = renderableCandidate.value();
             auto composition = Workspace::GetCompositionByNodeID(nodeID).value();

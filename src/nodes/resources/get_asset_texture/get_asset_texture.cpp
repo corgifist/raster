@@ -13,9 +13,9 @@ namespace Raster {
         AddOutputPin("CorrectedSize");
     }
 
-    AbstractPinMap GetAssetTexture::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap GetAssetTexture::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        auto assetIDCandidate = GetAttribute<int>("AssetID", t_contextData);
         if (assetIDCandidate.has_value()) {
             auto& assetID = assetIDCandidate.value();
             auto assetCandidate = Workspace::GetAssetByAssetID(assetID);

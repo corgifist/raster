@@ -10,11 +10,12 @@ namespace Raster {
         AddOutputPin("Time");
     }
 
-    AbstractPinMap GetTime::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap GetTime::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto relativeTimeCandidate = GetAttribute<bool>("RelativeTime");
+        auto relativeTimeCandidate = GetAttribute<bool>("RelativeTime", t_contextData);
         if (relativeTimeCandidate.has_value()) {
             bool relativeTime = relativeTimeCandidate.value();
+            m_lastRelativeTime = relativeTime;
             if (relativeTime) {
                 TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame);
             } else {
@@ -45,7 +46,7 @@ namespace Raster {
     }
 
     std::string GetTime::Icon() {
-        return GetAttribute<bool>("RelativeTime").value_or(false) ? ICON_FA_TIMELINE " " ICON_FA_STOPWATCH : ICON_FA_STOPWATCH;
+        return m_lastRelativeTime.value_or(false) ? ICON_FA_TIMELINE " " ICON_FA_STOPWATCH : ICON_FA_STOPWATCH;
     }
 
     std::optional<std::string> GetTime::Footer() {

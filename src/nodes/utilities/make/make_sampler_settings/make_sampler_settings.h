@@ -7,7 +7,7 @@ namespace Raster {
     struct MakeSamplerSettings : public NodeBase {
         MakeSamplerSettings();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 
@@ -17,5 +17,8 @@ namespace Raster {
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();
+
+    private:
+        std::optional<int> m_lastTextureFiltering, m_lastTextureWrapping;
     };
 };

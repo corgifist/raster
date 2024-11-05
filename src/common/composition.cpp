@@ -63,10 +63,13 @@ namespace Raster {
 
     void Composition::Traverse(ContextData t_data) {
         auto& project = Workspace::GetProject();
-        bool audioMixing = t_data.find("AUDIO_PASS") != t_data.end();
+        bool audioMixing = RASTER_GET_CONTEXT_VALUE(t_data, "AUDIO_PASS", bool);
+        bool resetWorkspaceState = RASTER_GET_CONTEXT_VALUE(t_data, "RESET_WORKSPACE_STATE", bool);
+        bool onlyAudioNodes = RASTER_GET_CONTEXT_VALUE(t_data, "ONLY_AUDIO_NODES", bool);
+        bool onlyRenderingNodes = RASTER_GET_CONTEXT_VALUE(t_data, "ONLY_RENDERING_NODES", bool);
         RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
         for (auto& pair : nodes) {
-            if (audioMixing) break;
+            if (!resetWorkspaceState) break;
             auto& node = pair.second;
             node->executionsPerFrame.SetBackValue(0);
             if (IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) {
@@ -90,7 +93,7 @@ namespace Raster {
                     }
                 }
                 if (!anyPinConnected) {
-                    if (audioMixing && !node->DoesAudioMixing()) continue;
+                    if (onlyAudioNodes && !node->DoesAudioMixing()) continue;
                     accumulator = node->Execute(accumulator, t_data);
                 }
             }

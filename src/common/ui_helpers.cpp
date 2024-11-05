@@ -212,6 +212,12 @@ namespace Raster {
 
     void UIHelpers::RenderAudioSamplesWaveform(AudioSamples& t_samples) {
 #define WAVEFORM_PRECISION 100
+        if (!t_samples.samples || t_samples.samples->size() <= 0) {
+            std::string waveformWarningText = FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("WAVEFORM_PREVIEW_IS_NOT_AVAILABLE").c_str());
+            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(waveformWarningText.c_str()).x / 2.0f);
+            ImGui::Text("%s", waveformWarningText.c_str());
+            return;
+        }
         for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
             ImGui::PushID(channel);
                 std::vector<float> constructedWaveform(WAVEFORM_PRECISION);

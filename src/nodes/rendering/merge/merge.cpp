@@ -22,12 +22,12 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap Merge::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Merge::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto aCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("A"));
-        auto bCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("B"));
-        auto opacityCandidate = GetAttribute<float>("Opacity");
-        auto blendingModeCandidate = GetAttribute<std::string>("BlendingMode");
+        auto aCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("A", t_contextData));
+        auto bCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("B", t_contextData));
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
+        auto blendingModeCandidate = GetAttribute<std::string>("BlendingMode", t_contextData);
 
         if (aCandidate.has_value() && bCandidate.has_value() && opacityCandidate.has_value() && blendingModeCandidate.has_value() && aCandidate.value().attachments.size() > 1 && bCandidate.value().attachments.size() > 1) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
@@ -35,6 +35,7 @@ namespace Raster {
             auto& b = bCandidate.value();
             auto& opacity = opacityCandidate.value();
             auto& blendingMode = blendingModeCandidate.value();
+            m_lastBlendMode = blendingMode;
 
             std::vector<CompositorTarget> targets;
             targets.push_back(CompositorTarget{
@@ -127,7 +128,7 @@ namespace Raster {
 
     std::string Merge::AbstractHeader() {
         std::string base = "Merge";
-        auto blendModeCandidate = GetAttribute<std::string>("BlendingMode");
+        auto blendModeCandidate = m_lastBlendMode;
         if (blendModeCandidate.has_value()) {
             auto& blendMode = blendModeCandidate.value();
             auto& blending = Compositor::s_blending;

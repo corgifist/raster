@@ -14,11 +14,11 @@ namespace Raster {
         AddOutputPin("Value");
     }
 
-    AbstractPinMap Mix::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Mix::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto aCandidate = GetDynamicAttribute("A");
-        auto bCandidate = GetDynamicAttribute("B");
-        auto phaseCandidate = GetDynamicAttribute("Phase");
+        auto aCandidate = GetDynamicAttribute("A", t_contextData);
+        auto bCandidate = GetDynamicAttribute("B", t_contextData);
+        auto phaseCandidate = GetDynamicAttribute("Phase", t_contextData);
         if (aCandidate.has_value() && bCandidate.has_value() && phaseCandidate.has_value()) {
             auto& a = aCandidate.value();
             auto& b = bCandidate.value();

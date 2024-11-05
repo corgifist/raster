@@ -6,7 +6,7 @@ namespace Raster {
     struct DebugPrintNode : public NodeBase {
         DebugPrintNode();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
         void AbstractRenderDetails();
@@ -14,5 +14,8 @@ namespace Raster {
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();
+
+    private:
+        std::optional<std::string> m_lastArbitraryValue;
     };
 };

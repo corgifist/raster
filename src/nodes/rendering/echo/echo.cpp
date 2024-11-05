@@ -21,7 +21,7 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap Echo::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Echo::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
         if (!s_echoPipeline.has_value()) {
@@ -34,8 +34,8 @@ namespace Raster {
         auto& project = Workspace::GetProject();
         auto requiredResolution = Compositor::GetRequiredResolution();
         
-        auto stepsCandidate = GetAttribute<int>("Steps");
-        auto frameStepCandidate = GetAttribute<int>("FrameStep");
+        auto stepsCandidate = GetAttribute<int>("Steps", t_contextData);
+        auto frameStepCandidate = GetAttribute<int>("FrameStep", t_contextData);
         if (stepsCandidate.has_value() && s_echoPipeline.has_value()) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
             auto framebuffer = m_framebuffer.GetFrontFramebuffer();
@@ -50,7 +50,7 @@ namespace Raster {
             auto& pipeline = s_echoPipeline.value();
 
             for (int i = 0; i < steps + 1; i++) {
-                auto baseCandidate = GetAttribute<Framebuffer>("Base");
+                auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
                 if (baseCandidate.has_value()) {
                     if (project.GetCorrectCurrentTime() < 0) {
                         project.TimeTravel(frameStep);

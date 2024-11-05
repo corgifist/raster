@@ -12,10 +12,10 @@ namespace Raster {
         AddOutputPin("Shape");
     }
 
-    AbstractPinMap SDFRoundedRect::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SDFRoundedRect::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto roundingCandidate = GetAttribute<float>("Rounding");
+        auto roundingCandidate = GetAttribute<float>("Rounding", t_contextData);
         if (roundingCandidate.has_value()) {
             auto& radius = roundingCandidate.value();
             static SDFShape s_roundedRectShape;

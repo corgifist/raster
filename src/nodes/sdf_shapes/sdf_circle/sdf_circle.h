@@ -7,7 +7,7 @@ namespace Raster {
     struct SDFCircle : public NodeBase {
         SDFCircle();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

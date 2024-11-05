@@ -24,16 +24,16 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap LensDistortion::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap LensDistortion::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         
-        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base"));
-        auto k1Candidate = GetAttribute<float>("K1");
-        auto k2Candidate = GetAttribute<float>("K2");
-        auto k3Candidate = GetAttribute<float>("K3");
-        auto edgeCandidate = GetAttribute<float>("Edge");
-        auto dispersionCandidate = GetAttribute<float>("Dispersion");
-        auto darkEdgesCandidate = GetAttribute<bool>("DarkEdges");
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto k1Candidate = GetAttribute<float>("K1", t_contextData);
+        auto k2Candidate = GetAttribute<float>("K2", t_contextData);
+        auto k3Candidate = GetAttribute<float>("K3", t_contextData);
+        auto edgeCandidate = GetAttribute<float>("Edge", t_contextData);
+        auto dispersionCandidate = GetAttribute<float>("Dispersion", t_contextData);
+        auto darkEdgesCandidate = GetAttribute<bool>("DarkEdges", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(

@@ -12,14 +12,14 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap PosterizeTime::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap PosterizeTime::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
 
-        auto levelsCandidate = GetAttribute<int>("Levels");
+        auto levelsCandidate = GetAttribute<int>("Levels", t_contextData);
         if (levelsCandidate.has_value()) {
             PerformPosterization(levelsCandidate.value());
-            auto dynamicCandidate = GetDynamicAttribute("Input");
+            auto dynamicCandidate = GetDynamicAttribute("Input", t_contextData);
             if (dynamicCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", dynamicCandidate.value());
             }

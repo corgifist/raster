@@ -31,10 +31,10 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap MakeFramebuffer::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap MakeFramebuffer::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto backgroundColorCandidate = GetAttribute<glm::vec4>("BackgroundColor");
+        auto backgroundColorCandidate = GetAttribute<glm::vec4>("BackgroundColor", t_contextData);
         if (backgroundColorCandidate.has_value()) {
             auto& backgroundColor = backgroundColorCandidate.value();
             auto requiredResolution = Compositor::GetRequiredResolution();
@@ -47,7 +47,7 @@ namespace Raster {
             }
 
             if (m_internalFramebuffer.has_value() && s_pipeline.has_value()) {
-                auto backgroundTextureCandidate = GetAttribute<Texture>("BackgroundTexture");
+                auto backgroundTextureCandidate = GetAttribute<Texture>("BackgroundTexture", t_contextData);
                 auto& framebuffer = m_internalFramebuffer.value();
                 GPU::BindFramebuffer(framebuffer.Get());
                 GPU::ClearFramebuffer(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);

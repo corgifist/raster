@@ -12,11 +12,12 @@ namespace Raster {
         AddOutputPin("ID");
     }
 
-    AbstractPinMap GetAssetID::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap GetAssetID::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        auto assetIDCandidate = GetAttribute<int>("AssetID", t_contextData);
         if (assetIDCandidate.has_value()) {
             auto& assetID = assetIDCandidate.value();
+            m_lastAssetID = assetID;
             auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
             if (assetCandidate.has_value()) {
                 AssetID wrappedAssetID(assetID);
@@ -39,7 +40,7 @@ namespace Raster {
     }
 
     void GetAssetID::AbstractRenderDetails() {
-        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        auto assetIDCandidate = m_lastAssetID;
         if (assetIDCandidate.has_value()) {
             auto& assetID = assetIDCandidate.value();
             auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
@@ -50,7 +51,7 @@ namespace Raster {
     }
 
     bool GetAssetID::AbstractDetailsAvailable() {
-        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        auto assetIDCandidate = m_lastAssetID;
         if (assetIDCandidate.has_value()) {
             auto& assetID = assetIDCandidate.value();
             auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
@@ -62,7 +63,7 @@ namespace Raster {
     }
 
     std::string GetAssetID::AbstractHeader() {
-        auto assetIDCandidate = GetAttribute<int>("AssetID");
+        auto assetIDCandidate = m_lastAssetID;
         if (assetIDCandidate.has_value()) {
             auto& assetID = assetIDCandidate.value();
             auto assetCandidate = Workspace::GetAssetByAssetID(assetID);

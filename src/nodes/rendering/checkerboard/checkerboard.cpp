@@ -21,14 +21,14 @@ namespace Raster {
         m_framebuffer.Destroy();
     }
 
-    AbstractPinMap Checkerboard::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Checkerboard::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         
-        auto baseCandidate = GetAttribute<Framebuffer>("Base");
-        auto firstColorCandidate = GetAttribute<glm::vec4>("Color1");
-        auto secondColorCandidate = GetAttribute<glm::vec4>("Color2");
-        auto positionCandidate = GetAttribute<glm::vec2>("Position");
-        auto sizeCandidate = GetAttribute<glm::vec2>("Size");
+        auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
+        auto firstColorCandidate = GetAttribute<glm::vec4>("Color1", t_contextData);
+        auto secondColorCandidate = GetAttribute<glm::vec4>("Color2", t_contextData);
+        auto positionCandidate = GetAttribute<glm::vec2>("Position", t_contextData);
+        auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(

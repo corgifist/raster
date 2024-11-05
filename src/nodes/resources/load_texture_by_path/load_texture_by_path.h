@@ -22,9 +22,9 @@ namespace Raster {
         LoadTextureByPath();
         ~LoadTextureByPath();
         
-        void UpdateTextureArchive();
+        void UpdateTextureArchive(ContextData& t_contextData);
 
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
 
         bool AbstractDetailsAvailable();
 
@@ -40,5 +40,7 @@ namespace Raster {
     private:
         AsyncUploadInfoID m_asyncUploadID;
         AsyncImageLoader m_loader;
+
+        std::optional<std::string> m_lastPath;
     };
 };

@@ -47,7 +47,7 @@ namespace Raster {
     struct ReverbEffect : public NodeBase {
         ReverbEffect();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

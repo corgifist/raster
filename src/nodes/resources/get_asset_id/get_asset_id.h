@@ -6,7 +6,7 @@ namespace Raster {
     struct GetAssetID : public NodeBase {
         GetAssetID();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         void AbstractRenderDetails();
         bool AbstractDetailsAvailable();
@@ -17,5 +17,8 @@ namespace Raster {
         std::string AbstractHeader();
         std::string Icon();
         std::optional<std::string> Footer();
+
+    private:
+        std::optional<int> m_lastAssetID;
     };
 };

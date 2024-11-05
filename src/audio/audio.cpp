@@ -44,7 +44,14 @@ namespace Raster {
             context["AUDIO_PASS"] = true;
             context["AUDIO_PASS_ID"] = AudioInfo::s_audioPassID;
 
-            project.Traverse(context);
+            project.Traverse({
+                {"AUDIO_PASS", true},
+                {"AUDIO_PASS_ID", AudioInfo::s_audioPassID},
+                {"INCREMENT_EPF", false},
+                {"RESET_WORKSPACE_STATE", false},
+                {"ALLOW_MEDIA_DECODING", true},
+                {"ONLY_AUDIO_NODES", true}
+            });
 
             project.audioBusesMutex->lock();
 

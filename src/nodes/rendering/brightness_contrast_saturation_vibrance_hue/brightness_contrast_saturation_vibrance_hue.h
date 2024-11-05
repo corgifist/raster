@@ -10,7 +10,7 @@ namespace Raster {
         BrightnessContrastSaturationVibranceHue();
         ~BrightnessContrastSaturationVibranceHue();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 
@@ -24,5 +24,7 @@ namespace Raster {
         DoubleBufferedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
+        std::optional<float> m_lastBrightness, m_lastContrast, 
+                                m_lastSaturation, m_lastVibrance, m_lastHue;
     };
 };

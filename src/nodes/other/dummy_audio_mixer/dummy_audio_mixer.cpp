@@ -9,9 +9,9 @@ namespace Raster {
         SetupAttribute("Samples", std::nullopt);
     }
 
-    AbstractPinMap DummyAudioMixer::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap DummyAudioMixer::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        GetDynamicAttribute("Samples");
+        GetDynamicAttribute("Samples", t_contextData);
         return result;
     }
 

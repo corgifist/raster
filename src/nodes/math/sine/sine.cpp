@@ -14,9 +14,9 @@ namespace Raster {
         AddOutputPin("Value");
     }
 
-    AbstractPinMap Sine::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Sine::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto sineCandidate = ComputeSine();
+        auto sineCandidate = ComputeSine(t_contextData);
         if (sineCandidate.has_value()) {
             auto sine = sineCandidate.value();
             TryAppendAbstractPinMap(result, "Value", sine);
@@ -44,7 +44,7 @@ namespace Raster {
 
     void Sine::AbstractRenderDetails() {
         ImGui::PushID(nodeID);
-            auto sineCandidate = ComputeSine();
+            auto sineCandidate = m_lastSine;
             if (sineCandidate.has_value()) {
                 auto& sine = sineCandidate.value();
                 if (sine.has_value() && sine.type() == typeid(float)) {
@@ -57,15 +57,16 @@ namespace Raster {
         ImGui::PopID();
     }
 
-    std::optional<std::any> Sine::ComputeSine() {
-        auto inputCandidate = GetDynamicAttribute("Input");
+    std::optional<std::any> Sine::ComputeSine(ContextData& t_contextData) {
+        auto inputCandidate = GetDynamicAttribute("Input", t_contextData);
         if (inputCandidate.has_value()) {
             auto& input = inputCandidate.value();
-            auto multiplyByCandidate = GetDynamicAttribute("MultiplyBy");
+            auto multiplyByCandidate = GetDynamicAttribute("MultiplyBy", t_contextData);
             auto dynamicSineCandidate = DynamicMath::Sine(input);
             if (multiplyByCandidate.has_value() && dynamicSineCandidate.has_value()) {
                 auto sine = DynamicMath::Multiply(dynamicSineCandidate.value(), multiplyByCandidate.value());
                 if (sine.has_value()) {
+                    m_lastSine = sine.value();
                     return sine.value();
                 }
             }

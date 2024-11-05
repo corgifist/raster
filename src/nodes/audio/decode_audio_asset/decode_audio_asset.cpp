@@ -34,15 +34,14 @@ namespace Raster {
         DestroyPersistentPins();
     }
 
-    AbstractPinMap DecodeAudioAsset::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap DecodeAudioAsset::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         std::lock_guard<std::mutex> decodingGuard(*m_decodingMutex);
-        auto contextData = GetContextData();
-        auto assetIDCandidate = GetAttribute<int>("Asset");
-        auto volumeCandidate = GetAttribute<float>("Volume");
+        auto assetIDCandidate = GetAttribute<int>("Asset", t_contextData);
+        auto volumeCandidate = GetAttribute<float>("Volume", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+        if ( t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
             auto decoderContext = GetDecoderContext();
             auto cacheCandidate = decoderContext->cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
@@ -50,8 +49,7 @@ namespace Raster {
             }
             return result;
         }
-        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
-        auto audioPassID = std::any_cast<int>(contextData["AUDIO_PASS_ID"]);
+        auto audioPassID = std::any_cast<int>(t_contextData["AUDIO_PASS_ID"]);
 
         auto decoderContext = GetDecoderContext();
         if (decoderContext->lastAudioPassID + 1 != audioPassID) {

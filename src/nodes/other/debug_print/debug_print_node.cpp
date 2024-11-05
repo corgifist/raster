@@ -17,10 +17,9 @@ namespace Raster {
         AddOutputPin("Um, Pins?");
     }
 
-    AbstractPinMap DebugPrintNode::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap DebugPrintNode::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto contextData = GetContextData();
-        std::optional<std::string> inputAttribute = GetAttribute<std::string>("ArbitraryValue");
+        std::optional<std::string> inputAttribute = GetAttribute<std::string>("ArbitraryValue", t_contextData);
         TryAppendAbstractPinMap(result, "ExposedOutput", std::string("Exposed Output Works!"));
         PushImmediateFooter("Immediate Footer 1");
         PushImmediateFooter("Immediate Footer 2");
@@ -48,7 +47,7 @@ namespace Raster {
     }
 
     std::optional<std::string> DebugPrintNode::Footer() {
-        return "ExposedInput: " + GetAttribute<std::string>("ArbitraryValue").value_or("");
+        return "ExposedInput: " + m_lastArbitraryValue.value_or("");
     }
 }
 

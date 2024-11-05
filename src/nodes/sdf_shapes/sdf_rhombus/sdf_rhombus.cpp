@@ -12,10 +12,10 @@ namespace Raster {
         AddOutputPin("Shape");
     }
 
-    AbstractPinMap SDFRhombus::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SDFRhombus::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto sizeCandidate = GetAttribute<glm::vec2>("Size");
+        auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
         if (sizeCandidate.has_value()) {
             auto& size = sizeCandidate.value();
             static SDFShape s_rhombus;

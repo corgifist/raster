@@ -11,6 +11,7 @@
 namespace Raster {
     struct AsyncRendering {
         static void* s_context;
+        static float s_renderTime;
         
         static void Initialize();
         static void Terminate();

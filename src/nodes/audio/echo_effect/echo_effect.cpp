@@ -21,18 +21,16 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap EchoEffect::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap EchoEffect::AbstractExecute(ContextData& t_contextData) {
         SharedLockGuard echoGuard(m_mutex);
         AbstractPinMap result = {};
 
-        auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
-        auto delayCandidate = GetAttribute<float>("Delay");
-        auto decayCandidate = GetAttribute<float>("Decay");
-
-        auto contextData = GetContextData();
+        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
+        auto delayCandidate = GetAttribute<float>("Delay", t_contextData);
+        auto decayCandidate = GetAttribute<float>("Decay", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (contextData.find("AUDIO_PASS") == contextData.end() && delayCandidate.has_value()) {
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() && delayCandidate.has_value()) {
             auto delay = (1 + delayCandidate.value());
             auto echoBuffer = GetEchoBuffer(delay);
             auto cacheCandidate = echoBuffer.cache.GetCachedSamples();
@@ -41,7 +39,7 @@ namespace Raster {
             }
             return result;
         }
-        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (samplesCandidate.has_value() && delayCandidate.has_value() && decayCandidate.has_value() && samplesCandidate.value().samples) {
             auto& samples = samplesCandidate.value();

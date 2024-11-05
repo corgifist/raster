@@ -6,7 +6,7 @@ namespace Raster {
     struct MakeVec4 : public NodeBase {
         MakeVec4();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

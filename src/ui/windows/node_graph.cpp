@@ -75,11 +75,19 @@ namespace Raster {
         ImGui::TextUnformatted(t_label.c_str());
     }
 
+    static unordered_dense::map<int, bool> s_inputPinCache;
+
+    static void InvalidateInputPinCache(int t_pinID) {
+        if (s_inputPinCache.find(t_pinID) != s_inputPinCache.end()) {
+            s_inputPinCache.erase(t_pinID);
+        }
+    }
+
     void NodeGraphUI::RenderInputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
         std::any cachedValue = std::nullopt;
         {
-            RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+            // RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
             if (Workspace::s_pinCache.GetFrontValue().find(pin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
                 cachedValue = Workspace::s_pinCache.GetFrontValue()[pin.connectedPinID];
             }
@@ -89,18 +97,23 @@ namespace Raster {
 
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
-            if (pin.flow) {
-                for (auto& pair : s_currentComposition->nodes) {
-                    auto& node = pair.second;
-                    if (node->flowInputPin.has_value()) {
-                        if (node->flowInputPin.value().connectedPinID == pin.pinID) isConnected = true;
-                    }
-                    
-                    if (node->flowOutputPin.has_value()) {
-                        if (node->flowOutputPin.value().connectedPinID == pin.pinID) isConnected = true;
-                    }
+            if (s_inputPinCache.find(pin.pinID) != s_inputPinCache.end()) {
+                isConnected = s_inputPinCache[pin.pinID];
+            } else {
+                if (pin.flow) {
+                    for (auto& pair : s_currentComposition->nodes) {
+                        auto& node = pair.second;
+                        if (node->flowInputPin.has_value()) {
+                            if (node->flowInputPin.value().connectedPinID == pin.pinID) isConnected = true;
+                        }
+                        
+                        if (node->flowOutputPin.has_value()) {
+                            if (node->flowOutputPin.value().connectedPinID == pin.pinID) isConnected = true;
+                        }
 
-                    if (isConnected) break;
+                        if (isConnected) break;
+                    }
+                    s_inputPinCache[pin.pinID] = isConnected;
                 }
             }
             ImVec4 pinColor = ImVec4(1, 1, 1, 1);
@@ -139,12 +152,25 @@ namespace Raster {
         ImGui::SetWindowFontScale(1.0f);
     }
 
+    static unordered_dense::map<int, bool> s_outputPinCache;
+
+    static void InvalidateOutputPinCache(int t_pinID) {
+        if (s_outputPinCache.find(t_pinID) != s_outputPinCache.end()) {
+            s_outputPinCache.erase(t_pinID);
+        }
+    }
+
+    static void InvalidatePinCache(int t_pinID) {
+        InvalidateInputPinCache(t_pinID);
+        InvalidateOutputPinCache(t_pinID);
+    }
+
     void NodeGraphUI::RenderOutputPin(GenericPin& pin, bool flow) {
         ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
 
         std::any cachedValue = std::nullopt;
         {
-            RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+            // RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
             if (Workspace::s_pinCache.GetFrontValue().find(pin.pinID) != Workspace::s_pinCache.GetFrontValue().end()) {
                 cachedValue = Workspace::s_pinCache.GetFrontValue()[pin.pinID];
             }
@@ -163,24 +189,29 @@ namespace Raster {
 
             if (!flow) ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1);
             bool isConnected = false;
-            for (auto& pair : s_currentComposition->nodes) {
-                auto& node = pair.second;
-                for (auto& inputPin : node->inputPins) {
-                    if (inputPin.connectedPinID == pin.pinID) isConnected = true;
-                }
-                for (auto& outputPin : node->outputPins) {
-                    if (outputPin.connectedPinID == pin.pinID) isConnected = true;
-                }
+            if (s_outputPinCache.find(pin.pinID) != s_outputPinCache.end()) {
+                isConnected = s_outputPinCache[pin.pinID];
+            } else {
+                for (auto& pair : s_currentComposition->nodes) {
+                    auto& node = pair.second;
+                    for (auto& inputPin : node->inputPins) {
+                        if (inputPin.connectedPinID == pin.pinID) isConnected = true;
+                    }
+                    for (auto& outputPin : node->outputPins) {
+                        if (outputPin.connectedPinID == pin.pinID) isConnected = true;
+                    }
 
-                if (node->flowInputPin.has_value()) {
-                    if (node->flowInputPin.value().pinID == pin.connectedPinID) isConnected = true;
-                }
-                
-                if (node->flowOutputPin.has_value()) {
-                    if (node->flowOutputPin.value().pinID == pin.connectedPinID) isConnected = true;
-                }
+                    if (node->flowInputPin.has_value()) {
+                        if (node->flowInputPin.value().pinID == pin.connectedPinID) isConnected = true;
+                    }
+                    
+                    if (node->flowOutputPin.has_value()) {
+                        if (node->flowOutputPin.value().pinID == pin.connectedPinID) isConnected = true;
+                    }
 
-                if (isConnected) break;
+                    if (isConnected) break;
+                }
+                s_outputPinCache[pin.pinID] = isConnected;
             }
             ImVec4 pinColor = ImVec4(1, 1, 1, 1);
             auto colorCandidate = GetColorByDynamicValue(cachedValue);
@@ -677,7 +708,9 @@ namespace Raster {
                                                         if (addedPinCandidate.has_value()) {
                                                             auto& addedPin = addedPinCandidate.value();
                                                             addedPin.connectedPinID = rawStartPinID;
+
                                                             Workspace::UpdatePinByID(addedPin, addedPin.pinID);
+                                                            InvalidatePinCache(addedPin.pinID);
                                                         }
                                                     }
                                                 }
@@ -716,6 +749,8 @@ namespace Raster {
 
                                                 Workspace::UpdatePinByID(startPin, startPin.pinID);
                                                 Workspace::UpdatePinByID(endPin, endPin.pinID);
+                                                InvalidatePinCache(startPin.pinID);
+                                                InvalidatePinCache(endPin.pinID);
                                         }
                                     }
                                 }
@@ -751,8 +786,10 @@ namespace Raster {
                                         auto pin = Workspace::GetPinByLinkID(rawLinkID);
                                         if (pin.has_value()) {
                                             auto correctedPin = pin.value();
+                                            InvalidatePinCache(correctedPin.connectedPinID);
                                             correctedPin.connectedPinID = -1;
                                             Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
+                                            InvalidatePinCache(correctedPin.pinID);
                                         }
                                     }
                                 }
@@ -1138,11 +1175,14 @@ namespace Raster {
                                                             nodeInputPin.connectedPinID = lastLinePin.pinID;
                                                             Workspace::UpdatePinByID(nodeInputPin, nodeInputPin.pinID);
                                                             Workspace::UpdatePinByID(lastLinePin, lastLinePin.pinID);
+                                                            InvalidatePinCache(nodeInputPin.pinID);
+                                                            InvalidatePinCache(lastLinePin.pinID);
                                                         }
                                                     } else {
                                                         if (!lastLineNode->inputPins.empty() && !node->outputPins.empty()) {
                                                             lastLinePin.connectedPinID = node->outputPins[0].pinID;
                                                             Workspace::UpdatePinByID(lastLinePin, lastLinePin.pinID);
+                                                            InvalidatePinCache(lastLinePin.pinID);
                                                         }
                                                     }
                                                 }

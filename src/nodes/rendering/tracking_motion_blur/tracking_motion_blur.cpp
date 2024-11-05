@@ -27,7 +27,7 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap TrackingMotionBlur::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap TrackingMotionBlur::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
 
@@ -42,10 +42,10 @@ namespace Raster {
             GPU::SetSamplerTextureWrappingMode(s_sampler.value(), TextureWrappingAxis::T, TextureWrappingMode::MirroredRepeat);
         }
 
-        auto baseCandidate = GetAttribute<Framebuffer>("Base");
-        auto baseTransformCandidate = GetAttribute<Transform2D>("Transform");
-        auto blurIntensityCandidate = GetAttribute<float>("BlurIntensity");
-        auto samplesCandidate = GetAttribute<int>("Samples");
+        auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
+        auto baseTransformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
+        auto blurIntensityCandidate = GetAttribute<float>("BlurIntensity", t_contextData);
+        auto samplesCandidate = GetAttribute<int>("Samples", t_contextData);
         if (s_pipeline.has_value() && s_sampler.has_value() && baseCandidate.has_value() && baseTransformCandidate.has_value() && blurIntensityCandidate.has_value() && samplesCandidate.has_value() && baseCandidate.value().attachments.size() > 0) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_temporalFramebuffer);
@@ -59,7 +59,7 @@ namespace Raster {
             
             project.TimeTravel(-1);
             
-            auto previousTransformCandidate = GetAttribute<Transform2D>("Transform");
+            auto previousTransformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
             if (previousTransformCandidate.has_value()) {
                 auto& previousTransform = previousTransformCandidate.value();
 

@@ -58,24 +58,23 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap BassTrebleEffect::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap BassTrebleEffect::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
-        auto bassCandidate = GetAttribute<float>("Bass");
-        auto trebleCandidate = GetAttribute<float>("Treble");
-        auto gainCandidate = GetAttribute<float>("Gain");
+        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
+        auto bassCandidate = GetAttribute<float>("Bass", t_contextData);
+        auto trebleCandidate = GetAttribute<float>("Treble", t_contextData);
+        auto gainCandidate = GetAttribute<float>("Gain", t_contextData);
 
         auto& project = Workspace::GetProject();
-        auto contextData = GetContextData();
-        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
             }
             return result;
         }
-        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
         if (samplesCandidate.has_value() && bassCandidate.has_value() && trebleCandidate.has_value() && gainCandidate.has_value()) {
             auto& samples = samplesCandidate.value();
             auto& bass = bassCandidate.value();

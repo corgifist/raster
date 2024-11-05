@@ -13,9 +13,9 @@ namespace Raster {
         AddOutputPin("W");
     }
 
-    AbstractPinMap BreakVec4::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap BreakVec4::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto vectorCandidate = GetAttribute<glm::vec4>("Vector");
+        auto vectorCandidate = GetAttribute<glm::vec4>("Vector", t_contextData);
         if (vectorCandidate.has_value()) {
             auto& vector = vectorCandidate.value();
             TryAppendAbstractPinMap(result, "X", vector.x);

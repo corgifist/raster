@@ -49,7 +49,7 @@ namespace Raster {
 
         void SetAttributeValue(std::string t_attribute, std::any t_value);
 
-        AbstractPinMap Execute(AbstractPinMap accumulator = {}, ContextData t_contextData = {});
+        AbstractPinMap Execute(AbstractPinMap& accumulator, ContextData& t_contextData);
         std::string Header();
 
         bool DetailsAvailable();
@@ -76,10 +76,10 @@ namespace Raster {
 
         std::vector<std::string> GetAttributesList();
 
-        std::optional<std::any> GetDynamicAttribute(std::string t_attribute);
+        std::optional<std::any> GetDynamicAttribute(std::string t_attribute, ContextData& t_contextData);
 
         template <typename T>
-        std::optional<T> GetAttribute(std::string t_attribute);
+        std::optional<T> GetAttribute(std::string t_attribute, ContextData& t_contextData);
 
         bool DoesAudioMixing();
 
@@ -108,7 +108,7 @@ namespace Raster {
         virtual std::vector<int> AbstractGetUsedAudioBuses() { return {}; }
 
         virtual Json AbstractSerialize() { return SerializeAllAttributes(); };
-        virtual AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {}) {
+        virtual AbstractPinMap AbstractExecute(ContextData& t_contextData) {
             return {};
         }
         void GenerateFlowPins();
@@ -129,22 +129,13 @@ namespace Raster {
         void MakePinPersistent(std::string t_attribute);
         void DestroyPersistentPins();
 
-        ContextData GetContextData();
-        void UpdateContextData(std::string t_key, std::any t_value);
-        void MergeContextDatas(ContextData t_data);
-
         void PushImmediateFooter(std::string t_footer);
 
-        bool RequireRenderingContext();
-
         private:
-        std::shared_ptr<std::mutex> m_attributesCacheMutex;
         DoubleBufferedValue<std::unordered_map<std::string, std::any>> m_attributesCache;
         std::vector<std::string> m_attributesOrder;
-        std::unique_ptr<std::mutex> m_contextMutex;
-        std::unordered_map<std::thread::id, ContextData> m_contextDatas;
 
-        bool ExecutingInAudioContext();
+        bool ExecutingInAudioContext(ContextData& t_data);
 
         DoubleBufferedValue<std::vector<std::string>> m_immediateFooters;
         AbstractPinMap m_accumulator;

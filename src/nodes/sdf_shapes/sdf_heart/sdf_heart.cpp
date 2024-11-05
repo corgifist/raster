@@ -12,10 +12,10 @@ namespace Raster {
         SetupAttribute("Size", 0.5f);
     }
 
-    AbstractPinMap SDFHeart::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap SDFHeart::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto sizeCandidate = GetAttribute<float>("Size");
+        auto sizeCandidate = GetAttribute<float>("Size", t_contextData);
         if (sizeCandidate.has_value()) {
             auto& size = sizeCandidate.value();
             static SDFShape s_heartShape;

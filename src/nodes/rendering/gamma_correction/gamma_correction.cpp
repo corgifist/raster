@@ -19,7 +19,7 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap GammaCorrection::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap GammaCorrection::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
         if (!s_pipeline.has_value()) {
@@ -29,8 +29,8 @@ namespace Raster {
             );
         }
         
-        auto framebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base"));
-        auto gammaCandidate = GetAttribute<float>("Gamma");
+        auto framebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto gammaCandidate = GetAttribute<float>("Gamma", t_contextData);
         if (s_pipeline.has_value() && gammaCandidate.has_value() && framebufferCandidate.has_value()) {
             auto& gamma = gammaCandidate.value();
             auto& base = framebufferCandidate.value();

@@ -32,6 +32,7 @@
 #include "source_location.h"
 
 #include "nfd/nfd.hpp"
+#include "unordered_dense.h"
 
 #define RASTER_PACKAGED "packaged.raster."
 
@@ -97,9 +98,13 @@
 #define RASTER_SYNCHRONIZED(MUTEX) \
     std::lock_guard<std::mutex> __sync((MUTEX)); \
 
+#define RASTER_GET_CONTEXT_VALUE(t_data, t_key, t_type) \
+    ((t_data.find(t_key) != t_data.end()) ? std::any_cast<t_type>(t_data[t_key]) : t_type())
+
 namespace Raster {
 
     using Json = nlohmann::json;
+    using namespace ankerl;
     
     template<typename ... Args>
     static std::string FormatString( const std::string& format, Args ... args ) {

@@ -6,7 +6,7 @@ namespace Raster {
     struct PosterizeTime : public NodeBase {
         PosterizeTime();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

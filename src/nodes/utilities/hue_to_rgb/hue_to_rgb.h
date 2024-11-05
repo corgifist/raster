@@ -6,7 +6,7 @@ namespace Raster {
     struct HueToRGB : public NodeBase {
         HueToRGB();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

@@ -18,4 +18,4 @@
 #include "audio_info.h"
 
 #define INSTANTIATE_ATTRIBUTE_TEMPLATE(T) \
-    template std::optional<T> NodeBase::GetAttribute<T>(std::string); 
+    template std::optional<T> NodeBase::GetAttribute<T>(std::string, ContextData&); 

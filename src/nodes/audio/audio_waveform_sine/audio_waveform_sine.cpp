@@ -18,27 +18,26 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap AudioWaveformSine::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap AudioWaveformSine::AbstractExecute(ContextData& t_contextData) {
         SharedLockGuard waveformGuard(m_mutex);
         AbstractPinMap result = {};
         
-        auto lengthCandidate = GetAttribute<float>("Length");
-        auto amplitudeCandidate = GetAttribute<float>("Amplitude");
-        auto phaseCandidate = GetAttribute<float>("Phase");
-        auto advanceCandidate = GetAttribute<float>("Advance");
+        auto lengthCandidate = GetAttribute<float>("Length", t_contextData);
+        auto amplitudeCandidate = GetAttribute<float>("Amplitude", t_contextData);
+        auto phaseCandidate = GetAttribute<float>("Phase", t_contextData);
+        auto advanceCandidate = GetAttribute<float>("Advance", t_contextData);
 
         auto& project = Workspace::GetProject();
 
-        auto contextData = GetContextData();
 
-        if (contextData.find("AUDIO_PASS") == contextData.end()) {
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
             }
             return result;
         }
-        if (contextData.find("AUDIO_PASS") == contextData.end() || !project.playing) return {};
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (lengthCandidate.has_value() && amplitudeCandidate.has_value() && phaseCandidate.has_value() && advanceCandidate.has_value()) {
             auto length = lengthCandidate.value() * 5000;

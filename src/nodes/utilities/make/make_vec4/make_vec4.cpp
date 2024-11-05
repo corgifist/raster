@@ -13,13 +13,13 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap MakeVec4::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap MakeVec4::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
-        auto xCandidate = GetAttribute<float>("X");
-        auto yCandidate = GetAttribute<float>("Y");
-        auto zCandidate = GetAttribute<float>("Z");
-        auto wCandidate = GetAttribute<float>("W");
+        auto xCandidate = GetAttribute<float>("X", t_contextData);
+        auto yCandidate = GetAttribute<float>("Y", t_contextData);
+        auto zCandidate = GetAttribute<float>("Z", t_contextData);
+        auto wCandidate = GetAttribute<float>("W", t_contextData);
         if (xCandidate.has_value() && yCandidate.has_value() && zCandidate.has_value() && wCandidate.has_value()) {
             auto& x = xCandidate.value();
             auto& y = yCandidate.value();

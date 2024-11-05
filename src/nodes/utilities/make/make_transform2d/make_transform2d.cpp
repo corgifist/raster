@@ -14,13 +14,13 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap MakeTransform2D::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap MakeTransform2D::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        auto positionCandidate = GetAttribute<glm::vec2>("Position");
-        auto sizeCandidate = GetAttribute<glm::vec2>("Size");
-        auto anchorCandidate = GetAttribute<glm::vec2>("Anchor");
-        auto angleCandidate = GetAttribute<float>("Angle");
-        auto parentTransformCandidate = GetAttribute<Transform2D>("ParentTransform");
+        auto positionCandidate = GetAttribute<glm::vec2>("Position", t_contextData);
+        auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
+        auto anchorCandidate = GetAttribute<glm::vec2>("Anchor", t_contextData);
+        auto angleCandidate = GetAttribute<float>("Angle", t_contextData);
+        auto parentTransformCandidate = GetAttribute<Transform2D>("ParentTransform", t_contextData);
         if (positionCandidate.has_value() && sizeCandidate.has_value() && anchorCandidate.has_value() && angleCandidate.has_value() && parentTransformCandidate.has_value()) {
             auto& position = positionCandidate.value();
             auto& size = sizeCandidate.value();

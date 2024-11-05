@@ -35,7 +35,7 @@ namespace Raster {
         GPU::DestroySampler(m_sampler);
     }
 
-    AbstractPinMap Layer2D::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Layer2D::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         if (!s_nullShapePipeline.has_value()) {
             s_nullShapePipeline = GeneratePipelineFromShape(SDFShape()).pipeline;
@@ -43,16 +43,16 @@ namespace Raster {
 
         auto& project = Workspace::s_project.value();
 
-        auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base"));
-        auto transformCandidate = GetAttribute<Transform2D>("Transform");
-        auto colorCandidate = GetAttribute<glm::vec4>("Color");
-        auto textureCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Texture"));
-        auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings");
-        auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform");
-        auto maintainUVRangeCandidate = GetAttribute<bool>("MaintainUVRange");
-        auto aspectRatioCorrectionCandidate = GetAttribute<bool>("AspectRatioCorrection");
-        auto shapeCandidate = GetShape();
-        auto pipelineCandidate = GetPipeline();
+        auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base", t_contextData));
+        auto transformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
+        auto colorCandidate = GetAttribute<glm::vec4>("Color", t_contextData);
+        auto textureCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Texture", t_contextData));
+        auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings", t_contextData);
+        auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform", t_contextData);
+        auto maintainUVRangeCandidate = GetAttribute<bool>("MaintainUVRange", t_contextData);
+        auto aspectRatioCorrectionCandidate = GetAttribute<bool>("AspectRatioCorrection", t_contextData);
+        auto shapeCandidate = GetShape(t_contextData);
+        auto pipelineCandidate = GetPipeline(t_contextData);
 
         if (pipelineCandidate && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && maintainUVRangeCandidate.has_value() && aspectRatioCorrectionCandidate.has_value() && shapeCandidate.has_value()) {
             auto& pipeline = pipelineCandidate.value();
@@ -120,6 +120,7 @@ namespace Raster {
         for (auto& uniform : t_shape.uniforms) {
             UNIFORM_CLAUSE(uniform, float);
             UNIFORM_CLAUSE(uniform, int);
+            UNIFORM_CLAUSE(uniform, bool);
             UNIFORM_CLAUSE(uniform, glm::vec2);
             UNIFORM_CLAUSE(uniform, glm::vec3);
             UNIFORM_CLAUSE(uniform, glm::vec4);
@@ -165,8 +166,8 @@ namespace Raster {
         });
     }
 
-    std::optional<Pipeline> Layer2D::GetPipeline() {
-        auto shapeCandidate = GetShape();
+    std::optional<Pipeline> Layer2D::GetPipeline(ContextData& t_contextData) {
+        auto shapeCandidate = GetShape(t_contextData);
         if (!shapeCandidate.has_value()) return std::nullopt;
         auto& shape = shapeCandidate.value();
         if (shape.uniforms.empty()) {
@@ -222,8 +223,8 @@ namespace Raster {
         };
     }
 
-    std::optional<SDFShape> Layer2D::GetShape() {
-        auto shapeCandidate = GetDynamicAttribute("Shape");
+    std::optional<SDFShape> Layer2D::GetShape(ContextData& t_contextData) {
+        auto shapeCandidate = GetDynamicAttribute("Shape", t_contextData);
         if (shapeCandidate.has_value() && shapeCandidate.value().type() == typeid(SDFShape)) {
             return std::any_cast<SDFShape>(shapeCandidate.value());
         }    

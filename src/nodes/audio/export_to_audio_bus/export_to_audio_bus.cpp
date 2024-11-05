@@ -18,15 +18,14 @@ namespace Raster {
         AddInputPin("Samples");
     }
 
-    AbstractPinMap ExportToAudioBus::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap ExportToAudioBus::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
-        auto contextData = GetContextData();
 
-        auto busIDCandidate = GetAttribute<int>("BusID");
-        auto samplesCandidate = GetAttribute<AudioSamples>("Samples");
+        auto busIDCandidate = GetAttribute<int>("BusID", t_contextData);
+        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
         
-        if (contextData.find("AUDIO_PASS") == contextData.end()) return {};
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) return {};
         if (busIDCandidate.has_value() && samplesCandidate.has_value() && samplesCandidate.value().samples && project.playing) {
             auto busID = busIDCandidate.value();
             auto busCandidate = Workspace::GetAudioBusByID(busID);

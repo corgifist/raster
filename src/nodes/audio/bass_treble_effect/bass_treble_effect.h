@@ -29,7 +29,7 @@ namespace Raster {
     struct BassTrebleEffect : public NodeBase {
         BassTrebleEffect();
         
-        AbstractPinMap AbstractExecute(AbstractPinMap t_accumulator = {});
+        AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
 

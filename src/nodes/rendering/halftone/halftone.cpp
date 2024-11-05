@@ -23,7 +23,7 @@ namespace Raster {
         }
     }
 
-    AbstractPinMap Halftone::AbstractExecute(AbstractPinMap t_accumulator) {
+    AbstractPinMap Halftone::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
         if (!s_pipeline.has_value()) {
@@ -33,11 +33,11 @@ namespace Raster {
             );
         }
 
-        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base"));
-        auto angleCandidate = GetAttribute<float>("Angle");
-        auto scaleCandidate = GetAttribute<float>("Scale");
-        auto offsetCandidate = GetAttribute<glm::vec2>("Offset");
-        auto colorCandidate = GetAttribute<glm::vec4>("Color");
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto angleCandidate = GetAttribute<float>("Angle", t_contextData);
+        auto scaleCandidate = GetAttribute<float>("Scale", t_contextData);
+        auto offsetCandidate = GetAttribute<glm::vec2>("Offset", t_contextData);
+        auto colorCandidate = GetAttribute<glm::vec4>("Color", t_contextData);
         if (s_pipeline.has_value() && baseCandidate.has_value() && offsetCandidate.has_value() && angleCandidate.has_value() && scaleCandidate.has_value() && colorCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
