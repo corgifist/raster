@@ -157,6 +157,7 @@ build_modules = [
     ["sdf_shapes/sdf_annular", node, [raster_common, raster_gpu]],
     ["sdf_shapes/sdf_union", node, [raster_common, raster_gpu]],
     ["sdf_shapes/sdf_transform", node, [raster_common, raster_gpu]],
+    ["sdf_shapes/sdf_subtract", node, [raster_common, raster_gpu]],
 
     ["other/debug_print", node, [raster_common, raster_ImGui]],
     ["other/dummy_audio_mixer", node, [raster_common]]
