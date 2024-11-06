@@ -20,6 +20,7 @@
 #include "audio/audio.h"
 
 #include "common/audio_samples.h"
+#include "common/shared_mutex.h"
 
 using namespace av;
 
@@ -36,7 +37,7 @@ namespace Raster {
         int resamplerSamplesCount;
         SharedRawAudioSamples cachedSamples;
         bool cacheValid;
-        AudioCache cache;
+        SynchronizedValue<AudioCache> cache;
 
         bool wasOpened;
         int lastAudioPassID;
@@ -77,8 +78,8 @@ namespace Raster {
         void FlushResampler(SharedDecoderContext t_context);
         void SeekDecoder(SharedDecoderContext t_context);
 
-        std::unordered_map<float, SharedDecoderContext> m_decoderContexts;
-        std::shared_ptr<std::mutex> m_decodingMutex;
+        SynchronizedValue<std::unordered_map<float, SharedDecoderContext>> m_decoderContexts;
+        SharedMutex m_decodingMutex;
         bool m_forceSeek;
     };
 };

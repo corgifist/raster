@@ -67,7 +67,7 @@ namespace Raster {
         bool resetWorkspaceState = RASTER_GET_CONTEXT_VALUE(t_data, "RESET_WORKSPACE_STATE", bool);
         bool onlyAudioNodes = RASTER_GET_CONTEXT_VALUE(t_data, "ONLY_AUDIO_NODES", bool);
         bool onlyRenderingNodes = RASTER_GET_CONTEXT_VALUE(t_data, "ONLY_RENDERING_NODES", bool);
-        RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+        // RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
         for (auto& pair : nodes) {
             if (!resetWorkspaceState) break;
             auto& node = pair.second;

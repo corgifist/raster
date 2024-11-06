@@ -95,15 +95,15 @@ namespace Raster {
     }
 
     float Project::GetTimeTravelOffset() {
-        return std::reduce(timeTravelStack.begin(), timeTravelStack.end());
+        return std::reduce(timeTravelStack.Get().begin(), timeTravelStack.Get().end());
     }
 
     void Project::TimeTravel(float t_offset) {
-        timeTravelStack.push_back(t_offset);
+        timeTravelStack.Get().push_back(t_offset);
     }
 
     void Project::ResetTimeTravel() {
-        timeTravelStack.pop_back();
+        timeTravelStack.Get().pop_back();
     }
 
     void Project::Traverse(ContextData t_data) {

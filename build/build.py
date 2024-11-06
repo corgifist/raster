@@ -23,6 +23,7 @@ if get_platform() == "linux":
     check_if_library_available("bfd")
     check_if_library_available("unwind")
     check_if_library_available("gtk+-3.0")
+check_if_library_available("rubberband")
 
 global_compiler_flags.append(get_cflags(ffmpeg_libraries_list))
 
@@ -59,7 +60,7 @@ build_modules = [
     ["avcpp", shared, [get_library(ffmpeg_libraries_list)]],
     ["font", shared],
     ["common", shared, [raster_ImGui, raster_font, raster_avcpp, get_library(ffmpeg_libraries_list)]],
-    ["audio", shared, [raster_common]],
+    ["audio", shared, [raster_common, get_library("rubberband")]],
     ["dispatchers_installer", shared, [raster_common, raster_ImGui, raster_font, raster_audio]],
     ["image", shared, [raster_common, get_library("OpenImageIO")]],
     ["gpu", shared, [get_library("glfw3"), raster_common, raster_ImGui, raster_image]],

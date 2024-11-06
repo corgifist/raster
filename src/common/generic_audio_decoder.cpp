@@ -19,7 +19,7 @@
 
 namespace Raster {
     
-    struct AudioDecoderContext {
+    struct GenericAudioDecoderContext {
         av::FormatContext formatCtx;
         av::Stream targetAudioStream;
         av::AudioDecoderContext audioDecoderCtx;
@@ -39,7 +39,7 @@ namespace Raster {
         float timeOffset;
         int id;
 
-        AudioDecoderContext() {
+        GenericAudioDecoderContext() {
             this->lastAudioPassID = INT_MIN;
             this->assetID = 0;
             this->needsSeeking = true;
@@ -52,7 +52,7 @@ namespace Raster {
         }
     };
 
-    using SharedAudioDecoderContext = std::shared_ptr<AudioDecoderContext>;
+    using SharedAudioDecoderContext = std::shared_ptr<GenericAudioDecoderContext>;
 
     static std::unordered_map<int, SharedAudioDecoderContext> s_decoders;
 
@@ -66,7 +66,7 @@ namespace Raster {
         if (s_decoders.find(t_decoderID) != s_decoders.end()) {
             return s_decoders[t_decoderID];
         }
-        s_decoders[t_decoderID] = std::make_shared<AudioDecoderContext>();
+        s_decoders[t_decoderID] = std::make_shared<GenericAudioDecoderContext>();
         return s_decoders[t_decoderID];
     }
 

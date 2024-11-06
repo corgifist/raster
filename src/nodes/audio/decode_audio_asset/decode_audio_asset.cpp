@@ -23,7 +23,6 @@ namespace Raster {
         SetupAttribute("Volume", 1.0f);
 
         this->m_forceSeek = false;
-        this->m_decodingMutex = std::make_shared<std::mutex>();
 
         AddOutputPin("Samples");
 
@@ -36,22 +35,26 @@ namespace Raster {
 
     AbstractPinMap DecodeAudioAsset::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
-        std::lock_guard<std::mutex> decodingGuard(*m_decodingMutex);
+        SharedLockGuard guard(m_decodingMutex);
         auto assetIDCandidate = GetAttribute<int>("Asset", t_contextData);
         auto volumeCandidate = GetAttribute<float>("Volume", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if ( t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
+        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || (t_contextData.find("AUDIO_PASS") != t_contextData.end() && !RASTER_GET_CONTEXT_VALUE(t_contextData, "ALLOW_MEDIA_DECODING", bool))) {
             auto decoderContext = GetDecoderContext();
-            auto cacheCandidate = decoderContext->cache.GetCachedSamples();
+            decoderContext->cache.Lock();
+            auto cacheCandidate = decoderContext->cache.GetReference().GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Samples", cacheCandidate.value());
             }
+            decoderContext->cache.Unlock();
             return result;
         }
         auto audioPassID = std::any_cast<int>(t_contextData["AUDIO_PASS_ID"]);
 
         auto decoderContext = GetDecoderContext();
+        DUMP_VAR(decoderContext->lastAudioPassID);
+        DUMP_VAR(audioPassID);
         if (decoderContext->lastAudioPassID + 1 != audioPassID) {
             decoderContext->needsSeeking = true;
             decoderContext->cacheValid = false;
@@ -133,7 +136,9 @@ namespace Raster {
             if (attachedPicCandidate.has_value()) {
                 samples.attachedPictures.push_back(attachedPicCandidate.value());
             }
-            decoderContext->cache.SetCachedSamples(samples);
+            decoderContext->cache.Lock();
+            decoderContext->cache.GetReference().SetCachedSamples(samples);
+            decoderContext->cache.Unlock();
 
             decoderContext->cacheValid = true;
             decoderContext->lastAudioPassID = audioPassID;
@@ -147,7 +152,8 @@ namespace Raster {
 
     SharedDecoderContext DecodeAudioAsset::GetDecoderContext() {
         std::vector<float> deadDecoders;
-        for (auto& context : m_decoderContexts) {
+        m_decoderContexts.Lock();
+        for (auto& context : m_decoderContexts.GetReference()) {
             context.second->health--;
             if (context.second->health < 0) {
                 deadDecoders.push_back(context.first);
@@ -155,18 +161,23 @@ namespace Raster {
         }
 
         for (auto& deadDecoder : deadDecoders) {
-            m_decoderContexts.erase(deadDecoder);
+            if (m_decoderContexts.GetReference().find(deadDecoder) != m_decoderContexts.GetReference().end())
+                m_decoderContexts.GetReference().erase(deadDecoder);
         }
 
         auto& project = Workspace::GetProject();
         auto currentOffset = project.GetTimeTravelOffset();
-        if (m_decoderContexts.find(currentOffset) != m_decoderContexts.end()) {
-            m_decoderContexts[currentOffset]->health = MAX_DECODER_LIFESPAN;
-            return m_decoderContexts[currentOffset];
+        if (m_decoderContexts.GetReference().find(currentOffset) != m_decoderContexts.GetReference().end()) {
+            m_decoderContexts.GetReference()[currentOffset]->health = MAX_DECODER_LIFESPAN;
+            auto result = m_decoderContexts.GetReference()[currentOffset];
+            m_decoderContexts.Unlock();
+            return result;
         }
 
-        m_decoderContexts[currentOffset] = std::make_shared<AudioDecoderContext>();
-        return m_decoderContexts[currentOffset];
+        m_decoderContexts.GetReference()[currentOffset] = std::make_shared<AudioDecoderContext>();
+        auto result = m_decoderContexts.GetReference()[currentOffset];
+        m_decoderContexts.Unlock();
+        return result;
     }
 
     av::AudioSamples DecodeAudioAsset::PopResampler(SharedDecoderContext t_context) {
@@ -220,22 +231,27 @@ namespace Raster {
     }
 
     void DecodeAudioAsset::AbstractOnTimelineSeek() {
-        std::lock_guard<std::mutex> decodingGuard(*m_decodingMutex);
+        SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
-        for (auto& decodingPair : m_decoderContexts) {
+        m_decoderContexts.Lock();
+        for (auto& decodingPair : m_decoderContexts.GetReference()) {
             decodingPair.second->needsSeeking = true;
             decodingPair.second->cacheValid = false;
         }
+        m_decoderContexts.Unlock();
     }
 
     std::optional<float> DecodeAudioAsset::AbstractGetContentDuration() {
-        if (m_decoderContexts.find(0) != m_decoderContexts.end()) {
-            auto& decoderContext = m_decoderContexts[0];
+        m_decoderContexts.Lock();
+        if (m_decoderContexts.GetReference().find(0) != m_decoderContexts.GetReference().end()) {
+            auto& decoderContext = m_decoderContexts.GetReference()[0];
             auto& project = Workspace::GetProject();
             if (decoderContext->formatCtx.isOpened()) {
+                m_decoderContexts.Unlock();
                 return decoderContext->formatCtx.duration().seconds() * project.framerate;
             }
         }
+        m_decoderContexts.Unlock();
         return std::nullopt;
     }
 

@@ -4,6 +4,7 @@
 #include "typedefs.h"
 #include "assets.h"
 #include "audio_bus.h"
+#include "thread_unique_value.h"
 
 namespace Raster {
     struct Project {
@@ -11,7 +12,7 @@ namespace Raster {
         std::string name, description;
         float framerate;
         float currentFrame;
-        std::vector<float> timeTravelStack;
+        ThreadUniqueValue<std::vector<float>> timeTravelStack;
         bool playing, looping;
 
         glm::vec2 preferredResolution;
