@@ -355,12 +355,17 @@ namespace Raster {
             static std::unordered_map<int, Nodes::EditorContext*> compositionContexts;
             Nodes::EditorContext* ctx = nullptr;
             
+            static int overrideCurrentComposition = -1;
             auto compositionsCandidate = Workspace::GetSelectedCompositions();
             if (!compositionsCandidate.has_value()) s_currentComposition = nullptr;
             if (compositionsCandidate.has_value()) {
                 auto compositions = compositionsCandidate.value();
                 if (compositions.empty()) s_currentComposition = nullptr;
                 s_currentComposition = compositions[0];
+                auto overridenCompositionCandidate = Workspace::GetCompositionByID(overrideCurrentComposition);
+                if (overridenCompositionCandidate.has_value()) {
+                    s_currentComposition = overridenCompositionCandidate.value();
+                }
             }
 
             if (s_currentComposition && compositionContexts.find(s_currentComposition->id) != compositionContexts.end()) {
@@ -408,17 +413,66 @@ namespace Raster {
                 style.PinArrowWidth = 10.0f;
             }
 
-            if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable)) {
+
+            if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_SaveSettings | ImGuiTabBarFlags_AutoSelectNewTabs)) {
                 if (Workspace::IsProjectLoaded()) {
                     auto& project = Workspace::GetProject();
-                    for (auto& compositionID : project.selectedCompositions) {
+                    int focusNeeded = -1;
+                    static std::vector<int> s_currentlyTabbedCompositions;
+
+                    static std::vector<int> s_previousSelectedCompositions;
+                    auto& selectedCompositions = project.selectedCompositions;
+                    bool mustReviewTabbedCompositions = false;
+                    if (s_previousSelectedCompositions.size() != selectedCompositions.size()) {
+                        mustReviewTabbedCompositions = true;
+                    }
+                    for (auto& compositionID : selectedCompositions) {
+                        if (std::find(s_previousSelectedCompositions.begin(), s_previousSelectedCompositions.end(), compositionID) == s_previousSelectedCompositions.end()) {
+                            mustReviewTabbedCompositions = true;
+                            break;
+                        }
+                    }
+                    std::vector<int> forceFocusedCompositions;
+                    if (mustReviewTabbedCompositions && selectedCompositions.size() > 1) {
+                        for (auto& compositionID : selectedCompositions) {
+                            if (std::find(s_currentlyTabbedCompositions.begin(), s_currentlyTabbedCompositions.end(), compositionID) == s_currentlyTabbedCompositions.end()) {
+                                s_currentlyTabbedCompositions.push_back(compositionID);
+                                forceFocusedCompositions.push_back(compositionID);
+                            }
+                        }
+                    } else if (mustReviewTabbedCompositions && selectedCompositions.size() == 1) {
+                        if (!selectedCompositions.empty()) {
+                            if (std::find(s_currentlyTabbedCompositions.begin(), s_currentlyTabbedCompositions.end(), selectedCompositions[0]) == s_currentlyTabbedCompositions.end()) {
+                                s_currentlyTabbedCompositions.push_back(selectedCompositions[0]);
+                            }
+                            forceFocusedCompositions.push_back(selectedCompositions[0]);
+                        }
+                    }
+                    if (!forceFocusedCompositions.empty()) {
+                        focusNeeded = forceFocusedCompositions[0];
+                    }
+                    s_previousSelectedCompositions = selectedCompositions;
+
+                    int closedComposition = -1;
+                    for (auto& compositionID : s_currentlyTabbedCompositions) {
                         auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
                         if (compositionCandidate.has_value()) {
                             auto& composition = compositionCandidate.value();
-                            if (ImGui::BeginTabItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str())) {
-                                s_currentComposition = composition;
+                            bool open = true;
+                            if (ImGui::BeginTabItem(FormatString("%s %s###%i", ICON_FA_LAYER_GROUP, composition->name.c_str(), composition->id).c_str(), &open, focusNeeded == compositionID ? ImGuiTabItemFlags_SetSelected : 0)) {
+                                overrideCurrentComposition = composition->id;
                                 ImGui::EndTabItem();
                             }
+                            if (!open) {
+                                closedComposition = compositionID;
+                            }
+                        }
+                    }
+
+                    if (closedComposition > 0) {
+                        auto tabIterator = std::find(s_currentlyTabbedCompositions.begin(), s_currentlyTabbedCompositions.end(), closedComposition);
+                        if (tabIterator != s_currentlyTabbedCompositions.end()) {
+                            s_currentlyTabbedCompositions.erase(tabIterator);
                         }
                     }
                 }
