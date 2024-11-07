@@ -74,7 +74,7 @@ namespace Raster {
             node->executionsPerFrame.SetBackValue(0);
             if (IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) {
                 node->ClearAttributesCache();
-                node->ClearImmediateFooters();
+                if (!audioMixing) node->ClearImmediateFooters();
             }
         }
         if (!IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) return;

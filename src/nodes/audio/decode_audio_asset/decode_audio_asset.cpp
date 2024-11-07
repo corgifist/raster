@@ -53,8 +53,6 @@ namespace Raster {
         auto audioPassID = std::any_cast<int>(t_contextData["AUDIO_PASS_ID"]);
 
         auto decoderContext = GetDecoderContext();
-        DUMP_VAR(decoderContext->lastAudioPassID);
-        DUMP_VAR(audioPassID);
         if (decoderContext->lastAudioPassID + 1 != audioPassID) {
             decoderContext->needsSeeking = true;
             decoderContext->cacheValid = false;

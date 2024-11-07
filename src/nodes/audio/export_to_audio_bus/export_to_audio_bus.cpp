@@ -47,7 +47,9 @@ namespace Raster {
                     bus->samples.resize(4096 * AudioInfo::s_channels);
                 }
                 auto rawSamples = samples.samples->data();
-                memcpy(bus->samples.data(), rawSamples, sizeof(float) * AudioInfo::s_periodSize * AudioInfo::s_channels);
+                for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
+                    bus->samples[i] += rawSamples[i];
+                }
             }
 
         }
