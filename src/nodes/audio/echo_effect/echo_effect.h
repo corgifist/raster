@@ -8,7 +8,7 @@
 #include "common/audio_cache.h"
 #include "common/shared_mutex.h"
 
-#define MAX_BUFFER_LIFESPAN 300
+#define MAX_BUFFER_LIFESPAN 20
 
 namespace Raster {
 

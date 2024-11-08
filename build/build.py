@@ -14,8 +14,6 @@ global_compiler_flags.append("-g")
 global_compiler_flags.append("-O3")
 global_compiler_flags.append("-D__STDC_CONSTANT_MACROS")
 
-ffmpeg_libraries_list = "libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"
-
 check_if_library_available("glfw3")
 check_if_library_available("freetype2")
 check_if_library_available("OpenImageIO")
@@ -25,7 +23,13 @@ if get_platform() == "linux":
     check_if_library_available("gtk+-3.0")
 check_if_library_available("rubberband")
 
-global_compiler_flags.append(get_cflags(ffmpeg_libraries_list))
+glfw3 = get_library("glfw3")
+rubberband = get_library("rubberband")
+freetype2 = get_library("freetype2")
+OpenImageIO = get_library("OpenImageIO")
+ffmpeg = get_library("libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample")
+
+global_compiler_flags.append(get_cflags("libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"))
 
 global_compiler_flags.append(get_cflags("freetype2"))
 if get_platform() == "linux":
@@ -56,17 +60,17 @@ node = 5
 ui_deps = [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_font, nfd]
 
 build_modules = [
-    ["ImGui", shared, [get_library("freetype2")]],
-    ["avcpp", shared, [get_library(ffmpeg_libraries_list)]],
+    ["ImGui", shared, [freetype2]],
+    ["avcpp", shared, [ffmpeg]],
     ["font", shared],
-    ["common", shared, [raster_ImGui, raster_font, raster_avcpp, get_library(ffmpeg_libraries_list)]],
-    ["audio", shared, [raster_common, get_library("rubberband")]],
+    ["common", shared, [raster_ImGui, raster_font, raster_avcpp, ffmpeg]],
+    ["audio", shared, [raster_common, rubberband]],
     ["dispatchers_installer", shared, [raster_common, raster_ImGui, raster_font, raster_audio]],
-    ["image", shared, [raster_common, get_library("OpenImageIO")]],
-    ["gpu", shared, [get_library("glfw3"), raster_common, raster_ImGui, raster_image]],
+    ["image", shared, [raster_common, OpenImageIO]],
+    ["gpu", shared, [glfw3, raster_common, raster_ImGui, raster_image]],
     ["compositor", shared, [raster_gpu, raster_common]],
     ["ui", shared, ui_deps],
-    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_compositor, raster_dispatchers_installer, nfd, raster_avcpp, get_library(ffmpeg_libraries_list), raster_audio]],
+    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_compositor, raster_dispatchers_installer, nfd, raster_avcpp, ffmpeg, raster_audio]],
     ["sampler_constants_base", shared, [raster_common]],
     ["core", binary, [raster_common, raster_app, "-lbfd", "-lunwind"]],
     
@@ -75,7 +79,7 @@ build_modules = [
 
     ["image_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_image]],
     ["placeholder_asset", asset, [raster_common, raster_gpu, raster_ImGui]],
-    ["media_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_avcpp, get_library(ffmpeg_libraries_list)]],
+    ["media_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_avcpp, ffmpeg]],
 
     ["float_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec4_attribute", attribute, [raster_common, raster_ImGui]],
@@ -85,7 +89,7 @@ build_modules = [
     ["vec3_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec2_attribute", attribute, [raster_common, raster_ImGui]],
 
-    ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, get_library(ffmpeg_libraries_list)]],
+    ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
     ["audio/export_to_audio_bus", node, [raster_common, raster_audio]],
     ["audio/bass_treble_effect", node, [raster_common, raster_audio]],
     ["audio/echo_effect", node, [raster_common, raster_audio]],
@@ -94,6 +98,7 @@ build_modules = [
     ["audio/merge_audio_samples", node, [raster_common, raster_audio]],
     ["audio/audio_waveform_sine", node, [raster_common, raster_audio]],
     ["audio/amplify_audio", node, [raster_common, raster_audio]],
+    ["audio/pitch_shift_audio", node, [raster_common, raster_audio, rubberband]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_image]],
     ["resources/get_asset_id", node, [raster_common, raster_ImGui]],
