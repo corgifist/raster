@@ -94,6 +94,7 @@ namespace Raster {
                 }
                 if (!anyPinConnected) {
                     if (onlyAudioNodes && !node->DoesAudioMixing()) continue;
+                    if (!onlyAudioNodes && node->DoesAudioMixing()) continue;
                     accumulator = node->Execute(accumulator, t_data);
                 }
             }

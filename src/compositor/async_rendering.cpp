@@ -30,7 +30,6 @@ namespace Raster {
                     {"INCREMENT_EPF", true},
                     {"RESET_WORKSPACE_STATE", true},
                     {"ALLOW_MEDIA_DECODING", true},
-                    {"ONLY_AUDIO_NODES", false},
                     {"ONLY_RENDERING_NODES", true}
                 });
                 project.Traverse({
