@@ -17,6 +17,7 @@ namespace Raster {
         AudioCache cache;
         bool seeked;
         int health;
+        bool highQualityPitch;
 
         PitchShiftContext();
     };

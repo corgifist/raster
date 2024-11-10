@@ -339,6 +339,7 @@ namespace Raster {
         std::unordered_map<int, DeferredAttributeExposure> exposures;
 
         static std::optional<ImVec2> nodeSearchMousePos;
+        static std::optional<Composition> s_compositionToAdd;
 
         if (ImGui::Begin(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE_GRAPH").c_str()).c_str())) {
             if (!Workspace::IsProjectLoaded()) {
@@ -414,7 +415,7 @@ namespace Raster {
             }
 
 
-            if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_SaveSettings | ImGuiTabBarFlags_AutoSelectNewTabs)) {
+            if (ImGui::BeginTabBar("##compositionsBar", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs)) {
                 if (Workspace::IsProjectLoaded()) {
                     auto& project = Workspace::GetProject();
                     int focusNeeded = -1;
@@ -467,6 +468,35 @@ namespace Raster {
                                 closedComposition = compositionID;
                             }
                         }
+                    }
+
+                    bool openNewCompositionPopup = false;
+                    static std::string s_newCompositionName = "";
+                    if (ImGui::TabItemButton(ICON_FA_PLUS)) {
+                        openNewCompositionPopup = true;
+                        s_newCompositionName = Localization::GetString("NEW_COMPOSITION");
+                    }
+
+                    if (openNewCompositionPopup) {
+                        ImGui::OpenPopup("##newCompositionPopup");
+                    }
+
+                    static bool s_compositionNameFieldFocused = false;
+                    if (ImGui::BeginPopup("##newCompositionPopup")) {
+                        if (!s_compositionNameFieldFocused) {
+                            ImGui::SetKeyboardFocusHere(0);
+                            s_compositionNameFieldFocused = true;
+                        }
+                        ImGui::InputTextWithHint("##compositionName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NEW_COMPOSITION_NAME").c_str()).c_str(), &s_newCompositionName);
+                        ImGui::SameLine();
+                        if (ImGui::Button(Localization::GetString("OK").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                            Composition newComposition;
+                            newComposition.beginFrame = project.currentFrame;
+                            newComposition.endFrame = project.currentFrame + project.framerate;
+                            s_compositionToAdd = newComposition;
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
                     }
 
                     if (closedComposition > 0) {
@@ -1443,6 +1473,12 @@ namespace Raster {
                     Dispatchers::DispatchString(value);
                     ImGui::EndTooltip();
                 }
+            }
+        
+            if (s_compositionToAdd.has_value()) {
+                auto& project = Workspace::GetProject();
+                project.compositions.push_back(s_compositionToAdd.value());
+                s_compositionToAdd = std::nullopt;
             }
         }
         

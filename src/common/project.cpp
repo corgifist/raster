@@ -113,6 +113,8 @@ namespace Raster {
         for (auto& composition : compositions) {
             composition.Traverse(t_data);
         }
+
+        timeTravelStack.Get().clear();
     }
 
     void Project::OnTimelineSeek() {

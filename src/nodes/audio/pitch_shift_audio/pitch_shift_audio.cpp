@@ -6,6 +6,7 @@ namespace Raster {
         this->stretcher = nullptr;
         this->health = MAX_PITCH_SHIFT_CONTEXT_HEALTH;
         this->seeked = true;
+        this->highQualityPitch = false;
     }
 
     PitchShiftAudio::PitchShiftAudio() {
@@ -13,6 +14,7 @@ namespace Raster {
 
         SetupAttribute("Samples", GenericAudioDecoder());
         SetupAttribute("PitchScale", 1.0f);
+        SetupAttribute("UseHighQualityPitch", false);
 
         AddOutputPin("Output");
     }
@@ -22,9 +24,10 @@ namespace Raster {
         SharedLockGuard guard(m_mutex);
         auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
         auto pitchScaleCandidate = GetAttribute<float>("PitchScale", t_contextData);
+        auto useHighQualityPitchCandidate = GetAttribute<bool>("UseHighQualityPitch", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool)) {
             auto pitchScaleContext = GetContext();
             auto cacheCandidate = pitchScaleContext->cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
@@ -33,17 +36,34 @@ namespace Raster {
             return result;
         }
 
-        if (samplesCandidate.has_value() && pitchScaleCandidate.has_value()) {
+        if (samplesCandidate.has_value() && pitchScaleCandidate.has_value() && useHighQualityPitchCandidate.has_value()) {
             auto& samples = samplesCandidate.value();
             auto pitchScale = pitchScaleCandidate.value();
             pitchScale = glm::abs(pitchScale);
+            auto& useHighQualityPitch = useHighQualityPitchCandidate.value();
             auto context = GetContext();
+            if (context->stretcher) {
+                if (context->highQualityPitch != useHighQualityPitch) {
+                    context->stretcher = nullptr;
+                }
+            }
             if (!context->stretcher) {
+                auto fastEngineFlags = RubberBand::RubberBandStretcher::OptionEngineFaster 
+                                    | RubberBand::RubberBandStretcher::OptionProcessRealTime 
+                                    | RubberBand::RubberBandStretcher::OptionPitchHighSpeed
+                                    | RubberBand::RubberBandStretcher::OptionThreadingAuto
+                                    | RubberBand::RubberBandStretcher::OptionWindowShort;
+
+                auto finerEngineFlags = RubberBand::RubberBandStretcher::OptionProcessRealTime 
+                                        | RubberBand::RubberBandStretcher::OptionPitchHighConsistency
+                                        | RubberBand::RubberBandStretcher::OptionChannelsTogether
+                                        | RubberBand::RubberBandStretcher::OptionFormantPreserved
+                                        | RubberBand::RubberBandStretcher::OptionWindowLong
+                                        | RubberBand::RubberBandStretcher::OptionThreadingAuto;
+
                 context->stretcher = std::make_shared<RubberBand::RubberBandStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels, 
-                                                                                    RubberBand::RubberBandStretcher::OptionEngineFaster 
-                                                                                    | RubberBand::RubberBandStretcher::OptionProcessRealTime 
-                                                                                    | RubberBand::RubberBandStretcher::OptionPitchHighSpeed
-                                                                                    | RubberBand::RubberBandStretcher::OptionThreadingNever);
+                                                                                    useHighQualityPitch ? finerEngineFlags : fastEngineFlags);
+                context->highQualityPitch = useHighQualityPitch;
             }
             auto& stretcher = context->stretcher;
             if (context->seeked) {
@@ -53,8 +73,9 @@ namespace Raster {
 
             if (samples.samples) {
                 auto& samplesVector = samples.samples;
-                stretcher->setTimeRatio(1);
-                stretcher->setPitchScale(pitchScale);
+                if (stretcher->getPitchScale() != pitchScale) {
+                    stretcher->setPitchScale(pitchScale);
+                }
    
                 {
                     static SharedRawDeinterleavedAudioSamples s_planarSamples = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
@@ -64,6 +85,7 @@ namespace Raster {
                     for (int i = 0; i < s_planarSamples->size(); i++) {
                         planarBuffersData.push_back(s_planarSamples->at(i).data());
                     }
+
                     stretcher->process(planarBuffersData.data(), AudioInfo::s_periodSize, false);
                 };
 
@@ -74,6 +96,7 @@ namespace Raster {
                     for (int i = 0; i < s_outputPlanarBuffers->size(); i++) {
                         planarBuffersData.push_back(s_outputPlanarBuffers->at(i).data());
                     }
+                    DUMP_VAR(stretcher->available());
                     if (stretcher->available() >= AudioInfo::s_periodSize) {
                         stretcher->retrieve(planarBuffersData.data(), AudioInfo::s_periodSize);
 
@@ -123,6 +146,7 @@ namespace Raster {
         RenderAttributeProperty("PitchScale", {
             SliderStepMetadata(0.01f)
         });
+        RenderAttributeProperty("UseHighQualityPitch");
     }
 
     void PitchShiftAudio::AbstractOnTimelineSeek() {
