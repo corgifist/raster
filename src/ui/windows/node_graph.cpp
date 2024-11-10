@@ -472,7 +472,7 @@ namespace Raster {
 
                     bool openNewCompositionPopup = false;
                     static std::string s_newCompositionName = "";
-                    if (ImGui::TabItemButton(ICON_FA_PLUS)) {
+                    if (ImGui::TabItemButton(ICON_FA_PLUS, ImGuiTabItemFlags_Trailing)) {
                         openNewCompositionPopup = true;
                         s_newCompositionName = Localization::GetString("NEW_COMPOSITION");
                     }
@@ -494,6 +494,7 @@ namespace Raster {
                             newComposition.beginFrame = project.currentFrame;
                             newComposition.endFrame = project.currentFrame + project.framerate;
                             s_compositionToAdd = newComposition;
+                            project.selectedCompositions = {newComposition.id};
                             ImGui::CloseCurrentPopup();
                         }
                         ImGui::EndPopup();

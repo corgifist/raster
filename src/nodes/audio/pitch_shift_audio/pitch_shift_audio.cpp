@@ -96,7 +96,6 @@ namespace Raster {
                     for (int i = 0; i < s_outputPlanarBuffers->size(); i++) {
                         planarBuffersData.push_back(s_outputPlanarBuffers->at(i).data());
                     }
-                    DUMP_VAR(stretcher->available());
                     if (stretcher->available() >= AudioInfo::s_periodSize) {
                         stretcher->retrieve(planarBuffersData.data(), AudioInfo::s_periodSize);
 
