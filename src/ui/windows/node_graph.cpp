@@ -930,6 +930,18 @@ namespace Raster {
                             if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
                                 node->bypassed = !node->bypassed;
                             }
+                            if (node->DoesAudioMixing()) {
+                                std::string audioMixingMessage = FormatString("%s %s", ICON_FA_VOLUME_HIGH, Localization::GetString("PERFORMS_AUDIO_MIXING").c_str());
+                                std::string audioMixingWarning = FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("AUDIO_MIXING_IS_DISABLED_IN_THIS_COMPOSITION").c_str());
+                                ImVec2 audioMixingMessageSize = ImGui::CalcTextSize(audioMixingMessage.c_str());
+                                ImVec2 audioMixingWarningSize = ImGui::CalcTextSize(audioMixingWarning.c_str());
+                                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - audioMixingMessageSize.x / 2.0f);
+                                ImGui::Text("%s", audioMixingMessage.c_str());
+                                if (!s_currentComposition->audioEnabled) {
+                                    ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - audioMixingWarningSize.x / 2.0f);
+                                    ImGui::Text("%s", audioMixingWarning.c_str());
+                                }
+                            }
                             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("EXPOSE_HIDE_ATTRIBUTES").c_str()).c_str())) {
                                 int id = 0;
                                 for (auto& attribute : node->GetAttributesList()) {

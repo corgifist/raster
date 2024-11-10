@@ -41,6 +41,7 @@ namespace Raster {
         static void ProcessDeleteAction();
 
         static void ProcessResizeToMatchContentDurationAction();
+        static void ProcessAudioMixingAction();
 
         static void ProcessShortcuts();
 

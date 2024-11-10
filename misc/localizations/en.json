@@ -245,5 +245,10 @@
     "COPY_AUDIO_BUS_ID": "Copy Audio Bus ID",
     "USED_IN_COMPOSITIONS": "Used in Compositions",
     "COPY_ATTRIBUTE_VALUE": "Copy Attribute Value",
-    "PASTE_ATTRIBUTE_VALUE": "Paste Attribute Value"
+    "PASTE_ATTRIBUTE_VALUE": "Paste Attribute Value",
+    "ENABLE_DISABLE_COMPOSITIONS_AUDIO_MIXING": "Enable/Disable Compositions Audio Mixing",
+    "PERFORMS_AUDIO_MIXING": "Performs Audio Mixing",
+    "AUDIO_MIXING_IS_DISABLED_IN_THIS_COMPOSITION": "Audio Mixing is Disabled for This Composition",
+    "ENABLE_DISABLE_AUDIO_MIXING": "Enable/Disable Audio Mixing",
+    "ENABLE_DISABLE_COMPOSITION": "Enable/Disable Composition"
 }

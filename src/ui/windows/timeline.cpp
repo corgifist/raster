@@ -447,7 +447,12 @@ namespace Raster {
             ImVec2 buttonCursor = ImGui::GetCursorPos();
             ImVec2 buttonSize = ImVec2(std::ceil((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame), LAYER_HEIGHT);
             bool compositionHovered;
-            bool compositionPressed = ClampedButton(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str(), buttonSize, 0, compositionHovered, composition);
+            std::string compositionIcons = "";
+            if (composition->audioEnabled) compositionIcons += ICON_FA_VOLUME_HIGH;
+            else compositionIcons += ICON_FA_VOLUME_OFF;
+            compositionIcons += " ";
+            compositionIcons += ICON_FA_LAYER_GROUP;
+            bool compositionPressed = ClampedButton(FormatString("%s %s", compositionIcons.c_str(), composition->name.c_str()).c_str(), buttonSize, 0, compositionHovered, composition);
             if (compositionHovered) {
                 s_anyCompositionWasPressed = true;
             }
@@ -881,6 +886,9 @@ namespace Raster {
                 }
             }
         }
+        if (ImGui::MenuItem(FormatString("%s %s", t_composition->audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITIONS_AUDIO_MIXING").c_str()).c_str(), "Ctrl+A")) {
+            ProcessAudioMixingAction();
+        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
             ProcessResizeToMatchContentDurationAction();
         }
@@ -996,6 +1004,17 @@ namespace Raster {
                     auto duration = contentDuration.value();
                     composition->endFrame = composition->beginFrame + duration;
                 }
+            }
+        }
+    }
+
+    void TimelineUI::ProcessAudioMixingAction() {
+        auto& project = Workspace::GetProject();
+        for (auto& compositionID : project.selectedCompositions) {
+            auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+            if (compositionCandidate.value()) {
+                auto& composition = compositionCandidate.value();
+                composition->audioEnabled = !composition->audioEnabled;
             }
         }
     }
@@ -1239,14 +1258,22 @@ namespace Raster {
                 if (ImGui::Button(ICON_FA_TRASH_CAN)) {
                     targetCompositionDelete = &composition;
                 }
+                ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_COMPOSITION").c_str()).c_str());
                 ImGui::SameLine();
                 if (ImGui::Button(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF)) {
                     composition.enabled = !composition.enabled;
                 }
+                ImGui::SetItemTooltip(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITION").c_str());
+                ImGui::SameLine();
+                if (ImGui::Button(composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF)) {
+                    composition.audioEnabled = !composition.audioEnabled;
+                }
+                ImGui::SetItemTooltip("%s %s", composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_AUDIO_MIXING").c_str());
                 ImGui::SameLine();
                 if (ImGui::Button(ICON_FA_PLUS)) {
                     ImGui::OpenPopup(FormatString("##createAttribute%i", composition.id).c_str());
                 }
+                ImGui::SetItemTooltip("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str());
                 if (ImGui::BeginPopup(FormatString("##createAttribute%i", composition.id).c_str())) {
                     RenderNewAttributePopup(&composition);
                     ImGui::EndPopup();

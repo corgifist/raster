@@ -14,6 +14,7 @@ namespace Raster {
         this->opacityAttributeID = -1;
         this->enabled = true;
         this->colorMark = Workspace::s_colorMarks[Workspace::s_defaultColorMark];
+        this->audioEnabled = true;
     }
 
     Composition::Composition(Json data) {
@@ -27,6 +28,7 @@ namespace Raster {
         this->opacityAttributeID = data["OpacityAttributeID"];
         this->enabled = data["Enabled"];
         this->colorMark = data["ColorMark"];
+        this->audioEnabled = data.contains("AudioEnabled") ? data["AudioEnabled"].get<bool>() : true;
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -77,6 +79,7 @@ namespace Raster {
                 if (!audioMixing) node->ClearImmediateFooters();
             }
         }
+        if (audioMixing && !audioEnabled) return;
         if (!IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) return;
         if (!enabled) return;
         AbstractPinMap accumulator;
@@ -132,6 +135,7 @@ namespace Raster {
         data["OpacityAttributeID"] = opacityAttributeID;
         data["Enabled"] = enabled;
         data["ColorMark"] = colorMark;
+        data["AudioEnabled"] = audioEnabled;
         data["Nodes"] = {};
         for (auto& pair : nodes) {
             data["Nodes"].push_back(pair.second->Serialize());

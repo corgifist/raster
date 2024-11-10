@@ -17,6 +17,7 @@ namespace Raster {
         int opacityAttributeID;
         bool enabled;
         uint32_t colorMark;
+        bool audioEnabled;
 
         Composition();
         Composition(Json data);
