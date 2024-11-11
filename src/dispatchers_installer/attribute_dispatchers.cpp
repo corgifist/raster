@@ -76,11 +76,39 @@ namespace Raster {
     }
 
     void AttributeDispatchers::DispatchStringAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto& project = Workspace::GetProject();
+        if (!project.customData.contains("StringAttributeIsMultiline")) {
+            project.customData["StringAttributeIsMultiline"] = Json::object();
+        }
+        auto& isMultilineDict = project.customData["StringAttributeIsMultiline"];
+        std::string attributeID = FormatString("##%s%i", t_attribute.c_str(), t_owner->nodeID);
+        if (!isMultilineDict.contains(attributeID)) {
+            isMultilineDict[attributeID] = false;
+        }
+        auto isMultiline = isMultilineDict[attributeID].get<bool>();
+
         std::string string = std::any_cast<std::string>(t_value);
         ImGui::AlignTextToFramePadding();
+        
         ImGui::Text("%s", t_attribute.c_str());
+        ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+        if (isMultiline) buttonColor.w = 0.5f;
+        ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
         ImGui::SameLine();
-        ImGui::InputText(FormatString("##%s", t_attribute.c_str()).c_str(), &string, 0);
+        if (ImGui::Button(ICON_FA_LIST)) {
+            isMultiline = !isMultiline;
+        }
+        ImGui::PopStyleColor();
+
+        ImGui::SameLine();
+
+        if (!isMultiline) {
+            ImGui::InputText(FormatString("##%s", t_attribute.c_str()).c_str(), &string, 0);
+        } else {
+            ImGui::InputTextMultiline(FormatString("##%s", t_attribute.c_str()).c_str(), &string);
+        }
+
+        isMultilineDict[attributeID] = isMultiline;
         t_value = string;
     }
 
