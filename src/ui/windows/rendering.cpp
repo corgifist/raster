@@ -176,10 +176,12 @@ namespace Raster {
                                 transformedAttributes.push_back(attribute.c_str());
                             }
                             ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
-                            ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
-                            ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
-                            ImGui::PopItemWidth();
-                            selectedPin = transformedAttributes[selectedAttributeIndex];
+                            if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size()) {
+                                ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
+                                ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
+                                ImGui::PopItemWidth();
+                                selectedPin = transformedAttributes[selectedAttributeIndex];
+                            }
 
                             if (dispatcherTarget.has_value()) {
                                 auto& value = dispatcherTarget.value();
