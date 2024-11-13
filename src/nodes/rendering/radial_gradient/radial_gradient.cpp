@@ -13,7 +13,9 @@ namespace Raster {
         SetupAttribute("FirstColor", glm::vec4(glm::vec3(0), 1));
         SetupAttribute("SecondColor", glm::vec4(1));
         SetupAttribute("Opacity", 1.0f);
+        SetupAttribute("OnlyScreenSpaceRendering", false);
 
+        AddInputPin("Base");
         AddOutputPin("Output");
     }
 
@@ -28,12 +30,13 @@ namespace Raster {
         }
         
         auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
-        auto framebuffer = m_framebuffer.GetWithoutBlitting(baseCandidate);
+        auto framebuffer = m_framebuffer.Get(baseCandidate);
         auto positionCandidate = GetAttribute<glm::vec2>("Position", t_contextData);
         auto radiusCandidate = GetAttribute<float>("Radius", t_contextData);
         auto firstColorCandidate = GetAttribute<glm::vec4>("FirstColor", t_contextData);
         auto secondColorCandidate = GetAttribute<glm::vec4>("SecondColor", t_contextData);
         auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
+        auto onlySpaceScreenRenderingCandidate = GetAttribute<bool>("OnlyScreenSpaceRendering", t_contextData);
         if (s_pipeline.has_value() && baseCandidate.has_value() && positionCandidate.has_value() && radiusCandidate.has_value() && firstColorCandidate.has_value() && secondColorCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
@@ -42,11 +45,13 @@ namespace Raster {
             auto& firstColor = firstColorCandidate.value();
             auto& secondColor = secondColorCandidate.value();
             auto& opacity = opacityCandidate.value();
+            auto& onlySpaceScreenRendering = onlySpaceScreenRenderingCandidate.value();
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
             GPU::ClearFramebuffer(0, 0, 0, 0);
 
             bool screenSpaceRendering = !(base.attachments.size() >= 2);
+            if (onlySpaceScreenRendering) screenSpaceRendering = true;
 
             GPU::SetShaderUniform(pipeline.fragment, "uPosition", position);
             GPU::SetShaderUniform(pipeline.fragment, "uRadius", radius);
@@ -82,6 +87,7 @@ namespace Raster {
             SliderBaseMetadata(100),
             FormatStringMetadata("%")
         });
+        RenderAttributeProperty("OnlyScreenSpaceRendering");
     }
 
     void RadialGradient::AbstractLoadSerialized(Json t_data) {

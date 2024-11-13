@@ -140,6 +140,7 @@ build_modules = [
     ["rendering/radial_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/box_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/radial_gradient", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/pixel_outline", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],
