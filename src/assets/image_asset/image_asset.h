@@ -36,6 +36,7 @@ namespace Raster {
         std::optional<std::future<bool>> m_asyncCopy;
 
         std::optional<Texture> m_texture;
+        std::optional<std::uintmax_t> m_cachedSize;
 
         static std::optional<Pipeline> s_gammaPipeline;
     };

@@ -4,6 +4,7 @@
 #include "common/audio_samples.h"
 #include "common/asset_id.h"
 #include "common/generic_audio_decoder.h"
+#include "common/generic_resolution.h"
 
 namespace Raster {
 
@@ -48,7 +49,8 @@ namespace Raster {
         RASTER_TYPE_NAME(AudioSamples),
         RASTER_TYPE_NAME(bool),
         RASTER_TYPE_NAME(AssetID),
-        RASTER_TYPE_NAME(GenericAudioDecoder)
+        RASTER_TYPE_NAME(GenericAudioDecoder),
+        RASTER_TYPE_NAME(GenericResolution)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {

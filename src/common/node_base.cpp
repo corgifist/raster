@@ -9,6 +9,7 @@
 #include "common/audio_samples.h"
 #include "common/asset_id.h"
 #include "common/generic_audio_decoder.h"
+#include "common/generic_resolution.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -24,7 +25,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()},
         {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), AssetID()},
         {TYPE_NAME(ICON_FA_VOLUME_HIGH " " ICON_FA_GEARS, GenericAudioDecoder), GenericAudioDecoder()},
-        {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), AudioSamples()}
+        {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), AudioSamples()},
+        {TYPE_NAME(ICON_FA_IMAGE " " ICON_FA_EXPAND, GenericResolution), GenericResolution()}
     };
 
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {

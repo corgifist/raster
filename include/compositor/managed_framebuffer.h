@@ -12,11 +12,12 @@ namespace Raster {
         ~ManagedFramebuffer();
 
         Framebuffer& Get(std::optional<Framebuffer> t_framebuffer);
+        Framebuffer& GetWithoutBlitting(std::optional<Framebuffer> t_framebuffer);
         Framebuffer& GetReadyFramebuffer();
         void Destroy();
 
     private:
-        void EnsureResolutionConstraints();
+        void EnsureResolutionConstraints(std::optional<Framebuffer> t_framebuffer);
         void InstantiateInternalFramebuffer(uint32_t width, uint32_t height);
         void DestroyInternalFramebuffer();
 

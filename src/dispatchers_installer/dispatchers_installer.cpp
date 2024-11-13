@@ -9,6 +9,7 @@
 #include "common/audio_samples.h"
 #include "common/asset_id.h"
 #include "common/generic_audio_decoder.h"
+#include "common/generic_resolution.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -26,7 +27,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(bool), AttributeDispatchers::DispatchBoolAttribute},
             {ATTRIBUTE_TYPE(AssetID), AttributeDispatchers::DispatchAssetIDAttribute},
             {ATTRIBUTE_TYPE(GenericAudioDecoder), AttributeDispatchers::DispatchGenericAudioDecoderAttribute},
-            {ATTRIBUTE_TYPE(AudioSamples), AttributeDispatchers::DispatchAudioSamplesAttribute}
+            {ATTRIBUTE_TYPE(AudioSamples), AttributeDispatchers::DispatchAudioSamplesAttribute},
+            {ATTRIBUTE_TYPE(GenericResolution), AttributeDispatchers::DispatchGenericResolutionAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -42,7 +44,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Transform2D), StringDispatchers::DispatchTransform2DValue},
             {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue},
             {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue},
-            {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetIDValue}
+            {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetIDValue},
+            {ATTRIBUTE_TYPE(GenericResolution), StringDispatchers::DispatchGenericResolutionValue}
         };
 
         Dispatchers::s_previewDispatchers = {
@@ -69,7 +72,8 @@ namespace Raster {
             {TYPE_PAIR(int, float), ConversionDispatchers::ConvertIntToFloat},
             {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4},
             {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture},
-            {TYPE_PAIR(GenericAudioDecoder, AudioSamples), ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples}
+            {TYPE_PAIR(GenericAudioDecoder, AudioSamples), ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples},
+            {TYPE_PAIR(GenericResolution, glm::vec2), ConversionDispatchers::ConvertGenericResolutionToVec2}
         };
     }
 };

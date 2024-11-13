@@ -4,11 +4,11 @@
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
 #include "compositor/texture_interoperability.h"
+#include "compositor/managed_framebuffer.h"
 
 namespace Raster {
     struct RadialGradient: public NodeBase {
         RadialGradient();
-        ~RadialGradient();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
@@ -21,7 +21,7 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
 
-        DoubleBufferedFramebuffer m_framebuffer;
+        ManagedFramebuffer m_framebuffer;
         static std::optional<Pipeline> s_pipeline;
     };
 };

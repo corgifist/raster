@@ -77,15 +77,14 @@ namespace Raster {
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
 
-
-            GPU::SetShaderUniform(pipeline.vertex, "uMatrix", project.GetProjectionMatrix() * transform.GetTransformationMatrix());
+            float aspect = (float) framebuffer.width / (float) framebuffer.height;
+            auto projectionMatrix = glm::ortho(-aspect, aspect, 1.0f, -1.0f, -1.0f, 1.0f);
+            GPU::SetShaderUniform(pipeline.vertex, "uMatrix", projectionMatrix * transform.GetTransformationMatrix());
 
             GPU::SetShaderUniform(pipeline.fragment, "uMaintainUVRange", maintainUVRange);
             GPU::SetShaderUniform(pipeline.fragment, "uAspectRatioCorrection", aspectRatioCorrection);
-            if (aspectRatioCorrection) {
-                glm::vec2 decomposedSize = transform.DecomposeSize();
-                GPU::SetShaderUniform(pipeline.fragment, "uAspectRatio", decomposedSize.x / decomposedSize.y);
-            }
+            glm::vec2 decomposedSize = transform.DecomposeSize();
+            GPU::SetShaderUniform(pipeline.fragment, "uAspectRatio", decomposedSize.x / decomposedSize.y);
             GPU::SetShaderUniform(pipeline.fragment, "uUVPosition", uvPosition);
             GPU::SetShaderUniform(pipeline.fragment, "uUVSize", uvSize);
             GPU::SetShaderUniform(pipeline.fragment, "uUVAngle", glm::radians(uvAngle));

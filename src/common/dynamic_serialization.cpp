@@ -1,5 +1,6 @@
 #include "common/dynamic_serialization.h"
 #include "common/generic_audio_decoder.h"
+#include "common/generic_resolution.h"
 
 #define TYPE_CONTAINER(type) std::type_index(typeid(type))
 #define TYPE_NAME(type) #type
@@ -17,7 +18,8 @@ namespace Raster {
         RASTER_TYPE_NAME(Transform2D),
         RASTER_TYPE_NAME(SamplerSettings),
         RASTER_TYPE_NAME(GenericAudioDecoder),
-        RASTER_TYPE_NAME(bool)
+        RASTER_TYPE_NAME(bool),
+        RASTER_TYPE_NAME(GenericResolution)
     };
 
     std::unordered_map<std::type_index, SerializationFunction> DynamicSerialization::s_serializers = {
@@ -30,7 +32,8 @@ namespace Raster {
         {TYPE_CONTAINER(Transform2D), DynamicSerialization::SerializeTransform2D},
         {TYPE_CONTAINER(SamplerSettings), DynamicSerialization::SerializeSamplerSettings},
         {TYPE_CONTAINER(GenericAudioDecoder), DynamicSerialization::SerializeGenericAudioDecoder},
-        {TYPE_CONTAINER(bool), DynamicSerialization::SerializeBool}
+        {TYPE_CONTAINER(bool), DynamicSerialization::SerializeBool},
+        {TYPE_CONTAINER(GenericResolution), DynamicSerialization::SerializeGenericResolution}
     };
 
     std::unordered_map<std::string, DeserializationFunction> DynamicSerialization::s_deserializers = {
@@ -43,7 +46,8 @@ namespace Raster {
         {TYPE_NAME(Transform2D), DynamicSerialization::DeserializeTransform2D},
         {TYPE_NAME(SamplerSettings), DynamicSerialization::DeserializeSamplerSettings},
         {TYPE_NAME(GenericAudioDecoder), DynamicSerialization::DeserializeGenericAudioDecoder},
-        {TYPE_NAME(bool), DynamicSerialization::DeserializeBool}
+        {TYPE_NAME(bool), DynamicSerialization::DeserializeBool},
+        {TYPE_NAME(GenericResolution), DynamicSerialization::DeserializeGenericResolution}
     };
 
     Json DynamicSerialization::SerializeInt(std::any& t_value) {
@@ -97,6 +101,10 @@ namespace Raster {
         return std::any_cast<bool>(t_value);
     }
 
+    Json DynamicSerialization::SerializeGenericResolution(std::any& t_value) {
+        return std::any_cast<GenericResolution>(t_value).Serialize();
+    }
+
     std::any DynamicSerialization::DeserializeInt(Json t_data) {
         return t_data.get<int>();
     }
@@ -137,6 +145,10 @@ namespace Raster {
 
     std::any DynamicSerialization::DeserializeBool(Json t_data) {
         return t_data.get<bool>();
+    }
+
+    std::any DynamicSerialization::DeserializeGenericResolution(Json t_data) {
+        return GenericResolution(t_data);
     }
 
     std::optional<Json> DynamicSerialization::Serialize(std::any& t_value) {

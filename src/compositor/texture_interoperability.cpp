@@ -5,13 +5,12 @@ namespace Raster {
     std::optional<Framebuffer> TextureInteroperability::GetFramebuffer(std::optional<std::any> t_value) {
         if (!t_value.has_value()) return std::nullopt;
         auto value = t_value.value();
+        if (value.type() == typeid(Framebuffer)) {
+            return std::any_cast<Framebuffer>(value);
+        }
         auto conversionCandidate = Dispatchers::DispatchConversion(value, typeid(Texture));
         if (conversionCandidate.has_value()) {
             value = conversionCandidate.value();
-        }
-
-        if (value.type() == typeid(Framebuffer)) {
-            return std::any_cast<Framebuffer>(value);
         }
         if (value.type() == typeid(Texture)) {
             auto texture = std::any_cast<Texture>(value);

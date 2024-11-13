@@ -3,6 +3,7 @@
 #include "gpu/gpu.h"
 #include "common/workspace.h"
 #include "common/generic_audio_decoder.h"
+#include "common/generic_resolution.h"
 
 namespace Raster {
     std::optional<std::any> ConversionDispatchers::ConvertAssetIDToInt(std::any& t_value) {
@@ -34,6 +35,10 @@ namespace Raster {
             }
         }
         return std::nullopt;
+    }
+
+    std::optional<std::any> ConversionDispatchers::ConvertGenericResolutionToVec2(std::any& t_value) {
+        return std::any_cast<GenericResolution>(t_value).CalculateResolution();
     }
 
     std::optional<std::any> ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples(std::any& t_value) {

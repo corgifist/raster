@@ -7,18 +7,14 @@ namespace Raster {
     RadialGradient::RadialGradient() {
         NodeBase::Initialize();
 
+        SetupAttribute("Base", Framebuffer());
         SetupAttribute("Position", glm::vec2(0.0));
         SetupAttribute("Radius", 0.5f);
         SetupAttribute("FirstColor", glm::vec4(glm::vec3(0), 1));
         SetupAttribute("SecondColor", glm::vec4(1));
+        SetupAttribute("Opacity", 1.0f);
 
         AddOutputPin("Output");
-    }
-
-    RadialGradient::~RadialGradient() {
-        if (m_framebuffer.Get().handle) {
-            m_framebuffer.Destroy();
-        }
     }
 
     AbstractPinMap RadialGradient::AbstractExecute(ContextData& t_contextData) {
@@ -31,26 +27,38 @@ namespace Raster {
             );
         }
         
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto framebuffer = m_framebuffer.GetWithoutBlitting(baseCandidate);
         auto positionCandidate = GetAttribute<glm::vec2>("Position", t_contextData);
         auto radiusCandidate = GetAttribute<float>("Radius", t_contextData);
         auto firstColorCandidate = GetAttribute<glm::vec4>("FirstColor", t_contextData);
         auto secondColorCandidate = GetAttribute<glm::vec4>("SecondColor", t_contextData);
-        if (s_pipeline.has_value() && positionCandidate.has_value() && radiusCandidate.has_value() && firstColorCandidate.has_value() && secondColorCandidate.has_value()) {
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
+        if (s_pipeline.has_value() && baseCandidate.has_value() && positionCandidate.has_value() && radiusCandidate.has_value() && firstColorCandidate.has_value() && secondColorCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
-            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            auto& base = baseCandidate.value();
             auto& position = positionCandidate.value();
             auto& radius = radiusCandidate.value();
             auto& firstColor = firstColorCandidate.value();
             auto& secondColor = secondColorCandidate.value();
-            Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
+            auto& opacity = opacityCandidate.value();
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
+            GPU::ClearFramebuffer(0, 0, 0, 0);
+
+            bool screenSpaceRendering = !(base.attachments.size() >= 2);
 
             GPU::SetShaderUniform(pipeline.fragment, "uPosition", position);
             GPU::SetShaderUniform(pipeline.fragment, "uRadius", radius);
             GPU::SetShaderUniform(pipeline.fragment, "uFirstColor", firstColor);
             GPU::SetShaderUniform(pipeline.fragment, "uSecondColor", secondColor);
             GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+            GPU::SetShaderUniform(pipeline.fragment, "uScreenSpaceRendering", screenSpaceRendering);
+            GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
+            if (!screenSpaceRendering) {
+                GPU::BindTextureToShader(pipeline.fragment, "uColorTexture", base.attachments.at(0), 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uUVTexture", base.attachments.at(1), 1);
+            }
 
             GPU::DrawArrays(3);
             
@@ -69,6 +77,11 @@ namespace Raster {
         });
         RenderAttributeProperty("FirstColor");
         RenderAttributeProperty("SecondColor");
+        RenderAttributeProperty("Opacity", {
+            SliderRangeMetadata(0, 100),
+            SliderBaseMetadata(100),
+            FormatStringMetadata("%")
+        });
     }
 
     void RadialGradient::AbstractLoadSerialized(Json t_data) {

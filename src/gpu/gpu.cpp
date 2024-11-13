@@ -269,6 +269,8 @@ namespace Raster {
     }
 
     Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision, bool mipmapped) {
+        width = std::max(1, (int) width);
+        height = std::max(1, (int) height);
         GLuint textureHandle;
         glGenTextures(1, &textureHandle);
         glBindTexture(GL_TEXTURE_2D, textureHandle);
@@ -341,6 +343,8 @@ namespace Raster {
 
     // TODO: return std::optional<Framebuffer> instead of Framebuffer
     Framebuffer GPU::GenerateFramebuffer(uint32_t width, uint32_t height, std::vector<Texture> attachments) {
+        width = std::max(1, (int) width);
+        height = std::max(1, (int) height);
         Framebuffer fbo;
         GLuint fboHandle;
         glGenFramebuffers(1, &fboHandle);

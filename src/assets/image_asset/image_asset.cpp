@@ -93,8 +93,10 @@ namespace Raster {
     }
 
     std::optional<std::uintmax_t> ImageAsset::AbstractGetSize() {
+        if (m_cachedSize.has_value()) return m_cachedSize;
         if (std::filesystem::exists(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()))) {
-            return std::filesystem::file_size(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()));
+            m_cachedSize = std::filesystem::file_size(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()));
+            return m_cachedSize;
         }
         return std::nullopt;
     }

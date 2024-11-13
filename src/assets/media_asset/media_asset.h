@@ -71,5 +71,6 @@ namespace Raster {
         std::vector<StreamInfo> m_streamInfos;
         std::vector<std::pair<std::string, std::string>> m_metadata;
         std::optional<std::future<bool>> m_copyFuture;
+        std::optional<std::uintmax_t> m_cachedSize;
     };
 };

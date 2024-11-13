@@ -32,6 +32,7 @@ namespace Raster {
     bool MediaAsset::AbstractIsReady() {
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str());
         if (m_copyFuture.has_value() && !IsFutureReady(m_copyFuture.value())) return false;
+        if (m_formatCtxWasOpened) return true;
         if (std::filesystem::exists(absolutePath) && !std::filesystem::is_directory(absolutePath) && !m_formatCtx.isOpened() && !m_formatCtxWasOpened) {
             std::error_code ec;
             m_formatCtx.openInput(absolutePath, ec);
@@ -136,17 +137,18 @@ namespace Raster {
     }
 
     std::optional<std::uintmax_t> MediaAsset::AbstractGetSize() {
+        if (m_cachedSize.has_value()) {
+            return m_cachedSize;
+        }
         if (std::filesystem::exists(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()))) {
-            return std::filesystem::file_size(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()));
+            m_cachedSize = std::filesystem::file_size(FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str()));
+            return m_cachedSize;
         }
         return std::nullopt;
     }
 
     std::optional<std::string> MediaAsset::AbstractGetPath() {
-        if (std::filesystem::exists(m_originalPath) && !std::filesystem::is_directory(m_originalPath)) {
-            return m_originalPath;
-        }
-        return std::nullopt;
+        return m_originalPath;
     }
 
     Json MediaAsset::AbstractSerialize() {

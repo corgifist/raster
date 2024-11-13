@@ -11,6 +11,7 @@
 #include "audio/audio.h"
 #include "common/asset_id.h"
 #include "common/ui_helpers.h"
+#include "common/generic_resolution.h"
 
 namespace Raster {
 
@@ -217,6 +218,13 @@ namespace Raster {
             }
             ImGui::EndChild();
         }
+    }
+
+    void StringDispatchers::DispatchGenericResolutionValue(std::any& t_attribute) {
+        auto value = std::any_cast<GenericResolution>(t_attribute);
+        auto resolution = value.CalculateResolution();
+        std::string screenText = FormatString("%ix%i (%0.2f)", (int) resolution.x, (int) resolution.y, (float) resolution.x / (float) resolution.y);
+        ImGui::Button(screenText.c_str(), FitRectInRect(ImVec2(160, 160), ImVec2(resolution.x, resolution.y)));
     }
 
 };

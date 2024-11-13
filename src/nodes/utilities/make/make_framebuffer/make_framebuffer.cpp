@@ -3,6 +3,7 @@
 #include "raster.h"
 
 #include "make_framebuffer.h"
+#include "common/generic_resolution.h"
 
 namespace Raster {
 
@@ -14,14 +15,8 @@ namespace Raster {
         AddOutputPin("Value");
 
         SetupAttribute("BackgroundColor", glm::vec4(1));
+        SetupAttribute("Resolution", GenericResolution());
         SetupAttribute("BackgroundTexture", Texture());
-
-        if (!s_pipeline.has_value()) {
-            s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "make_framebuffer/shader"),
-                GPU::GenerateShader(ShaderType::Fragment, "make_framebuffer/shader")
-            );
-        }
     }
 
     MakeFramebuffer::~MakeFramebuffer() {
@@ -34,10 +29,18 @@ namespace Raster {
     AbstractPinMap MakeFramebuffer::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
+        if (!s_pipeline.has_value()) {
+            s_pipeline = GPU::GeneratePipeline(
+                GPU::GenerateShader(ShaderType::Vertex, "make_framebuffer/shader"),
+                GPU::GenerateShader(ShaderType::Fragment, "make_framebuffer/shader")
+            );
+        }
+
         auto backgroundColorCandidate = GetAttribute<glm::vec4>("BackgroundColor", t_contextData);
-        if (backgroundColorCandidate.has_value()) {
+        auto resolutionCandidate = GetAttribute<glm::vec2>("Resolution", t_contextData);
+        if (backgroundColorCandidate.has_value() && resolutionCandidate.has_value()) {
             auto& backgroundColor = backgroundColorCandidate.value();
-            auto requiredResolution = Compositor::GetRequiredResolution();
+            auto requiredResolution = resolutionCandidate.value() * Compositor::previewResolutionScale;
             if (!m_internalFramebuffer.has_value() || m_internalFramebuffer.value().width != (int) requiredResolution.x || m_internalFramebuffer.value().height != (int) requiredResolution.y) {
                 if (m_internalFramebuffer.has_value()) {
                     auto& framebuffer = m_internalFramebuffer.value();
@@ -56,7 +59,7 @@ namespace Raster {
                     auto& texture = backgroundTextureCandidate.value();
                     GPU::BindPipeline(pipeline);
                     GPU::SetShaderUniform(pipeline.fragment, "uColor", backgroundColor);
-                    GPU::SetShaderUniform(pipeline.fragment, "uResolution", requiredResolution);
+                    GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
                     GPU::BindTextureToShader(pipeline.fragment, "uTexture", texture, 0);
                     GPU::DrawArrays(3);
                 }
@@ -69,6 +72,7 @@ namespace Raster {
 
     void MakeFramebuffer::AbstractRenderProperties() {
         RenderAttributeProperty("BackgroundColor");
+        RenderAttributeProperty("Resolution");
     }
 
     void MakeFramebuffer::AbstractLoadSerialized(Json t_data) {

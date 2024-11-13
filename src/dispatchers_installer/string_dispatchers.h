@@ -19,5 +19,6 @@ namespace Raster {
         static void DispatchBoolValue(std::any& t_attribute);
         static void DispatchAudioSamplesValue(std::any& t_attribute);
         static void DispatchAssetIDValue(std::any& t_attribute);
+        static void DispatchGenericResolutionValue(std::any& t_attribute);
     };
 };

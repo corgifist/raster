@@ -58,10 +58,11 @@ void main() {
 
     uv += 0.5;
 
-    vec2 saturatedUV = saturateUV(uv);
     float d = SDF_DISTANCE_FUNCTION_PLACEHOLDER(uv - 0.5);
     if (d > 0.0) gColor *= vec4(0);
 
     if (uTextureAvailable) gColor *= texture(uTexture, uv);
-    gUV = vec4(uMaintainUVRange ? saturatedUV : uv, 0, 1);
+    vec2 saturatedUV = saturateUV(uv);
+    if (!uAspectRatioCorrection) saturatedUV.x *= uAspectRatio;
+    gUV = vec4(uMaintainUVRange ? saturatedUV - 0.5 : uv - 0.5, 0, 1);
 }

@@ -11,6 +11,7 @@
 #include "common/asset_id.h"
 #include "string_dispatchers.h"
 #include "common/generic_audio_decoder.h"
+#include "common/generic_resolution.h"
 
 namespace Raster {
 
@@ -547,6 +548,48 @@ namespace Raster {
             ImGui::EndChild();
         }
         ImGui::EndChild();
+        t_value = value;
+    }
+
+
+    void AttributeDispatchers::DispatchGenericResolutionAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<GenericResolution>(t_value);
+        auto resolution = value.CalculateResolution();
+        std::string resolutionText = FormatString("%ix%i (%0.2f)", (int) resolution.x, (int) resolution.y, (float) resolution.x / (float) resolution.y);
+        auto glmFitResolution = FitRectInRect(glm::vec2(ImGui::GetContentRegionAvail().x, 200), resolution);
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - glmFitResolution.x / 2.0f);
+        ImGui::Button(resolutionText.c_str(), ImVec2(glmFitResolution.x, glmFitResolution.y));
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("USE_HARDCODED_RESOLUTION").c_str());
+        ImGui::SameLine();
+        ImGui::Checkbox("##useRawResolution", &value.useRawResolution);
+        if (!value.useRawResolution) {
+            ImGui::SameLine();
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s %s", ICON_FA_GEARS, Localization::GetString("USE_HARDCODED_RESOLUTION_AS_REFERENCE").c_str());
+            ImGui::SameLine();
+            ImGui::Checkbox("##useHardcodedResolutionAsReference", &value.useRawResolutionAsReference);
+        }
+        if (value.useRawResolution || value.useRawResolutionAsReference) {
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str());
+            ImGui::SameLine();
+            ImGui::DragFloat2("##resolutionDrag", glm::value_ptr(value.rawResolution), 1, 1, 0, "%0.0f");
+        }
+        if (!value.useRawResolution || !value.useProjectAspectResolution) {
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("ASPECT_RATIO").c_str());
+            ImGui::SameLine();
+            ImGui::DragFloat("##aspectRatioDrag", &value.aspectRatio, 0.01f);
+        }
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s %s", ICON_FA_FOLDER, Localization::GetString("USE_PROJECT_ASPECT_RESOLUTION").c_str());
+        ImGui::SameLine();
+        ImGui::Checkbox("##useProjectAspectResolution", &value.useProjectAspectResolution);
+
+        value.aspectRatio = glm::max(0.001f, value.aspectRatio);
+
         t_value = value;
     }
 };
