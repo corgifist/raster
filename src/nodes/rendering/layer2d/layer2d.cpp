@@ -26,7 +26,6 @@ namespace Raster {
         SetupAttribute("Texture", Texture());
         SetupAttribute("Shape", SDFShape());
         SetupAttribute("SamplerSettings", SamplerSettings());
-        SetupAttribute("MaintainUVRange", true);
         SetupAttribute("AspectRatioCorrection", false);
 
         this->m_sampler = GPU::GenerateSampler();
@@ -50,19 +49,17 @@ namespace Raster {
         auto textureCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Texture", t_contextData));
         auto samplerSettingsCandidate = GetAttribute<SamplerSettings>("SamplerSettings", t_contextData);
         auto uvTransformCandidate = GetAttribute<Transform2D>("UVTransform", t_contextData);
-        auto maintainUVRangeCandidate = GetAttribute<bool>("MaintainUVRange", t_contextData);
         auto aspectRatioCorrectionCandidate = GetAttribute<bool>("AspectRatioCorrection", t_contextData);
         auto shapeCandidate = GetShape(t_contextData);
         auto pipelineCandidate = GetPipeline(t_contextData);
 
-        if (pipelineCandidate && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && maintainUVRangeCandidate.has_value() && aspectRatioCorrectionCandidate.has_value() && shapeCandidate.has_value()) {
+        if (pipelineCandidate && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && aspectRatioCorrectionCandidate.has_value() && shapeCandidate.has_value()) {
             auto& pipeline = pipelineCandidate.value();
             auto& transform = transformCandidate.value();
             auto& color = colorCandidate.value();
             auto& texture = textureCandidate.value();
             auto& samplerSettings = samplerSettingsCandidate.value();
             auto uvTransform = uvTransformCandidate.value();
-            auto& maintainUVRange = maintainUVRangeCandidate.value();
             auto& aspectRatioCorrection = aspectRatioCorrectionCandidate.value();
             auto& shape = shapeCandidate.value();
             uvTransform.size = 1.0f / uvTransform.size;
@@ -81,7 +78,6 @@ namespace Raster {
             auto projectionMatrix = glm::ortho(-aspect, aspect, 1.0f, -1.0f, -1.0f, 1.0f);
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", projectionMatrix * transform.GetTransformationMatrix());
 
-            GPU::SetShaderUniform(pipeline.fragment, "uMaintainUVRange", maintainUVRange);
             GPU::SetShaderUniform(pipeline.fragment, "uAspectRatioCorrection", aspectRatioCorrection);
             glm::vec2 decomposedSize = transform.DecomposeSize();
             GPU::SetShaderUniform(pipeline.fragment, "uAspectRatio", decomposedSize.x / decomposedSize.y);
@@ -154,9 +150,6 @@ namespace Raster {
         });
         RenderAttributeProperty("Color", {
             IconMetadata(ICON_FA_DROPLET)
-        });
-        RenderAttributeProperty("MaintainUVRange", {
-            IconMetadata(ICON_FA_EXPAND)
         });
         RenderAttributeProperty("AspectRatioCorrection", {
             IconMetadata(ICON_FA_EXPAND)

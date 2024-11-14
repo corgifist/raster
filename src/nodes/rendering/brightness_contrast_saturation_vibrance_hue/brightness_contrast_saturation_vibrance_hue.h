@@ -8,7 +8,6 @@
 namespace Raster {
     struct BrightnessContrastSaturationVibranceHue : public NodeBase {
         BrightnessContrastSaturationVibranceHue();
-        ~BrightnessContrastSaturationVibranceHue();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
@@ -21,7 +20,7 @@ namespace Raster {
         std::string Icon();
         std::optional<std::string> Footer();
     private:
-        DoubleBufferedFramebuffer m_framebuffer;
+        ManagedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
         std::optional<float> m_lastBrightness, m_lastContrast, 

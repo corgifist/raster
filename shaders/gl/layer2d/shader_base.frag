@@ -18,22 +18,10 @@ uniform vec2 uUVPosition;
 uniform vec2 uUVSize;
 uniform float uUVAngle;
 
-uniform bool uMaintainUVRange;
-
 uniform float uAspectRatio;
 uniform bool uAspectRatioCorrection;
 
 SDF_UNIFORMS_PLACEHOLDER
-
-float saturateUV(float a) {
-    if (a < -1.0) a = fract(a);
-    if (a < 0.0) return 1.0 + a;
-    return mod(a, 1.0);
-}
-
-vec2 saturateUV(vec2 a) {
-    return vec2(saturateUV(a.x), saturateUV(a.y));
-}
 
 vec2 rotate(vec2 v, float a) {
 	float s = sin(a);
@@ -62,7 +50,6 @@ void main() {
     if (d > 0.0) gColor *= vec4(0);
 
     if (uTextureAvailable) gColor *= texture(uTexture, uv);
-    vec2 saturatedUV = saturateUV(uv);
-    if (!uAspectRatioCorrection) saturatedUV.x *= uAspectRatio;
-    gUV = vec4(uMaintainUVRange ? saturatedUV - 0.5 : uv - 0.5, 0, 1);
+    
+    gUV = vec4(uv - 0.5, 0, 1);
 }

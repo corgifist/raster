@@ -15,6 +15,7 @@ uniform vec2 uBoxBlurIntensity;
 
 uniform float uSamples;
 uniform sampler2D uTexture;
+uniform float uOpacity;
 
 #define SAMPLES uSamples
 
@@ -39,6 +40,7 @@ void main() {
     vec2 texel = 1.0 / uResolution;
 
     vec4 result = blur_box(uTexture, texel, uv, uBoxBlurIntensity);
+    result.a *= uOpacity;
 
     gColor = result;
 }

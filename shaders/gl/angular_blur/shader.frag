@@ -7,12 +7,12 @@ precision highp float;
 // This shader uses code from https://www.shadertoy.com/view/NscGDf
 // Many thanks to Xor (https://www.shadertoy.com/user/Xor) on Shadertoy!
 
-
 layout(location = 0) out vec4 gColor;
 
 uniform vec2 uResolution;
 uniform float uAngularBlurAngle;
 uniform vec2 uCenter;
+uniform float uOpacity;
 
 uniform float uSamples;
 uniform sampler2D uTexture;
@@ -42,6 +42,7 @@ void main() {
     vec2 texel = 1.0 / uResolution;
 
     vec4 result = blur_angular(uTexture, texel, uv, uAngularBlurAngle);
+    result.a *= uOpacity;
 
     gColor = result;
 }

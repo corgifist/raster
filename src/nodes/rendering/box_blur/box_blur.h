@@ -4,12 +4,12 @@
 
 #include "compositor/compositor.h"
 #include "compositor/texture_interoperability.h"
+#include "compositor/managed_framebuffer.h"
 #include "gpu/gpu.h"
 
 namespace Raster {
     struct BoxBlur : public NodeBase {
         BoxBlur();
-        ~BoxBlur();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
@@ -23,7 +23,7 @@ namespace Raster {
         std::optional<std::string> Footer();
     
     private:
-        DoubleBufferedFramebuffer m_framebuffer;
+        ManagedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
     };

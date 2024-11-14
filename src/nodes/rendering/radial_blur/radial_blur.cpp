@@ -10,26 +10,24 @@ namespace Raster {
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("Intensity", glm::vec2(0.5f));
         SetupAttribute("Center", glm::vec2(0));
+        SetupAttribute("Opacity", 1.0f);
         SetupAttribute("Samples", 50);
 
         AddInputPin("Base");
         AddOutputPin("Output");
     }
 
-    RadialBlur::~RadialBlur() {
-        if (m_framebuffer.Get().handle) {
-            m_framebuffer.Destroy();
-        }
-    }
-
     AbstractPinMap RadialBlur::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
+
         auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto& framebuffer = m_framebuffer.Get(baseCandidate);
         auto intensityCandidate = GetAttribute<glm::vec2>("Intensity", t_contextData);
         auto centerCandidate = GetAttribute<glm::vec2>("Center", t_contextData);
         auto samplesCandidate = GetAttribute<int>("Samples", t_contextData);
-        
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
+
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
                 GPU::s_basicShader,
@@ -37,29 +35,26 @@ namespace Raster {
             );
         }
 
-        if (s_pipeline.has_value() && baseCandidate.has_value() && intensityCandidate.has_value() && centerCandidate.has_value() && samplesCandidate.has_value()) {
+        if (s_pipeline.has_value() && baseCandidate.has_value() && intensityCandidate.has_value() && centerCandidate.has_value() && samplesCandidate.has_value() && opacityCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
             auto& intensity = intensityCandidate.value();
             auto& center = centerCandidate.value();
-            auto samples = (float) samplesCandidate.value();    
-
-            Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
+            auto& opacity = opacityCandidate.value();
+            auto samples = (float) samplesCandidate.value();   
 
             intensity *= 0.1f;
-            intensity *= glm::vec2(m_framebuffer.width, m_framebuffer.height);
+            intensity *= glm::vec2(framebuffer.width, framebuffer.height);
 
-            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
-            GPU::ClearFramebuffer(0, 0, 0, 0);
 
             GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
             GPU::SetShaderUniform(pipeline.fragment, "uRadialBlurIntensity", intensity);
             GPU::SetShaderUniform(pipeline.fragment, "uSamples", samples);
             GPU::SetShaderUniform(pipeline.fragment, "uCenter", center);
-
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
+            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+            GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
             
             GPU::DrawArrays(3);
 
@@ -77,8 +72,14 @@ namespace Raster {
         RenderAttributeProperty("Center", {
             IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT)
         });
+        RenderAttributeProperty("Opacity", {
+            IconMetadata(ICON_FA_DROPLET),
+            SliderRangeMetadata(0, 100),
+            SliderBaseMetadata(100)
+        });
         RenderAttributeProperty("Samples", {
-            IconMetadata(ICON_FA_GEARS)
+            IconMetadata(ICON_FA_GEARS),
+            SliderRangeMetadata(1, 300)
         });
     }
 

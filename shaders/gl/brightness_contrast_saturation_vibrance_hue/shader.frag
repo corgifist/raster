@@ -34,6 +34,8 @@ uniform vec2 uResolution;
 
 uniform sampler2D uTexture;
 
+uniform float uOpacity;
+
 void brightnessAdjust( inout vec4 color, in float b) {
     color.rgb += b;
 }
@@ -204,6 +206,8 @@ void main() {
         if (_vibrance != 1.0) fragColor = vibrance(fragColor, _vibrance);
         if (_hue != 0.0) fragColor = shiftHue(fragColor.rgb, _hue);
     } else discard;
+
+    fragColor.a *= uOpacity;
 
     gColor = fragColor;
 }

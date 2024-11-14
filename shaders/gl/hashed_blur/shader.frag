@@ -44,7 +44,7 @@ vec2 Hash22(vec2 p)
 }
 
 //-------------------------------------------------------------------------------------------
-vec3 Blur(vec2 uv, float radius)
+vec4 Blur(vec2 uv, float radius)
 {
 	radius = radius * .04;
     
@@ -54,10 +54,10 @@ vec3 Blur(vec2 uv, float radius)
 	vec2 random = Hash22(uv + uHashOffset);
 
     // Do the blur here...
-	vec3 acc = vec3(0.0);
+	vec4 acc = vec4(0.0);
 	for (int i = 0; i < uIterations; i++)
     {
-		acc += texture(uTexture, uv + circle * Sample(random), radius*10.0).xyz;
+		acc += texture(uTexture, uv + circle * Sample(random), radius*10.0);
     }
 	return acc / float(uIterations);
 }
@@ -67,5 +67,5 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / uResolution;
     uv.y = 1.0 - uv.y;
  
-	gColor = vec4(Blur(uv * vec2(1.0, -1.0), uRadius), 1.0);
+	gColor = Blur(uv * vec2(1.0, -1.0), uRadius);
 }

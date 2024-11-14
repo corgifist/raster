@@ -16,6 +16,8 @@ uniform vec2 uCenter;
 uniform float uSamples;
 uniform sampler2D uTexture;
 
+uniform float uOpacity;
+
 #define SAMPLES uSamples
 
 vec4 blur_radial(sampler2D tex, vec2 texel, vec2 uv, vec2 radius)
@@ -38,6 +40,10 @@ void main() {
     vec2 texel = 1.0 / uResolution;
 
     vec4 result = blur_radial(uTexture, texel, uv, uRadialBlurIntensity);
+    result.a *= uOpacity;
 
     gColor = result;
+    uv -= 0.5;
+    uv.x *= uResolution.x / uResolution.y;
+    gUV = vec4()
 }

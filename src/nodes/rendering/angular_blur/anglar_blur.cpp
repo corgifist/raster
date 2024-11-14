@@ -10,17 +10,13 @@ namespace Raster {
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("Angle", 0.0f);
         SetupAttribute("Center", glm::vec2(0));
+        SetupAttribute("Opacity", 1.0f);
         SetupAttribute("Samples", 50);
 
         AddInputPin("Base");
         AddOutputPin("Output");
     }
 
-    AngularBlur::~AngularBlur() {
-        if (m_framebuffer.Get().handle) {
-            m_framebuffer.Destroy();
-        }
-    }
 
     AbstractPinMap AngularBlur::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
@@ -29,6 +25,7 @@ namespace Raster {
         auto angleCandidate = GetAttribute<float>("Angle", t_contextData);
         auto centerCandidate = GetAttribute<glm::vec2>("Center", t_contextData);
         auto samplesCandidate = GetAttribute<int>("Samples", t_contextData);
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
         
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -37,25 +34,25 @@ namespace Raster {
             );
         }
 
-        if (s_pipeline.has_value() && baseCandidate.has_value() && angleCandidate.has_value() && centerCandidate.has_value() && samplesCandidate.has_value()) {
+        if (s_pipeline.has_value() && baseCandidate.has_value() && angleCandidate.has_value() && centerCandidate.has_value() && samplesCandidate.has_value() && opacityCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
             auto angle = glm::radians(angleCandidate.value());
             auto& center = centerCandidate.value();
+            auto& opacity = opacityCandidate.value();
             auto samples = (float) samplesCandidate.value();    
 
-            Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
-            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
+            auto& framebuffer = m_framebuffer.Get(baseCandidate);
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
-            GPU::ClearFramebuffer(0, 0, 0, 0);
 
             GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
             GPU::SetShaderUniform(pipeline.fragment, "uAngularBlurAngle", angle);
             GPU::SetShaderUniform(pipeline.fragment, "uSamples", samples);
             GPU::SetShaderUniform(pipeline.fragment, "uCenter", center);
+            GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
 
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
+            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
             
             GPU::DrawArrays(3);
 

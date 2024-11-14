@@ -63,12 +63,19 @@ namespace Raster {
     }
 
     void PixelOutline::AbstractRenderProperties() {
-        RenderAttributeProperty("OutlineColor");
-        RenderAttributeProperty("BackgroundColor");
-        RenderAttributeProperty("Intensity", {
-            SliderStepMetadata(0.1f)
+        RenderAttributeProperty("OutlineColor", {
+            IconMetadata(ICON_FA_DROPLET)
         });
-        RenderAttributeProperty("OnlyOutline");
+        RenderAttributeProperty("BackgroundColor", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
+        RenderAttributeProperty("Intensity", {
+            SliderStepMetadata(0.1f),
+            IconMetadata(ICON_FA_PERCENT)
+        });
+        RenderAttributeProperty("OnlyOutline", {
+            IconMetadata(ICON_FA_BORDER_NONE)
+        });
     }
 
     void PixelOutline::AbstractLoadSerialized(Json t_data) {

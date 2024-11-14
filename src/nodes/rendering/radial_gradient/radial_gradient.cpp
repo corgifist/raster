@@ -48,7 +48,6 @@ namespace Raster {
             auto& onlySpaceScreenRendering = onlySpaceScreenRenderingCandidate.value();
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
-            GPU::ClearFramebuffer(0, 0, 0, 0);
 
             bool screenSpaceRendering = !(base.attachments.size() >= 2);
             if (onlySpaceScreenRendering) screenSpaceRendering = true;
@@ -75,19 +74,28 @@ namespace Raster {
 
     void RadialGradient::AbstractRenderProperties() {
         RenderAttributeProperty("Position", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
             SliderStepMetadata(0.05f)
         });
         RenderAttributeProperty("Radius", {
+            IconMetadata(ICON_FA_CIRCLE),
             SliderStepMetadata(0.05f)
         });
-        RenderAttributeProperty("FirstColor");
-        RenderAttributeProperty("SecondColor");
+        RenderAttributeProperty("FirstColor", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
+        RenderAttributeProperty("SecondColor", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
         RenderAttributeProperty("Opacity", {
             SliderRangeMetadata(0, 100),
             SliderBaseMetadata(100),
-            FormatStringMetadata("%")
+            FormatStringMetadata("%"),
+            IconMetadata(ICON_FA_DROPLET)
         });
-        RenderAttributeProperty("OnlyScreenSpaceRendering");
+        RenderAttributeProperty("OnlyScreenSpaceRendering", {
+            IconMetadata(ICON_FA_IMAGE)
+        });
     }
 
     void RadialGradient::AbstractLoadSerialized(Json t_data) {

@@ -10,16 +10,11 @@ namespace Raster {
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("Radius", 0.5f);
         SetupAttribute("HashOffset", glm::vec2(0));
+        SetupAttribute("Opacity", 1.0f);
         SetupAttribute("Iterations", 30);
 
         AddInputPin("Base");
         AddOutputPin("Output");
-    }
-
-    HashedBlur::~HashedBlur() {
-        if (m_framebuffer.Get().handle) {
-            m_framebuffer.Destroy();
-        }
     }
 
     AbstractPinMap HashedBlur::AbstractExecute(ContextData& t_contextData) {
@@ -29,6 +24,7 @@ namespace Raster {
         auto radiusCandidate = GetAttribute<float>("Radius", t_contextData);
         auto hashOffsetCandidate = GetAttribute<glm::vec2>("HashOffset", t_contextData);
         auto iterationsCandidate = GetAttribute<int>("Iterations", t_contextData);
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -44,21 +40,21 @@ namespace Raster {
             auto& hashOffset = hashOffsetCandidate.value();
             auto& iterations = iterationsCandidate.value();
 
-            Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.Get(baseCandidate);
+            if (framebuffer.attachments.size() >= 1) {
+                GPU::BindFramebuffer(framebuffer);
+                GPU::BindPipeline(pipeline);
+                GPU::ClearFramebuffer(0, 0, 0, 0);
+                
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+                GPU::SetShaderUniform(pipeline.fragment, "uRadius", radius);
+                GPU::SetShaderUniform(pipeline.fragment, "uHashOffset", hashOffset);
+                GPU::SetShaderUniform(pipeline.fragment, "uIterations", iterations);
 
-            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
-            GPU::BindFramebuffer(framebuffer);
-            GPU::BindPipeline(pipeline);
-            GPU::ClearFramebuffer(0, 0, 0, 0);
-            
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(m_framebuffer.width, m_framebuffer.height));
-            GPU::SetShaderUniform(pipeline.fragment, "uRadius", radius);
-            GPU::SetShaderUniform(pipeline.fragment, "uHashOffset", hashOffset);
-            GPU::SetShaderUniform(pipeline.fragment, "uIterations", iterations);
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
 
-            GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
-
-            GPU::DrawArrays(3);
+                GPU::DrawArrays(3);
+            }
 
             TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
@@ -72,6 +68,12 @@ namespace Raster {
             SliderStepMetadata(0.01f)
         });
         RenderAttributeProperty("HashOffset");
+        RenderAttributeProperty("Opacity", {
+            IconMetadata(ICON_FA_DROPLET),
+            SliderBaseMetadata(100),
+            SliderRangeMetadata(0, 100),
+            FormatString("%")
+        });
         RenderAttributeProperty("Iterations");
     }
 

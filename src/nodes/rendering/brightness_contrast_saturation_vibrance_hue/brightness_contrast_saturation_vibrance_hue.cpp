@@ -7,32 +7,28 @@ namespace Raster {
     BrightnessContrastSaturationVibranceHue::BrightnessContrastSaturationVibranceHue() {
         NodeBase::Initialize();
 
-        SetupAttribute("Input", Framebuffer());
+        SetupAttribute("Base", Framebuffer());
         SetupAttribute("Brightness", 0.0f);
         SetupAttribute("Contrast", 1.0f);
         SetupAttribute("Saturation", 1.0f);
         SetupAttribute("Vibrance", 1.0f);
         SetupAttribute("Hue", 0.0f);
+        SetupAttribute("Opacity", 1.0f);
 
-        AddInputPin("Input");
+        AddInputPin("Base");
         AddOutputPin("Output");
-    }
-
-    BrightnessContrastSaturationVibranceHue::~BrightnessContrastSaturationVibranceHue() {
-        if (m_framebuffer.Get().handle) {
-            m_framebuffer.Destroy();
-        }
     }
 
     AbstractPinMap BrightnessContrastSaturationVibranceHue::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         
-        auto inputCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Input", t_contextData));
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
         auto brightnessCandidate = GetAttribute<float>("Brightness", t_contextData);
         auto contrastCandidate = GetAttribute<float>("Contrast", t_contextData);
         auto saturationCandidate = GetAttribute<float>("Saturation", t_contextData);
         auto vibranceCandidate = GetAttribute<float>("Vibrance", t_contextData);
         auto hueCandidate = GetAttribute<float>("Hue", t_contextData);
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -41,16 +37,16 @@ namespace Raster {
             );
         }
 
-        Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
-        if (s_pipeline.has_value() && inputCandidate.has_value() && brightnessCandidate.has_value() && contrastCandidate.has_value() && saturationCandidate.has_value() && vibranceCandidate.has_value() && hueCandidate.has_value()) {
-            auto& framebuffer = m_framebuffer.GetFrontFramebuffer();
-            auto& input = inputCandidate.value();
+        if (s_pipeline.has_value() && baseCandidate.has_value() && brightnessCandidate.has_value() && contrastCandidate.has_value() && saturationCandidate.has_value() && vibranceCandidate.has_value() && hueCandidate.has_value() && opacityCandidate.has_value()) {
+            auto& framebuffer = m_framebuffer.Get(baseCandidate);
+            auto& base = baseCandidate.value();
             auto& pipeline = s_pipeline.value();
             auto& brightness = brightnessCandidate.value();
             auto& contrast = contrastCandidate.value();
             auto& saturation = saturationCandidate.value();
             auto& vibrance = vibranceCandidate.value();
             auto& hue = hueCandidate.value();
+            auto& opacity = opacityCandidate.value();
             m_lastBrightness = brightness;
             m_lastContrast = contrast;
             m_lastSaturation = saturation;
@@ -58,19 +54,22 @@ namespace Raster {
             m_lastHue = hue;
 
             GPU::BindFramebuffer(framebuffer);
-            GPU::ClearFramebuffer(0, 0, 0, 0);
 
             GPU::BindPipeline(pipeline);
 
-            GPU::SetShaderUniform(pipeline.fragment, "uBrightness", brightness);
-            GPU::SetShaderUniform(pipeline.fragment, "uContrast", contrast);
-            GPU::SetShaderUniform(pipeline.fragment, "uSaturation", saturation);
-            GPU::SetShaderUniform(pipeline.fragment, "uVibrance", vibrance);
-            GPU::SetShaderUniform(pipeline.fragment, "uHue", hue);
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
-            GPU::BindTextureToShader(pipeline.fragment, "uTexture", input, 0);
+            if (base.attachments.size() >= 1) {
+                GPU::SetShaderUniform(pipeline.fragment, "uBrightness", brightness);
+                GPU::SetShaderUniform(pipeline.fragment, "uContrast", contrast);
+                GPU::SetShaderUniform(pipeline.fragment, "uSaturation", saturation);
+                GPU::SetShaderUniform(pipeline.fragment, "uVibrance", vibrance);
+                GPU::SetShaderUniform(pipeline.fragment, "uHue", hue);
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+                GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
 
-            GPU::DrawArrays(3);
+                GPU::DrawArrays(3);
+            }
+
 
             TryAppendAbstractPinMap(result, "Output", framebuffer); 
         }
@@ -84,6 +83,12 @@ namespace Raster {
         RenderAttributeProperty("Saturation");
         RenderAttributeProperty("Vibrance");
         RenderAttributeProperty("Hue");
+        RenderAttributeProperty("Opacity", {
+            IconMetadata(ICON_FA_DROPLET),
+            SliderBaseMetadata(100),
+            SliderRangeMetadata(0, 100),
+            FormatString("%")
+        });
     }
 
     void BrightnessContrastSaturationVibranceHue::AbstractLoadSerialized(Json t_data) {

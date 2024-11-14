@@ -5,12 +5,11 @@
 #include "compositor/compositor.h"
 #include "compositor/texture_interoperability.h"
 #include "gpu/gpu.h"
-#include "compositor/double_buffered_framebuffer.h"
+#include "compositor/managed_framebuffer.h"
 
 namespace Raster {
     struct LinearBlur : public NodeBase {
         LinearBlur();
-        ~LinearBlur();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
@@ -24,7 +23,7 @@ namespace Raster {
         std::optional<std::string> Footer();
     
     private:
-        DoubleBufferedFramebuffer m_framebuffer;
+        ManagedFramebuffer m_framebuffer;
 
         static std::optional<Pipeline> s_pipeline;
     };
