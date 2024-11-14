@@ -39,7 +39,13 @@ void main()
         if (inside((fragCoord + right) / uResolution) ||
             inside((fragCoord + down) / uResolution) ||
             inside((fragCoord - right) / uResolution) ||
-            inside((fragCoord - down) / uResolution))
+            inside((fragCoord - down) / uResolution) ||
+            inside((fragCoord + right / 2.0) / uResolution) ||
+            inside((fragCoord - right / 2.0) / uResolution) ||
+            inside((fragCoord - down + right / 2.0) / uResolution) ||
+            inside((fragCoord + down + right / 2.0) / uResolution) ||
+            inside((fragCoord - down - right / 2.0) / uResolution) ||
+            inside((fragCoord - down + right / 2.0) / uResolution)) 
             x = uOutlineColor;
     }
     // Output to screen
