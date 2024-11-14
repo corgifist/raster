@@ -28,6 +28,11 @@ namespace Raster {
         static std::vector<std::string> GetSupportedExtensions();
     };
 
+    struct ImageWriter {
+        static bool Write(std::string t_path, Image& t_image);
+        static std::optional<std::string> GetError();
+    };
+
     struct AsyncImageLoader {
     public:
         AsyncImageLoader();

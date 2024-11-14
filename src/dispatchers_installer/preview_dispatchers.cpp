@@ -10,6 +10,7 @@
 #include "common/dispatchers.h"
 #include "common/audio_samples.h"
 #include "string_dispatchers.h"
+#include "image/image.h"
 
 namespace Raster {
 
@@ -235,6 +236,9 @@ namespace Raster {
 
             zoom = std::max(zoom, 0.5f);
 
+            bool mustOpenErrorPopup = false;
+            static std::optional<std::string> s_imageWriterError;
+
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
                 ImGui::OpenPopup("##texturePopup");
             }
@@ -250,6 +254,122 @@ namespace Raster {
                     endImageOffset = ImVec2(0, 0);
                     animationPercentage = 0.0f;
                 }
+                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE_TO_DISK").c_str()).c_str())) {
+                    bool mustBeSaved = false;
+                    ImagePrecision targetPrecision = ImagePrecision::Usual;
+                    TexturePrecision targetTexturePrecision = TexturePrecision::Usual;
+                    std::string saveTargetPath = "";
+
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE_TO_DISK").c_str()).c_str());
+                    if (ImGui::MenuItem(ICON_FA_GEAR " RGBA8")) {
+                        mustBeSaved = true;
+                        targetPrecision = ImagePrecision::Usual;
+                        targetTexturePrecision = TexturePrecision::Usual;
+                    }
+                    if (ImGui::MenuItem(ICON_FA_GEAR " RGBA16")) {
+                        mustBeSaved = true;
+                        targetPrecision = ImagePrecision::Half;
+                        targetTexturePrecision = TexturePrecision::Half;
+                    }
+                    if (ImGui::MenuItem(ICON_FA_GEAR " RGBA32")) {
+                        mustBeSaved = true;
+                        targetPrecision = ImagePrecision::Full;
+                        targetTexturePrecision = TexturePrecision::Full;
+                    }
+
+                    if (mustBeSaved) {
+                        NFD::UniquePath savePath;
+                        std::vector<nfdfilteritem_t> filters;
+                        auto extensions = ImageLoader::GetSupportedExtensions();
+                        filters.push_back({"Other", "*"});
+                        for (auto& format : extensions) {
+                            std::string originalFormat = format;
+                            std::transform(format.begin(), format.end(), format.begin(), ::toupper);
+                            filters.push_back(
+                                nfdfilteritem_t{format.c_str(), originalFormat.c_str()}
+                            );
+                        }
+                        auto result = NFD::SaveDialog(savePath, filters.data());
+                        if (result == NFD_OKAY) {
+                            saveTargetPath = savePath.get();
+                        } else {
+                            mustBeSaved = false;
+                        }
+                    }
+
+                    if (mustBeSaved) {
+                        Texture targetReadTexture = texture;
+                        bool textureMustBeDestroyed = false;
+
+                        static std::optional<Pipeline> s_pipeline;
+                        if (!s_pipeline.has_value()) {
+                            s_pipeline = GPU::GeneratePipeline(
+                                GPU::s_basicShader,
+                                GPU::GenerateShader(ShaderType::Fragment, "texture_convert/shader")
+                            );
+                        }
+                        auto& pipeline = s_pipeline.value();
+
+                        Texture newTexture = GPU::GenerateTexture(targetReadTexture.width, targetReadTexture.height, targetReadTexture.channels, targetTexturePrecision);
+                        Framebuffer conversionFramebuffer = GPU::GenerateFramebuffer(targetReadTexture.width, targetReadTexture.height, {newTexture});
+
+                        GPU::BindFramebuffer(conversionFramebuffer);
+                        GPU::BindPipeline(pipeline);
+
+                        GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(targetReadTexture.width, targetReadTexture.height));
+                        GPU::BindTextureToShader(pipeline.fragment, "uTexture", targetReadTexture, 0);
+                        GPU::DrawArrays(3);
+
+                        targetReadTexture = newTexture;
+                        textureMustBeDestroyed = true;
+
+                        int elementSize = 1;
+                        if (targetReadTexture.precision == TexturePrecision::Half) elementSize = 2;
+                        if (targetReadTexture.precision == TexturePrecision::Full) elementSize = 4;
+
+                        Image targetImage;
+                        targetImage.width = targetReadTexture.width;
+                        targetImage.height = targetReadTexture.height;
+                        targetImage.channels = targetReadTexture.channels;
+                        targetImage.precision = targetPrecision;
+                        targetImage.data = std::vector<uint8_t>(targetImage.width * targetImage.height * targetImage.channels * elementSize);
+
+                        GPU::BindFramebuffer(conversionFramebuffer);
+                        GPU::ReadPixels(0, 0, targetImage.width, targetImage.height, targetImage.channels, targetTexturePrecision, targetImage.data.data());
+
+                        ImageWriter::Write(saveTargetPath, targetImage);
+                        s_imageWriterError = ImageWriter::GetError();
+
+                        if (textureMustBeDestroyed) {
+                            GPU::DestroyTexture(targetReadTexture);
+                        }
+                        GPU::BindFramebuffer(std::nullopt);
+                        GPU::DestroyFramebuffer(conversionFramebuffer);
+                    }
+
+                    ImGui::EndMenu();
+                }
+                ImGui::EndPopup();
+            }
+
+            if (mustOpenErrorPopup) {
+                ImGui::OpenPopup("##imageWriterErrorPopup");
+            }
+            static ImVec2 s_errorPopupSize = ImVec2(300, 150);
+            ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Size / 2.0f - s_errorPopupSize / 2.0f);
+            if (ImGui::BeginPopupModal("##imageWriterErrorPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove)) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("IMAGE_WRITER_ERROR").c_str()).c_str());
+                auto errorText = Localization::GetString("UNEXPECTED_ERROR");
+                if (s_imageWriterError.has_value()) {
+                    errorText = s_imageWriterError.value();
+                }
+                auto textSize = ImGui::CalcTextSize(errorText.c_str());
+                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - textSize.x / 2.0f);
+                ImGui::Text("%s", errorText.c_str());
+                if (ImGui::Button(Localization::GetString("OK").c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0)) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                    ImGui::CloseCurrentPopup();
+                }
+                s_errorPopupSize = ImGui::GetWindowSize();
                 ImGui::EndPopup();
             }
         ImGui::EndChild();

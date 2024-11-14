@@ -253,5 +253,8 @@
     "ENABLE_DISABLE_COMPOSITION": "Enable/Disable Composition",
     "USE_HARDCODED_RESOLUTION": "Use Hardcoded Resolution",
     "USE_HARDCODED_RESOLUTION_AS_REFERENCE": "Use Hardcoded Resolution as Reference",
-    "USE_PROJECT_ASPECT_RESOLUTION": "Use Project Aspect Resolution"
+    "USE_PROJECT_ASPECT_RESOLUTION": "Use Project Aspect Resolution",
+    "SAVE_TO_DISK": "Save to Disk",
+    "IMAGE_WRITER_ERROR": "Image Writer Error",
+    "UNEXPECTED_ERROR": "Unexpected Error"
 }

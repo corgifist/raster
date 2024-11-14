@@ -43,6 +43,46 @@ namespace Raster {
         return result;
     }
 
+    static std::optional<std::string> s_imageWriterError = std::nullopt;
+
+    bool ImageWriter::Write(std::string t_path, Image& t_image) {
+        auto output = OIIO::ImageOutput::create(t_path);
+        if (!output) {
+            s_imageWriterError = OIIO::geterror();
+            return false;
+        }
+
+        OIIO::TypeDesc specFormat = OIIO::TypeDesc::UINT8;
+        if (t_image.precision == ImagePrecision::Half) {
+            specFormat = OIIO::TypeDesc::HALF;
+        } else if (t_image.precision == ImagePrecision::Full) {
+            specFormat = OIIO::TypeDesc::FLOAT;
+        }
+        OIIO::ImageSpec spec(t_image.width, t_image.height, t_image.channels, specFormat);
+        if (!output->open(t_path, spec)) {
+            s_imageWriterError = OIIO::geterror();
+            return false;
+        }
+
+        if (!output->write_image(specFormat, t_image.data.data())) {
+            s_imageWriterError = OIIO::geterror();
+            return false;
+        }
+
+        if (!output->close()) {
+            s_imageWriterError = OIIO::geterror();
+            return false;
+        }
+
+        return true;
+    }
+
+    std::optional<std::string> ImageWriter::GetError() {
+        auto error = s_imageWriterError;
+        s_imageWriterError = std::nullopt;
+        return error;
+    }
+
     std::string ImageLoader::GetImplementationName() {
         return FormatString("OpenImageIO %i.%i.%i", OIIO_VERSION_MAJOR, OIIO_VERSION_MINOR, OIIO_VERSION_PATCH);
     }

@@ -657,6 +657,13 @@ namespace Raster {
         glDrawArrays(GL_TRIANGLES, 0, count);
     }
 
+    void GPU::ReadPixels(int x, int y, int w, int h, int channels, TexturePrecision texturePrecision, void* data) {
+        GLenum precision = GL_UNSIGNED_BYTE;
+        if (texturePrecision == TexturePrecision::Half) precision = GL_HALF_FLOAT;
+        if (texturePrecision == TexturePrecision::Full) precision = GL_FLOAT;
+        glReadPixels(x, y, w, h, InterpretTextureChannels(channels), precision, data);
+    }
+
     void GPU::Terminate() {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();

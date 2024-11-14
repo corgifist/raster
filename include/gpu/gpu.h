@@ -166,6 +166,8 @@ namespace Raster {
         static void SetShaderUniform(Shader shader, std::string name, glm::mat4 mat);
 
         static void DrawArrays(int count);
+
+        static void ReadPixels(int x, int y, int w, int h, int channels, TexturePrecision texturePrecision, void* data);
         
         static void BindFramebuffer(std::optional<Framebuffer> fbo);
         static void ClearFramebuffer(float r, float g, float b, float a);
