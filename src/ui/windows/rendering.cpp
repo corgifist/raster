@@ -96,7 +96,7 @@ namespace Raster {
                             static bool textHovered = false;
                             float factor = textHovered ? 0.7f : 1.0f;
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(factor));
-                                ImGui::Text("%s%s %s", compositionLock ? ICON_FA_LOCK " " : "", ICON_FA_LAYER_GROUP, composition->name.c_str());
+                                ImGui::Text("%s%s %s", compositionLock ? ICON_FA_LOCK " " : ICON_FA_LOCK_OPEN " ", ICON_FA_LAYER_GROUP, composition->name.c_str());
                             ImGui::PopStyleColor();
                             textHovered = ImGui::IsItemHovered();
                             if (textHovered && ImGui::IsItemClicked() && ImGui::IsWindowFocused()) {
@@ -176,11 +176,13 @@ namespace Raster {
                                 transformedAttributes.push_back(attribute.c_str());
                             }
                             ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
-                            if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size()) {
+                            try {
                                 ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
                                 ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
                                 ImGui::PopItemWidth();
                                 selectedPin = transformedAttributes[selectedAttributeIndex];
+                            } catch (...) {
+                                // TODO: investigate this further
                             }
 
                             if (dispatcherTarget.has_value()) {

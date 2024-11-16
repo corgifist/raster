@@ -256,5 +256,6 @@
     "USE_PROJECT_ASPECT_RESOLUTION": "Use Project Aspect Resolution",
     "SAVE_TO_DISK": "Save to Disk",
     "IMAGE_WRITER_ERROR": "Image Writer Error",
-    "UNEXPECTED_ERROR": "Unexpected Error"
+    "UNEXPECTED_ERROR": "Unexpected Error",
+    "COMPOSITION_LOCK": "Composition Lock"
 }

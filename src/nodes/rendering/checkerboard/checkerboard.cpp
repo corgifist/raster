@@ -101,7 +101,7 @@ namespace Raster {
             IconMetadata(ICON_FA_DROPLET),
             SliderBaseMetadata(100),
             SliderRangeMetadata(0, 100),
-            FormatString("%")
+            FormatStringMetadata("%")
         });
         RenderAttributeProperty("OnlyScreenSpaceRendering", {
             IconMetadata(ICON_FA_IMAGE)

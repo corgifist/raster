@@ -41,7 +41,7 @@ void main() {
     vec2 texel = 1.0 / uResolution;
 
     vec4 result = blur_box(uTexture, texel, uv, uBoxBlurIntensity);
-    result.a *= uOpacity;
+    result = mix(texture(uTexture, uv), result, uOpacity);
 
     gColor = result;
     gUV = vec4(uv, 1.0, 1.0);

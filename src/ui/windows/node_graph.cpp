@@ -1141,6 +1141,20 @@ namespace Raster {
                             ImGui::EndMenu();
                         }
                         ImGui::Separator();
+                        if (Workspace::IsProjectLoaded()) {
+                            auto& project = Workspace::GetProject();
+                            if (!project.customData.contains("RenderingCompositionLock")) {
+                                project.customData["RenderingCompositionLock"] = false;
+                            }
+
+                            bool compositionLock = project.customData["RenderingCompositionLock"];
+
+                            if (ImGui::MenuItem(FormatString("%s %s", compositionLock ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN, Localization::GetString("COMPOSITION_LOCK").c_str()).c_str())) {
+                                compositionLock = !compositionLock;
+                            }
+
+                            project.customData["RenderingCompositionLock"] = compositionLock;
+                        }
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO_NODE").c_str()).c_str(), "`")) {
                             openNavigateToNodePopup = true;
                         }

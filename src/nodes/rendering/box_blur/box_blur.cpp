@@ -45,6 +45,8 @@ namespace Raster {
             if (base.attachments.size() >= 1) {
                 GPU::BindFramebuffer(framebuffer);
                 GPU::BindPipeline(pipeline);
+                
+                GPU::ClearFramebuffer(0, 0, 0, 0); 
 
                 GPU::BindTextureToShader(pipeline.fragment, "uTexture", base.attachments.at(0), 0);
                 GPU::SetShaderUniform(pipeline.fragment, "uBoxBlurIntensity", intensity);
@@ -65,9 +67,18 @@ namespace Raster {
 
     void BoxBlur::AbstractRenderProperties() {
         RenderAttributeProperty("Intensity", {
-            SliderStepMetadata(0.01f)
+            SliderStepMetadata(0.01f),
+            IconMetadata(ICON_FA_PERCENT)
         });
-        RenderAttributeProperty("Samples");
+        RenderAttributeProperty("Opacity", {
+            IconMetadata(ICON_FA_DROPLET),
+            SliderBaseMetadata(100),
+            SliderRangeMetadata(0, 100),
+            FormatStringMetadata("%")
+        });
+        RenderAttributeProperty("Samples", {
+            IconMetadata(ICON_FA_GEARS)
+        });
     }
 
     void BoxBlur::AbstractLoadSerialized(Json t_data) {
