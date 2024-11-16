@@ -257,5 +257,6 @@
     "SAVE_TO_DISK": "Save to Disk",
     "IMAGE_WRITER_ERROR": "Image Writer Error",
     "UNEXPECTED_ERROR": "Unexpected Error",
-    "COMPOSITION_LOCK": "Composition Lock"
+    "COMPOSITION_LOCK": "Composition Lock",
+    "NEW_GRADIENT_STOP": "New Gradient Stop"
 }

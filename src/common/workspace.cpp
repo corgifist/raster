@@ -5,6 +5,7 @@
 #include "common/asset_id.h"
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
+#include "common/gradient_1d.h"
 
 namespace Raster {
 
@@ -32,7 +33,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(SamplerSettings), RASTER_COLOR32(124, 186, 53, 255)},
         {ATTRIBUTE_TYPE(int), RASTER_COLOR32(50, 168, 82, 255)},
         {ATTRIBUTE_TYPE(AudioSamples), RASTER_COLOR32(139, 95, 239, 255)},
-        {ATTRIBUTE_TYPE(AssetID), RASTER_COLOR32(50, 168, 82, 255)}
+        {ATTRIBUTE_TYPE(AssetID), RASTER_COLOR32(50, 168, 82, 255)},
+        {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 24, 115, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
@@ -50,7 +52,8 @@ namespace Raster {
         RASTER_TYPE_NAME(bool),
         RASTER_TYPE_NAME(AssetID),
         RASTER_TYPE_NAME(GenericAudioDecoder),
-        RASTER_TYPE_NAME(GenericResolution)
+        RASTER_TYPE_NAME(GenericResolution),
+        RASTER_TYPE_NAME(Gradient1D)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {

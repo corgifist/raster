@@ -3,6 +3,7 @@
 #include "raster.h"
 #include "workspace.h"
 #include "audio_samples.h"
+#include "gradient_1d.h"
 
 namespace Raster {
     struct UIHelpers {
@@ -20,5 +21,7 @@ namespace Raster {
         static void RenderDecibelScale(float t_linear);
 
         static void RenderNothingToShowText();
+
+        static void RenderGradient1D(Gradient1D& t_gradient, float t_width = 0, float t_height = 0);
     };
 };

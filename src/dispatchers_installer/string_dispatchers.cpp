@@ -12,6 +12,7 @@
 #include "common/asset_id.h"
 #include "common/ui_helpers.h"
 #include "common/generic_resolution.h"
+#include "common/gradient_1d.h"
 
 namespace Raster {
 
@@ -225,6 +226,11 @@ namespace Raster {
         auto resolution = value.CalculateResolution();
         std::string screenText = FormatString("%ix%i (%0.2f)", (int) resolution.x, (int) resolution.y, (float) resolution.x / (float) resolution.y);
         ImGui::Button(screenText.c_str(), FitRectInRect(ImVec2(160, 160), ImVec2(resolution.x, resolution.y)));
+    }
+
+    void StringDispatchers::DispatchGradient1DValue(std::any& t_attribute) {
+        auto value = std::any_cast<Gradient1D>(t_attribute);
+        UIHelpers::RenderGradient1D(value);
     }
 
 };

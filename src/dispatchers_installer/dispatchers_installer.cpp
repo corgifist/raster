@@ -10,6 +10,7 @@
 #include "common/asset_id.h"
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
+#include "common/gradient_1d.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -28,7 +29,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(AssetID), AttributeDispatchers::DispatchAssetIDAttribute},
             {ATTRIBUTE_TYPE(GenericAudioDecoder), AttributeDispatchers::DispatchGenericAudioDecoderAttribute},
             {ATTRIBUTE_TYPE(AudioSamples), AttributeDispatchers::DispatchAudioSamplesAttribute},
-            {ATTRIBUTE_TYPE(GenericResolution), AttributeDispatchers::DispatchGenericResolutionAttribute}
+            {ATTRIBUTE_TYPE(GenericResolution), AttributeDispatchers::DispatchGenericResolutionAttribute},
+            {ATTRIBUTE_TYPE(Gradient1D), AttributeDispatchers::DispatchGradient1DAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -45,7 +47,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(bool), StringDispatchers::DispatchBoolValue},
             {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue},
             {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetIDValue},
-            {ATTRIBUTE_TYPE(GenericResolution), StringDispatchers::DispatchGenericResolutionValue}
+            {ATTRIBUTE_TYPE(GenericResolution), StringDispatchers::DispatchGenericResolutionValue},
+            {ATTRIBUTE_TYPE(Gradient1D), StringDispatchers::DispatchGradient1DValue}
         };
 
         Dispatchers::s_previewDispatchers = {

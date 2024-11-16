@@ -592,4 +592,141 @@ namespace Raster {
 
         t_value = value;
     }
+
+    struct Gradient1DAttributeContext {
+        std::vector<DragStructure> stopDrags;
+        Gradient1DAttributeContext() {
+
+        }
+    };
+
+    static bool CenteredButton(const char* label, float alignment) {
+        ImGuiStyle &style = ImGui::GetStyle();
+
+        float size = ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f;
+        float avail = ImGui::GetContentRegionAvail().x;
+
+        float off = (avail - size) * alignment;
+        if (off > 0.0f)
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+
+        return ImGui::Button(label);
+    }
+
+#define GRADIENT_ATTRIBUTE_PAYLOAD "GRADIENT_ATTRIBUTE_PAYLOAD"
+
+    void AttributeDispatchers::DispatchGradient1DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<Gradient1D>(t_value);
+        auto& project = Workspace::GetProject();
+
+        std::string attributeID = FormatString("##%s%i", t_attribute.c_str(), t_owner->nodeID);
+        static std::unordered_map<std::string, Gradient1DAttributeContext> s_contexts;
+        if (s_contexts.find(attributeID) == s_contexts.end()) {
+            s_contexts[attributeID] = Gradient1DAttributeContext();
+        }
+
+        auto& gradientContext = s_contexts[attributeID];
+
+        float gradientWidth = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x;
+        UIHelpers::RenderGradient1D(value, gradientWidth, 45);
+        if (gradientContext.stopDrags.size() != value.stops.size()) {
+            gradientContext.stopDrags.resize(value.stops.size());
+        }
+
+        bool gradientMustBeResorted = false;
+
+        ImVec2 dragTrackCursor = ImGui::GetCursorPos();
+        for (int i = 0; i < value.stops.size(); i++) {
+            auto& stop = value.stops[i];
+            ImGui::PushID(stop.id);
+            auto& drag = gradientContext.stopDrags[i];
+            ImVec2 dragSize = ImVec2(20, 20);
+
+            ImGui::SetCursorPosY(dragTrackCursor.y);
+            ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * stop.percentage - dragSize.x / 2.0f);
+            if (ImGui::ColorButton("##dragTrackColorButton", ImVec4(stop.color.x, stop.color.y, stop.color.z, stop.color.w), ImGuiColorEditFlags_AlphaPreview, dragSize)) {
+                ImGui::OpenPopup("##dragTrackPopup");
+            }
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+                drag.Activate();
+            }
+            if ((ImGui::IsItemHovered() || drag.isActive) && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                float deltaX = ImGui::GetIO().MouseDelta.x;
+                stop.percentage += deltaX / gradientWidth;
+                stop.percentage = glm::clamp(stop.percentage, 0.0f, 1.0f);
+                gradientMustBeResorted = true;
+            } else drag.Deactivate();
+
+            if (ImGui::BeginPopup("##dragTrackPopup")) {
+                ImGui::ColorPicker4("##dragTrackColorEdit", glm::value_ptr(stop.color));
+                ImGui::EndPopup();
+            }
+
+            ImGui::PopID();
+        }
+
+        for (int i = 0; i < value.stops.size(); i++) {
+            auto& stop = value.stops[i];
+            ImGui::PushID(stop.id);
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("%s %i", ICON_FA_STOPWATCH, i);
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                    ImGui::SetDragDropPayload(GRADIENT_ATTRIBUTE_PAYLOAD, &i, sizeof(int));
+                    ImGui::EndDragDropSource();
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(GRADIENT_ATTRIBUTE_PAYLOAD)) {
+                        int fromIndex = *((int*) payload->Data);
+                        int toIndex = i;
+                        std::swap(value.stops[fromIndex], value.stops[toIndex]);
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine();
+                ImGui::PushItemWidth(100);
+                    ImGui::SliderFloat("##gradientStopPercentage", &stop.percentage, 0, 1, "%0.2f");
+                    if (ImGui::IsItemEdited()) {
+                        gradientMustBeResorted = true;
+                    }
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                    ImGui::ColorEdit4("##gradientStopColor", glm::value_ptr(stop.color));
+                ImGui::PopItemWidth();
+            ImGui::PopID();
+        }
+
+        if (gradientMustBeResorted) {
+            value.SortStops();
+        }
+
+        static float s_newStopPercentage = 1.0f;
+        static glm::vec4 s_newStopColor = glm::vec4(1);
+
+        if (CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_GRADIENT_STOP").c_str()).c_str(), 0.5f)) {
+            s_newStopPercentage = 1.0f;
+            s_newStopColor = glm::vec4(1);
+            ImGui::OpenPopup("##newGradientStopPopup");
+        }
+
+        if (ImGui::BeginPopup("##newGradientStopPopup")) {
+            ImGui::PushItemWidth(100);
+                ImGui::SliderFloat("##newGradientPercentage", &s_newStopPercentage, 0, 1, "%0.2f");
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            ImGui::PushItemWidth(400);
+                ImGui::ColorEdit4("##gradientStopColor", glm::value_ptr(s_newStopColor));
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            if (ImGui::Button(Localization::GetString("OK").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                value.AddStop(s_newStopPercentage, s_newStopColor);
+                value.SortStops();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        t_value = value;
+    }
+
 };

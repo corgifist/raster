@@ -271,4 +271,47 @@ namespace Raster {
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2 - ImGui::CalcTextSize(nothingToShowText.c_str()).x / 2);
         ImGui::Text("%s", nothingToShowText.c_str());
     }
+
+    void UIHelpers::RenderGradient1D(Gradient1D& t_gradient, float t_width, float t_height) {
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+        if (t_width == 0.0f) t_width = 240;
+        if (t_height == 0.0f) t_height = 40;
+
+#define GRADIENT_RENDERING_PRECISION 255
+        ImRect bb(cursorPos, cursorPos + ImVec2(t_width, t_height));
+        ImGui::ItemSize(bb);
+        if (!ImGui::ItemAdd(bb, 0, 0)) return;
+        if (t_gradient.stops.size() < 2) return;
+
+        if (ImGui::IsMouseHoveringRect(bb.Min, bb.Max) && ImGui::IsWindowFocused()) {
+            auto mouseCoord = ImGui::GetMousePos();
+            float mouseDifference = mouseCoord.x - bb.Min.x;
+            glm::vec4 color = t_gradient.Get(mouseDifference / t_width);
+            if (ImGui::BeginTooltip()) {
+                ImGui::PushItemWidth(200);
+                    ImGui::ColorPicker4("##colorPreview", glm::value_ptr(color), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
+                ImGui::PopItemWidth();
+                ImGui::EndTooltip();
+            }
+        }
+
+        for (int i = 1; i < t_gradient.stops.size(); i++) {
+            GradientStop1D& previousStop = t_gradient.stops[i - 1];
+            GradientStop1D& currentStop = t_gradient.stops[i];
+
+            ImVec2 UL = cursorPos;
+            UL.x += previousStop.percentage * t_width;
+            
+            ImVec2 BR = cursorPos;
+            BR.x += currentStop.percentage * t_width;
+            BR.y += t_height;
+
+            
+            ImU32 previousColor = ImGui::GetColorU32(ImVec4(previousStop.color.r, previousStop.color.g, previousStop.color.b, previousStop.color.a));
+            ImU32 currentColor = ImGui::GetColorU32(ImVec4(currentStop.color.r, currentStop.color.g, currentStop.color.b, currentStop.color.a));
+            ImGui::GetWindowDrawList()->AddRectFilledMultiColor(UL, BR, previousColor, currentColor, currentColor, previousColor);
+        }
+
+        // ImGui::RenderFrame(cursorPos, cursorPos + ImVec2(t_width, t_height), ImGui::GetColorU32(ImGui::GetStyleColorVec4(ImGuiCol_PopupBg)));
+    }
 };
