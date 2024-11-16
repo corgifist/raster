@@ -51,5 +51,5 @@ void main() {
 
     if (uTextureAvailable) gColor *= texture(uTexture, uv);
     
-    gUV = vec4(uv - 0.5, 0, 1);
+    gUV = vec4(uv - 0.5, uAspectRatio, 1);
 }

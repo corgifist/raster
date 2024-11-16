@@ -15,6 +15,9 @@ layout(location = 1) out vec4 gUV;
 
 uniform vec2 uResolution;
 uniform sampler2D uTexture;
+uniform sampler2D uUVTexture;
+uniform float uOpacity;
+uniform bool uScreenSpaceRendering;
 
 uniform vec2 uOffset;
 uniform vec4 uColor;
@@ -37,12 +40,31 @@ float dotScreen(in vec2 uv, in float angle, in float scale) {
 }
 
 void main() {
-	vec2 uv = gl_FragCoord.xy / uResolution;
-    vec3 col = texture(uTexture, uv).rgb; 
-    float grey = greyScale(col); 
-    float angle = uAngle;
-    float scale = uScale; 
-    col = vec3( grey * 10.0 - 5.0 + dotScreen(uv, angle, scale ) );
-	gColor = vec4( col, 1.0 ) * uColor;
-    gUV = vec4(uv, 0., 1.);
+	vec2 screenUV = gl_FragCoord.xy / uResolution;
+    if (uScreenSpaceRendering) {
+        vec3 col = texture(uTexture, screenUV).rgb; 
+        float grey = greyScale(col); 
+        float angle = uAngle;
+        float scale = uScale; 
+        col = vec3( grey * 10.0 - 5.0 + dotScreen(screenUV, angle, scale ) );
+        gColor = vec4( col, 1.0 ) * uColor;
+        gColor.a *= uOpacity;
+        gUV = vec4(screenUV, 1., 1.);
+    } else {
+        vec4 uvPixel = texture(uUVTexture, screenUV);
+        if (uvPixel.a != 0.0) {
+            vec4 colorPixel = texture(uTexture, screenUV);
+            if (colorPixel.a != 0.0) {
+                vec2 uv = vec2(uvPixel.x / uvPixel.z, uvPixel.y);
+                uv += 0.5;
+                float grey = greyScale(colorPixel.rgb); 
+                float angle = uAngle;
+                float scale = uScale; 
+                colorPixel.rgb = vec3( grey * 10.0 - 5.0 + dotScreen(uv, angle, scale ) );
+                gColor = vec4( colorPixel.rgb, 1.0 ) * uColor;
+                gColor.a *= uOpacity;
+                gUV = uvPixel;
+            } else discard;
+        } else discard;
+    }
 }

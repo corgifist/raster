@@ -12,13 +12,10 @@ namespace Raster {
         SetupAttribute("Color2", glm::vec4(1, 1, 1, 1));
         SetupAttribute("Position", glm::vec2(0, 0));
         SetupAttribute("Size", glm::vec2(1, 1));
+        SetupAttribute("Opacity", 1.0f);
 
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
-    }
-
-    Checkerboard::~Checkerboard() {
-        m_framebuffer.Destroy();
     }
 
     AbstractPinMap Checkerboard::AbstractExecute(ContextData& t_contextData) {

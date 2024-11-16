@@ -43,7 +43,5 @@ void main() {
     result.a *= uOpacity;
 
     gColor = result;
-    uv -= 0.5;
-    uv.x *= uResolution.x / uResolution.y;
-    gUV = vec4()
+    gUV = vec4(uv, 1.0, 1.0);
 }

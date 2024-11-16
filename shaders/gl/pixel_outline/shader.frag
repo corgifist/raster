@@ -52,5 +52,5 @@ void main()
     gColor = x;
     uv -= 0.5;
     uv.x *= uResolution.x / uResolution.y;
-    gUV = vec4(uv, 0.0, 1.0);
+    gUV = vec4(uv, 1.0, 1.0);
 }

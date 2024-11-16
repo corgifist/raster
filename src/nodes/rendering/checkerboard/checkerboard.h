@@ -8,7 +8,6 @@ namespace Raster {
     struct Checkerboard : public NodeBase {
     public:
         Checkerboard();
-        ~Checkerboard();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();

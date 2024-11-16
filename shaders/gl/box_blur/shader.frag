@@ -9,6 +9,7 @@ precision highp float;
 
 
 layout(location = 0) out vec4 gColor;
+layout(location = 1) out vec4 gUV;
 
 uniform vec2 uResolution;
 uniform vec2 uBoxBlurIntensity;
@@ -43,4 +44,5 @@ void main() {
     result.a *= uOpacity;
 
     gColor = result;
+    gUV = vec4(uv, 1.0, 1.0);
 }

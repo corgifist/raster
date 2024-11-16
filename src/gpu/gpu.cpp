@@ -151,6 +151,8 @@ namespace Raster {
     static std::thread::id s_mainThreadID;
     static std::unordered_map<void*, std::unordered_map<std::string, int>> shaderRegistry;
 
+    static int s_width, s_height;
+
     void GPU::Initialize() {
         s_mainThreadID = std::this_thread::get_id();
         if (!glfwInit()) {
@@ -163,6 +165,8 @@ namespace Raster {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         GLFWwindow* display = glfwCreateWindow(1280, 720, "Raster", nullptr, nullptr);
+        s_width = 1280;
+        s_height = 720;
         info.display = display;
         if (!info.display) {
             throw std::runtime_error("cannot create raster window!");
@@ -187,6 +191,8 @@ namespace Raster {
 
         glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
             glViewport(0, 0, width, height);
+            s_width = width;
+            s_height = height;
         });
 
         info.version = std::string((const char*) glGetString(GL_VERSION));
@@ -407,10 +413,8 @@ namespace Raster {
             glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) (uint64_t) fbo.value().handle);
             glViewport(0, 0, fbo.value().width, fbo.value().height);
         } else {
-            int w, h;
-            glfwGetWindowSize((GLFWwindow*) info.display, &w, &h);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, w, h);
+            glViewport(0, 0, s_width, s_height);
         }
     }
 

@@ -31,7 +31,7 @@ void main() {
             1.0 - length(uPosition - uv) - (1.-uRadius));
         gColor.a *= uOpacity;
         
-        gUV = vec4(uv, 0., 1.);
+        gUV = vec4(uv, 1., 1.);
     } else {
         vec4 uvPixel = texture(uUVTexture, screenUV);
         if (uvPixel.a != 0.0) {
@@ -41,7 +41,7 @@ void main() {
                 gColor = mix(uFirstColor, uSecondColor, 
                     1.0 - length(uPosition - uv) - (1.-uRadius));
                 gColor = mix(texture(uColorTexture, gl_FragCoord.xy / uResolution), gColor, uOpacity);
-                gUV = vec4(uv, 0., 1.);
+                gUV = vec4(uv, uvPixel.b, 1.);
             }
         }
     }

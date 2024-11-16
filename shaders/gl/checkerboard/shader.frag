@@ -30,5 +30,5 @@ void main() {
     }
 
     gColor = mix(uFirstColor, uSecondColor, mask);
-    gUV = vec4(gl_FragCoord.xy / uResolution, 0.0, 1.0) * mask;
+    gUV = vec4(gl_FragCoord.xy / uResolution, 1.0, 1.0) * mask;
 }

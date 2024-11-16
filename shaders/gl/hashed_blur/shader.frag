@@ -68,4 +68,6 @@ void main() {
     uv.y = 1.0 - uv.y;
  
 	gColor = Blur(uv * vec2(1.0, -1.0), uRadius);
+    uv.y = 1.0 - uv.y;
+    gUV = vec4(uv, 1.0, 1.0);
 }
