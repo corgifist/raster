@@ -589,7 +589,7 @@ namespace Raster {
                         selectedComposition->endFrame += scrollAmount / s_pixelsPerFrame;
                     }
                 }
-            }
+            } else s_forwardBoundsDrag.Deactivate();
 
             if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 s_backwardBoundsDrag.Activate();
@@ -609,7 +609,7 @@ namespace Raster {
                         selectedComposition->beginFrame += scrollAmount / s_pixelsPerFrame;
                     }
                 }
-            }
+            } else s_backwardBoundsDrag.Deactivate();
  
             if ((compositionHovered || s_layerDrag.isActive) && !s_timelineRulerDragged && !s_backwardBoundsDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 s_layerDrag.Activate();
@@ -653,9 +653,9 @@ namespace Raster {
                     }
                     
                 } else s_layerDrag.Deactivate();
-            }
+            } else s_layerDrag.Deactivate();
 
-            s_anyLayerDragged = s_anyLayerDragged || s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive;
+            s_anyLayerDragged = (s_anyLayerDragged || s_layerDrag.isActive || s_backwardBoundsDrag.isActive || s_forwardBoundsDrag.isActive) && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
 
             if (compositionHovered && ImGui::GetIO().MouseDoubleClicked[ImGuiMouseButton_Left]) {
                 ImGui::OpenPopup(FormatString("##renameComposition%i", t_id).c_str());

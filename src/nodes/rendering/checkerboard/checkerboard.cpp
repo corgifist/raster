@@ -13,6 +13,7 @@ namespace Raster {
         SetupAttribute("Position", glm::vec2(0, 0));
         SetupAttribute("Size", glm::vec2(1, 1));
         SetupAttribute("Opacity", 1.0f);
+        SetupAttribute("OnlyScreenSpaceRendering", false);
 
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
@@ -26,6 +27,8 @@ namespace Raster {
         auto secondColorCandidate = GetAttribute<glm::vec4>("Color2", t_contextData);
         auto positionCandidate = GetAttribute<glm::vec2>("Position", t_contextData);
         auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
+        auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
+        auto onlyScreenSpaceRenderingCandidate = GetAttribute<bool>("OnlyScreenSpaceRendering", t_contextData);
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -33,23 +36,35 @@ namespace Raster {
                 GPU::GenerateShader(ShaderType::Fragment, "checkerboard/shader")
             );
         }
-
-        auto framebuffer = m_framebuffer.Get(baseCandidate);
         auto& pipeline = s_pipeline.value();
 
-        if (firstColorCandidate.has_value() && secondColorCandidate.has_value() && positionCandidate.has_value() && sizeCandidate.has_value()) {
+        if (s_pipeline.has_value() && baseCandidate.has_value() && firstColorCandidate.has_value() && secondColorCandidate.has_value() && positionCandidate.has_value() && sizeCandidate.has_value() && onlyScreenSpaceRenderingCandidate.has_value()) {
+            auto& base = baseCandidate.value();
             auto& firstColor = firstColorCandidate.value();
             auto& secondColor = secondColorCandidate.value();
             auto& position = positionCandidate.value();
             auto& size = sizeCandidate.value();
+            auto& opacity = opacityCandidate.value();
+            auto& onlyScreenSpaceRendering = onlyScreenSpaceRenderingCandidate.value();
+            auto framebuffer = m_framebuffer.Get(baseCandidate);
+            
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
+
+            bool screenSpaceRendering = !(base.attachments.size() >= 2);
+            if (onlyScreenSpaceRendering) screenSpaceRendering = true;
 
             GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
             GPU::SetShaderUniform(pipeline.fragment, "uFirstColor", firstColor);
             GPU::SetShaderUniform(pipeline.fragment, "uSecondColor", secondColor);
             GPU::SetShaderUniform(pipeline.fragment, "uPosition", position);
             GPU::SetShaderUniform(pipeline.fragment, "uSize", size);
+            GPU::SetShaderUniform(pipeline.fragment, "uScreenSpaceRendering", screenSpaceRendering);
+            GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
+            if (!screenSpaceRendering) {
+                GPU::BindTextureToShader(pipeline.fragment, "uColorTexture", base.attachments.at(0), 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uUVTexture", base.attachments.at(1), 1);
+            }
 
             GPU::DrawArrays(3);
 
@@ -68,10 +83,29 @@ namespace Raster {
     }
 
     void Checkerboard::AbstractRenderProperties() {
-        RenderAttributeProperty("Color1");
-        RenderAttributeProperty("Color2");
-        RenderAttributeProperty("Position");
-        RenderAttributeProperty("Size");
+        RenderAttributeProperty("Color1", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
+        RenderAttributeProperty("Color2", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
+        RenderAttributeProperty("Position", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
+            SliderStepMetadata(0.05f)
+        });
+        RenderAttributeProperty("Size", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
+            SliderStepMetadata(0.05f) 
+        });
+        RenderAttributeProperty("Opacity", {
+            IconMetadata(ICON_FA_DROPLET),
+            SliderBaseMetadata(100),
+            SliderRangeMetadata(0, 100),
+            FormatString("%")
+        });
+        RenderAttributeProperty("OnlyScreenSpaceRendering", {
+            IconMetadata(ICON_FA_IMAGE)
+        });
     }
 
     bool Checkerboard::AbstractDetailsAvailable() {

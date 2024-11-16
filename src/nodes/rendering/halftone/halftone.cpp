@@ -76,10 +76,21 @@ namespace Raster {
     }
 
     void Halftone::AbstractRenderProperties() {
-        RenderAttributeProperty("Angle");
-        RenderAttributeProperty("Scale");
-        RenderAttributeProperty("Offset");
-        RenderAttributeProperty("Color");
+        RenderAttributeProperty("Angle", {
+            IconMetadata(ICON_FA_ROTATE),
+            SliderStepMetadata(0.5f)
+        });
+        RenderAttributeProperty("Scale", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
+            SliderStepMetadata(0.05f)
+        });
+        RenderAttributeProperty("Offset", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
+            SliderStepMetadata(0.05f)
+        });
+        RenderAttributeProperty("Color", {
+            IconMetadata(ICON_FA_DROPLET)
+        });
         RenderAttributeProperty("Opacity", {
             IconMetadata(ICON_FA_DROPLET),
             SliderBaseMetadata(100),
