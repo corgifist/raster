@@ -10,6 +10,7 @@ namespace Raster {
     Gradient1D::Gradient1D(Json t_data) {
         for (auto& stop : t_data) {
             AddStop(stop["Percentage"], glm::vec4(stop["Color"][0].get<float>(), stop["Color"][1].get<float>(), stop["Color"][2].get<float>(), stop["Color"][3].get<float>()));
+            stops[stops.size() - 1].id = stop["ID"];
         }
     }
 
@@ -75,6 +76,7 @@ namespace Raster {
         Json result = Json::array();
         for (auto& stop : stops) {
             result.push_back({
+                {"ID", stop.id},
                 {"Percentage", stop.percentage},
                 {"Color", {stop.color.x, stop.color.y, stop.color.z, stop.color.w}}
             });

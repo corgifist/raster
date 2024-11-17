@@ -295,9 +295,23 @@ namespace Raster {
             }
         }
 
+        float lowestPercentage = FLT_MAX;
+        float biggestPercentage = FLT_MIN;
         for (int i = 1; i < t_gradient.stops.size(); i++) {
             GradientStop1D& previousStop = t_gradient.stops[i - 1];
             GradientStop1D& currentStop = t_gradient.stops[i];
+            if (previousStop.percentage < lowestPercentage) {
+                lowestPercentage = previousStop.percentage;
+            }
+            if (previousStop.percentage > biggestPercentage) {
+                biggestPercentage = previousStop.percentage;
+            }
+            if (currentStop.percentage < lowestPercentage) {
+                lowestPercentage = currentStop.percentage;
+            }
+            if (currentStop.percentage > biggestPercentage) {
+                biggestPercentage = currentStop.percentage;
+            }
 
             ImVec2 UL = cursorPos;
             UL.x += previousStop.percentage * t_width;
@@ -310,6 +324,30 @@ namespace Raster {
             ImU32 previousColor = ImGui::GetColorU32(ImVec4(previousStop.color.r, previousStop.color.g, previousStop.color.b, previousStop.color.a));
             ImU32 currentColor = ImGui::GetColorU32(ImVec4(currentStop.color.r, currentStop.color.g, currentStop.color.b, currentStop.color.a));
             ImGui::GetWindowDrawList()->AddRectFilledMultiColor(UL, BR, previousColor, currentColor, currentColor, previousColor);
+        }
+
+        if (lowestPercentage != 0.0) {
+            auto& firstStop = t_gradient.stops[0];
+            ImVec2 UL = cursorPos;
+            ImVec2 BR = cursorPos;
+            BR.x += lowestPercentage * t_width;
+            BR.y += t_height;
+
+            ImU32 firstColor = ImGui::GetColorU32(ImVec4(firstStop.color.r, firstStop.color.g, firstStop.color.b, firstStop.color.a));
+            ImGui::GetWindowDrawList()->AddRectFilled(UL, BR, firstColor);
+        }
+
+        if (biggestPercentage != 1.0f) {
+            auto& lastStop = t_gradient.stops[t_gradient.stops.size() - 1];
+            ImVec2 UL = cursorPos;
+            UL.x += biggestPercentage * t_width;
+
+            ImVec2 BR = cursorPos;
+            BR.x += t_width;
+            BR.y += t_height;
+
+            ImU32 lastColor = ImGui::GetColorU32(ImVec4(lastStop.color.r, lastStop.color.g, lastStop.color.b, lastStop.color.a));
+            ImGui::GetWindowDrawList()->AddRectFilled(UL, BR, lastColor);
         }
 
         // ImGui::RenderFrame(cursorPos, cursorPos + ImVec2(t_width, t_height), ImGui::GetColorU32(ImGui::GetStyleColorVec4(ImGuiCol_PopupBg)));

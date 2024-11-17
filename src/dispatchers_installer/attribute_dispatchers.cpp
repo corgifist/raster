@@ -628,7 +628,14 @@ namespace Raster {
         auto& gradientContext = s_contexts[attributeID];
 
         float gradientWidth = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x;
-        UIHelpers::RenderGradient1D(value, gradientWidth, 45);
+        float gradientHeight = 45;
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+        ImVec2 gradientUL = cursorPos;
+        ImVec2 gradientBL = cursorPos;
+        gradientBL.x += gradientWidth;
+        gradientBL.y += gradientHeight;
+
+        UIHelpers::RenderGradient1D(value, gradientWidth, gradientHeight);
         if (gradientContext.stopDrags.size() != value.stops.size()) {
             gradientContext.stopDrags.resize(value.stops.size());
         }
@@ -636,11 +643,11 @@ namespace Raster {
         bool gradientMustBeResorted = false;
 
         ImVec2 dragTrackCursor = ImGui::GetCursorPos();
+        ImVec2 dragSize = ImVec2(20, 20);
         for (int i = 0; i < value.stops.size(); i++) {
             auto& stop = value.stops[i];
             ImGui::PushID(stop.id);
             auto& drag = gradientContext.stopDrags[i];
-            ImVec2 dragSize = ImVec2(20, 20);
 
             ImGui::SetCursorPosY(dragTrackCursor.y);
             ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * stop.percentage - dragSize.x / 2.0f);
@@ -665,9 +672,51 @@ namespace Raster {
             ImGui::PopID();
         }
 
+        if (ImGui::IsMouseHoveringRect(gradientUL, gradientBL) && ImGui::IsWindowFocused()) {
+            ImVec2 mouseCoord = ImGui::GetMousePos();
+            float mouseDifference = (mouseCoord.x - gradientUL.x) / gradientWidth;
+            float highlightWidth = 10;
+
+            ImVec2 highlightUL = cursorPos;
+            highlightUL.x += mouseDifference * gradientWidth - highlightWidth / 2.0f;
+        
+            ImVec2 highlightBR = cursorPos;
+            highlightBR.x = highlightUL.x + highlightWidth / 2.0f;
+            highlightBR.y += gradientHeight;
+
+            auto color = value.Get(mouseDifference);
+            auto reservedColor = color;
+            color.r = 1.0f - color.r;
+            color.g = 1.0f - color.g;
+            color.b = 1.0f - color.b;
+            ImGui::GetWindowDrawList()->AddRectFilled(highlightUL, highlightBR, ImGui::GetColorU32(ImVec4(color.r, color.g, color.b, color.a)));
+
+            bool stopExists = false;
+            for (auto& stop : value.stops) {
+                if (stop.percentage == mouseDifference) {
+                    stopExists = true;
+                    break;
+                }
+            }
+            if (!stopExists) {
+                ImGui::SetCursorPosY(dragTrackCursor.y);
+                ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * mouseDifference - dragSize.x / 2.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                ImGui::Button("+", dragSize);
+                ImGui::PopStyleVar();
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    value.AddStop(mouseDifference, reservedColor);
+                }
+            }
+        }
+
+        int stopDeleteIndex = -1;
         for (int i = 0; i < value.stops.size(); i++) {
             auto& stop = value.stops[i];
             ImGui::PushID(stop.id);
+                if (i != 0 && ImGui::Button(ICON_FA_TRASH_CAN)) {
+                    stopDeleteIndex = i;
+                }
                 ImGui::AlignTextToFramePadding();
                 ImGui::Text("%s %i", ICON_FA_STOPWATCH, i);
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
@@ -694,6 +743,11 @@ namespace Raster {
                     ImGui::ColorEdit4("##gradientStopColor", glm::value_ptr(stop.color));
                 ImGui::PopItemWidth();
             ImGui::PopID();
+        }
+
+        if (stopDeleteIndex > 0) {
+            value.stops.erase(value.stops.begin() + stopDeleteIndex);
+            gradientMustBeResorted = true;
         }
 
         if (gradientMustBeResorted) {
