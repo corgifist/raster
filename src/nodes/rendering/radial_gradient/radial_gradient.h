@@ -22,6 +22,7 @@ namespace Raster {
         std::optional<std::string> Footer();
 
         ManagedFramebuffer m_framebuffer;
+        std::optional<ArrayBuffer> m_gradientBuffer;
         static std::optional<Pipeline> s_pipeline;
     };
 };

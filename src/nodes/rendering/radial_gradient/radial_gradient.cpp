@@ -1,4 +1,5 @@
 #include "radial_gradient.h"
+#include "common/gradient_1d.h"
 
 namespace Raster {
 
@@ -10,8 +11,7 @@ namespace Raster {
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("Position", glm::vec2(0.0));
         SetupAttribute("Radius", 0.5f);
-        SetupAttribute("FirstColor", glm::vec4(glm::vec3(0), 1));
-        SetupAttribute("SecondColor", glm::vec4(1));
+        SetupAttribute("Gradient", Gradient1D());
         SetupAttribute("Opacity", 1.0f);
         SetupAttribute("OnlyScreenSpaceRendering", false);
 
@@ -33,18 +33,16 @@ namespace Raster {
         auto framebuffer = m_framebuffer.Get(baseCandidate);
         auto positionCandidate = GetAttribute<glm::vec2>("Position", t_contextData);
         auto radiusCandidate = GetAttribute<float>("Radius", t_contextData);
-        auto firstColorCandidate = GetAttribute<glm::vec4>("FirstColor", t_contextData);
-        auto secondColorCandidate = GetAttribute<glm::vec4>("SecondColor", t_contextData);
+        auto gradientCandidate = GetAttribute<Gradient1D>("Gradient", t_contextData);
         auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
         auto onlySpaceScreenRenderingCandidate = GetAttribute<bool>("OnlyScreenSpaceRendering", t_contextData);
-        if (s_pipeline.has_value() && baseCandidate.has_value() && positionCandidate.has_value() && radiusCandidate.has_value() && firstColorCandidate.has_value() && secondColorCandidate.has_value()) {
+        if (s_pipeline.has_value() && baseCandidate.has_value() && positionCandidate.has_value() && radiusCandidate.has_value() && gradientCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& base = baseCandidate.value();
             auto& position = positionCandidate.value();
             auto& radius = radiusCandidate.value();
-            auto& firstColor = firstColorCandidate.value();
-            auto& secondColor = secondColorCandidate.value();
             auto& opacity = opacityCandidate.value();
+            auto& gradient = gradientCandidate.value();
             auto& onlySpaceScreenRendering = onlySpaceScreenRenderingCandidate.value();
             GPU::BindFramebuffer(framebuffer);
             GPU::BindPipeline(pipeline);
@@ -54,8 +52,6 @@ namespace Raster {
 
             GPU::SetShaderUniform(pipeline.fragment, "uPosition", position);
             GPU::SetShaderUniform(pipeline.fragment, "uRadius", radius);
-            GPU::SetShaderUniform(pipeline.fragment, "uFirstColor", firstColor);
-            GPU::SetShaderUniform(pipeline.fragment, "uSecondColor", secondColor);
             GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
             GPU::SetShaderUniform(pipeline.fragment, "uScreenSpaceRendering", screenSpaceRendering);
             GPU::SetShaderUniform(pipeline.fragment, "uOpacity", opacity);
@@ -63,6 +59,22 @@ namespace Raster {
                 GPU::BindTextureToShader(pipeline.fragment, "uColorTexture", base.attachments.at(0), 0);
                 GPU::BindTextureToShader(pipeline.fragment, "uUVTexture", base.attachments.at(1), 1);
             }
+
+            int gradientBufferSize = sizeof(float) + sizeof(float) * 5 * gradient.stops.size();
+            char* gradientBufferArray = new char[gradientBufferSize];
+            gradient.FillToBuffer(gradientBufferArray);
+            if (!m_gradientBuffer.has_value()) {
+                m_gradientBuffer = GPU::GenerateBuffer(gradientBufferSize, ArrayBufferType::ShaderStorageBuffer, ArrayBufferUsage::Dynamic);
+            }
+            auto& gradientBuffer = m_gradientBuffer.value();
+            if (gradientBuffer.size != gradientBufferSize) {
+                GPU::DestroyBuffer(gradientBuffer);
+                gradientBuffer = GPU::GenerateBuffer(gradientBufferSize, ArrayBufferType::ShaderStorageBuffer, ArrayBufferUsage::Dynamic);
+            }
+            GPU::FillBuffer(gradientBuffer, 0, gradientBufferSize, gradientBufferArray);
+            GPU::BindBufferBase(gradientBuffer, 0);
+            delete gradientBufferArray;
+
 
             GPU::DrawArrays(3);
             
@@ -81,10 +93,7 @@ namespace Raster {
             IconMetadata(ICON_FA_CIRCLE),
             SliderStepMetadata(0.05f)
         });
-        RenderAttributeProperty("FirstColor", {
-            IconMetadata(ICON_FA_DROPLET)
-        });
-        RenderAttributeProperty("SecondColor", {
+        RenderAttributeProperty("Gradient", {
             IconMetadata(ICON_FA_DROPLET)
         });
         RenderAttributeProperty("Opacity", {

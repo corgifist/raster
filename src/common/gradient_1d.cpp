@@ -72,6 +72,39 @@ namespace Raster {
         }
     }
 
+    std::vector<RawGradientStop1D> Gradient1D::GetRawStops() {
+        std::vector<RawGradientStop1D> result;
+        for (auto& stop : stops) {
+            result.push_back(RawGradientStop1D(
+                stop.percentage, stop.color
+            ));
+        }
+        return result;
+    }
+
+    void Gradient1D::FillToBuffer(char* t_buffer) {
+        *((float*) t_buffer) = (float) stops.size();
+        t_buffer += sizeof(float);
+
+        auto rawStops = GetRawStops();
+        for (auto& stop : rawStops) {
+            *((float*) t_buffer) = stop.percentage;
+            t_buffer += sizeof(float);
+
+            *((float*) t_buffer) = stop.color.r;
+            t_buffer += sizeof(float);
+
+            *((float*) t_buffer) = stop.color.g;
+            t_buffer += sizeof(float);
+
+            *((float*) t_buffer) = stop.color.b;
+            t_buffer += sizeof(float);
+
+            *((float*) t_buffer) = stop.color.a;
+            t_buffer += sizeof(float);
+        }
+    }
+
     Json Gradient1D::Serialize() {
         Json result = Json::array();
         for (auto& stop : stops) {

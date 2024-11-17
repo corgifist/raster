@@ -717,6 +717,7 @@ namespace Raster {
                 if (i != 0 && ImGui::Button(ICON_FA_TRASH_CAN)) {
                     stopDeleteIndex = i;
                 }
+                if (i != 0) ImGui::SameLine();
                 ImGui::AlignTextToFramePadding();
                 ImGui::Text("%s %i", ICON_FA_STOPWATCH, i);
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {

@@ -107,6 +107,16 @@ namespace Raster {
         return GL_RGB;
     }
 
+    static GLenum InterpretArrayBufferUsage(ArrayBufferUsage usage) {
+        if (usage == ArrayBufferUsage::Static) return GL_STATIC_READ;
+        return GL_DYNAMIC_READ;
+    }
+
+    static GLenum InterpretArrayBufferType(ArrayBufferType type) {
+        if (type == ArrayBufferType::ShaderStorageBuffer) return GL_SHADER_STORAGE_BUFFER;
+        return GL_ARRAY_BUFFER;
+    }
+
     static unsigned int RSHash(const std::string& str)
     {
         unsigned int b    = 378551;
@@ -416,6 +426,36 @@ namespace Raster {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, s_width, s_height);
         }
+    }
+
+    ArrayBuffer GPU::GenerateBuffer(size_t size, ArrayBufferType type, ArrayBufferUsage usage) {
+        GLuint buffer;
+        glGenBuffers(1, &buffer);
+        glBindBuffer(InterpretArrayBufferType(type), buffer);
+        glBufferData(InterpretArrayBufferType(type), size, nullptr, InterpretArrayBufferUsage(usage));
+
+        ArrayBuffer result;
+        result.handle = GLUINT_TO_HANDLE(buffer);
+        result.usage = usage;
+        result.size = size;
+        result.type = type;
+        return result;
+    }
+
+    void GPU::DestroyBuffer(ArrayBuffer& buffer) {
+        GLuint id = HANDLE_TO_GLUINT(buffer.handle);
+        glDeleteBuffers(1, &id);
+    }
+
+    void GPU::FillBuffer(ArrayBuffer& buffer, size_t offset, size_t size, void* data) {
+        GLuint id = HANDLE_TO_GLUINT(buffer.handle);
+        glBindBuffer(InterpretArrayBufferType(buffer.type), id);
+        glBufferSubData(InterpretArrayBufferType(buffer.type), offset, size, data);
+    }
+
+    void GPU::BindBufferBase(ArrayBuffer& buffer, int binding) {
+        glBindBuffer(InterpretArrayBufferType(buffer.type), binding);
+        glBindBufferBase(InterpretArrayBufferType(buffer.type), binding, HANDLE_TO_GLUINT(buffer.handle));
     }
 
     Shader GPU::GenerateShader(ShaderType type, std::string name, bool useBinaryCache) {

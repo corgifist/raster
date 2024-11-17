@@ -122,6 +122,23 @@ namespace Raster {
         void* handle;
     };
 
+    enum class ArrayBufferUsage {
+        Static, Dynamic
+    };
+
+    enum ArrayBufferType {
+        Typical, ShaderStorageBuffer
+    };
+
+    struct ArrayBuffer {
+        void* handle;
+        size_t size;
+        ArrayBufferUsage usage;
+        ArrayBufferType type;
+
+        ArrayBuffer() : handle(nullptr), size(0), usage(ArrayBufferUsage::Static), type(ArrayBufferType::Typical) {}
+    };
+
     struct GPU {
         static GPUInfo info;
         static Shader s_basicShader;
@@ -168,6 +185,11 @@ namespace Raster {
         static void DrawArrays(int count);
 
         static void ReadPixels(int x, int y, int w, int h, int channels, TexturePrecision texturePrecision, void* data);
+
+        static ArrayBuffer GenerateBuffer(size_t size, ArrayBufferType type = ArrayBufferType::Typical, ArrayBufferUsage usage = ArrayBufferUsage::Static);
+        static void DestroyBuffer(ArrayBuffer& buffer);
+        static void FillBuffer(ArrayBuffer& buffer, size_t offset, size_t size, void* data);
+        static void BindBufferBase(ArrayBuffer& buffer, int binding);
         
         static void BindFramebuffer(std::optional<Framebuffer> fbo);
         static void ClearFramebuffer(float r, float g, float b, float a);
