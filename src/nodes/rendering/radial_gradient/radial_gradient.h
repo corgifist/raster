@@ -9,6 +9,7 @@
 namespace Raster {
     struct RadialGradient: public NodeBase {
         RadialGradient();
+        ~RadialGradient();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();

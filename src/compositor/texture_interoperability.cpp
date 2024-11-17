@@ -17,6 +17,7 @@ namespace Raster {
             Framebuffer result;
             result.width = texture.width;
             result.height = texture.height;
+            result.handle = (void*) (uint64_t) 1;
             result.attachments = {texture};
             return result;
         }

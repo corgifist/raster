@@ -19,8 +19,10 @@ uniform float uBackgroundAlpha;
 // Many thanks to portponky (https://www.shadertoy.com/user/portponky) on Shadertoy!
 
 
+
 bool inside(vec2 uv)
 {
+    if (uv.x > 1.0 || uv.y > 1.0 || uv.x < 0.0 || uv.y < 0.0) return false;
     return texture(uColorTexture, uv).a != 0.0;
 }
 
@@ -36,17 +38,16 @@ void main()
     vec4 x = mix(uBackgroundColor, texture(uColorTexture, uv), uBackgroundAlpha);
     if (!inside(uv))
     {
-        if (inside((fragCoord + right) / uResolution) ||
-            inside((fragCoord + down) / uResolution) ||
-            inside((fragCoord - right) / uResolution) ||
-            inside((fragCoord - down) / uResolution) ||
-            inside((fragCoord + right / 2.0) / uResolution) ||
-            inside((fragCoord - right / 2.0) / uResolution) ||
-            inside((fragCoord - down + right / 2.0) / uResolution) ||
-            inside((fragCoord + down - right / 2.0) / uResolution) ||
-            inside((fragCoord + down - right / 2.0) / uResolution) ||
-            inside((fragCoord - down + right / 2.0) / uResolution)) 
-            x = uOutlineColor;
+        int subsamplingAmount = int(uIntensity);
+        float angleStep = 360.0 / (4.0 * float(subsamplingAmount));
+        for (int i = 0; i < 4 * subsamplingAmount + 1; i++) {
+            float currentAngle = radians(float(i) * angleStep);
+            vec2 direction = vec2(cos(currentAngle), sin(currentAngle)) * uIntensity;
+            if (inside((fragCoord + direction) / uResolution)) {
+                x = uOutlineColor;
+                break;
+            }
+        }
     }
     // Output to screen
     gColor = x;

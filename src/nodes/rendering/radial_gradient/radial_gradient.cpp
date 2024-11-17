@@ -19,6 +19,12 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
+    RadialGradient::~RadialGradient() {
+        if (m_gradientBuffer.has_value()) {
+            GPU::DestroyBuffer(m_gradientBuffer.value());
+        }
+    }
+
     AbstractPinMap RadialGradient::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
