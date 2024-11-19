@@ -297,6 +297,98 @@ namespace Raster {
             bool assetsListBegin = ImGui::BeginChild("##assetsList", ImGui::GetContentRegionAvail());
             ImGui::PopStyleVar(2);
             if (assetsListBegin) {
+                if (s_previewType == AssetPreviewType::List) {
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_Button));
+                    if (ImGui::BeginChild("##assetsList", ImGui::GetContentRegionAvail())) {
+                        for (auto& asset : project.assets) {
+                            ImGui::PushID(asset->id);
+                            bool isSelected = std::find(selectedAssets.begin(), selectedAssets.end(), asset->id) != selectedAssets.end();
+                            static std::unordered_map<int, bool> s_hoveredMap;
+                            if (s_hoveredMap.find(asset->id) == s_hoveredMap.end()) {
+                                s_hoveredMap[asset->id] = false;
+                            }
+                            ImVec4 childBgColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                            bool& isHovered = s_hoveredMap[asset->id];
+                            if (isHovered) childBgColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered);
+                            if (isSelected) childBgColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
+                            ImGui::PushStyleColor(ImGuiCol_ChildBg, childBgColor);
+                            if (ImGui::BeginChild("##assetChild", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
+                                auto textureCandidate = asset->GetPreviewTexture();
+                                ImVec2 previewSize = ImVec2(50, 50);
+                                if (textureCandidate.has_value()) {
+                                    auto& texture = textureCandidate.value();
+                                    ImVec2 fitSize = FitRectInRect(ImVec2(50, 50), ImVec2(texture.width, texture.height));
+                                    ImGui::SetCursorPosX(previewSize.x / 2.0f - fitSize.x / 2.0f);
+                                    ImGui::SetCursorPosY(ImGui::GetWindowSize().y / 2.0f - fitSize.y / 2.0f);
+                                    ImGui::Image((ImTextureID) texture.handle, fitSize);
+                                } else {
+                                    auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                                    if (assetImplementationCandidate.has_value()) {
+                                        auto& assetImplementation = assetImplementationCandidate.value();
+                                        ImGui::PushFont(Font::s_denseFont);
+                                        ImGui::SetWindowFontScale(previewSize.y / ImGui::GetFontSize());
+                                        ImGui::Text("%s", assetImplementation.description.icon.c_str());
+                                        ImGui::SetWindowFontScale(1.0f);
+                                        ImGui::PopFont();
+                                    }
+                                }
+                                ImGui::SameLine(0, 12);
+                                if (ImGui::BeginChild("##assetInfoChild", ImGui::GetContentRegionAvail())) {
+                                    auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                                    if (assetImplementationCandidate.has_value()) {
+                                        auto& assetImplementation = assetImplementationCandidate.value();
+                                        auto durationCandidate = asset->GetDuration();
+                                        auto resolutionCandidate = asset->GetResolution();
+                                        auto sizeCandidate = asset->GetSize();
+                                        auto pathCandidate = asset->GetPath();
+                                        ImGui::Text("%s %s", assetImplementation.description.icon.c_str(), asset->name.c_str());
+                                        ImGui::Text("%s %s | %s %s | %s %s | %s %s", ICON_FA_STOPWATCH, durationCandidate.value_or("-").c_str(), 
+                                                                                    ICON_FA_EXPAND, resolutionCandidate.value_or("-").c_str(), 
+                                                                                    ICON_FA_SCALE_BALANCED, sizeCandidate.has_value() ? ConvertToHRSize(sizeCandidate.value()).c_str() : "-", 
+                                                                                    ICON_FA_FOLDER_OPEN, pathCandidate.value_or("-").c_str());
+                                        ImGui::SetItemTooltip("%s %s | %s %s | %s %s | %s %s", ICON_FA_STOPWATCH, durationCandidate.value_or("-").c_str(), 
+                                                                                    ICON_FA_EXPAND, resolutionCandidate.value_or("-").c_str(), 
+                                                                                    ICON_FA_SCALE_BALANCED, sizeCandidate.has_value() ? ConvertToHRSize(sizeCandidate.value()).c_str() : "-", 
+                                                                                    ICON_FA_FOLDER_OPEN, pathCandidate.value_or("-").c_str());
+                                    }
+                                }  
+                                ImGui::EndChild();
+                            }
+                            ImGui::EndChild();
+                            bool leftClick = isHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+                            bool rightClick = isHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+                            isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
+                            if (leftClick) {
+                                if (ImGui::GetIO().KeyCtrl) {
+                                    auto idIterator = std::find(selectedAssets.begin(), selectedAssets.end(), asset->id);
+                                    if (idIterator == selectedAssets.end()) {
+                                        selectedAssets.push_back(asset->id);
+                                    } else {
+                                        selectedAssets.erase(idIterator);
+                                    }
+                                } else {
+                                    selectedAssets = {asset->id};
+                                }
+                            }
+
+                            std::string popupID = FormatString("##assetPopup%i", asset->id);
+                            if (rightClick) {
+                                ImGui::OpenPopup(popupID.c_str());
+                            }
+
+                            if (ImGui::BeginPopup(popupID.c_str())) {
+                                ImGui::SeparatorText(FormatString("%s %s", Assets::GetAssetImplementation(asset->packageName).value().description.icon.c_str(), asset->name.c_str()).c_str());
+                                RenderAssetPopup(asset);
+                                ImGui::EndPopup();
+                            }
+                            ImGui::Separator();
+                            ImGui::PopStyleColor();
+                            ImGui::PopID();
+                        }
+                    } 
+                    ImGui::EndChild();
+                    ImGui::PopStyleColor();
+                }
                 if (s_previewType == AssetPreviewType::Table) {
                     // asset table columns list
                     // 1 - name

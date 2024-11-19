@@ -77,7 +77,7 @@ namespace Raster {
             }
             GPU::FillBuffer(gradientBuffer, 0, gradientBufferSize, gradientBufferArray);
             GPU::BindBufferBase(gradientBuffer, 0);
-            delete gradientBufferArray;
+            delete[] gradientBufferArray;
 
 
             GPU::DrawArrays(3);
