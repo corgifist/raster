@@ -87,7 +87,7 @@ namespace Raster {
         float renderViewTime = t_frame;
 
         for (int i = 0; i < keyframesLength; i++) {
-            float keyframeTimestamp = keyframes.at(i).timestamp;
+            float keyframeTimestamp = keyframes[i].timestamp;
             if (renderViewTime <= keyframeTimestamp) {
                 targetKeyframeIndex = i;
                 break;
@@ -102,19 +102,19 @@ namespace Raster {
             return AbstractInterpolate(keyframes.front().value, keyframes.front().value, 0.0f, 0.0f, composition);
         }
 
-        float keyframeTimestamp = keyframes.at(targetKeyframeIndex).timestamp;
+        float keyframeTimestamp = keyframes[targetKeyframeIndex].timestamp;
         float interpolationPercentage = 0;
         if (targetKeyframeIndex == 1) {
             interpolationPercentage = renderViewTime / keyframeTimestamp;
         } else {
-            float previousFrame = keyframes.at(targetKeyframeIndex - 1).timestamp;
+            float previousFrame = keyframes[targetKeyframeIndex - 1].timestamp;
             interpolationPercentage = (renderViewTime - previousFrame) / (keyframeTimestamp - previousFrame);
         }
 
-        auto& beginKeyframeValue = keyframes.at(targetKeyframeIndex - 1).value;
-        auto& endkeyframeValue = keyframes.at(targetKeyframeIndex).value;
-        if (keyframes.at(targetKeyframeIndex).easing.has_value()) {
-            interpolationPercentage = keyframes.at(targetKeyframeIndex).easing.value()->Get(interpolationPercentage);
+        auto& beginKeyframeValue = keyframes[targetKeyframeIndex - 1].value;
+        auto& endkeyframeValue = keyframes[targetKeyframeIndex].value;
+        if (keyframes[targetKeyframeIndex].easing.has_value()) {
+            interpolationPercentage = keyframes[targetKeyframeIndex].easing.value()->Get(interpolationPercentage);
         }
 
         return AbstractInterpolate(beginKeyframeValue, endkeyframeValue, interpolationPercentage, t_frame, t_composition);
@@ -346,8 +346,8 @@ namespace Raster {
     void AttributeBase::SortKeyframes() {
         for (int step = 0; step < keyframes.size() - 1; ++step) {
             for (int i = 1; i < keyframes.size() - step - 1; ++i) {
-                if (keyframes.at(i).timestamp > keyframes.at(i + 1).timestamp ) {
-                    std::swap(keyframes.at(i), keyframes.at(i + 1));
+                if (keyframes[i].timestamp > keyframes[i + 1].timestamp ) {
+                    std::swap(keyframes[i], keyframes[i + 1]);
                 }
             }
         }
@@ -356,8 +356,8 @@ namespace Raster {
             AttributeKeyframe& stamp = keyframes.at(i);
             for (int j = i + 1; j < keyframes.size(); j++) {
                 if (int(stamp.timestamp) ==
-                    int(keyframes.at(j).timestamp)) {
-                    stamp.timestamp = int(keyframes.at(j).timestamp) + 1;
+                    int(keyframes[j].timestamp)) {
+                    stamp.timestamp = int(keyframes[j].timestamp) + 1;
                 }
             }
         }

@@ -57,7 +57,7 @@ namespace Raster {
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("REVEAL_IN_FILE_EXPLORER").c_str()).c_str(), "Ctrl+R", nullptr, pathCandidate.has_value())) {
             auto& path = pathCandidate.value();
             if (std::filesystem::exists(path)) {
-                SystemOpenURL(path);
+                SystemOpenURL(ReplaceString(path, " ", "\\ "));
             }
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_ASSETS").c_str()).c_str(), "Ctrl+D")) {

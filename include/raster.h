@@ -63,9 +63,9 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     #define SystemOpenURL(url) system(FormatString("%s %s", "start", (url).c_str()).c_str())
 #elif __APPLE__
-    #define SystemOpenURL(url)  system(FormatString("%s %s &&", "open", (url).c_str()).c_str())
+    #define SystemOpenURL(url)  system(FormatString("%s \"%s\" &&", "open", (url).c_str()).c_str())
 #elif __linux__
-    #define SystemOpenURL(url)  system(FormatString("%s %s &&", "xdg-open", (url).c_str()).c_str())
+    #define SystemOpenURL(url)  system(FormatString("%s \"%s\" &&", "xdg-open", (url).c_str()).c_str())
 #else
     #error "Cannot determine valid SystemOpenURL implementation for your platform :("
 #endif
