@@ -16,8 +16,7 @@ layout(location = 1) out vec4 gUV;
 
 uniform vec2 uResolution;
 
-uniform vec2 uPosition;
-uniform float uRadius;
+uniform bool uUseYPlane;
 uniform float uOpacity;
 
 uniform sampler2D uColorTexture;
@@ -56,17 +55,17 @@ void main() {
     vec2 screenUV = gl_FragCoord.xy / uResolution;
     gColor = vec4(0.);
     if (uScreenSpaceRendering) {
-        vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / uResolution.y;
-        gColor = createGradient(1.0 - length(uPosition - uv) - (1.-uRadius));
-        
-        gUV = vec4(uv, 1., 1.);
+        gColor = createGradient(uUseYPlane ? screenUV.y : screenUV.x);
+        gUV = vec4(screenUV, 1., 1.);
     } else {
         vec4 uvPixel = texture(uUVTexture, screenUV);
         if (uvPixel.a != 0.0) {
             vec2 uv = uvPixel.rg;
             vec4 colorPixel = texture(uColorTexture, screenUV);
             if (colorPixel.a != 0.0) {
-                gColor = createGradient(1.0 - length(uPosition - uv) - (1.-uRadius));
+                uv.x /= uvPixel.z;
+                uv += 0.5;
+                gColor = createGradient(uUseYPlane ? uv.y : uv.x);
                 gUV = vec4(uv, uvPixel.b, 1.);
             }
         }

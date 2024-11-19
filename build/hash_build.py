@@ -14,7 +14,6 @@ from colorama import init, just_fix_windows_console, Fore, Style
 just_fix_windows_console()
 init()
 
-
 def get_platform():
     return platform.system().lower()
 
