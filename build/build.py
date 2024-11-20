@@ -88,6 +88,7 @@ build_modules = [
     ["color4_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec3_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec2_attribute", attribute, [raster_common, raster_ImGui]],
+    ["gradient1d_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
     ["audio/export_to_audio_bus", node, [raster_common, raster_audio]],

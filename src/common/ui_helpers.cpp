@@ -4,6 +4,7 @@
 #include "common/audio_info.h"
 #include "../ImGui/imgui_internal.h"
 #include "common/dispatchers.h"
+#include "../ImGui/imgui_drag.h"
 
 namespace Raster {
 
@@ -272,16 +273,16 @@ namespace Raster {
         ImGui::Text("%s", nothingToShowText.c_str());
     }
 
-    void UIHelpers::RenderGradient1D(Gradient1D& t_gradient, float t_width, float t_height) {
+    void UIHelpers::RenderGradient1D(Gradient1D& t_gradient, float t_width, float t_height, float t_alpha) {
         ImVec2 cursorPos = ImGui::GetCursorScreenPos();
         if (t_width == 0.0f) t_width = 240;
         if (t_height == 0.0f) t_height = 40;
 
-#define GRADIENT_RENDERING_PRECISION 255
         ImRect bb(cursorPos, cursorPos + ImVec2(t_width, t_height));
         ImGui::ItemSize(bb);
         if (!ImGui::ItemAdd(bb, 0, 0)) return;
         if (t_gradient.stops.size() < 2) return;
+        ImGui::RenderFrameBorder(cursorPos, cursorPos + ImVec2(t_width, t_height));
 
         if (ImGui::IsMouseHoveringRect(bb.Min, bb.Max) && ImGui::IsWindowFocused()) {
             auto mouseCoord = ImGui::GetMousePos();
@@ -321,8 +322,8 @@ namespace Raster {
             BR.y += t_height;
 
             
-            ImU32 previousColor = ImGui::GetColorU32(ImVec4(previousStop.color.r, previousStop.color.g, previousStop.color.b, previousStop.color.a));
-            ImU32 currentColor = ImGui::GetColorU32(ImVec4(currentStop.color.r, currentStop.color.g, currentStop.color.b, currentStop.color.a));
+            ImU32 previousColor = ImGui::GetColorU32(ImVec4(previousStop.color.r, previousStop.color.g, previousStop.color.b, previousStop.color.a * t_alpha));
+            ImU32 currentColor = ImGui::GetColorU32(ImVec4(currentStop.color.r, currentStop.color.g, currentStop.color.b, currentStop.color.a * t_alpha));
             ImGui::GetWindowDrawList()->AddRectFilledMultiColor(UL, BR, previousColor, currentColor, currentColor, previousColor);
         }
 
@@ -333,7 +334,7 @@ namespace Raster {
             BR.x += lowestPercentage * t_width;
             BR.y += t_height;
 
-            ImU32 firstColor = ImGui::GetColorU32(ImVec4(firstStop.color.r, firstStop.color.g, firstStop.color.b, firstStop.color.a));
+            ImU32 firstColor = ImGui::GetColorU32(ImVec4(firstStop.color.r, firstStop.color.g, firstStop.color.b, firstStop.color.a * t_alpha));
             ImGui::GetWindowDrawList()->AddRectFilled(UL, BR, firstColor);
         }
 
@@ -346,10 +347,212 @@ namespace Raster {
             BR.x += t_width;
             BR.y += t_height;
 
-            ImU32 lastColor = ImGui::GetColorU32(ImVec4(lastStop.color.r, lastStop.color.g, lastStop.color.b, lastStop.color.a));
+            ImU32 lastColor = ImGui::GetColorU32(ImVec4(lastStop.color.r, lastStop.color.g, lastStop.color.b, lastStop.color.a * t_alpha));
             ImGui::GetWindowDrawList()->AddRectFilled(UL, BR, lastColor);
         }
 
         // ImGui::RenderFrame(cursorPos, cursorPos + ImVec2(t_width, t_height), ImGui::GetColorU32(ImGui::GetStyleColorVec4(ImGuiCol_PopupBg)));
+    }
+
+    struct Gradient1DAttributeContext {
+        std::vector<DragStructure> stopDrags;
+        Gradient1DAttributeContext() {
+
+        }
+    };
+
+#define GRADIENT_ATTRIBUTE_PAYLOAD "GRADIENT_ATTRIBUTE_PAYLOAD"
+
+    static bool CenteredButton(const char* label, float alignment) {
+        ImGuiStyle &style = ImGui::GetStyle();
+
+        float size = ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f;
+        float avail = ImGui::GetContentRegionAvail().x;
+
+        float off = (avail - size) * alignment;
+        if (off > 0.0f)
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+
+        return ImGui::Button(label);
+    }
+
+    bool UIHelpers::RenderGradient1DEditor(Gradient1D& value, float t_width, float t_height) {
+        std::string attributeID = std::to_string(ImGui::GetID("##gradientEditorContextID"));
+        static std::unordered_map<std::string, Gradient1DAttributeContext> s_contexts;
+        if (s_contexts.find(attributeID) == s_contexts.end()) {
+            s_contexts[attributeID] = Gradient1DAttributeContext();
+        }
+
+        auto& gradientContext = s_contexts[attributeID];
+
+        float gradientWidth = t_width > 0 ? t_width : ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x;
+        float gradientHeight = t_height > 0 ? t_height : 45;
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+        ImVec2 gradientUL = cursorPos;
+        ImVec2 gradientBL = cursorPos;
+        gradientBL.x += gradientWidth;
+        gradientBL.y += gradientHeight;
+
+        UIHelpers::RenderGradient1D(value, gradientWidth, gradientHeight);
+        if (gradientContext.stopDrags.size() != value.stops.size()) {
+            gradientContext.stopDrags.resize(value.stops.size());
+        }
+
+        bool gradientMustBeResorted = false;
+        bool gradientWasEdited = true;
+
+        ImVec2 dragTrackCursor = ImGui::GetCursorPos();
+        ImVec2 dragSize = ImVec2(20, 20);
+        for (int i = 0; i < value.stops.size(); i++) {
+            auto& stop = value.stops[i];
+            ImGui::PushID(stop.id);
+            auto& drag = gradientContext.stopDrags[i];
+
+            ImGui::SetCursorPosY(dragTrackCursor.y);
+            ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * stop.percentage - dragSize.x / 2.0f);
+            if (ImGui::ColorButton("##dragTrackColorButton", ImVec4(stop.color.x, stop.color.y, stop.color.z, stop.color.w), ImGuiColorEditFlags_AlphaPreview, dragSize)) {
+                ImGui::OpenPopup("##dragTrackPopup");
+            }
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused()) {
+                drag.Activate();
+            }
+            if ((ImGui::IsItemHovered() || drag.isActive) && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                float deltaX = ImGui::GetIO().MouseDelta.x;
+                stop.percentage += deltaX / gradientWidth;
+                stop.percentage = glm::clamp(stop.percentage, 0.0f, 1.0f);
+                gradientMustBeResorted = true;
+            } else drag.Deactivate();
+
+            if (ImGui::BeginPopup("##dragTrackPopup")) {
+                ImGui::ColorPicker4("##dragTrackColorEdit", glm::value_ptr(stop.color));
+                ImGui::EndPopup();
+            }
+
+            ImGui::PopID();
+        }
+
+        if (ImGui::IsMouseHoveringRect(gradientUL, gradientBL) && ImGui::IsWindowFocused()) {
+            ImVec2 mouseCoord = ImGui::GetMousePos();
+            float mouseDifference = (mouseCoord.x - gradientUL.x) / gradientWidth;
+            float highlightWidth = 10;
+
+            ImVec2 highlightUL = cursorPos;
+            highlightUL.x += mouseDifference * gradientWidth - highlightWidth / 2.0f;
+        
+            ImVec2 highlightBR = cursorPos;
+            highlightBR.x = highlightUL.x + highlightWidth / 2.0f;
+            highlightBR.y += gradientHeight;
+
+            auto color = value.Get(mouseDifference);
+            auto reservedColor = color;
+            color.r = 1.0f - color.r;
+            color.g = 1.0f - color.g;
+            color.b = 1.0f - color.b;
+            ImGui::GetWindowDrawList()->AddRectFilled(highlightUL, highlightBR, ImGui::GetColorU32(ImVec4(color.r, color.g, color.b, color.a)));
+
+            bool stopExists = false;
+            for (auto& stop : value.stops) {
+                if (stop.percentage == mouseDifference) {
+                    stopExists = true;
+                    break;
+                }
+            }
+            if (!stopExists) {
+                ImGui::SetCursorPosY(dragTrackCursor.y);
+                ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * mouseDifference - dragSize.x / 2.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                ImGui::Button("+", dragSize);
+                ImGui::PopStyleVar();
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    value.AddStop(mouseDifference, reservedColor);
+                    gradientMustBeResorted = true;
+                }
+            }
+        }
+
+        int stopDeleteIndex = -1;
+        for (int i = 0; i < value.stops.size(); i++) {
+            auto& stop = value.stops[i];
+            ImGui::PushID(stop.id);
+                ImGui::PushID(i);
+                if (i == 0) ImGui::BeginDisabled();
+                if (ImGui::Button(ICON_FA_TRASH_CAN)) {
+                    stopDeleteIndex = i;
+                }
+                if (i == 0) ImGui::EndDisabled();
+                ImGui::PopID();
+                ImGui::SameLine();
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("%s %i", ICON_FA_STOPWATCH, i);
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                    ImGui::SetDragDropPayload(GRADIENT_ATTRIBUTE_PAYLOAD, &i, sizeof(int));
+                    ImGui::EndDragDropSource();
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(GRADIENT_ATTRIBUTE_PAYLOAD)) {
+                        int fromIndex = *((int*) payload->Data);
+                        int toIndex = i;
+                        std::swap(value.stops[fromIndex], value.stops[toIndex]);
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SameLine();
+                ImGui::PushItemWidth(100);
+                    ImGui::SliderFloat("##gradientStopPercentage", &stop.percentage, 0, 1, "%0.2f");
+                    if (ImGui::IsItemEdited()) {
+                        gradientMustBeResorted = true;
+                    }
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                    ImGui::ColorEdit4("##gradientStopColor", glm::value_ptr(stop.color));
+                    if (ImGui::IsItemEdited()) {
+                        gradientWasEdited = true;
+                    }
+                ImGui::PopItemWidth();
+            ImGui::PopID();
+        }
+
+        if (gradientMustBeResorted) {
+            value.SortStops();
+            gradientWasEdited = true;
+        }
+
+        static float s_newStopPercentage = 1.0f;
+        static glm::vec4 s_newStopColor = glm::vec4(1);
+
+        if (CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_GRADIENT_STOP").c_str()).c_str(), 0.5f)) {
+            s_newStopPercentage = 1.0f;
+            s_newStopColor = glm::vec4(1);
+            ImGui::OpenPopup("##newGradientStopPopup");
+        }
+
+        if (ImGui::BeginPopup("##newGradientStopPopup")) {
+            ImGui::PushItemWidth(100);
+                ImGui::SliderFloat("##newGradientPercentage", &s_newStopPercentage, 0, 1, "%0.2f");
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            ImGui::PushItemWidth(400);
+                ImGui::ColorEdit4("##gradientStopColor", glm::value_ptr(s_newStopColor));
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            if (ImGui::Button(Localization::GetString("OK").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                value.AddStop(s_newStopPercentage, s_newStopColor);
+                value.SortStops();
+                gradientMustBeResorted = true;
+                gradientWasEdited = true;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        if (stopDeleteIndex > 0) {
+            value.stops.erase(value.stops.begin() + stopDeleteIndex);
+            gradientMustBeResorted = true;
+            gradientWasEdited = true;
+            value.SortStops();
+        }
+
+        return gradientWasEdited;
     }
 };

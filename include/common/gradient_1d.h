@@ -43,6 +43,8 @@ namespace Raster {
 
         std::vector<RawGradientStop1D> GetRawStops();
 
+        Gradient1D MatchStopsCount(Gradient1D& t_reference);
+
         Json Serialize();
     };
 };

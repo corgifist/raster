@@ -22,6 +22,7 @@ namespace Raster {
 
         static void RenderNothingToShowText();
 
-        static void RenderGradient1D(Gradient1D& t_gradient, float t_width = 0, float t_height = 0);
+        static void RenderGradient1D(Gradient1D& t_gradient, float t_width = 0, float t_height = 0, float t_alpha = 1.0f);
+        static bool RenderGradient1DEditor(Gradient1D& t_gradient, float t_width = 0, float t_height = 0.0f);
     };
 };

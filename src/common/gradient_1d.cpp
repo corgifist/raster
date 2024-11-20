@@ -105,6 +105,20 @@ namespace Raster {
         }
     }
 
+
+    Gradient1D Gradient1D::MatchStopsCount(Gradient1D& t_reference) {
+        Gradient1D result;
+        result.stops.clear();
+        int baseID = t_reference.stops[0].id;
+        int index = 0;
+        for (auto& stop : t_reference.stops) {
+            result.AddStop(stop.percentage, Get(stop.percentage));
+            (*result.stops.end()).id = baseID + (index++);
+        }
+        result.SortStops();
+        return result;
+    }
+
     Json Gradient1D::Serialize() {
         Json result = Json::array();
         for (auto& stop : stops) {
