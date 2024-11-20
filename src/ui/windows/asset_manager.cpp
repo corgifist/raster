@@ -355,7 +355,7 @@ namespace Raster {
                                 ImGui::EndChild();
                             }
                             ImGui::EndChild();
-                            if (ImGui::BeginDragDropSource()) {
+                            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                                 ImGui::SetDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD, &asset->id, sizeof(asset->id));
                                 asset->RenderDetails();
                                 ImGui::EndDragDropSource();

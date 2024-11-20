@@ -135,6 +135,34 @@ namespace Raster {
             if (ImGui::BeginPopup("##selectAsset")) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ASSET_ID").c_str()).c_str());
                 static std::string s_assetFilter = "";
+                static std::unordered_map<ImGuiID, std::string> s_allowedAssetTypes;
+                ImGuiID metadataID = ImGui::GetID("##allowedAssetTypes");
+                if (s_allowedAssetTypes.find(metadataID) == s_allowedAssetTypes.end()) {
+                    s_allowedAssetTypes[metadataID] = "";
+                }
+                auto& allowedAssetType = s_allowedAssetTypes[metadataID];
+                ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+                if (!allowedAssetType.empty()) buttonColor.w *= 0.4f;
+                ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+                if (ImGui::Button(allowedAssetType.empty() ? ICON_FA_FILTER " " ICON_FA_XMARK : ICON_FA_FILTER " " ICON_FA_CHECK)) {
+                    ImGui::OpenPopup("##assetFilterSpecifier");
+                }
+                ImGui::SameLine();
+                ImGui::PopStyleColor();
+                if (ImGui::BeginPopup("##assetFilterSpecifier")) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FILTER, Localization::GetString("FILTER_ASSETS_BY_TYPE").c_str()).c_str());
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
+                        allowedAssetType = "";
+                        ImGui::CloseCurrentPopup();
+                    }
+                    for (auto& implementation : Assets::s_implementations) {
+                        if (ImGui::MenuItem(FormatString("%s%s %s", implementation.description.icon.c_str(), allowedAssetType == implementation.description.packageName ? ICON_FA_CHECK " " : "", implementation.description.prettyName.c_str()).c_str())) {
+                            allowedAssetType = implementation.description.packageName;
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
                 ImGui::InputTextWithHint("##assetFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_assetFilter);
                 ImGui::PopItemWidth();
@@ -146,6 +174,7 @@ namespace Raster {
                     for (auto& asset : project.assets) {
                         auto description = Assets::GetAssetImplementation(asset->packageName).value();
                         if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
+                        if (!allowedAssetType.empty() && allowedAssetType != asset->packageName) continue;
                         hasCandidates = true;
                         if (ImGui::MenuItem(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
                             t_assetID = asset->id;
@@ -459,7 +488,7 @@ namespace Raster {
             }
             if (!stopExists) {
                 ImGui::SetCursorPosY(dragTrackCursor.y);
-                ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * mouseDifference - dragSize.x / 2.0f - highlightWidth / 2.0f);
+                ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * mouseDifference - dragSize.x / 2.0f);
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
                 ImGui::Button("+", dragSize);
                 ImGui::PopStyleVar();
@@ -505,8 +534,9 @@ namespace Raster {
                 ImGui::PopItemWidth();
                 ImGui::SameLine();
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                    glm::vec4 originalColor = stop.color;
                     ImGui::ColorEdit4("##gradientStopColor", glm::value_ptr(stop.color));
-                    if (ImGui::IsItemEdited()) {
+                    if (originalColor != stop.color) {
                         gradientWasEdited = true;
                     }
                 ImGui::PopItemWidth();

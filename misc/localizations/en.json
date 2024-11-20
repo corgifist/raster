@@ -259,5 +259,6 @@
     "UNEXPECTED_ERROR": "Unexpected Error",
     "COMPOSITION_LOCK": "Composition Lock",
     "NEW_GRADIENT_STOP": "New Gradient Stop",
-    "NAVIGATE_TO_COMPOSITION": "Navigate to Composition"
+    "NAVIGATE_TO_COMPOSITION": "Navigate to Composition",
+    "FILTER_ASSETS_BY_TYPE": "Filter Assets by Type"
 }
