@@ -258,5 +258,6 @@
     "IMAGE_WRITER_ERROR": "Image Writer Error",
     "UNEXPECTED_ERROR": "Unexpected Error",
     "COMPOSITION_LOCK": "Composition Lock",
-    "NEW_GRADIENT_STOP": "New Gradient Stop"
+    "NEW_GRADIENT_STOP": "New Gradient Stop",
+    "NAVIGATE_TO_COMPOSITION": "Navigate to Composition"
 }

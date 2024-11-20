@@ -459,7 +459,7 @@ namespace Raster {
             }
             if (!stopExists) {
                 ImGui::SetCursorPosY(dragTrackCursor.y);
-                ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * mouseDifference - dragSize.x / 2.0f);
+                ImGui::SetCursorPosX(dragTrackCursor.x + gradientWidth * mouseDifference - dragSize.x / 2.0f - highlightWidth / 2.0f);
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
                 ImGui::Button("+", dragSize);
                 ImGui::PopStyleVar();

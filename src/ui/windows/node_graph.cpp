@@ -419,9 +419,17 @@ namespace Raster {
                 if (Workspace::IsProjectLoaded()) {
                     auto& project = Workspace::GetProject();
                     int focusNeeded = -1;
-                    static std::vector<int> s_currentlyTabbedCompositions;
+                    if (!project.customData.contains("CurrentlyTabbedCompositions")) {
+                        project.customData["CurrentlyTabbedCompositions"] = Json::array();
+                    }
+                    static std::vector<int> s_currentlyTabbedCompositions = project.customData["CurrentlyTabbedCompositions"];
 
-                    static std::vector<int> s_previousSelectedCompositions;
+                    if (!project.customData.contains("PreviousSelectedCompositions")) {
+                        project.customData["PreviousSelectedCompositions"] = Json::array();
+                    }
+                    static std::vector<int> s_previousSelectedCompositions = project.customData["PreviousSelectedCompositions"];
+                    project.customData["PreviousSelectedCompositions"] = s_previousSelectedCompositions;
+                    project.customData["CurrentlyTabbedCompositions"] = s_currentlyTabbedCompositions;
                     auto& selectedCompositions = project.selectedCompositions;
                     bool mustReviewTabbedCompositions = false;
                     if (s_previousSelectedCompositions.size() != selectedCompositions.size()) {
@@ -460,10 +468,16 @@ namespace Raster {
                         if (compositionCandidate.has_value()) {
                             auto& composition = compositionCandidate.value();
                             bool open = true;
+                            ImVec4 colorMark4 = ImGui::ColorConvertU32ToFloat4(composition->colorMark);
+                            ImGui::PushStyleColor(ImGuiCol_Tab, colorMark4 * 0.6f);
+                            ImGui::PushStyleColor(ImGuiCol_TabHovered, colorMark4 * 0.8f);
+                            ImGui::PushStyleColor(ImGuiCol_TabActive, colorMark4);
+                            
                             if (ImGui::BeginTabItem(FormatString("%s %s###%i", ICON_FA_LAYER_GROUP, composition->name.c_str(), composition->id).c_str(), &open, focusNeeded == compositionID ? ImGuiTabItemFlags_SetSelected : 0)) {
                                 overrideCurrentComposition = composition->id;
                                 ImGui::EndTabItem();
                             }
+                            ImGui::PopStyleColor(3);
                             if (!open) {
                                 closedComposition = compositionID;
                             }
@@ -471,15 +485,47 @@ namespace Raster {
                     }
 
                     bool openNewCompositionPopup = false;
+                    bool openNavigateToCompositionPopup = false;
                     static std::string s_newCompositionName = "";
                     if (ImGui::TabItemButton(ICON_FA_PLUS, ImGuiTabItemFlags_Trailing)) {
                         openNewCompositionPopup = true;
                         s_newCompositionName = Localization::GetString("NEW_COMPOSITION");
                     }
+                    if (ImGui::TabItemButton(ICON_FA_MAGNIFYING_GLASS, ImGuiTabItemFlags_Trailing)) {
+                        openNavigateToCompositionPopup = true;
+                    }
 
                     if (openNewCompositionPopup) {
                         ImGui::OpenPopup("##newCompositionPopup");
                     }
+
+                    if (openNavigateToCompositionPopup) {
+                        ImGui::OpenPopup("##navigateToCompositionPopup");
+                    }
+
+                    static bool s_compositionSearchFocused = false;
+                    if (ImGui::BeginPopup("##navigateToCompositionPopup")) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("NAVIGATE_TO_COMPOSITION").c_str()).c_str());
+                        static std::string s_compositionSearch = "";
+                        if (!s_compositionSearchFocused) {
+                            ImGui::SetKeyboardFocusHere(0);
+                            s_compositionSearchFocused = true;
+                        }
+                        ImGui::InputTextWithHint("##compositionSearch", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_compositionSearch);
+                        if (ImGui::BeginChild("##compositionCandidates", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                            bool first = true;
+                            for (auto& composition : project.compositions) {
+                                if (!s_compositionSearch.empty() && LowerCase(composition.name).find(LowerCase(s_compositionSearch)) == std::string::npos) continue;
+                                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str()).c_str()) || (first && ImGui::IsKeyPressed(ImGuiKey_Enter))) {
+                                    project.selectedCompositions = {composition.id};
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                first = false;
+                            }
+                        }
+                        ImGui::EndChild();
+                        ImGui::EndPopup();
+                    } else s_compositionSearchFocused = false;
 
                     static bool s_compositionNameFieldFocused = false;
                     if (ImGui::BeginPopup("##newCompositionPopup")) {
@@ -498,7 +544,7 @@ namespace Raster {
                             ImGui::CloseCurrentPopup();
                         }
                         ImGui::EndPopup();
-                    }
+                    } else s_compositionNameFieldFocused = false;
 
                     if (closedComposition > 0) {
                         auto tabIterator = std::find(s_currentlyTabbedCompositions.begin(), s_currentlyTabbedCompositions.end(), closedComposition);

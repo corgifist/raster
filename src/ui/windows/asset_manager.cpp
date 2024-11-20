@@ -355,6 +355,24 @@ namespace Raster {
                                 ImGui::EndChild();
                             }
                             ImGui::EndChild();
+                            if (ImGui::BeginDragDropSource()) {
+                                ImGui::SetDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD, &asset->id, sizeof(asset->id));
+                                asset->RenderDetails();
+                                ImGui::EndDragDropSource();
+                            }
+
+                            if (ImGui::BeginDragDropTarget()) {
+                                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD)) {
+                                    int aID = *((int*) payload->Data);
+                                    for (auto& testAsset : project.assets) {
+                                        if (testAsset->id == aID) {
+                                            auto& aAsset = testAsset;
+                                            std::swap(aAsset, asset);
+                                        }
+                                    }
+                                }
+                                ImGui::EndDragDropTarget();
+                            }
                             bool leftClick = isHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
                             bool rightClick = isHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
                             isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
