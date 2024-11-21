@@ -12,6 +12,7 @@
 #include "image/image.h"
 
 #include "nfd/nfd_glfw3.h"
+#include "common/synchronized_value.h"
 
 #define HANDLE_TO_GLUINT(x) ((uint32_t) (uint64_t) (x))
 #define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
@@ -195,6 +196,13 @@ namespace Raster {
 
     static int s_width, s_height;
 
+    static std::thread s_renderingThread;
+    static std::function<void()> s_renderingFunction;
+    static bool s_running;
+
+    static SynchronizedValue<std::string> s_targetTitle;
+    static std::mutex s_resizeMutex;
+
     void GPU::Initialize() {
         s_mainThreadID = std::this_thread::get_id();
         if (!glfwInit()) {
@@ -213,8 +221,12 @@ namespace Raster {
         if (!info.display) {
             throw std::runtime_error("cannot create raster window!");
         }
+    }
+
+    void GPU::InitializeImGui() {
+        auto display = (GLFWwindow*) info.display;
         glfwMakeContextCurrent(display);
-        glfwSwapInterval(0);
+        glfwSwapInterval(1);
 
         if (!gladLoadGLES2((GLADloadfunc) glfwGetProcAddress)) {
             throw std::runtime_error("cannot initialize opengl es pointers!");
@@ -232,7 +244,7 @@ namespace Raster {
         SetupContextState();
 
         glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
-            glViewport(0, 0, width, height);
+            RASTER_SYNCHRONIZED(s_resizeMutex);
             s_width = width;
             s_height = height;
         });
@@ -244,6 +256,42 @@ namespace Raster {
         std::cout << info.renderer << std::endl;
 
         s_basicShader = GPU::GenerateShader(ShaderType::Vertex, "basic/shader");
+    }
+
+    void GPU::SetRenderingFunction(std::function<void()> t_function) {
+        s_renderingFunction = t_function;
+    }
+
+    void GPU::StartRenderingThread() {
+        s_running = true;
+        s_renderingThread = std::thread([]() {
+            InitializeImGui();
+            glfwMakeContextCurrent((GLFWwindow*) info.display);
+            static int s_viewportWidth = 0, s_viewportHeight = 0;
+            while (s_running) {
+                if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
+                    RASTER_SYNCHRONIZED(s_resizeMutex);
+                    glViewport(0, 0, s_width, s_height);
+                    s_viewportWidth = s_width;
+                    s_viewportHeight = s_height;
+                }
+                s_renderingFunction();
+                glfwSwapBuffers((GLFWwindow*) info.display);
+            }
+        });
+        while (!GPU::MustTerminate()) {
+            glfwPollEvents();
+            auto targetTitle = s_targetTitle.Get();
+            static std::string s_cachedTitle = "";
+            if (targetTitle != s_cachedTitle) {
+                glfwSetWindowTitle((GLFWwindow*) info.display, targetTitle.c_str());
+                s_cachedTitle = targetTitle;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            s_running = true;
+        }
+        s_running = false;
+        s_renderingThread.join();
     }
 
     void GPU::Flush() {
@@ -272,7 +320,6 @@ namespace Raster {
         glEnable              ( GL_DEBUG_OUTPUT );
         glDebugMessageCallback( MessageCallback, 0 );
 
-        glEnable(GL_DITHER);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     }
@@ -291,7 +338,6 @@ namespace Raster {
     }
 
     void GPU::BeginFrame() {
-        glfwPollEvents();
 
         GPU::BindFramebuffer(std::nullopt);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -313,7 +359,6 @@ namespace Raster {
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
         }
-        glfwSwapBuffers((GLFWwindow*) info.display);
     }
 
     Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision, bool mipmapped) {
@@ -750,7 +795,7 @@ namespace Raster {
     }
 
     void GPU::SetWindowTitle(std::string title) {
-        glfwSetWindowTitle((GLFWwindow*) info.display, title.c_str());
+        s_targetTitle.Set(title);
     }
 
     std::string GPU::GetShadersPath() {

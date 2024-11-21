@@ -275,7 +275,7 @@ namespace Raster {
     }
 
     std::string DecodeAudioAsset::AbstractHeader() {
-        return "Decode Audio Asset";
+        return "Decode Audio";
     }
 
     std::string DecodeAudioAsset::Icon() {

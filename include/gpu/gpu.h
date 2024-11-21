@@ -144,9 +144,12 @@ namespace Raster {
         static Shader s_basicShader;
 
         static void Initialize();
+        static void SetRenderingFunction(std::function<void()> t_function);
+        static void StartRenderingThread();
         static bool MustTerminate();
         static void BeginFrame();
         static void EndFrame();
+        static void InitializeImGui();
 
         static void* ReserveContext();
         static void SetupContextState();

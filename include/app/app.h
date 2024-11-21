@@ -10,7 +10,8 @@ namespace Raster {
     struct App {
         static std::vector<AbstractUI> s_windows;
 
-        static void Initialize();
+        static void Start();
+        static void InitializeInternals();
         static void RenderLoop();
         static void Terminate();
     };

@@ -23,7 +23,7 @@ namespace Raster {
 
     std::vector<AbstractUI> App::s_windows{};
 
-    void App::Initialize() {
+    void App::Start() {
         print(RASTER_COMPILER_VERSION_STRING);
         static NFD::Guard s_guard;
         av::init();
@@ -34,6 +34,14 @@ namespace Raster {
         DUMP_VAR(Audio::s_backendInfo.name);
         DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
+        GPU::SetRenderingFunction(App::RenderLoop);
+        
+
+        GPU::StartRenderingThread();
+        Terminate();
+    }
+
+    void App::InitializeInternals() {
         AsyncUpload::Initialize();
         AsyncRendering::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
@@ -180,8 +188,6 @@ namespace Raster {
         colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.55f, 0.55f, 0.55f, 0.50f);
         colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.55f, 0.55f, 0.55f, 0.50f);
 
-
-
         s_windows.push_back(UIFactory::SpawnDockspaceUI());
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
@@ -193,57 +199,59 @@ namespace Raster {
     }
 
     void App::RenderLoop() {
-        while (!GPU::MustTerminate()) {
-            UIShared::s_timelineAnykeyframeDragged = false;
+        static bool firstFrame = true;
+        if (firstFrame) {
+            InitializeInternals();
+            firstFrame = false;
+        }
+        UIShared::s_timelineAnykeyframeDragged = false;
 
-            std::string constructedTitle = std::string("Raster - Build Number ") + NumberToHexadecimal(BUILD_NUMBER) + " (" + std::to_string(BUILD_NUMBER) + ")";
-            if (Workspace::s_project.has_value()) {
-                auto& project = Workspace::s_project.value();
-                constructedTitle += " - " + project.name;
+        std::string constructedTitle = std::string("Raster - Build Number ") + NumberToHexadecimal(BUILD_NUMBER) + " (" + std::to_string(BUILD_NUMBER) + ")";
+        if (Workspace::s_project.has_value()) {
+            auto& project = Workspace::s_project.value();
+            constructedTitle += " - " + project.name;
+        }
+        GPU::SetWindowTitle(constructedTitle);
+
+        GPU::BeginFrame();
+            if (Workspace::s_project.has_value() && ImGui::IsAnyItemActive() == false && ImGui::IsAnyItemFocused() == false && ImGui::IsKeyPressed(ImGuiKey_Space)) {
+                Workspace::GetProject().playing = !Workspace::GetProject().playing;
             }
-            GPU::SetWindowTitle(constructedTitle);
-
-            GPU::BeginFrame();
-                if (Workspace::s_project.has_value() && ImGui::IsAnyItemActive() == false && ImGui::IsAnyItemFocused() == false && ImGui::IsKeyPressed(ImGuiKey_Space)) {
-                    Workspace::GetProject().playing = !Workspace::GetProject().playing;
-                }
-                if (Workspace::s_project.has_value()) {
-                    auto& project = Workspace::GetProject();
-                    if (project.playing) {
-                        auto projectLength = project.GetProjectLength();
-                        if (project.currentFrame >= projectLength) {
-                            if (project.looping) {
-                                project.currentFrame = 0;
-                                project.OnTimelineSeek();
-                            } else project.playing = false;
-                        } else {
-                            if (project.currentFrame < projectLength) {
-                                project.currentFrame += (project.framerate * ImGui::GetIO().DeltaTime);
-                            }
+            if (Workspace::s_project.has_value()) {
+                auto& project = Workspace::GetProject();
+                if (project.playing) {
+                    auto projectLength = project.GetProjectLength();
+                    if (project.currentFrame >= projectLength) {
+                        if (project.looping) {
+                            project.currentFrame = 0;
+                            project.OnTimelineSeek();
+                        } else project.playing = false;
+                    } else {
+                        if (project.currentFrame < projectLength) {
+                            project.currentFrame += (project.framerate * ImGui::GetIO().DeltaTime);
                         }
                     }
                 }
-                GPU::BindFramebuffer(std::nullopt);
-                if (Workspace::s_project.has_value()) {
-                    auto& project = Workspace::s_project.value();
-                    project.currentFrame = std::max(project.currentFrame, 0.0f);
-                    project.currentFrame = std::min(project.currentFrame, project.GetProjectLength());
-                }
-
-                for (const auto& window : s_windows) {
-                    window->Render();
-                }
-
-                ImGui::ShowDemoWindow();
-                GPU::BindFramebuffer(std::nullopt);
-            GPU::EndFrame();
-            AsyncRendering::AllowRendering();
-
-
-            if (Workspace::IsProjectLoaded()) {
-                auto& project = Workspace::GetProject();
-                AudioInfo::s_globalAudioOffset = std::fmod(project.currentFrame / project.framerate * AudioInfo::s_sampleRate, AudioInfo::s_periodSize);
             }
+            GPU::BindFramebuffer(std::nullopt);
+            if (Workspace::s_project.has_value()) {
+                auto& project = Workspace::s_project.value();
+                project.currentFrame = std::max(project.currentFrame, 0.0f);
+                project.currentFrame = std::min(project.currentFrame, project.GetProjectLength());
+            }
+
+            for (const auto& window : s_windows) {
+                window->Render();
+            }
+
+            ImGui::ShowDemoWindow();
+            GPU::BindFramebuffer(std::nullopt);
+        GPU::EndFrame();
+        AsyncRendering::AllowRendering();
+
+        if (Workspace::IsProjectLoaded()) {
+            auto& project = Workspace::GetProject();
+            AudioInfo::s_globalAudioOffset = std::fmod(project.currentFrame / project.framerate * AudioInfo::s_sampleRate, AudioInfo::s_periodSize);
         }
     }
 
