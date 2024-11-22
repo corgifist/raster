@@ -78,12 +78,26 @@ namespace Raster {
     }
 
     void LensDistortion::AbstractRenderProperties() {
-        RenderAttributeProperty("K1");
-        RenderAttributeProperty("K2");
-        RenderAttributeProperty("K3");
+        RenderAttributeProperty("K1", {
+            IconMetadata(ICON_FA_PERCENT),
+            SliderStepMetadata(0.01f)
+        });
+        RenderAttributeProperty("K2", {
+            IconMetadata(ICON_FA_PERCENT),
+            SliderStepMetadata(0.01f)
+        });
+        RenderAttributeProperty("K3", {
+            IconMetadata(ICON_FA_PERCENT),
+            SliderStepMetadata(0.01f)
+        });
         RenderAttributeProperty("DarkEdges");
-        RenderAttributeProperty("Edge");
-        RenderAttributeProperty("Dispersion");
+        RenderAttributeProperty("Edge", {
+            SliderStepMetadata(0.01f)
+        });
+        RenderAttributeProperty("Dispersion", {
+            IconMetadata(ICON_FA_PERCENT),
+            SliderStepMetadata(0.01f)
+        });
     }
 
     void LensDistortion::AbstractLoadSerialized(Json t_data) {

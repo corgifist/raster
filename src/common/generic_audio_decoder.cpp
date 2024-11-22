@@ -27,7 +27,7 @@ namespace Raster {
         int resamplerSamplesCount;
         SharedRawAudioSamples cachedSamples;
         bool cacheValid;
-        AudioCache cache;
+        SynchronizedValue<AudioCache> cache;
 
         bool wasOpened;
         int lastAudioPassID;
@@ -168,7 +168,7 @@ namespace Raster {
         auto& project = Workspace::GetProject();
 
         auto decoder = GetDecoderContext(this);
-        if (decoder->cacheValid) return decoder->cache.GetCachedSamples();
+        if (decoder->cacheValid) return decoder->cache.Get().GetCachedSamples();
         return std::nullopt;
     }
 
@@ -249,7 +249,9 @@ namespace Raster {
             if (attachedPicCandidate.has_value()) {
                 samples.attachedPictures.push_back(attachedPicCandidate.value());
             }
-            decoder->cache.SetCachedSamples(samples);
+            decoder->cache.Lock();
+            decoder->cache.GetReference().SetCachedSamples(samples);
+            decoder->cache.Unlock();
 
             decoder->cacheValid = true;
             decoder->lastAudioPassID = audioPassID;
