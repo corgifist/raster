@@ -94,7 +94,6 @@ namespace Raster {
 
         auto& style = ImGui::GetStyle();
         // style.CurveTessellationTol = 0.01f;
-        style.ScrollSmooth = 4;
         style.SeparatorTextAlign = ImVec2(0.5, 0.5);
         style.ScrollbarSize = 10;
 	

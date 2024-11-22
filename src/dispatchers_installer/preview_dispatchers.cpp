@@ -148,7 +148,7 @@ namespace Raster {
             } + imageOffset);
 
             ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 194, ImVec2{fitTextureSize.x, fitTextureSize.y} * zoom);
-            ImGui::Image(texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
+            ImGui::Image((ImTextureID) texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
             auto& project = Workspace::GetProject();
             if (!project.selectedAttributes.empty() && Dispatchers::s_enableOverlays) {

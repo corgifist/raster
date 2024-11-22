@@ -19,20 +19,15 @@ namespace Raster {
         auto b = std::any_cast<Gradient1D>(t_endValue);
         float& t = t_percentage;
 
-        if (a.stops.size() != b.stops.size()) {
-            Gradient1D& referenceGradient = a.stops.size() > b.stops.size() ? a : b;
-            Gradient1D& targetGradient = a.stops.size() > b.stops.size() ? b : a;
-            Gradient1D matchedGradient = targetGradient.MatchStopsCount(referenceGradient);
-            for (int i = 0; i < referenceGradient.stops.size(); i++) {
-                matchedGradient.stops[i].color = glm::mix(matchedGradient.stops[i].color, referenceGradient.stops[i].color, t);
-            }
-            return matchedGradient;
-        } else {
-            for (int i = 0; i < b.stops.size(); i++) {
-                b.stops[i].color = glm::mix(a.stops[i].color, b.stops[i].color, t);
-            }
-            return b;
+        if (a.stops.size() > b.stops.size()) {
+            b = b.MatchStopsCount(a);
+        } else if (a.stops.size() < b.stops.size()) {
+            a = a.MatchStopsCount(b);
         }
+        for (int i = 0; i < b.stops.size(); i++) {
+            b.stops[i].color = glm::mix(a.stops[i].color, b.stops[i].color, t);
+        }
+        return b;
     }
 
     Json Gradient1DAttribute::SerializeKeyframeValue(std::any t_value) {

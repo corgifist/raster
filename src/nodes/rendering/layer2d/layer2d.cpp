@@ -347,7 +347,7 @@ extern "C" {
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - 150 / 2.0f);
         ImVec2 fitSize = FitRectInRect(ImVec2(150, 150), ImVec2(framebuffer.width, framebuffer.height));
         ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 12, 5, fitSize);
-        ImGui::Image(framebuffer.attachments[0].handle, fitSize);
+        ImGui::Image((ImTextureID) framebuffer.attachments[0].handle, fitSize);
         
     }
 
