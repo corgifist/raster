@@ -185,8 +185,8 @@ namespace Raster {
         static bool positionDragAlreadyActive = false;
 
         if ((MouseHoveringBounds(xCircleBounds) || xDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !yDragActive && !positionDragActive && !anchorDragging && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x;
-            transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y;
+            transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
             if (linkedSize) {
                 transform.size.y = transform.size.x;
             }
@@ -221,8 +221,8 @@ namespace Raster {
         rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
 
         if ((MouseHoveringBounds(yCircleBounds) || yDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !anchorDragging && !positionDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x;
-            transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y;
+            transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
             if (linkedSize) {
                 transform.size.x = transform.size.y;
             }
@@ -255,8 +255,8 @@ namespace Raster {
         rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
 
         if ((MouseHoveringBounds(ySecondaryCircleBounds) || ySecondaryDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !yDragActive && !anchorDragging && !positionDragActive && !rotatorActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x;
-            transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y;
+            transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
             if (linkedSize) {
                 transform.size.x = transform.size.y;
             }
@@ -289,8 +289,8 @@ namespace Raster {
         rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
 
         if ((MouseHoveringBounds(xSecondaryCircleBounds) || xSecondaryDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !yDragActive && !anchorDragging && !positionDragActive && !rotatorActive && !ySecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x;
-            transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y;
+            transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
             if (linkedSize) {
                 transform.size.y = transform.size.x;
             }
@@ -330,8 +330,8 @@ namespace Raster {
         );
         ImGui::ItemAdd(ImRect(positionDragBounds.UL, positionDragBounds.BR), ImGui::GetID("##transformContainer"));
         if ((MouseHoveringBounds(positionDragBounds) || positionDragActive) && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left] && !anchorDragging && !xDragActive && !yDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.position.x += ImGui::GetIO().MouseDelta.x / (t_regionSize.x / t_zoom);
-            transform.position.y += -ImGui::GetIO().MouseDelta.y / (t_regionSize.y / t_zoom);
+            transform.position.x += ImGui::GetIO().MouseDelta.x / (t_regionSize.x / t_zoom) * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.position.y += -ImGui::GetIO().MouseDelta.y / (t_regionSize.y / t_zoom) * 2;
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
             ImGui::SetTooltip("%s Move Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
 
