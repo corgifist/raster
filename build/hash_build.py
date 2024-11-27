@@ -30,6 +30,7 @@ elif get_platform() == "windows":
     shared_library_prefix = ""
     shared_library_extension = "dll"
 
+compilation_database = []
 
 def hash_string(string: str):
     return hashlib.blake2s(string.encode()).hexdigest()
@@ -38,6 +39,7 @@ argument_parser = argparse.ArgumentParser(prog="HashBuild", description="embedda
 
 argument_parser.add_argument("-e", "--entry_point", metavar="ENTRY_POINT_NAME", help="set up entry point", default=None, type=str)
 argument_parser.add_argument("-c", "--clean", help="clean object & dependency cache", default=False, action="store_true")
+argument_parser.add_argument("-d", "--database", help="generate compilation database", default=False, action="store_true")
 
 arguments = vars(argument_parser.parse_args())
 
@@ -378,6 +380,13 @@ def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=
         for include_path in global_include_paths:
             compiler_command.append(f"-I{include_path}")
 
+        compilation_database.append({
+            'directory': os.getcwd(),
+            'arguments': compiler_command,
+            'file': file,
+            'output': object_file_path
+        })
+
         compiler_command = filter_list_from_empty_strings(compiler_command)
         
         compilation_message = f"compiling {file} ({object_file_path})"
@@ -502,3 +511,7 @@ def router():
         empty_entry_point()
     else:
         get_entry_point(builder_entry_point)()
+
+    if arguments["database"]:
+        ensure_file_exists("compilation_commands.json")
+        write_file("compilation_commands.json", str(compilation_database))

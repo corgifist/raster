@@ -12,6 +12,7 @@
 #include "string_dispatchers.h"
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
+#include "common/item_aligner.h"
 
 namespace Raster {
 

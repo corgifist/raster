@@ -1,6 +1,9 @@
 #include "dockspace.h"
 #include "build_number.h"
+#include "common/localization.h"
+#include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
+#include "common/ui_helpers.h"
 
 namespace Raster {
 
@@ -21,6 +24,16 @@ namespace Raster {
         buf[w] = 0;
         return w;
     }
+
+    void DockspaceUI::RenderAboutWindow() {
+        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("ABOUT").c_str()).c_str());
+        ImGui::Text("%s %s: %s (%i)", ICON_FA_SCREWDRIVER, Localization::GetString("BUILD_NUMBER").c_str(), NumberToHexadecimal(BUILD_NUMBER).c_str(), BUILD_NUMBER);
+        ImGui::Text("%s %s: %s", ICON_FA_GEARS, Localization::GetString("COMPILER_VERSION").c_str(), RASTER_COMPILER_VERSION_STRING);
+        ImGui::Text("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("GRAPHICS_API").c_str(), GPU::info.version.c_str());
+    }
+
+    static Project s_project;
+    static std::string s_projectPath;
 
     void DockspaceUI::Render() {
         auto viewport = ImGui::GetMainViewport();
@@ -48,7 +61,6 @@ namespace Raster {
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), 0, nullptr);
 
         bool openProjectInfoEditor = false;
-        static std::string s_projectPath;
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER, Localization::GetString("PROJECT").c_str()).c_str())) {
@@ -89,10 +101,7 @@ namespace Raster {
             }
 
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("ABOUT").c_str()).c_str())) {
-                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("ABOUT").c_str()).c_str());
-                ImGui::Text("%s %s: %s (%i)", ICON_FA_SCREWDRIVER, Localization::GetString("BUILD_NUMBER").c_str(), NumberToHexadecimal(BUILD_NUMBER).c_str(), BUILD_NUMBER);
-                ImGui::Text("%s %s: %s", ICON_FA_GEARS, Localization::GetString("COMPILER_VERSION").c_str(), RASTER_COMPILER_VERSION_STRING);
-                ImGui::Text("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("GRAPHICS_API").c_str(), GPU::info.version.c_str());
+                RenderAboutWindow();
                 ImGui::EndMenu();
             }
 
@@ -103,79 +112,31 @@ namespace Raster {
             ImGui::EndMainMenuBar();
         }
 
-        static std::string s_projectName, s_projectDescription;
-        static glm::vec2 s_projectResolution;
-        static glm::vec4 s_backgroundColor;
-
         if (openProjectInfoEditor) {
             ImGui::OpenPopup("##projectInfoEditor");
-            s_projectName = "New Project";
-            s_projectDescription = "Empty Project";
-            s_projectResolution = glm::vec2(1280, 720);
-            s_backgroundColor = glm::vec4(0, 0, 0, 1);
+            s_project = Project();
         }
 
+        RenderNewProjectPopup();
+
+        ImGui::End();
+    }
+
+    void DockspaceUI::RenderNewProjectPopup() {
+        static ImVec2 s_windowSize(0, 0);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Size / 2.0f - s_windowSize / 2.0f);
         if (ImGui::BeginPopupModal("##projectInfoEditor", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
-
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("PROJECT_INFO").c_str()).c_str());
-
-            static std::vector<float> s_cursorCandidates;
-
-            float largestCursorX = 0;
-            for (auto& cursor : s_cursorCandidates) {
-                if (cursor > largestCursorX) largestCursorX = cursor;
-            }
-
-            s_cursorCandidates.clear();
-
-            ImGui::Text("%s %s", ICON_FA_PENCIL, Localization::GetString("PROJECT_NAME").c_str());
-            ImGui::SameLine();
-            s_cursorCandidates.push_back(ImGui::GetCursorPosX());
-            if (largestCursorX != 0) ImGui::SetCursorPosX(largestCursorX);
-            ImGui::InputText("##projectName", &s_projectName);
-
-
-            ImGui::Text("%s %s", ICON_FA_PENCIL, Localization::GetString("PROJECT_DESCRIPTION").c_str());
-            ImGui::SameLine();
-            s_cursorCandidates.push_back(ImGui::GetCursorPosX());
-            if (largestCursorX != 0) ImGui::SetCursorPosX(largestCursorX);
-            ImGui::InputTextMultiline("##projectDescription", &s_projectDescription);
-
-            ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str());
-            ImGui::SameLine();
-            s_cursorCandidates.push_back(ImGui::GetCursorPosX());
-            if (largestCursorX != 0) ImGui::SetCursorPosX(largestCursorX);
-            ImGui::DragFloat2("##projectResolution", glm::value_ptr(s_projectResolution), 1, 0, 0, "%0.0f");
-
-            ImGui::Text("%s %s", ICON_FA_DROPLET, Localization::GetString("PROJECT_BACKGROUND_COLOR").c_str());
-            ImGui::SameLine();
-            s_cursorCandidates.push_back(ImGui::GetCursorPosX());
-            if (largestCursorX != 0) ImGui::SetCursorPosX(largestCursorX);
-            ImGui::ColorEdit4("##bgColor", glm::value_ptr(s_backgroundColor));
-
+            UIHelpers::RenderProjectEditor(s_project);
             if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-                Project result;
-
-                result.name = s_projectName;
-                result.description = s_projectDescription;
-                result.preferredResolution = s_projectResolution;
-                result.path = s_projectPath;
-                result.compositions.push_back(Composition());
-                result.selectedCompositions = {result.compositions.back().id};
-                result.backgroundColor = s_backgroundColor;
-
-                Workspace::s_project = result;
-                ImGui::CloseCurrentPopup();
+                s_project.path = s_projectPath;
+                Workspace::s_project = s_project;
             }
             if (ImGui::Button(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("CANCEL").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
                 ImGui::CloseCurrentPopup();
             }
-            ImGui::SetWindowPos(ImGui::GetMainViewport()->Size / 2.0f - ImGui::GetWindowSize() / 2.0f);
+            s_windowSize = ImGui::GetWindowSize();
             ImGui::EndPopup();
         }
-
-
-
-        ImGui::End();
     }
 };

@@ -40,13 +40,4 @@ namespace Raster {
     std::optional<std::any> ConversionDispatchers::ConvertGenericResolutionToVec2(std::any& t_value) {
         return std::any_cast<GenericResolution>(t_value).CalculateResolution();
     }
-
-    std::optional<std::any> ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples(std::any& t_value) {
-        auto decoder = std::any_cast<GenericAudioDecoder>(t_value);
-        auto samplesCandidate = decoder.DecodeSamples();
-        if (samplesCandidate.has_value()) {
-            return samplesCandidate.value();
-        }
-        return std::nullopt;
-    }
 };

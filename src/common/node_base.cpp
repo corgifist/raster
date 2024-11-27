@@ -11,6 +11,7 @@
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
+#include "raster.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -333,6 +334,15 @@ namespace Raster {
                     auto& project = Workspace::GetProject();
                     auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
                     *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.currentFrame - composition->beginFrame) / project.framerate;
+                    if (typeid(T) == typeid(AudioSamples)) {
+                        auto decoder = std::any_cast<GenericAudioDecoder>(dynamicAttribute);
+                        bool isAudioPass = RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool);
+                        int audioPassID = RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int);
+                        auto samplesCandidate = decoder.DecodeSamples(isAudioPass ? audioPassID : AudioInfo::s_audioPassID);
+                        if (samplesCandidate.has_value()) {
+                            dynamicAttribute = samplesCandidate.value();
+                        }
+                    }
                 }
                 if (RASTER_GET_CONTEXT_VALUE(t_contextData, "ALLOW_MEDIA_DECODING", bool)) {
                     auto conversionCandidate = Dispatchers::DispatchConversion(dynamicAttribute, typeid(T));

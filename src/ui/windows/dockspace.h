@@ -12,6 +12,10 @@
 
 namespace Raster {
     struct DockspaceUI : public UI {
+
+        void RenderAboutWindow();
+        void RenderNewProjectPopup();
+
         void Render();
     };
 };

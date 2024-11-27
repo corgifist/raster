@@ -260,5 +260,8 @@
     "COMPOSITION_LOCK": "Composition Lock",
     "NEW_GRADIENT_STOP": "New Gradient Stop",
     "NAVIGATE_TO_COMPOSITION": "Navigate to Composition",
-    "FILTER_ASSETS_BY_TYPE": "Filter Assets by Type"
+    "FILTER_ASSETS_BY_TYPE": "Filter Assets by Type",
+    "AUDIO_DISCRETIZATION_OPTIONS": "Audio Discretization Settings",
+    "AUDIO_SAMPLE_RATE": "Audio Sample Rate",
+    "AUDIO_CHANNELS_COUNT": "Audio Channels Count"
 }

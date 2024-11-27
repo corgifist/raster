@@ -20,6 +20,7 @@ namespace Raster {
 
     AbstractPinMap ExportToAudioBus::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
+        if (!Audio::IsAudioInstanceActive()) return result;
         auto& project = Workspace::GetProject();
 
         auto busIDCandidate = GetAttribute<int>("BusID", t_contextData);

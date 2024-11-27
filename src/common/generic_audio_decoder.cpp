@@ -1,12 +1,8 @@
 #include "common/generic_audio_decoder.h"
 
-#include "../avcpp/av.h"
-#include "../avcpp/ffmpeg.h"
 #include "../avcpp/codec.h"
 #include "../avcpp/packet.h"
-#include "../avcpp/videorescaler.h"
 #include "../avcpp/audioresampler.h"
-#include "../avcpp/avutils.h"
 
 // API2
 #include "../avcpp/format.h"
@@ -15,7 +11,8 @@
 #include "../avcpp/codeccontext.h"
 
 #include "common/audio_info.h"
-#include "common/threads.h"
+#include "common/audio_samples.h"
+#include <optional>
 
 namespace Raster {
     
@@ -24,8 +21,6 @@ namespace Raster {
         av::Stream targetAudioStream;
         av::AudioDecoderContext audioDecoderCtx;
         av::AudioResampler audioResampler;
-        int resamplerSamplesCount;
-        SharedRawAudioSamples cachedSamples;
         bool cacheValid;
         SynchronizedValue<AudioCache> cache;
 
@@ -46,8 +41,6 @@ namespace Raster {
             this->wasOpened = false;
             this->health = MAX_GENERIC_AUDIO_DECODER_LIFESPAN;
             this->cacheValid = false;
-            this->cachedSamples = AudioInfo::MakeRawAudioSamples();
-            this->resamplerSamplesCount = 0;
             this->timeOffset = 0;
         }
     };
@@ -110,9 +103,8 @@ namespace Raster {
 
     static void FlushResampler(GenericAudioDecoder* t_ga, int t_decoderID) {
         auto decoder = AllocateDecoderContext(t_decoderID);
-        if (decoder->resamplerSamplesCount > 0) decoder->audioResampler.pop(decoder->resamplerSamplesCount);
+        decoder->audioResampler.pop(decoder->audioResampler.delay());
         decoder->audioResampler.pop(0);
-        decoder->resamplerSamplesCount = 0;
     }
 
     static av::AudioSamples DecodeOneFrame(GenericAudioDecoder* t_ga, int t_decoderID) {
@@ -128,24 +120,25 @@ namespace Raster {
         return av::AudioSamples();
     }
 
-    static void PushMoreSamples(GenericAudioDecoder* t_ga, int t_decoderID) {
+    static bool PushMoreSamples(GenericAudioDecoder* t_ga, int t_decoderID) {
         auto decoder = AllocateDecoderContext(t_decoderID);
         auto decodedSamples = DecodeOneFrame(t_ga, t_decoderID);
         if (decodedSamples) {
             decoder->audioResampler.push(decodedSamples);
-            decoder->resamplerSamplesCount += decodedSamples.samplesCount();
+            return true;
         }
+        return false;
     }
 
     static av::AudioSamples PopResampler(GenericAudioDecoder* t_ga, int t_decoderID) {
         auto decoder = AllocateDecoderContext(t_decoderID);
-        if (decoder->resamplerSamplesCount < AudioInfo::s_periodSize) {
-            PushMoreSamples(t_ga, t_decoderID);
-            return PopResampler(t_ga, t_decoderID);
+
+        auto result = av::AudioSamples();
+        while (!(result = decoder->audioResampler.pop(AudioInfo::s_periodSize))) {
+            if (!PushMoreSamples(t_ga, t_decoderID)) return av::AudioSamples();
         }
 
-        auto result = decoder->audioResampler.pop(AudioInfo::s_periodSize);
-        decoder->resamplerSamplesCount -= AudioInfo::s_periodSize;
+
         return result;
     }
 
@@ -172,12 +165,11 @@ namespace Raster {
         return std::nullopt;
     }
 
-    std::optional<AudioSamples> GenericAudioDecoder::DecodeSamples() {
+    std::optional<AudioSamples> GenericAudioDecoder::DecodeSamples(int audioPassID) {
         SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
 
         auto decoder = GetDecoderContext(this);
-        auto audioPassID = AudioInfo::s_audioPassID;
 
         if (decoder->lastAudioPassID + 1 != audioPassID) {
             decoder->needsSeeking = true;
@@ -185,11 +177,13 @@ namespace Raster {
         }
         if (decoder->lastAudioPassID != audioPassID) decoder->cacheValid = false;
         if (decoder->cacheValid) {
-            AudioSamples samples;
-            samples.sampleRate = AudioInfo::s_sampleRate;
-            samples.samples = decoder->cachedSamples;
+            decoder->cache.Lock();
+            auto cachedSamples = decoder->cache.GetReference().GetCachedSamples();
+            decoder->cache.Unlock();
             decoder->lastAudioPassID = audioPassID;
-            return samples;
+            if (cachedSamples) {
+                return *cachedSamples;
+            } 
         }
 
         if (decoder->needsSeeking && decoder->formatCtx.isOpened()) {
@@ -239,23 +233,33 @@ namespace Raster {
         }
 
         if (decoder->formatCtx.isOpened() && decoder->audioDecoderCtx.isOpened()) {
-            auto resampledSamples = PopResampler(this, decoder->id);
-            auto samplesPtr = resampledSamples.data();
-            memcpy(decoder->cachedSamples->data(), samplesPtr, resampledSamples.sampleFormat().bytesPerSample() * resampledSamples.channelsCount() * resampledSamples.samplesCount());
-
-            AudioSamples samples;
-            samples.sampleRate = resampledSamples.sampleRate();
-            samples.samples = decoder->cachedSamples;
-            if (attachedPicCandidate.has_value()) {
-                samples.attachedPictures.push_back(attachedPicCandidate.value());
+            if (decoder->audioResampler.dstChannelLayout() != av::ChannelLayout(AudioInfo::s_channels).layout() || 
+                    decoder->audioResampler.dstSampleRate() != AudioInfo::s_sampleRate) {
+                decoder->audioResampler.init(av::ChannelLayout(AudioInfo::s_channels).layout(), AudioInfo::s_sampleRate, AV_SAMPLE_FMT_FLT,
+                                                        decoder->audioDecoderCtx.channelLayout(), decoder->audioDecoderCtx.sampleRate(), decoder->audioDecoderCtx.sampleFormat());
             }
-            decoder->cache.Lock();
-            decoder->cache.GetReference().SetCachedSamples(samples);
-            decoder->cache.Unlock();
-
-            decoder->cacheValid = true;
             decoder->lastAudioPassID = audioPassID;
-            return samples;
+            auto resampledSamples = PopResampler(this, decoder->id);
+            if (resampledSamples) {
+                auto samplesPtr = resampledSamples.data();
+                SharedRawAudioSamples allocatedSamples = AudioInfo::MakeRawAudioSamples();
+                memcpy(allocatedSamples->data(), samplesPtr, resampledSamples.sampleFormat().bytesPerSample() * resampledSamples.channelsCount() * resampledSamples.samplesCount());
+
+                AudioSamples samples;
+                samples.sampleRate = resampledSamples.sampleRate();
+                samples.samples = allocatedSamples;
+                if (attachedPicCandidate.has_value()) {
+                    samples.attachedPictures.push_back(attachedPicCandidate.value());
+                }
+                decoder->cache.Lock();
+                decoder->cache.GetReference().SetCachedSamples(samples);
+                decoder->cache.Unlock();
+
+                decoder->cacheValid = true;
+                return samples;
+            } else {
+                print("samples are invalid");
+            }
         }
 
         return std::nullopt;

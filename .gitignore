@@ -15,3 +15,5 @@ HashBuild/__pycache__/
 *.exe
 misc/projects/*
 raster_core
+compile_commands.json
+.cache

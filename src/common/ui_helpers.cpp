@@ -5,6 +5,11 @@
 #include "../ImGui/imgui_internal.h"
 #include "common/dispatchers.h"
 #include "../ImGui/imgui_drag.h"
+#include "common/item_aligner.h"
+#include "common/localization.h"
+#include "font/IconsFontAwesome5.h"
+#include "raster.h"
+#include "common/ratio.h"
 
 namespace Raster {
 
@@ -16,7 +21,7 @@ namespace Raster {
     void UIHelpers::SelectAttribute(Composition* t_composition, int& t_attributeID, std::string t_headerText, std::string* t_customAttributeFilter) {
         int reservedID = t_attributeID;
         bool openMoreAttributesPopup = false;
-        if (ImGui::BeginPopup(FormatString("##attributeSelector").c_str())) {
+        if (ImGui::BeginPopup("##attributeSelector")) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("INSERT_ATTRIBUTE_ID").c_str()).c_str());
             auto parentComposition = t_composition;
             static std::string defaultAttributeFilter = "";
@@ -392,7 +397,7 @@ namespace Raster {
 
 #define GRADIENT_ATTRIBUTE_PAYLOAD "GRADIENT_ATTRIBUTE_PAYLOAD"
 
-    static bool CenteredButton(const char* label, float alignment) {
+    bool UIHelpers::CenteredButton(const char* label, float alignment) {
         ImGuiStyle &style = ImGui::GetStyle();
 
         float size = ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f;
@@ -584,5 +589,171 @@ namespace Raster {
         }
 
         return gradientWasEdited;
+    }
+
+    void UIHelpers::RenderAudioDiscretizationOptionsEditor(AudioDiscretizationOptions &t_options) {
+        if (ImGui::TreeNodeEx(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("AUDIO_DISCRETIZATION_OPTIONS").c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+            static ItemAligner s_aligner;
+            s_aligner.ClearCursors();
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("AUDIO_SAMPLE_RATE").c_str());
+            ImGui::SameLine();
+            s_aligner.AlignCursor();
+            if (ImGui::Button(FormatString("%s %i Hz", ICON_FA_WAVE_SQUARE, t_options.desiredSampleRate).c_str())) {
+                ImGui::OpenPopup("##sampleRatesPopup");
+            }
+            if (ImGui::BeginPopup("##sampleRatesPopup")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("AUDIO_SAMPLE_RATE").c_str()).c_str());
+                static std::vector<int> s_sampleRatePresets = {
+                    8000,
+                    11025,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100,
+                    48000,
+                    88200,
+                    96000
+                };
+                for (auto& preset : s_sampleRatePresets) {
+                    if (ImGui::MenuItem(FormatString("%i Hz", preset).c_str())) {
+                        t_options.desiredSampleRate = preset;
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndPopup();
+            }
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s %s", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNELS_COUNT").c_str());
+            ImGui::SameLine();
+            s_aligner.AlignCursor();
+            ImGui::SliderInt("##audioChannelsCount", &t_options.desiredChannelsCount, 1, 8);
+
+            ImGui::TreePop();
+        }
+    }
+
+    struct ResolutionPreset {
+        glm::vec2 size;
+        std::string name;
+        float aspectRatio;
+
+        ResolutionPreset() : size({512, 512}), name("Not Specified"), aspectRatio(1) {}
+        ResolutionPreset(glm::vec2 t_size, std::string t_name) : size(t_size), name(t_name) {
+            this->aspectRatio = t_size.x / t_size.y;
+        }
+
+    };
+
+    void UIHelpers::RenderProjectEditor(Project &t_project) {
+        static bool isEditingDescription;
+        static ItemAligner s_aligner;
+
+        s_aligner.ClearCursors();
+        ImGui::Text("%s %s", ICON_FA_FONT, Localization::GetString("PROJECT_NAME").c_str());
+        ImGui::SameLine();
+        s_aligner.AlignCursor();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+        ImGui::InputText("##projectName", &t_project.name);
+        ImGui::PopItemWidth();
+
+        ImGui::Text("%s %s", ICON_FA_COMMENT, Localization::GetString("PROJECT_DESCRIPTION").c_str());
+        ImGui::SameLine();
+        s_aligner.AlignCursor();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+        ImGui::InputTextMultiline("##descriptionEditor", &t_project.description, ImVec2(0, 0));
+        ImGui::PopItemWidth();
+        ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("CTRL_CLICK_TO_CLOSE").c_str());
+
+        ImGui::Text("%s %s", ICON_FA_VIDEO, Localization::GetString("PROJECT_FRAMERATE").c_str());
+        ImGui::SameLine();
+
+        int signedFramerate = t_project.framerate;
+        s_aligner.AlignCursor();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+        ImGui::DragInt("##projectFramerate", &signedFramerate, 1, 1);
+        ImGui::PopItemWidth();
+        t_project.framerate = signedFramerate;
+
+        int signedPreferredResolution[2] = {
+            (int) t_project.preferredResolution.x,
+            (int) t_project.preferredResolution.y
+        };
+        ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str());
+        ImGui::SameLine();
+        s_aligner.AlignCursor();
+        if (ImGui::Button(ICON_FA_EXPAND)) {
+            ImGui::OpenPopup("##extendedResolutionPopup");
+        }
+        if (ImGui::BeginPopup("##extendedResolutionPopup")) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str()).c_str());
+            static std::vector<ResolutionPreset> s_resolutionPresets = {
+                {{640, 360}, "nHD"},
+                {{640, 480}, "VGA"},
+                {{800, 600}, "SVGA"},
+                {{1024, 768}, "XGA"},
+                {{1280, 720}, "WXGA"},
+                {{1280, 800}, "WXGA"},
+                {{1280, 1024}, "SXGA"},
+                {{1360, 768}, "HD"},
+                {{1366, 768}, "HD"},
+                {{1440, 900}, "WXGA+"},
+                {{1600, 900}, "HD+"},
+                {{1600, 1200}, "UXGA"},
+                {{1680, 1050}, "WSXGA+"},
+                {{1920, 1080}, "FHD"},
+                {{1920, 1200}, "WUXGA"},
+                {{2048, 1152}, "QWXGA"},
+                {{2048, 1536}, "QXGA"}
+            };
+            static std::string s_resolutionFilter;
+            ImGui::InputTextWithHint("##resolutionFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_resolutionFilter);
+            if (ImGui::BeginChild("##resolutionsChild", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                for (auto& preset : s_resolutionPresets) {
+                    std::string resolutionName = FormatString("%s %s %ix%i", ICON_FA_EXPAND, preset.name.c_str(), (int) preset.size.x, (int) preset.size.y);
+                    if (!s_resolutionFilter.empty() && LowerCase(resolutionName).find(LowerCase(s_resolutionFilter)) == std::string::npos) continue;
+                    if (ImGui::MenuItem(resolutionName.c_str())) {
+                        t_project.preferredResolution = preset.size;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    if (ImGui::IsItemHovered() && ImGui::BeginTooltip()) {
+                        ImVec2 targetSize = ImVec2(100, 100.0f * 1.0f / (preset.size.x / preset.size.y));
+                        ImGui::Button(FormatString("%ix%i", (int) preset.size.x, (int) preset.size.y).c_str(), targetSize);
+                        ImGui::EndTooltip();
+                    }
+                }
+            }
+            ImGui::EndChild();
+            ImGui::EndPopup();
+        }
+        ImGui::SameLine();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+        ImGui::DragInt2("##preferredResolution", signedPreferredResolution);
+        ImGui::PopItemWidth();
+        t_project.preferredResolution = {signedPreferredResolution[0], signedPreferredResolution[1]};
+
+        ImGui::Text("%s %s ", ICON_FA_DROPLET, Localization::GetString("PROJECT_BACKGROUND_COLOR").c_str());
+        ImGui::SameLine();
+        s_aligner.AlignCursor();
+        float colorPtr[4] = {
+            t_project.backgroundColor.r,
+            t_project.backgroundColor.g, 
+            t_project.backgroundColor.b,
+            t_project.backgroundColor.a
+        };        
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+        ImGui::ColorEdit4("##colorPreview", colorPtr);
+        ImGui::PopItemWidth();
+        t_project.backgroundColor = {
+            colorPtr[0], colorPtr[1], colorPtr[2], colorPtr[3]
+        };
+        RenderAudioDiscretizationOptionsEditor(t_project.audioOptions);
+    }
+
+    bool UIHelpers::AnyItemFocused() {
+        return ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused();
     }
 };

@@ -75,7 +75,6 @@ namespace Raster {
             {TYPE_PAIR(int, float), ConversionDispatchers::ConvertIntToFloat},
             {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4},
             {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture},
-            {TYPE_PAIR(GenericAudioDecoder, AudioSamples), ConversionDispatchers::ConvertGenericAudioDecoderToAudioSamples},
             {TYPE_PAIR(GenericResolution, glm::vec2), ConversionDispatchers::ConvertGenericResolutionToVec2}
         };
     }

@@ -1,5 +1,9 @@
 #include "node_properties.h"
+#include "common/localization.h"
+#include "font/IconsFontAwesome5.h"
 #include "font/font.h"
+#include "common/ui_helpers.h"
+#include "raster.h"
 
 namespace Raster {
 
@@ -42,68 +46,8 @@ namespace Raster {
                     if (treeExpanded) {
                         static bool isEditingDescription = false;
                             if (isEditingDescription) {
-                                static std::vector<float> s_largestCursors;
-
-                                float largestCursor = 0;
-                                for (auto& cursor : s_largestCursors) {
-                                    if (cursor > largestCursor) {
-                                        largestCursor = cursor;
-                                    }
-                                }
-
-                                s_largestCursors.clear();
-
-                                ImGui::Text("%s %s", ICON_FA_FONT, Localization::GetString("PROJECT_NAME").c_str());
-                                ImGui::SameLine();
-                                s_largestCursors.push_back(ImGui::GetCursorPosX());
-                                if (largestCursor != 0) ImGui::SetCursorPosX(largestCursor);
-                                ImGui::InputText("##projectName", &project.name);
-
-                                ImGui::Text("%s %s", ICON_FA_COMMENT, Localization::GetString("PROJECT_DESCRIPTION").c_str());
-                                ImGui::SameLine();
-                                s_largestCursors.push_back(ImGui::GetCursorPosX());
-                                if (largestCursor != 0) ImGui::SetCursorPosX(largestCursor);
-                                isEditingDescription = !ImGui::InputTextMultiline("##descriptionEditor", &project.description, ImVec2(0, 0), ImGuiInputTextFlags_EnterReturnsTrue);
-                                ImGui::SetItemTooltip("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("CTRL_CLICK_TO_CLOSE").c_str());
-
-                                ImGui::Text("%s %s", ICON_FA_VIDEO, Localization::GetString("PROJECT_FRAMERATE").c_str());
-                                ImGui::SameLine();
-
-                                int signedFramerate = project.framerate;
-                                s_largestCursors.push_back(ImGui::GetCursorPosX());
-                                if (largestCursor != 0) ImGui::SetCursorPosX(largestCursor);
-                                ImGui::DragInt("##projectFramerate", &signedFramerate, 1, 1);
-                                project.framerate = signedFramerate;
-
-                                int signedPreferredResolution[2] = {
-                                    (int) project.preferredResolution.x,
-                                    (int) project.preferredResolution.y
-                                };
-                                ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("PROJECT_RESOLUTION").c_str());
-                                ImGui::SameLine();
-                                s_largestCursors.push_back(ImGui::GetCursorPosX());
-                                if (largestCursor != 0) ImGui::SetCursorPosX(largestCursor);
-                                ImGui::DragInt2("##preferredResolution", signedPreferredResolution);
-                                project.preferredResolution = {signedPreferredResolution[0], signedPreferredResolution[1]};
-
-                                ImGui::Text("%s %s: ", ICON_FA_DROPLET, Localization::GetString("PROJECT_BACKGROUND_COLOR").c_str());
-                                ImGui::SameLine();
-                                s_largestCursors.push_back(ImGui::GetCursorPosX());
-                                if (largestCursor != 0) ImGui::SetCursorPosX(largestCursor);
-                                float colorPtr[4] = {
-                                    project.backgroundColor.r,
-                                    project.backgroundColor.g, 
-                                    project.backgroundColor.b,
-                                    project.backgroundColor.a
-                                };
-                                ImGui::PushItemWidth(200);
-                                    ImGui::ColorPicker4("##colorPreview", colorPtr, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoAlpha);
-                                ImGui::PopItemWidth();
-                                project.backgroundColor = {
-                                    colorPtr[0], colorPtr[1], colorPtr[2], colorPtr[3]
-                                };
-
-                                if (CenteredButton(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str())) {
+                                UIHelpers::RenderProjectEditor(project);
+                                if (UIHelpers::CenteredButton(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str())) {
                                     isEditingDescription = false;
                                 }
                             } else {

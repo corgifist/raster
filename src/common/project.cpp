@@ -1,3 +1,4 @@
+#include "common/audio_discretization_options.h"
 #include "raster.h"
 #include "common/common.h"
 
@@ -19,6 +20,9 @@ namespace Raster {
         };
         this->playing = data["Playing"];
         this->looping = data["Looping"];
+        if (data.contains("AudioDiscretizationOptions")) {
+            this->audioOptions = AudioDiscretizationOptions(data["AudioDiscretizationOptions"]);
+        }
         this->selectedCompositions = data["SelectedCompositions"].get<std::vector<int>>();
         this->selectedAttributes = data["SelectedAttributes"].get<std::vector<int>>();
         this->selectedNodes = data["SelectedNodes"].get<std::vector<int>>();
@@ -43,8 +47,8 @@ namespace Raster {
     }
 
     Project::Project() {
-        this->name = "Empty Project";
-        this->description = "Nothing...";
+        this->name = "New Project";
+        this->description = "Empty Description";
         this->framerate = 60;
         this->currentFrame = 0;
         this->preferredResolution = {
@@ -144,6 +148,7 @@ namespace Raster {
         data["SelectedKeyframes"] = selectedKeyframes;
         data["SelectedAssets"] = selectedAssets;
         data["CustomData"] = customData;
+        data["AudioDiscretizationOptions"] = audioOptions.Serialize();
 
         data["Compositions"] = {};
         for (auto& composition : compositions) {

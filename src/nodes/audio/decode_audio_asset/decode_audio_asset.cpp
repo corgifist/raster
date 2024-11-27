@@ -2,6 +2,7 @@
 #include "common/asset_id.h"
 
 #include "common/audio_info.h"
+#include "raster.h"
 
 namespace Raster {
 
@@ -27,7 +28,7 @@ namespace Raster {
         auto volumeCandidate = GetAttribute<float>("Volume", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || (t_contextData.find("AUDIO_PASS") != t_contextData.end() && !RASTER_GET_CONTEXT_VALUE(t_contextData, "ALLOW_MEDIA_DECODING", bool))) {
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool) || !RASTER_GET_CONTEXT_VALUE(t_contextData, "ALLOW_MEDIA_DECODING", bool)) {
             auto cacheCandidate = m_decoder.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Samples", cacheCandidate.value());
@@ -39,9 +40,7 @@ namespace Raster {
             m_decoder.assetID = assetIDCandidate.value();
         }
 
-
-
-        auto samplesCandidate = m_decoder.DecodeSamples();
+        auto samplesCandidate = m_decoder.DecodeSamples(RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int));
         if (samplesCandidate.has_value()) {
             auto resampledSamples = samplesCandidate.value();
             auto samplesPtr = resampledSamples.samples->data();
@@ -55,7 +54,6 @@ namespace Raster {
 
             TryAppendAbstractPinMap(result, "Samples", resampledSamples);
         }
-
 
         return result;
     }

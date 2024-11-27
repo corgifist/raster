@@ -54,4 +54,21 @@ namespace Raster {
         }
         return result;
     }
+
+    static void ValidateInterleavedAudioSamples(SharedRawInterleavedAudioSamples& t_samples, int t_periodSize, int t_channels) {
+        if (t_samples->size() != t_periodSize * t_channels) {
+            t_samples->resize(t_periodSize * t_channels);
+        }
+    }
+
+    static void ValidateDeinterleavedAudioSamples(SharedRawDeinterleavedAudioSamples& t_samples, int t_periodSize, int t_channels) {
+        if (t_samples->size() != t_channels) {
+            t_samples->resize(t_channels);
+        }
+        for (int i = 0; i < t_channels; i++) {
+            if (t_samples->at(i).size() != t_periodSize) {
+                t_samples->at(i).resize(t_periodSize);
+            }
+        }
+    }
 };

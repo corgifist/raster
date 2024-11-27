@@ -19,7 +19,7 @@ namespace Raster {
 
         GenericAudioDecoder();
 
-        std::optional<AudioSamples> DecodeSamples();
+        std::optional<AudioSamples> DecodeSamples(int t_audioPassID);
         std::optional<AudioSamples> GetCachedSamples();
         void Seek(float t_second);
         std::optional<float> GetContentDuration();

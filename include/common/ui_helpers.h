@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/audio_discretization_options.h"
 #include "raster.h"
 #include "workspace.h"
 #include "audio_samples.h"
@@ -24,5 +25,11 @@ namespace Raster {
 
         static void RenderGradient1D(Gradient1D& t_gradient, float t_width = 0, float t_height = 0, float t_alpha = 1.0f);
         static bool RenderGradient1DEditor(Gradient1D& t_gradient, float t_width = 0, float t_height = 0.0f);
+
+        static void RenderProjectEditor(Project& t_project);
+        static void RenderAudioDiscretizationOptionsEditor(AudioDiscretizationOptions& t_options);
+
+        static bool CenteredButton(const char* string, float alignment = 0.5f);
+        static bool AnyItemFocused();
     };
 };

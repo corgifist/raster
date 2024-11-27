@@ -1,4 +1,5 @@
 #include "pitch_shift_audio.h"
+#include "common/audio_samples.h"
 
 namespace Raster {
 
@@ -79,6 +80,7 @@ namespace Raster {
    
                 {
                     static SharedRawDeinterleavedAudioSamples s_planarSamples = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
+                    ValidateDeinterleavedAudioSamples(s_planarSamples, AudioInfo::s_periodSize, AudioInfo::s_channels);
                     DeinterleaveAudioSamples(samples.samples, s_planarSamples, AudioInfo::s_periodSize, AudioInfo::s_channels);
 
                     std::vector<float*> planarBuffersData;
@@ -91,6 +93,7 @@ namespace Raster {
 
                 {
                     static SharedRawDeinterleavedAudioSamples s_outputPlanarBuffers = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
+                    ValidateDeinterleavedAudioSamples(s_outputPlanarBuffers, AudioInfo::s_periodSize, AudioInfo::s_channels);
 
                     std::vector<float*> planarBuffersData;
                     for (int i = 0; i < s_outputPlanarBuffers->size(); i++) {

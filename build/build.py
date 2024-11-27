@@ -2,6 +2,7 @@ from hash_build import *
 set_std_cxx("20")
 info(f"current platform: {get_platform()}")
 
+ffmpeg_libraries_list = "libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"
 global_include_paths.append("include/")
 
 global_linker_flags.append("-lm")
@@ -22,12 +23,14 @@ if get_platform() == "linux":
     check_if_library_available("unwind")
     check_if_library_available("gtk+-3.0")
 check_if_library_available("rubberband")
+for ffmpeg_library in ffmpeg_libraries_list.split(" "):
+    check_if_library_available(ffmpeg_library)
 
 glfw3 = get_library("glfw3")
 rubberband = get_library("rubberband")
 freetype2 = get_library("freetype2")
 OpenImageIO = get_library("OpenImageIO")
-ffmpeg = get_library("libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample")
+ffmpeg = get_library(ffmpeg_libraries_list)
 
 global_compiler_flags.append(get_cflags("libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"))
 

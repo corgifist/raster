@@ -1,10 +1,12 @@
 #pragma once
 
+#include "common/audio_discretization_options.h"
 #include "raster.h"
 #include "typedefs.h"
 #include "assets.h"
 #include "audio_bus.h"
 #include "thread_unique_value.h"
+#include "audio_discretization_options.h"
 
 namespace Raster {
     struct Project {
@@ -14,6 +16,7 @@ namespace Raster {
         float currentFrame;
         ThreadUniqueValue<std::vector<float>> timeTravelStack;
         bool playing, looping;
+        AudioDiscretizationOptions audioOptions;
 
         glm::vec2 preferredResolution;
         glm::vec4 backgroundColor;

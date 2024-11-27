@@ -16,6 +16,7 @@
 #include "audio/audio.h"
 #include "compositor/async_rendering.h"
 #include "common/audio_info.h"
+#include "common/ui_helpers.h"
 
 using namespace av;
 
@@ -30,7 +31,6 @@ namespace Raster {
         av::set_logging_level(AV_LOG_ERROR);
         RASTER_LOG("ffmpeg version: " << av::getversion());
 
-        Audio::Initialize(2, 48000);
         DUMP_VAR(Audio::s_backendInfo.name);
         DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
@@ -213,11 +213,17 @@ namespace Raster {
         GPU::SetWindowTitle(constructedTitle);
 
         GPU::BeginFrame();
-            if (Workspace::s_project.has_value() && ImGui::IsAnyItemActive() == false && ImGui::IsAnyItemFocused() == false && ImGui::IsKeyPressed(ImGuiKey_Space)) {
+            if (Workspace::s_project.has_value() && !UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Space)) {
                 Workspace::GetProject().playing = !Workspace::GetProject().playing;
             }
-            if (Workspace::s_project.has_value()) {
+            if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
+                Audio::s_currentOptions = project.audioOptions;
+                if (!UIHelpers::AnyItemFocused()) {
+                    if (Audio::UpdateAudioInstance()) {
+                        project.OnTimelineSeek();
+                    }
+                }
                 if (project.playing) {
                     auto projectLength = project.GetProjectLength();
                     if (project.currentFrame >= projectLength) {
