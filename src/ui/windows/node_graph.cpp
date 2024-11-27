@@ -2,6 +2,7 @@
 #include "font/font.h"
 #include "common/ui_shared.h"
 #include "common/dispatchers.h"
+#include "raster.h"
 #include "timeline.h"
 #include "asset_manager.h"
 
@@ -1286,7 +1287,7 @@ namespace Raster {
                             }
                             ImGui::EndChild();
                             ImGui::SameLine(0, 6);
-                            if (ImGui::BeginChild("##nodeCandidates", ImVec2(0, ImGui::GetContentRegionAvail().y), ImGuiChildFlags_AutoResizeX)) {
+                            if (ImGui::BeginChild("##nodeCandidates", ImVec2(RASTER_PREFERRED_POPUP_WIDTH * 2, ImGui::GetContentRegionAvail().y))) {
                                 bool hasCandidates = false;
                                 std::string categoryText = NodeCategoryUtils::ToString(targetCategory);
                                 if (targetCategory == 0) {

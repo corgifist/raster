@@ -9,7 +9,6 @@
 #include "common/localization.h"
 #include "font/IconsFontAwesome5.h"
 #include "raster.h"
-#include "common/ratio.h"
 
 namespace Raster {
 

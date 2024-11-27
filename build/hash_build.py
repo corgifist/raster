@@ -309,6 +309,8 @@ def dependency_must_be_recompiled(dependency_path: str, dependency_holder: str, 
     previous_dependencies = list(set(previous_dependencies))
     dependency_hash_file = ensure_hash_file_exists(dependency_path + dependency_holder)
 
+    if not os.path.isfile(dependency_path):
+        return True
     dependency_source_hash = hash_string(read_file(dependency_path))
     saved_dependency_hash = read_file(dependency_hash_file)
     # print(dependency_source_hash + " == " + saved_dependency_hash, " | ", dependency_path)
