@@ -131,12 +131,14 @@ namespace ImGui
                     float &px = (P[selected * 2 + 0] += GetIO().MouseDelta.x / Canvas.x);
                     float &py = (P[selected * 2 + 1] -= GetIO().MouseDelta.y / Canvas.y);
 
-                    float constrainPower = 0.3;
-                    float lowerLimit = AREA_CONSTRAINED ? 0 : -constrainPower;
-                    float upperLimit = AREA_CONSTRAINED ? 1 : 1 + constrainPower;
+                    float constrainPower = 0;
+                    float lowerLimit = -constrainPower;
+                    float upperLimit = 1;
 
-                    px = std::clamp(px, lowerLimit, upperLimit);
-                    py = std::clamp(py, lowerLimit, upperLimit);
+                    if (AREA_CONSTRAINED) {
+                        px = std::clamp(px, lowerLimit, upperLimit);
+                        py = std::clamp(py, lowerLimit, upperLimit);
+                    }
 
                     // changed = true;
                 }

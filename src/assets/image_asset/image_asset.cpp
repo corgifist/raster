@@ -1,4 +1,5 @@
 #include "image_asset.h"
+#include "raster.h"
 
 namespace Raster {
 
@@ -17,8 +18,8 @@ namespace Raster {
 
         if (!s_gammaPipeline.has_value()) {
             s_gammaPipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "gamma_correction/shader"),
-                GPU::GenerateShader(ShaderType::Fragment, "gamma_correction/shader")
+                GPU::s_basicShader,
+                GPU::GenerateShader(ShaderType::Fragment, "exr_gamma_correction/shader")
             );
         }
     }
@@ -48,40 +49,33 @@ namespace Raster {
             }
         }
         if (AsyncUpload::IsUploadReady(m_uploadID)) {
-            auto& info = AsyncUpload::GetUpload(m_uploadID);
+            auto info = AsyncUpload::GetUpload(m_uploadID);
             m_texture = info.texture;
 
+            DUMP_VAR(GetExtension(m_relativePath));
+            RASTER_LOG("UPLOAD IS READY");
             if (s_gammaPipeline.has_value() && GetExtension(m_relativePath) == ".exr") {
+                RASTER_LOG("EXR GAMMA CORRECTION");
                 auto& pipeline = s_gammaPipeline.value();
-                Texture copiedTexture = GPU::GenerateTexture(info.texture.width, info.texture.height, info.texture.channels, info.texture.precision);
                 Texture gammaTexture = GPU::GenerateTexture(info.texture.width, info.texture.height, info.texture.channels, info.texture.precision);
-
                 Framebuffer gammaFbo = GPU::GenerateFramebuffer(info.texture.width, info.texture.height, {gammaTexture});
-
-                GPU::BlitTexture(copiedTexture, info.texture);
 
                 GPU::BindFramebuffer(gammaFbo);
                 GPU::BindPipeline(pipeline);
                 GPU::ClearFramebuffer(0, 0, 0, 0);
 
                 GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(info.texture.width, info.texture.height));
-                GPU::SetShaderUniform(pipeline.fragment, "uGamma", 2.2f);
-                GPU::BindTextureToShader(pipeline.fragment, "uColor", copiedTexture, 0);
-                GPU::SetShaderUniform(pipeline.fragment, "uUVAvailable", 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uTexture", info.texture, 0);
 
                 GPU::DrawArrays(3);
 
                 GPU::BindFramebuffer(std::nullopt);
-
-                GPU::BlitTexture(info.texture, gammaTexture);
-
-                GPU::DestroyTexture(copiedTexture);
-                GPU::DestroyTexture(gammaTexture);
+                GPU::DestroyTexture(info.texture);
                 GPU::DestroyFramebuffer(gammaFbo);
+                m_texture = gammaTexture;
             }
 
             
-
             AsyncUpload::DestroyUpload(m_uploadID);
         }
 

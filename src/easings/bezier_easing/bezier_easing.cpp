@@ -1,5 +1,6 @@
 #include "bezier_easing.h"
 
+#include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 
 #include "common/localization.h"
@@ -8,6 +9,7 @@
 #include "../../ImGui/imgui_bezier.h"
 #include "../../ImGui/imgui_stdlib.h"
 #include "../../ImGui/imgui_stripes.h"
+#include "raster.h"
 
 namespace Raster {
 
@@ -94,23 +96,7 @@ namespace Raster {
 
         ImVec2 processedBezierSize = bezierEditorSize;
         if (m_constrained) {
-            std::optional<float> sizeCandidate = std::nullopt;
-            float overshootMultiplier = 0.5f;
-            for (int i = 0; i < 4; i++) {
-                auto point = m_points[i];
-                if (IsInBounds(point, 0.0f, 1.0f)) continue;
-                float overshootAmount;
-                if (point > 1) overshootAmount = point - 1;
-                else if (point < 0) overshootAmount = +point;
-                
-                if (sizeCandidate.value_or(-100) < overshootAmount * overshootMultiplier) {
-                    sizeCandidate = std::abs(overshootAmount * overshootMultiplier);
-                }
-            }
-
-            if (sizeCandidate.has_value()) {
-                processedBezierSize = bezierEditorSize * (1 - std::clamp(std::abs(sizeCandidate.value() * 2), 0.3f, 1.0f));
-            }
+            processedBezierSize = processedBezierSize * 0.4f;
         }
 
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - bezierEditorSize.x / 2.0f);
@@ -126,7 +112,7 @@ namespace Raster {
             ImGui::AlignTextToFramePadding();
             ImGui::Text(ICON_FA_BEZIER_CURVE " P1");
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_RECYCLE "##p1")) {
+            if (ImGui::Button(ICON_FA_TRASH_CAN "##p1")) {
                 m_points[0] = 0;
                 m_points[1] = 0;
             }
@@ -139,7 +125,7 @@ namespace Raster {
             ImGui::AlignTextToFramePadding();
             ImGui::Text(ICON_FA_BEZIER_CURVE " P2");
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_RECYCLE "##p2")) {
+            if (ImGui::Button(ICON_FA_TRASH_CAN "##p2")) {
                 m_points[2] = 1;
                 m_points[3] = 1;
             }
@@ -151,7 +137,7 @@ namespace Raster {
             if (ImGui::Button(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("CURVE_PRESETS").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
                 ImGui::OpenPopup("##curvePresets");
             }
-
+ 
             if (ImGui::BeginPopup("##curvePresets")) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("CURVE_PRESETS").c_str()).c_str());
                 std::optional<CurvePreset> hoveredPreset;
@@ -188,6 +174,10 @@ namespace Raster {
                             )) continue;
                             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_BEZIER_CURVE, preset.filteredCategoryName.c_str()).c_str())) {
                                 this->m_points = preset.points;
+                                this->m_constrained = !IsInBounds(preset.points.x, 0.0f, 1.0f)
+                                                        || !IsInBounds(preset.points.y, 0.0f, 1.0f)
+                                                        || !IsInBounds(preset.points.z, 0.0f, 1.0f)
+                                                        || !IsInBounds(preset.points.w, 0.0f, 1.0f);
                                 ImGui::CloseCurrentPopup();
                             }
                             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNone) && ImGui::BeginTooltip()) {
