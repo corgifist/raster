@@ -1,10 +1,14 @@
 #include "pitch_shift_audio.h"
+#include "audio/time_stretcher.h"
+#include "common/audio_info.h"
 #include "common/audio_samples.h"
+#include <iomanip>
+#include <memory>
 
 namespace Raster {
 
     PitchShiftContext::PitchShiftContext() {
-        this->stretcher = nullptr;
+        this->stretcher = std::make_shared<TimeStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels);
         this->health = MAX_PITCH_SHIFT_CONTEXT_HEALTH;
         this->seeked = true;
         this->highQualityPitch = false;
@@ -43,74 +47,30 @@ namespace Raster {
             pitchScale = glm::abs(pitchScale);
             auto& useHighQualityPitch = useHighQualityPitchCandidate.value();
             auto context = GetContext();
-            if (context->stretcher) {
-                if (context->highQualityPitch != useHighQualityPitch) {
-                    context->stretcher = nullptr;
-                }
-            }
-            if (!context->stretcher) {
-                auto fastEngineFlags = RubberBand::RubberBandStretcher::OptionEngineFaster 
-                                    | RubberBand::RubberBandStretcher::OptionProcessRealTime 
-                                    | RubberBand::RubberBandStretcher::OptionPitchHighSpeed
-                                    | RubberBand::RubberBandStretcher::OptionThreadingAuto
-                                    | RubberBand::RubberBandStretcher::OptionWindowShort;
-
-                auto finerEngineFlags = RubberBand::RubberBandStretcher::OptionProcessRealTime 
-                                        | RubberBand::RubberBandStretcher::OptionPitchHighConsistency
-                                        | RubberBand::RubberBandStretcher::OptionChannelsTogether
-                                        | RubberBand::RubberBandStretcher::OptionFormantPreserved
-                                        | RubberBand::RubberBandStretcher::OptionWindowLong
-                                        | RubberBand::RubberBandStretcher::OptionThreadingAuto;
-
-                context->stretcher = std::make_shared<RubberBand::RubberBandStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels, 
-                                                                                    useHighQualityPitch ? finerEngineFlags : fastEngineFlags);
-                context->highQualityPitch = useHighQualityPitch;
-            }
+            context->stretcher->UseHighQualityEngine(useHighQualityPitch);
+            context->stretcher->Validate();
             auto& stretcher = context->stretcher;
             if (context->seeked) {
-                stretcher->reset();
+                stretcher->Reset();
                 context->seeked = false;
             }
 
             if (samples.samples) {
                 auto& samplesVector = samples.samples;
-                if (stretcher->getPitchScale() != pitchScale) {
-                    stretcher->setPitchScale(pitchScale);
+                if (stretcher->GetPitchRatio() != pitchScale) {
+                    stretcher->SetPitchRatio(pitchScale);
                 }
    
-                {
-                    static SharedRawDeinterleavedAudioSamples s_planarSamples = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
-                    ValidateDeinterleavedAudioSamples(s_planarSamples, AudioInfo::s_periodSize, AudioInfo::s_channels);
-                    DeinterleaveAudioSamples(samples.samples, s_planarSamples, AudioInfo::s_periodSize, AudioInfo::s_channels);
+                stretcher->Push(samples.samples);
 
-                    std::vector<float*> planarBuffersData;
-                    for (int i = 0; i < s_planarSamples->size(); i++) {
-                        planarBuffersData.push_back(s_planarSamples->at(i).data());
-                    }
+                if (stretcher->AvailableSamples() >= AudioInfo::s_periodSize) {
+                    auto pitchSamples = stretcher->Pop();
 
-                    stretcher->process(planarBuffersData.data(), AudioInfo::s_periodSize, false);
-                };
-
-                {
-                    static SharedRawDeinterleavedAudioSamples s_outputPlanarBuffers = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
-                    ValidateDeinterleavedAudioSamples(s_outputPlanarBuffers, AudioInfo::s_periodSize, AudioInfo::s_channels);
-
-                    std::vector<float*> planarBuffersData;
-                    for (int i = 0; i < s_outputPlanarBuffers->size(); i++) {
-                        planarBuffersData.push_back(s_outputPlanarBuffers->at(i).data());
-                    }
-                    if (stretcher->available() >= AudioInfo::s_periodSize) {
-                        stretcher->retrieve(planarBuffersData.data(), AudioInfo::s_periodSize);
-
-                        SharedRawInterleavedAudioSamples resultInterleavedBuffer = MakeInterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
-                        InterleaveAudioSamples(s_outputPlanarBuffers, resultInterleavedBuffer, AudioInfo::s_periodSize, AudioInfo::s_channels);
-                        AudioSamples outputSamples = samples;
-                        outputSamples.samples = resultInterleavedBuffer;
-                        context->cache.SetCachedSamples(outputSamples);
-                        TryAppendAbstractPinMap(result, "Output", outputSamples);
-                    }
-                };
-
+                    AudioSamples outputSamples = samples;
+                    outputSamples.samples = pitchSamples;
+                    context->cache.SetCachedSamples(outputSamples);
+                    TryAppendAbstractPinMap(result, "Output", outputSamples);
+                }
             }
         }
 

@@ -555,7 +555,7 @@ namespace Raster {
                     bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
                     auto reservedCursor = ImGui::GetCursorPos();
                     ImGui::SetCursorPos(buttonCursor);
-                    ImGui::SetCursorPosX(buttonCursor.x + dragSize.x);
+                    ImGui::SetCursorPosX(buttonCursor.x + dragSize.x + ImGui::GetScrollX());
                     ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 14, 214, ImVec2{rectSize.x, rectSize.y});
                     ImGui::GetWindowDrawList()->AddImage((ImTextureID) framebuffer.attachments[0].handle, upperLeft, bottomRight);
                     if (ImGui::IsMouseHoveringRect(upperLeft, bottomRight) && s_timelineFocused) {

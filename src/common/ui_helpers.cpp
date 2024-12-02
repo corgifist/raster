@@ -1,6 +1,7 @@
 #include "common/ui_helpers.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
+#include "common/audio_discretization_options.h"
 #include "common/audio_info.h"
 #include "../ImGui/imgui_internal.h"
 #include "common/dispatchers.h"
@@ -599,7 +600,7 @@ namespace Raster {
             ImGui::Text("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("AUDIO_SAMPLE_RATE").c_str());
             ImGui::SameLine();
             s_aligner.AlignCursor();
-            if (ImGui::Button(FormatString("%s %i Hz", ICON_FA_WAVE_SQUARE, t_options.desiredSampleRate).c_str())) {
+            if (ImGui::Button(FormatString("%s %i Hz", ICON_FA_WAVE_SQUARE, t_options.desiredSampleRate).c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
                 ImGui::OpenPopup("##sampleRatesPopup");
             }
             if (ImGui::BeginPopup("##sampleRatesPopup")) {
@@ -617,7 +618,7 @@ namespace Raster {
                     96000
                 };
                 for (auto& preset : s_sampleRatePresets) {
-                    if (ImGui::MenuItem(FormatString("%i Hz", preset).c_str())) {
+                    if (ImGui::MenuItem(FormatString("%s %i Hz", ICON_FA_WAVE_SQUARE, preset).c_str())) {
                         t_options.desiredSampleRate = preset;
                         ImGui::CloseCurrentPopup();
                     }
@@ -629,7 +630,21 @@ namespace Raster {
             ImGui::Text("%s %s", ICON_FA_VOLUME_HIGH, Localization::GetString("AUDIO_CHANNELS_COUNT").c_str());
             ImGui::SameLine();
             s_aligner.AlignCursor();
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
             ImGui::SliderInt("##audioChannelsCount", &t_options.desiredChannelsCount, 1, 8);
+            ImGui::PopItemWidth();
+
+            bool usingLowLatencyMode = t_options.performanceProfile == AudioPerformanceProfile::LowLatency;
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s %s", ICON_FA_STOPWATCH, Localization::GetString("USE_LOW_LATENCY_MODE").c_str());
+            ImGui::SameLine();
+            ImGui::Checkbox("##performanceProfile", &usingLowLatencyMode);
+            ImGui::SetItemTooltip("%s %s", ICON_FA_GEARS,
+                usingLowLatencyMode 
+                ? Localization::GetString("USING_LOW_LATENCY_PERFORMANCE_PROFILE").c_str()  
+                : Localization::GetString("USING_CONSERVATIVE_PERFORMANCE_PROFILE").c_str());
+            t_options.performanceProfile = usingLowLatencyMode ? AudioPerformanceProfile::LowLatency : AudioPerformanceProfile::Conservative;
+
 
             ImGui::TreePop();
         }

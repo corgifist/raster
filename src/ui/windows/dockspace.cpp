@@ -4,6 +4,7 @@
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
 #include "common/ui_helpers.h"
+#include "raster.h"
 
 namespace Raster {
 
@@ -125,16 +126,19 @@ namespace Raster {
     void DockspaceUI::RenderNewProjectPopup() {
         static ImVec2 s_windowSize(0, 0);
         ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Size / 2.0f - s_windowSize / 2.0f);
-        if (ImGui::BeginPopupModal("##projectInfoEditor", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("PROJECT_INFO").c_str()).c_str());
-            UIHelpers::RenderProjectEditor(s_project);
-            if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-                s_project.path = s_projectPath;
-                Workspace::s_project = s_project;
+        if (ImGui::BeginPopupModal("##projectInfoEditor", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::BeginChild("##projectSettingsContainer", ImVec2(RASTER_PREFERRED_POPUP_WIDTH * 2.5f, 0), ImGuiChildFlags_AutoResizeY)) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("PROJECT_INFO").c_str()).c_str());
+                UIHelpers::RenderProjectEditor(s_project);
+                if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                    s_project.path = s_projectPath;
+                    Workspace::s_project = s_project;
+                }
+                if (ImGui::Button(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("CANCEL").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                    ImGui::CloseCurrentPopup();
+                }
             }
-            if (ImGui::Button(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("CANCEL").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-                ImGui::CloseCurrentPopup();
-            }
+            ImGui::EndChild();
             s_windowSize = ImGui::GetWindowSize();
             ImGui::EndPopup();
         }

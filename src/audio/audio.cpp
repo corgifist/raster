@@ -1,6 +1,8 @@
 #include "audio/audio.h"
+#include "audio/time_stretcher.h"
 #include "common/audio_discretization_options.h"
 #include "common/audio_samples.h"
+#include <memory>
 
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
@@ -9,7 +11,7 @@
 #include "common/workspace.h"
 #include "common/audio_info.h"
 #include "common/threads.h"
-#include <rubberband/RubberBandStretcher.h>
+#include "audio/time_stretcher.h"
 
 namespace Raster {
 
@@ -85,22 +87,11 @@ namespace Raster {
         }
     }
 
-    static RubberBand::RubberBandStretcher s_stretcher(AudioInfo::s_sampleRate, AudioInfo::s_channels, RubberBand::RubberBandStretcher::OptionEngineFaster 
-                                                                                                    | RubberBand::RubberBandStretcher::OptionProcessRealTime 
-                                                                                                    | RubberBand::RubberBandStretcher::OptionPitchHighSpeed
-                                                                                                    | RubberBand::RubberBandStretcher::OptionThreadingNever);
+    static std::shared_ptr<TimeStretcher> s_stretcher; 
 
     static void PushToStretcher(float* t_interleavedSamples) {
-        static SharedRawDeinterleavedAudioSamples s_planarBuffers = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
-        ValidateDeinterleavedAudioSamples(s_planarBuffers, AudioInfo::s_periodSize, AudioInfo::s_channels);
-
-        std::vector<float*> rawPlanarBuffers;
-        for (auto& planarBuffer : *s_planarBuffers) {
-            rawPlanarBuffers.push_back(planarBuffer.data());
-        }
-
-        ma_deinterleave_pcm_frames(ma_format_f32, AudioInfo::s_channels, AudioInfo::s_periodSize, t_interleavedSamples, (void**) rawPlanarBuffers.data());
-        s_stretcher.process(rawPlanarBuffers.data(), AudioInfo::s_periodSize, false);
+        s_stretcher->Validate();
+        s_stretcher->Push(std::make_shared<std::vector<float>>(t_interleavedSamples, t_interleavedSamples + (AudioInfo::s_periodSize * AudioInfo::s_channels)));
     }
 
     static void raster_data_callback(ma_device* t_device, void* t_output, const void* t_input, ma_uint32 t_frameCount) {
@@ -113,7 +104,7 @@ namespace Raster {
             static SharedRawInterleavedAudioSamples s_samples = MakeInterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
             CopyFromMainBus(s_samples->data());
             if (passMs > allowedMsPerCall) {
-                s_stretcher.setTimeRatio(s_stretcher.getTimeRatio() * 1.8f);
+                s_stretcher->SetTimeRatio(s_stretcher->GetTimeRatio() * 1.8f);
                 PushToStretcher(s_samples->data());
                 s_slowedDownAudioPass = std::nullopt;
             } else {
@@ -124,20 +115,12 @@ namespace Raster {
             }
         }
         if (s_slowedDownAudioPass.has_value() && !IsFutureReady(s_slowedDownAudioPass.value())) {
-            s_stretcher.setTimeRatio(s_stretcher.getTimeRatio() * 1.6f);
+            s_stretcher->SetTimeRatio(s_stretcher->GetTimeRatio() * 1.6f);
         }
-        if (s_stretcher.available() >= AudioInfo::s_periodSize) {
-            static SharedRawDeinterleavedAudioSamples s_channels = MakeDeinterleavedAudioSamples(AudioInfo::s_periodSize, AudioInfo::s_channels);
-            ValidateDeinterleavedAudioSamples(s_channels, AudioInfo::s_periodSize, AudioInfo::s_channels);
-
-            std::vector<float*> channelPointers;
-            for (auto& channel : *s_channels) {
-                channelPointers.push_back(channel.data());
-            }
-
-            s_stretcher.retrieve(channelPointers.data(), AudioInfo::s_periodSize);
-            ma_interleave_pcm_frames(ma_format_f32, AudioInfo::s_channels, AudioInfo::s_periodSize, (const void**) channelPointers.data(), t_output);
-            if (s_stretcher.available() <= AudioInfo::s_channels) {
+        if (s_stretcher->AvailableSamples() >= AudioInfo::s_periodSize) {
+            auto retrievedSamples = s_stretcher->Pop();
+            memcpy(t_output, retrievedSamples->data(), sizeof(float) * AudioInfo::s_periodSize * AudioInfo::s_channels);
+            if (s_stretcher->AvailableSamples() <= AudioInfo::s_channels) {
                 s_slowedDownAudioPass = std::async(std::launch::async, []() {
                     return PerformAudioPass();
                 });
@@ -150,8 +133,8 @@ namespace Raster {
             auto timeDifference = PerformAudioPass();
             CopyFromMainBus(t_output);
             if (timeDifference > allowedMsPerCall) {
-                s_stretcher.reset();
-                s_stretcher.setTimeRatio(1 + (timeDifference * 1.5f / allowedMsPerCall));
+                s_stretcher->Reset();
+                s_stretcher->SetTimeRatio(1 + (timeDifference * 1.5f / allowedMsPerCall));
                 PushToStretcher((float*) t_output);
             }
         }
@@ -178,6 +161,8 @@ namespace Raster {
         AudioInfo::s_channels = Audio::s_currentOptions.desiredChannelsCount;
         AudioInfo::s_sampleRate = Audio::s_currentOptions.desiredSampleRate;
         AudioInfo::s_periodSize = deviceConfig.periodSizeInFrames;
+
+        s_stretcher = std::make_shared<TimeStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels);
     
         if (ma_device_init(nullptr, &deviceConfig, &s_device) != MA_SUCCESS) {
             RASTER_LOG("failed to create audio playback!");

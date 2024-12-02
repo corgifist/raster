@@ -221,6 +221,19 @@ def is_library_available(library: str):
         return ld_process.returncode == 0
     return pkg_config_process.returncode == 0
 
+def does_compile(code: str):
+    ld_process = subprocess.run(f'echo "{code}" | cc -o /dev/null -x c - 2>/dev/null', shell=True)
+    return ld_process.returncode == 0
+
+def does_header_exist(header: str):
+    ld_process = subprocess.run(f'echo "#include <{header}>\n int main() {{}}" | cc -o /dev/null -x c++ -', shell=True)
+    return ld_process.returncode == 0
+
+def check_if_header_exists(header: str):
+    if not does_header_exist(header):
+        error(f"header {header} does not exist!")
+        exit(1)
+
 # calls pkg-config with some arguments and returns the result
 def pkg_config_with_option(library: str, option: str):
     pkg_config_process = subprocess.run(['pkg-config', option, library], capture_output=True, text=True)

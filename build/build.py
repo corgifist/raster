@@ -15,16 +15,32 @@ global_compiler_flags.append("-g")
 global_compiler_flags.append("-O3")
 global_compiler_flags.append("-D__STDC_CONSTANT_MACROS")
 
-check_if_library_available("glfw3")
-check_if_library_available("freetype2")
-check_if_library_available("OpenImageIO")
+build_dependencies = [
+    "glfw3", "freetype2", "OpenImageIO", "rubberband",
+    "libavcodec", "libavformat", "libavutil", "libavdevice",
+    "libavfilter", "libswscale", "libswresample"
+]
+
+check_if_header_exists("glm/glm.hpp")
+
 if get_platform() == "linux":
-    check_if_library_available("bfd")
-    check_if_library_available("unwind")
-    check_if_library_available("gtk+-3.0")
-check_if_library_available("rubberband")
-for ffmpeg_library in ffmpeg_libraries_list.split(" "):
-    check_if_library_available(ffmpeg_library)
+    build_dependencies += [
+        "bfd", "unwind", "gtk+-3.0"
+    ]
+
+failed_dependencies = []
+for dependency in build_dependencies:
+    info(f"checking for {dependency} library")
+    if not is_library_available(dependency):
+        failed_dependencies.append(dependency)
+
+
+if len(failed_dependencies) > 0:
+    error("missing build dependencies:")
+    for dependency in failed_dependencies:
+        print(f"\t * {dependency}")
+    info("install these libraries using your package manager")
+    exit(1)
 
 glfw3 = get_library("glfw3")
 rubberband = get_library("rubberband")
@@ -32,7 +48,7 @@ freetype2 = get_library("freetype2")
 OpenImageIO = get_library("OpenImageIO")
 ffmpeg = get_library(ffmpeg_libraries_list)
 
-global_compiler_flags.append(get_cflags("libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"))
+global_compiler_flags.append(get_cflags(ffmpeg_libraries_list))
 
 global_compiler_flags.append(get_cflags("freetype2"))
 if get_platform() == "linux":
@@ -102,7 +118,7 @@ build_modules = [
     ["audio/merge_audio_samples", node, [raster_common, raster_audio]],
     ["audio/audio_waveform_sine", node, [raster_common, raster_audio]],
     ["audio/amplify_audio", node, [raster_common, raster_audio]],
-    ["audio/pitch_shift_audio", node, [raster_common, raster_audio, rubberband]],
+    ["audio/pitch_shift_audio", node, [raster_common, raster_audio]],
 
     ["resources/load_texture_by_path", node, [raster_common, raster_gpu, raster_image]],
     ["resources/get_asset_id", node, [raster_common, raster_ImGui]],

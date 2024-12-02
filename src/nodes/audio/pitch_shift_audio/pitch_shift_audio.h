@@ -1,4 +1,5 @@
 #pragma once
+#include "audio/time_stretcher.h"
 #include "raster.h"
 #include "common/common.h"
 #include "common/generic_audio_decoder.h"
@@ -6,14 +7,14 @@
 #include "common/audio_info.h"
 #include "common/shared_mutex.h"
 
-#include <rubberband/RubberBandStretcher.h>
+
 
 #define MAX_PITCH_SHIFT_CONTEXT_HEALTH 20
 
 namespace Raster {
 
     struct PitchShiftContext {
-        std::shared_ptr<RubberBand::RubberBandStretcher> stretcher;
+        std::shared_ptr<TimeStretcher> stretcher;
         AudioCache cache;
         bool seeked;
         int health;

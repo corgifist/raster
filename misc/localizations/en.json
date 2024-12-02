@@ -263,5 +263,8 @@
     "FILTER_ASSETS_BY_TYPE": "Filter Assets by Type",
     "AUDIO_DISCRETIZATION_OPTIONS": "Audio Discretization Settings",
     "AUDIO_SAMPLE_RATE": "Audio Sample Rate",
-    "AUDIO_CHANNELS_COUNT": "Audio Channels Count"
+    "AUDIO_CHANNELS_COUNT": "Audio Channels Count",
+    "USE_LOW_LATENCY_MODE": "Use Low Latency Mode",
+    "USING_LOW_LATENCY_PERFORMANCE_PROFILE": "Using Low Latency Performance Profile",
+    "USING_CONSERVATIVE_PERFORMANCE_PROFILE": "Using Conservative Performance Profile"
 }

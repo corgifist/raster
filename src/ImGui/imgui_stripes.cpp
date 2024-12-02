@@ -4,44 +4,6 @@
 namespace ImGui {
 
     void Stripes(ImVec4 background_color, ImVec4 stripe_color, float stripes_width, float stripes_shift, ImVec2 canvas_size) {
-        /* ImVec2 canvasPos = ImGui::GetCursorScreenPos();
-        if (canvas_size.x == 0 || canvas_size.y == 0) canvas_size = ImGui::GetWindowSize();
-        // 147
-
-        ImGui::PushClipRect(canvasPos, canvasPos + canvas_size, true);
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        drawList->AddRectFilled(canvasPos, canvasPos + canvas_size, ImGui::GetColorU32(background_color));
-        ImVec2 stripe_acc(-(ImGui::GetTime() * 10 + stripes_shift + stripes_width * 50), 0);
-        float shift_factor = 5;
-        while (stripe_acc.x < canvas_size.x + stripes_width * 2) {
-            ImVec2 upperLeft = stripe_acc;
-
-            ImVec2 upperRight = upperLeft;
-            upperRight.x += stripes_width;
-
-            ImVec2 bottomLeft = upperLeft;
-            bottomLeft.y = canvas_size.y;
-            bottomLeft.x += stripes_width * shift_factor;
-
-            ImVec2 bottomRight = bottomLeft;
-            bottomRight.x += stripes_width;
-
-            if (bottomRight.x < -stripes_width * 2) {
-                stripe_acc.x += stripes_width * 2;
-                continue;
-            }
-
-            std::swap(bottomRight, bottomLeft);
-
-             upperLeft.x = ImGui::GetWindowSize().x - upperLeft.x;
-            upperRight.x = ImGui::GetWindowSize().x - upperRight.x;
-            bottomLeft.x = ImGui::GetWindowSize().x - bottomLeft.x;
-            bottomRight.x = ImGui::GetWindowSize().x - bottomRight.x;
- 
-            drawList->AddQuadFilled(canvasPos + upperLeft, canvasPos + upperRight, canvasPos + bottomLeft, canvasPos + bottomRight, ImGui::GetColorU32(stripe_color));
-            stripe_acc.x += stripes_width * 2;
-        }
-        ImGui::PopClipRect(); */
         ImVec2 canvas_pos = ImGui::GetCursorScreenPos();
         if (canvas_size.x == 0 || canvas_size.y == 0) canvas_size = ImGui::GetContentRegionAvail();
         ImGui::PushClipRect(canvas_pos, canvas_pos + canvas_size, true);
