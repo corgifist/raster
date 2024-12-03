@@ -151,8 +151,6 @@ build_modules = [
     ["rendering/tracking_motion_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/merge", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui, raster_font]],
     ["rendering/brightness_contrast_saturation_vibrance_hue", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui]],
-    ["rendering/gamma_correction", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/lens_distortion", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/halftone", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/hashed_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/linear_blur", node, [raster_common, raster_gpu, raster_compositor]],

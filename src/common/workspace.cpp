@@ -1,3 +1,6 @@
+#include "xml_effect_provider/xml_effect_provider.h"
+
+
 #include "common/common.h"
 #include "gpu/gpu.h"
 #include "common/transform2d.h"
@@ -6,8 +9,14 @@
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
+#include "common/node_category.h"
+#include <filesystem>
+#include <string>
+
 
 namespace Raster {
+
+    using namespace pugi;
 
     std::optional<Project> Workspace::s_project;
     std::mutex Workspace::s_projectMutex;
@@ -98,6 +107,32 @@ namespace Raster {
             }
             s_nodeImplementations.push_back(implementation);
             std::cout << "loading node '" << implementation.description.packageName << "'" << std::endl;
+        }
+
+        auto xmlIterator = std::filesystem::directory_iterator("misc/xml/effects");
+        for (auto& entry : xmlIterator) {
+            std::function<AbstractNode()> spawnFunction = [entry]() {
+                return std::make_shared<XMLEffectProvider>(entry.path().string());
+            };
+
+            xml_document doc;
+            if (!doc.load_file(entry.path().string().c_str())) {
+                continue;
+            }
+
+            auto description = doc.child("effect").child("description");
+            auto packaged = description.attribute("packaged").as_bool();
+            auto packageName = description.attribute("packageName").as_string();
+            auto name = description.attribute("name").as_string();
+
+            NodeImplementation implementation;
+            implementation.libraryName = packageName;
+            implementation.spawn = spawnFunction;
+            implementation.description.packageName = std::string(packaged ? RASTER_PACKAGED : "") + packageName;
+            implementation.description.prettyName = name;
+            implementation.description.category = DefaultNodeCategories::s_rendering;
+
+            s_nodeImplementations.push_back(implementation);
         }
 
         Easings::Initialize();

@@ -1,0 +1,82 @@
+<effect>
+    <description name="Lens Distortion" packageName="lens_distortion" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="K1" type="float" value="1.0"/>
+        <attribute name="K2" type="float" value="0.0"/>
+        <attribute name="K3" type="float" value="0.0"/>
+        <attribute name="Edge" type="float" value="0.7"/>
+        <attribute name="Dispersion" type="float" value="0.03"/>
+        <attribute name="DarkEdges" type="bool" value="false"/>
+    </attributes>
+
+    <pins>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="lens_distortion/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uK1" stage="fragment">
+                <value attribute="K1" type="float"/>
+            </uniform>
+            <uniform name="uK2" stage="fragment">
+                <value attribute="K2" type="float"/>
+            </uniform>
+            <uniform name="uK3" stage="fragment">
+                <value attribute="K3" type="float"/>
+            </uniform>
+            <uniform name="uEdge" stage="fragment">
+                <value attribute="Edge" type="float"/>
+            </uniform>
+            <uniform name="uDispersion" stage="fragment">
+                <value attribute="Dispersion" type="float"/>
+            </uniform>
+            <uniform name="uDarkEdges" stage="fragment">
+                <value attribute="DarkEdges" type="bool"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="K1">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_PERCENT"/>
+        </property>
+
+        <property name="K2">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_PERCENT"/>
+        </property>
+
+        <property name="K3">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_PERCENT"/>
+        </property>
+
+        <property name="DarkEdges"/>
+
+        <property name="Edge">
+            <sliderStep step="0.01"/>
+        </property>
+
+        <property name="Dispersion">
+            <icon icon="ICON_FA_PERCENT"/>
+            <sliderStep step="0.01"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_CAMERA" />
+</effect>
