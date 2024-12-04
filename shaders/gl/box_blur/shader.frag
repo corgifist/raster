@@ -14,11 +14,11 @@ layout(location = 1) out vec4 gUV;
 uniform vec2 uResolution;
 uniform vec2 uBoxBlurIntensity;
 
-uniform float uSamples;
+uniform int uSamples;
 uniform sampler2D uTexture;
 uniform float uOpacity;
 
-#define SAMPLES uSamples
+#define SAMPLES abs(float(uSamples))
 
 vec4 blur_box(sampler2D tex, vec2 texel, vec2 uv, vec2 rect)
 {
@@ -40,7 +40,8 @@ void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
     vec2 texel = 1.0 / uResolution;
 
-    vec4 result = blur_box(uTexture, texel, uv, uBoxBlurIntensity);
+
+    vec4 result = blur_box(uTexture, texel, uv, uBoxBlurIntensity * 0.1 * uResolution);
     result = mix(texture(uTexture, uv), result, uOpacity);
 
     gColor = result;

@@ -117,8 +117,10 @@ namespace Raster {
 
             xml_document doc;
             if (!doc.load_file(entry.path().string().c_str())) {
+                print("failed to load xml effect '" << entry << "'");
                 continue;
             }
+            print("loading xml effect '" << entry << "'");
 
             auto description = doc.child("effect").child("description");
             auto packaged = description.attribute("packaged").as_bool();
