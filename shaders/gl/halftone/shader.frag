@@ -44,7 +44,7 @@ void main() {
     if (uScreenSpaceRendering) {
         vec3 col = texture(uTexture, screenUV).rgb; 
         float grey = greyScale(col); 
-        float angle = uAngle;
+        float angle = radians(uAngle);
         float scale = uScale; 
         col = vec3( grey * 10.0 - 5.0 + dotScreen(screenUV, angle, scale ) );
         gColor = vec4( col, 1.0 ) * uColor;
@@ -58,7 +58,7 @@ void main() {
                 vec2 uv = vec2(uvPixel.x / uvPixel.z, uvPixel.y);
                 uv += 0.5;
                 float grey = greyScale(colorPixel.rgb); 
-                float angle = uAngle;
+                float angle = radians(uAngle);
                 float scale = uScale; 
                 colorPixel.rgb = vec3( grey * 10.0 - 5.0 + dotScreen(uv, angle, scale ) );
                 gColor = vec4( colorPixel.rgb, 1.0 ) * uColor;

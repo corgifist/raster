@@ -98,8 +98,12 @@ namespace Raster {
             int targetFramebuffer = pass.attribute("framebuffer").as_int();
             int targetShader = pass.attribute("shader").as_int();
             std::string baseFramebuffer = pass.attribute("base").as_string();
-            auto clearColorStr = SplitString(pass.attribute("clearColor").as_string(), ";");
-            glm::vec4 targetClearColor = glm::vec4(std::stof(clearColorStr[0]), std::stof(clearColorStr[1]), std::stof(clearColorStr[2]), std::stof(clearColorStr[3]));
+            std::string clearColorRawString = pass.attribute("clearColor").as_string();
+            auto clearColorStr = SplitString(clearColorRawString, ";");
+            glm::vec4 targetClearColor = glm::vec4(1);
+            if (!clearColorRawString.empty()) {
+                targetClearColor = glm::vec4(std::stof(clearColorStr[0]), std::stof(clearColorStr[1]), std::stof(clearColorStr[2]), std::stof(clearColorStr[3]));
+            }
             
             std::optional<Framebuffer> baseFramebufferCandidate = std::nullopt;
             if (attributesCache.find(baseFramebuffer) != attributesCache.end()) {
@@ -116,7 +120,8 @@ namespace Raster {
 
             GPU::BindPipeline(m_pipelines.at(targetShader));
             GPU::BindFramebuffer(framebuffer);
-            GPU::ClearFramebuffer(targetClearColor.r, targetClearColor.g, targetClearColor.g, targetClearColor.a);
+            if (!clearColorRawString.empty())
+                GPU::ClearFramebuffer(targetClearColor.r, targetClearColor.g, targetClearColor.g, targetClearColor.a);
 
             for (auto& uniform : pass.children("uniform")) {
                 std::string uniformName = uniform.attribute("name").as_string();
@@ -154,6 +159,39 @@ namespace Raster {
                     int resolutionFramebuffer = resolution.attribute("framebuffer").as_int();
                     auto& targetResolutionFramebuffer = swappedFramebuffers[resolutionFramebuffer];
                     GPU::SetShaderUniform(shaderStage, uniformName, glm::vec2(targetResolutionFramebuffer.width, targetResolutionFramebuffer.height));
+                }
+
+                for (auto screenSpaceRendering : uniform.children("screenSpaceRendering")) {
+                    std::string framebufferAttributeName = screenSpaceRendering.attribute("attribute").as_string();
+                    std::string overrideAttributeName = screenSpaceRendering.attribute("override").as_string();
+                    std::optional<Framebuffer> framebufferCandidate = std::nullopt;
+                    if (attributesCache.find(framebufferAttributeName) != attributesCache.end()) {
+                        auto cacheCandidate = attributesCache[framebufferAttributeName];
+                        if (cacheCandidate.type() == typeid(Framebuffer)) {
+                            framebufferCandidate = std::any_cast<Framebuffer>(cacheCandidate);
+                        }
+                    } else {
+                        framebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute(framebufferAttributeName, t_contextData));
+                        if (framebufferCandidate) attributesCache[framebufferAttributeName] = *framebufferCandidate;
+                    }
+                    if (!framebufferCandidate) continue;
+                    auto& targetScreenSpaceFramebuffer = *framebufferCandidate;
+                    bool useScreenSpaceRendering = !(targetScreenSpaceFramebuffer.attachments.size() >= 2);
+                    if (attributesCache.find(overrideAttributeName) != attributesCache.end()) {
+                        auto overrideCandidate = attributesCache[overrideAttributeName];
+                        if (overrideCandidate.type() == typeid(bool)) {
+                            if (std::any_cast<bool>(overrideCandidate)) {
+                                useScreenSpaceRendering = true;
+                            }
+                        }
+                    } else {
+                        auto overrideCandidate = GetAttribute<bool>(overrideAttributeName, t_contextData);
+                        if (overrideCandidate) {
+                            if (*overrideCandidate) useScreenSpaceRendering = true;
+                            attributesCache[overrideAttributeName] = *overrideCandidate;
+                        }
+                    }
+                    GPU::SetShaderUniform(shaderStage, uniformName, useScreenSpaceRendering);
                 }
 
                 for (auto attachment : uniform.children("attachment")) {
