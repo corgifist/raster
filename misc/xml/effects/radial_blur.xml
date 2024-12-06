@@ -1,9 +1,10 @@
 <effect>
-    <description name="Box Blur" packageName="box_blur" packaged="true"/>
+    <description name="Radial Blur" packageName="radial_blur" packaged="true"/>
     
     <attributes>
         <attribute name="Base" type="Framebuffer"/>
         <attribute name="Intensity" type="glm::vec2" value="0.5;0.5"/>
+        <attribute name="Center" type="glm::vec2" value="0.5;0.5"/>
         <attribute name="Opacity" type="float" value="1.0"/>
         <attribute name="Samples" type="int" value="80"/>
     </attributes>
@@ -15,13 +16,16 @@
 
     <framebuffers count="1" />
     <shaders>
-        <shader vertex="basic" fragment="box_blur/shader"/>
+        <shader vertex="basic" fragment="radial_blur/shader"/>
     </shaders>
 
     <rendering result="0" pin="Output">
         <pass framebuffer="0" base="Base" shader="0" clearColor="0.0;0.0;0.0;0.0">
-            <uniform name="uBoxBlurIntensity" stage="fragment">
+            <uniform name="uRadialBlurIntensity" stage="fragment">
                 <value attribute="Intensity" type="glm::vec2"/>
+            </uniform>
+            <uniform name="uCenter" stage="fragment">
+                <value attribute="Center" type="glm::vec2"/>
             </uniform>
             <uniform name="uSamples" stage="fragment">
                 <value attribute="Samples" type="int"/>
@@ -45,6 +49,11 @@
             <icon icon="ICON_FA_PERCENT"/>
         </property>
 
+        <property name="Center">
+            <icon icon="ICON_FA_UP_DOWN_LEFT_RIGHT"/>
+            <sliderStep step="0.05"/>
+        </property>
+
         <property name="Opacity">
             <sliderBase base="100"/>
             <sliderRange min="0" max="100"/>
@@ -57,5 +66,5 @@
         </property>
     </properties>
 
-    <icon icon="ICON_FA_SQUARE" />
+    <icon icon="ICON_FA_EXPAND" />
 </effect>

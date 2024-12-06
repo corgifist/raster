@@ -8,17 +8,18 @@ precision highp float;
 // Many thanks to Xor (https://www.shadertoy.com/user/Xor) on Shadertoy!
 
 layout(location = 0) out vec4 gColor;
+layout(location = 1) out vec4 gUV;
 
 uniform vec2 uResolution;
 uniform vec2 uRadialBlurIntensity;
 uniform vec2 uCenter;
 
-uniform float uSamples;
+uniform int uSamples;
 uniform sampler2D uTexture;
 
 uniform float uOpacity;
 
-#define SAMPLES uSamples
+#define SAMPLES abs(float(uSamples))
 
 vec4 blur_radial(sampler2D tex, vec2 texel, vec2 uv, vec2 radius)
 {
@@ -39,9 +40,11 @@ void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
     vec2 texel = 1.0 / uResolution;
 
-    vec4 result = blur_radial(uTexture, texel, uv, uRadialBlurIntensity);
-    result.a *= uOpacity;
+    vec4 result = blur_radial(uTexture, texel, uv, uRadialBlurIntensity * 0.1 * uResolution);
+    result = mix(texture(uTexture, uv), result, uOpacity);
 
     gColor = result;
     gUV = vec4(uv, 1.0, 1.0);
+    gUV.z = uResolution.x / uResolution.y;
+    gUV.xy = (uv - 0.5) * (uResolution.x / uResolution.y);
 }

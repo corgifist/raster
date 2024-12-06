@@ -154,7 +154,6 @@ build_modules = [
     ["rendering/hashed_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/linear_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/angular_blur", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/radial_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/radial_gradient", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/pixel_outline", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/linear_gradient", node, [raster_common, raster_gpu, raster_compositor]],
