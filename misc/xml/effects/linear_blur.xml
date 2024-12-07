@@ -1,0 +1,69 @@
+<effect>
+    <description name="Linear Blur" packageName="linear_blur" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Angle" type="float" value="0.0"/>
+        <attribute name="Intensity" type="float" value="1.0"/>
+        <attribute name="Opacity" type="float" value="1.0"/>
+        <attribute name="Samples" type="int" value="80"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="linear_blur/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0.0;0.0;0.0;0.0">
+            <uniform name="uLinearBlurIntensity" stage="fragment">
+                <value attribute="Intensity" type="float"/>
+            </uniform>
+            <uniform name="uAngle" stage="fragment">
+                <value attribute="Angle" type="float"/>
+            </uniform>
+            <uniform name="uSamples" stage="fragment">
+                <value attribute="Samples" type="int"/>
+            </uniform>
+            <uniform name="uOpacity" stage="fragment">
+                <value attribute="Opacity" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Angle">
+            <icon icon="ICON_FA_ROTATE"/>
+        </property>
+
+        <property name="Intensity">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_PERCENT"/>
+        </property>
+
+        <property name="Opacity">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+
+        <property name="Samples">
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_LEFT_RIGHT" />
+</effect>

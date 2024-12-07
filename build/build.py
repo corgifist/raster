@@ -152,11 +152,6 @@ build_modules = [
     ["rendering/merge", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui, raster_font]],
     ["rendering/brightness_contrast_saturation_vibrance_hue", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui]],
     ["rendering/hashed_blur", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/linear_blur", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/angular_blur", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/radial_gradient", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/linear_gradient", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/conic_gradient", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],

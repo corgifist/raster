@@ -2,6 +2,7 @@
 #include "common/attribute_metadata.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
+#include "common/project.h"
 #include "common/sampler_settings.h"
 #include "common/transform2d.h"
 #include "compositor/managed_framebuffer.h"
@@ -65,6 +66,19 @@ namespace Raster {
         auto framebuffersAttribute = framebuffersNode.node();
         int framebuffersCount = framebuffersAttribute.attribute("count").as_int();
         m_framebuffers = std::vector<ManagedFramebuffer>(framebuffersCount);
+    
+        auto gradientsNode = m_document->select_node("/effect/gradients1d");
+        auto gradientsAttribute = gradientsNode.node();
+        int gradientsCount = gradientsAttribute.attribute("count").as_int();
+        m_gradientBuffers = std::vector<std::optional<ArrayBuffer>>(gradientsCount);
+    }
+
+    XMLEffectProvider::~XMLEffectProvider() {
+        for (auto& gradientBuffer : m_gradientBuffers) {
+            if (gradientBuffer) {
+                GPU::DestroyBuffer(*gradientBuffer);
+            }
+        }
     }
 
     AbstractPinMap XMLEffectProvider::AbstractExecute(ContextData& t_contextData) {
@@ -92,7 +106,7 @@ namespace Raster {
         auto renderingNode = m_document->select_node("/effect/rendering").node();
         int resultFramebuffer = renderingNode.attribute("result").as_int();
 
-        std::unordered_map<std::string, std::any> attributesCache;
+        m_cachedValues.clear();
 
         for (auto pass : renderingNode.children("pass")) {
             int targetFramebuffer = pass.attribute("framebuffer").as_int();
@@ -105,16 +119,7 @@ namespace Raster {
                 targetClearColor = glm::vec4(std::stof(clearColorStr[0]), std::stof(clearColorStr[1]), std::stof(clearColorStr[2]), std::stof(clearColorStr[3]));
             }
             
-            std::optional<Framebuffer> baseFramebufferCandidate = std::nullopt;
-            if (attributesCache.find(baseFramebuffer) != attributesCache.end()) {
-                auto cacheCandidate = attributesCache[baseFramebuffer];
-                if (cacheCandidate.type() == typeid(Framebuffer)) {
-                    baseFramebufferCandidate = std::any_cast<Framebuffer>(cacheCandidate);
-                }
-            } else {
-                baseFramebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute(baseFramebuffer, t_contextData));
-                if (baseFramebufferCandidate) attributesCache[baseFramebuffer] = *baseFramebufferCandidate;
-            }
+            std::optional<Framebuffer> baseFramebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicCachedAttribute(baseFramebuffer, t_contextData));
             auto& framebuffer = swappedFramebuffers.at(targetFramebuffer);
             framebuffer = m_framebuffers.at(targetFramebuffer).Get(baseFramebufferCandidate);
 
@@ -131,13 +136,7 @@ namespace Raster {
                     std::string attributeName = value.attribute("attribute").as_string();
                     std::string type = value.attribute("type").as_string();
 
-                    std::optional<std::any> attributeCandidate = std::nullopt;
-                    if (attributesCache.find(attributeName) != attributesCache.end()) {
-                        attributeCandidate = attributesCache[attributeName];
-                    } else {
-                        attributeCandidate = GetDynamicAttribute(attributeName, t_contextData);
-                        if (attributeCandidate) attributesCache[attributeName] = *attributeCandidate;
-                    }
+                    std::optional<std::any> attributeCandidate = GetDynamicCachedAttribute(attributeName, t_contextData);
                     if (attributeCandidate) {
                         auto& attributeValue = *attributeCandidate;
 
@@ -164,32 +163,13 @@ namespace Raster {
                 for (auto screenSpaceRendering : uniform.children("screenSpaceRendering")) {
                     std::string framebufferAttributeName = screenSpaceRendering.attribute("attribute").as_string();
                     std::string overrideAttributeName = screenSpaceRendering.attribute("override").as_string();
-                    std::optional<Framebuffer> framebufferCandidate = std::nullopt;
-                    if (attributesCache.find(framebufferAttributeName) != attributesCache.end()) {
-                        auto cacheCandidate = attributesCache[framebufferAttributeName];
-                        if (cacheCandidate.type() == typeid(Framebuffer)) {
-                            framebufferCandidate = std::any_cast<Framebuffer>(cacheCandidate);
-                        }
-                    } else {
-                        framebufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute(framebufferAttributeName, t_contextData));
-                        if (framebufferCandidate) attributesCache[framebufferAttributeName] = *framebufferCandidate;
-                    }
+                    std::optional<Framebuffer> framebufferCandidate = GetCachedAttribute<Framebuffer>(framebufferAttributeName, t_contextData);
                     if (!framebufferCandidate) continue;
                     auto& targetScreenSpaceFramebuffer = *framebufferCandidate;
                     bool useScreenSpaceRendering = !(targetScreenSpaceFramebuffer.attachments.size() >= 2);
-                    if (attributesCache.find(overrideAttributeName) != attributesCache.end()) {
-                        auto overrideCandidate = attributesCache[overrideAttributeName];
-                        if (overrideCandidate.type() == typeid(bool)) {
-                            if (std::any_cast<bool>(overrideCandidate)) {
-                                useScreenSpaceRendering = true;
-                            }
-                        }
-                    } else {
-                        auto overrideCandidate = GetAttribute<bool>(overrideAttributeName, t_contextData);
-                        if (overrideCandidate) {
-                            if (*overrideCandidate) useScreenSpaceRendering = true;
-                            attributesCache[overrideAttributeName] = *overrideCandidate;
-                        }
+                    auto overriderCandidate = GetCachedAttribute<bool>(overrideAttributeName, t_contextData);
+                    if (overriderCandidate && *overriderCandidate) {
+                        useScreenSpaceRendering = true;
                     }
                     GPU::SetShaderUniform(shaderStage, uniformName, useScreenSpaceRendering);
                 }
@@ -198,22 +178,40 @@ namespace Raster {
                     int attachmentIndex = attachment.attribute("index").as_int();
                     int unitIndex = attachment.attribute("unit").as_int();
                     auto attributeName = attachment.attribute("attribute").as_string();
-                    std::optional<Framebuffer> attributeCandidate = std::nullopt;
-                    if (attributesCache.find(attributeName) != attributesCache.end()) {
-                        auto cacheCandidate = attributesCache[attributeName];
-                        if (cacheCandidate.type() == typeid(Framebuffer)) {
-                            attributeCandidate = std::any_cast<Framebuffer>(cacheCandidate);
-                        }
-                    } else {
-                        attributeCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute(attributeName, t_contextData));
-                        if (attributeCandidate) attributesCache[attributeName] = *attributeCandidate;
-                    }
+                    std::optional<Framebuffer> attributeCandidate = TextureInteroperability::GetFramebuffer(GetDynamicCachedAttribute(attributeName, t_contextData));
                     if (attributeCandidate) {
                         auto& attributeValue = *attributeCandidate;
                         if (attachmentIndex >= 0 && attachmentIndex < attributeValue.attachments.size()) {
                             GPU::BindTextureToShader(shaderStage, uniformName, attributeValue.attachments.at(attachmentIndex), unitIndex);
                         }
                     }
+                }
+            }
+
+            for (auto& gradient : pass.children("gradient1d")) {
+                auto attributeName = gradient.attribute("attribute").as_string();
+                auto slotIndex = gradient.attribute("slot").as_int();
+                auto unitIndex = gradient.attribute("unit").as_int();
+
+                if (slotIndex < 0 || slotIndex >= m_gradientBuffers.size()) continue;
+                auto& gradientBuffer = m_gradientBuffers[slotIndex];
+                auto gradientCandidate = GetCachedAttribute<Gradient1D>(attributeName, t_contextData);
+                if (gradientCandidate) {
+                    auto& gradient = *gradientCandidate;
+                    int gradientBufferSize = sizeof(float) + sizeof(float) * 5 * gradient.stops.size();
+                    char* gradientBufferArray = new char[gradientBufferSize];
+                    gradient.FillToBuffer(gradientBufferArray);
+                    if (!gradientBuffer.has_value()) {
+                        gradientBuffer = GPU::GenerateBuffer(gradientBufferSize, ArrayBufferType::ShaderStorageBuffer, ArrayBufferUsage::Dynamic);
+                    }
+                    auto& gradientBufferRaw = gradientBuffer.value();
+                    if (gradientBufferRaw.size != gradientBufferSize) {
+                        GPU::DestroyBuffer(gradientBufferRaw);
+                        gradientBuffer = GPU::GenerateBuffer(gradientBufferSize, ArrayBufferType::ShaderStorageBuffer, ArrayBufferUsage::Dynamic);
+                    }
+                    GPU::FillBuffer(gradientBufferRaw, 0, gradientBufferSize, gradientBufferArray);
+                    GPU::BindBufferBase(gradientBufferRaw, unitIndex);
+                    delete[] gradientBufferArray;
                 }
             }
 

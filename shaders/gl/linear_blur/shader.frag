@@ -12,13 +12,14 @@ layout(location = 0) out vec4 gColor;
 layout(location = 1) out vec4 gUV;
 
 uniform vec2 uResolution;
-uniform vec2 uLinearBlurIntensity;
+uniform float uLinearBlurIntensity;
+uniform float uAngle;
 
-uniform float uSamples;
+uniform int uSamples;
 uniform sampler2D uTexture;
 uniform float uOpacity;
 
-#define SAMPLES uSamples
+#define SAMPLES abs(float(uSamples))
 
 vec4 blur_linear(sampler2D tex, vec2 texel, vec2 uv, vec2 line) {
     vec4 total = vec4(0);
@@ -37,8 +38,11 @@ void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
     vec2 texel = 1.0 / uResolution;
 
-    vec4 result = blur_linear(uTexture, texel, uv, uLinearBlurIntensity);
-    result.a *= uOpacity;
+    vec2 intensity = vec2(cos(radians(uAngle)), sin(radians(uAngle)));
+    intensity *= 0.1 * uLinearBlurIntensity * uResolution;
+
+    vec4 result = blur_linear(uTexture, texel, uv, intensity);
+    result = mix(texture(uTexture, uv), result, uOpacity);
 
     gColor = result;
 

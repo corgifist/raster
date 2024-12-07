@@ -187,6 +187,8 @@ namespace Raster {
         colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.55f, 0.55f, 0.55f, 0.50f);
         colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.55f, 0.55f, 0.55f, 0.50f);
 
+        ImGui::GetIO().ConfigDebugHighlightIdConflicts = false;
+
         s_windows.push_back(UIFactory::SpawnDockspaceUI());
         s_windows.push_back(UIFactory::SpawnNodeGraphUI());
         s_windows.push_back(UIFactory::SpawnNodePropertiesUI());

@@ -58,7 +58,7 @@ void main() {
     if (uScreenSpaceRendering) {
         vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / uResolution.y;
         gColor = createGradient(1.0 - length(uPosition - uv) - (1.-uRadius));
-        
+        gColor.a *= uOpacity;
         gUV = vec4(uv, 1., 1.);
     } else {
         vec4 uvPixel = texture(uUVTexture, screenUV);
@@ -67,9 +67,9 @@ void main() {
             vec4 colorPixel = texture(uColorTexture, screenUV);
             if (colorPixel.a != 0.0) {
                 gColor = createGradient(1.0 - length(uPosition - uv) - (1.-uRadius));
-                gUV = vec4(uv, uvPixel.b, 1.);
+                gColor = mix(texture(uColorTexture, screenUV), gColor, uOpacity);
+                gUV = uvPixel;
             }
         }
     }
-    gColor.a *= uOpacity;
 }

@@ -43,7 +43,7 @@ namespace Raster {
 
     void ManagedFramebuffer::EnsureResolutionConstraints(std::optional<Framebuffer> t_framebuffer) {
         auto requiredResolution = Compositor::GetRequiredResolution();
-        if (!m_internalFramebuffer.Get().handle && !(t_framebuffer.has_value() && t_framebuffer.value().handle)) {
+        if (!(t_framebuffer.has_value() && t_framebuffer.value().handle)) {
             InstantiateInternalFramebuffer(requiredResolution.x, requiredResolution.y);
         } else if (t_framebuffer.has_value() && t_framebuffer.value().handle) {
             auto& passedFramebuffer = t_framebuffer.value();

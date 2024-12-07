@@ -15,10 +15,10 @@ uniform float uAngularBlurAngle;
 uniform vec2 uCenter;
 uniform float uOpacity;
 
-uniform float uSamples;
+uniform int uSamples;
 uniform sampler2D uTexture;
 
-#define SAMPLES uSamples
+#define SAMPLES abs(float(uSamples))
 
 vec4 blur_angular(sampler2D tex, vec2 texel, vec2 uv, float angle)
 {
@@ -42,9 +42,11 @@ void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
     vec2 texel = 1.0 / uResolution;
 
-    vec4 result = blur_angular(uTexture, texel, uv, uAngularBlurAngle);
-    result.a *= uOpacity;
+    vec4 result = blur_angular(uTexture, texel, uv, radians(uAngularBlurAngle));
+    result = mix(texture(uTexture, uv), result, uOpacity);
 
     gColor = result;
-    gUV = vec4(uv, 1.0, 1.0);
+    uv -= 0.5;
+    uv.x *= uResolution.x / uResolution.y;
+    gUV = vec4(uv, uResolution.x / uResolution.y, 1.0);
 }

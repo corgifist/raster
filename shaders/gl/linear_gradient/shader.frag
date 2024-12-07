@@ -56,7 +56,10 @@ void main() {
     gColor = vec4(0.);
     if (uScreenSpaceRendering) {
         gColor = createGradient(uUseYPlane ? screenUV.y : screenUV.x);
-        gUV = vec4(screenUV, 1., 1.);
+        gColor.a *= uOpacity;
+        screenUV -= 0.5;
+        screenUV.x *= uResolution.x / uResolution.y;
+        gUV = vec4(screenUV, uResolution.x / uResolution.y, 1.);
     } else {
         vec4 uvPixel = texture(uUVTexture, screenUV);
         if (uvPixel.a != 0.0) {
@@ -66,9 +69,9 @@ void main() {
                 uv.x /= uvPixel.z;
                 uv += 0.5;
                 gColor = createGradient(uUseYPlane ? uv.y : uv.x);
-                gUV = vec4(uv, uvPixel.b, 1.);
+                gColor = mix(texture(uColorTexture, screenUV), gColor, uOpacity);
+                gUV = uvPixel;
             }
         }
     }
-    gColor.a *= uOpacity;
 }

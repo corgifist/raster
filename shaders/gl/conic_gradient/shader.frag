@@ -63,15 +63,18 @@ vec4 createGradient(in float y) {
 void main() {
     vec2 screenUV = gl_FragCoord.xy / uResolution;
     gColor = vec4(0.);
+    vec2 correctPosition = uPosition;
+    correctPosition.x *= -1.0;
     if (uScreenSpaceRendering) {
         vec2 uv = screenUV;
         uv -= 0.5;
         uv.x *= uResolution.x / uResolution.y;
-        vec2 relative = rotate(uv + uPosition, uAngle);
+        vec2 relative = rotate(uv + correctPosition, radians(-uAngle));
 
         float angle = atan(relative.x, relative.y);
         float t = (angle + 3.14) / 2.0 / 3.14;
         gColor = createGradient(t);
+        gColor.a *= uOpacity;
         gUV = vec4(uv, uResolution.x / uResolution.y, 1.);
     } else {
         vec4 uvPixel = texture(uUVTexture, screenUV);
@@ -80,11 +83,12 @@ void main() {
             vec4 colorPixel = texture(uColorTexture, screenUV);
             if (colorPixel.a != 0.0) {
                 uv.x /= uvPixel.z;
-                vec2 relative = rotate(uv + uPosition, uAngle);
+                vec2 relative = rotate(uv + correctPosition, radians(-uAngle));
 
                 float angle = atan(relative.x, relative.y);
                 float t = (angle + 3.14) / 2.0 / 3.14;
                 gColor = createGradient(t);
+                gColor = mix(texture(uColorTexture, screenUV), gColor, uOpacity);
                 gUV = uvPixel;
             }
         }
