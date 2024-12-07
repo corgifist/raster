@@ -1,69 +1,27 @@
 #include "common/generic_audio_decoder.h"
 
-#include "../avcpp/codec.h"
-#include "../avcpp/packet.h"
-#include "../avcpp/audioresampler.h"
-
-// API2
-#include "../avcpp/format.h"
-#include "../avcpp/formatcontext.h"
-#include "../avcpp/codec.h"
-#include "../avcpp/codeccontext.h"
-
+#include "audio_decoder.h"
 #include "common/audio_info.h"
 #include "common/audio_samples.h"
-#include <optional>
+#include "audio_decoders.h"
 
 namespace Raster {
-    
-    struct GenericAudioDecoderContext {
-        av::FormatContext formatCtx;
-        av::Stream targetAudioStream;
-        av::AudioDecoderContext audioDecoderCtx;
-        av::AudioResampler audioResampler;
-        bool cacheValid;
-        SynchronizedValue<AudioCache> cache;
-
-        bool wasOpened;
-        int lastAudioPassID;
-        bool needsSeeking;
-        int health;
-        int assetID;
-        std::string assetPath;
-
-        float timeOffset;
-        int id;
-
-        GenericAudioDecoderContext() {
-            this->lastAudioPassID = INT_MIN;
-            this->assetID = 0;
-            this->needsSeeking = true;
-            this->wasOpened = false;
-            this->health = MAX_GENERIC_AUDIO_DECODER_LIFESPAN;
-            this->cacheValid = false;
-            this->timeOffset = 0;
-        }
-    };
-
-    using SharedAudioDecoderContext = std::shared_ptr<GenericAudioDecoderContext>;
-
-    static std::unordered_map<int, SharedAudioDecoderContext> s_decoders;
-
     GenericAudioDecoder::GenericAudioDecoder() {
         this->assetID = 0;
         this->decoderContexts = std::make_shared<std::unordered_map<float, int>>();
         this->seekTarget = std::make_shared<float>();
     }
 
-    static SharedAudioDecoderContext AllocateDecoderContext(int t_decoderID) {
-        if (s_decoders.find(t_decoderID) != s_decoders.end()) {
-            return s_decoders[t_decoderID];
+    static SharedAudioDecoder AllocateDecoderContext(int t_decoderID) {
+        if (AudioDecoders::s_decoders.find(t_decoderID) == AudioDecoders::s_decoders.end()) {
+            auto result = std::make_shared<AudioDecoder>();
+            AudioDecoders::s_decoders[t_decoderID] = result;
+            return result;
         }
-        s_decoders[t_decoderID] = std::make_shared<GenericAudioDecoderContext>();
-        return s_decoders[t_decoderID];
+        return AudioDecoders::GetDecoder(t_decoderID);
     }
 
-    static SharedAudioDecoderContext GetDecoderContext(GenericAudioDecoder* t_decoder) {
+    static SharedAudioDecoder GetDecoderContext(GenericAudioDecoder* t_decoder) {
         std::vector<float> deadDecoders;
         for (auto& context : *t_decoder->decoderContexts) {
             auto decoder = AllocateDecoderContext(context.second);
@@ -75,9 +33,9 @@ namespace Raster {
 
         for (auto& deadDecoder : deadDecoders) {
             auto correspondingDecoderID = (*t_decoder->decoderContexts)[deadDecoder];
-            auto decoderIterator = s_decoders.find(correspondingDecoderID);
-            if (decoderIterator != s_decoders.end()) {
-                s_decoders.erase(correspondingDecoderID);
+            auto decoderIterator = AudioDecoders::s_decoders.find(correspondingDecoderID);
+            if (decoderIterator != AudioDecoders::s_decoders.end()) {
+                AudioDecoders::s_decoders.erase(correspondingDecoderID);
                 t_decoder->decoderContexts->erase(deadDecoder);
             }
         }
@@ -101,60 +59,6 @@ namespace Raster {
         return newDecoder;
     }
 
-    static void FlushResampler(GenericAudioDecoder* t_ga, int t_decoderID) {
-        auto decoder = AllocateDecoderContext(t_decoderID);
-        decoder->audioResampler.pop(decoder->audioResampler.delay());
-        decoder->audioResampler.pop(0);
-    }
-
-    static av::AudioSamples DecodeOneFrame(GenericAudioDecoder* t_ga, int t_decoderID) {
-        auto decoder = AllocateDecoderContext(t_decoderID);
-        while (true) {
-            av::Packet pkt = decoder->formatCtx.readPacket();
-            if (!pkt) break;
-            if (pkt.streamIndex() != decoder->targetAudioStream.index()) continue;
-
-            av::AudioSamples decodedSamples = decoder->audioDecoderCtx.decode(pkt);
-            return decodedSamples;
-        }
-        return av::AudioSamples();
-    }
-
-    static bool PushMoreSamples(GenericAudioDecoder* t_ga, int t_decoderID) {
-        auto decoder = AllocateDecoderContext(t_decoderID);
-        auto decodedSamples = DecodeOneFrame(t_ga, t_decoderID);
-        if (decodedSamples) {
-            decoder->audioResampler.push(decodedSamples);
-            return true;
-        }
-        return false;
-    }
-
-    static av::AudioSamples PopResampler(GenericAudioDecoder* t_ga, int t_decoderID) {
-        auto decoder = AllocateDecoderContext(t_decoderID);
-
-        auto result = av::AudioSamples();
-        while (!(result = decoder->audioResampler.pop(AudioInfo::s_periodSize))) {
-            if (!PushMoreSamples(t_ga, t_decoderID)) return av::AudioSamples();
-        }
-
-
-        return result;
-    }
-
-    static void SeekDecoder(GenericAudioDecoder* t_ga, int t_decoderID, float t_second) {
-        auto decoder = AllocateDecoderContext(t_decoderID);
-        if (!decoder->audioDecoderCtx.isOpened()) return;
-        auto& project = Workspace::GetProject();
-        float currentTime = t_second + decoder->timeOffset / project.framerate;
-        auto rational = decoder->audioDecoderCtx.timeBase().getValue();
-        avcodec_flush_buffers(decoder->audioDecoderCtx.raw());
-        decoder->formatCtx.seek((int64_t) (currentTime) * (int64_t)rational.den / (int64_t) rational.num, decoder->targetAudioStream.index(), AVSEEK_FLAG_ANY);
-        decoder->cacheValid = false;
-        decoder->needsSeeking = false;
-        FlushResampler(t_ga, t_decoderID);
-        DecodeOneFrame(t_ga, t_decoderID);
-    }
 
     std::optional<AudioSamples> GenericAudioDecoder::GetCachedSamples() {
         SharedLockGuard guard(m_decodingMutex);
@@ -187,7 +91,7 @@ namespace Raster {
         }
 
         if (decoder->needsSeeking && decoder->formatCtx.isOpened()) {
-            SeekDecoder(this, decoder->id, *seekTarget);
+            decoder->SeekDecoder(*seekTarget);
         }
 
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
@@ -239,7 +143,7 @@ namespace Raster {
                                                         decoder->audioDecoderCtx.channelLayout(), decoder->audioDecoderCtx.sampleRate(), decoder->audioDecoderCtx.sampleFormat());
             }
             decoder->lastAudioPassID = audioPassID;
-            auto resampledSamples = PopResampler(this, decoder->id);
+            auto resampledSamples = decoder->PopResampler();
             if (resampledSamples) {
                 auto samplesPtr = resampledSamples.data();
                 SharedRawAudioSamples allocatedSamples = AudioInfo::MakeRawAudioSamples();

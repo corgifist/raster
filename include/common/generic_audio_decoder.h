@@ -6,8 +6,6 @@
 #include "audio_cache.h"
 #include "shared_mutex.h"
 
-#define MAX_GENERIC_AUDIO_DECODER_LIFESPAN 5
-
 namespace Raster {
 
     // default audio decoder used by Raster 
