@@ -17,4 +17,8 @@ namespace Raster {
     void AudioDecoders::DestroyDecoder(int t_handle) {
         s_decoders.erase(t_handle);
     }
+
+    bool AudioDecoders::DecoderExists(int t_handle) {
+        return s_decoders.find(t_handle) != s_decoders.end();
+    }
 }

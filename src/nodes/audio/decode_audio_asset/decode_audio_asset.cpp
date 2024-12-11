@@ -40,6 +40,7 @@ namespace Raster {
             m_decoder.assetID = assetIDCandidate.value();
         }
 
+        *m_decoder.seekTarget = project.currentFrame / project.framerate;
         auto samplesCandidate = m_decoder.DecodeSamples(RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int));
         if (samplesCandidate.has_value()) {
             auto resampledSamples = samplesCandidate.value();
@@ -89,7 +90,7 @@ namespace Raster {
     }
 
     std::string DecodeAudioAsset::AbstractHeader() {
-        return "Decode Audio";
+        return "Read Audio";
     }
 
     std::string DecodeAudioAsset::Icon() {

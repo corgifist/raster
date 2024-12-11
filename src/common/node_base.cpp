@@ -32,6 +32,17 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), Gradient1D()}
     };
 
+    NodeBase::~NodeBase() {
+        m_attributes.Lock();
+        auto& attributes = m_attributes.GetReference();
+        for (auto& attributePair : attributes) {
+            if (attributePair.second.type() == typeid(GenericAudioDecoder)) {
+                std::any_cast<GenericAudioDecoder>(attributePair.second).Destroy();
+            }
+        }
+        m_attributes.Unlock();
+    }
+
     void NodeBase::SetAttributeValue(std::string t_attribute, std::any t_value) {
         m_attributes.Lock();
             m_attributes.GetReference()[t_attribute] = t_value;

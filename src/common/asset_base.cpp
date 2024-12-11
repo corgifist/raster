@@ -14,6 +14,10 @@ namespace Raster {
     void AssetBase::RenderDetails() {
         AbstractRenderDetails();
     }
+    
+    void AssetBase::RenderPopup() {
+        AbstractRenderPopup();
+    }
 
     Json AssetBase::Serialize() {
         return {

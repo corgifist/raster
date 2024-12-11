@@ -1,8 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <memory>
-#include <stdexcept>
+
 
 #include "ffmpeg.h"
 #include "rational.h"

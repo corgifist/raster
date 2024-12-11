@@ -18,6 +18,7 @@ namespace Raster {
 
         void Initialize();
         void RenderDetails();
+        void RenderPopup();
 
         std::optional<Texture> GetPreviewTexture();
         void Import(std::string t_path);
@@ -54,6 +55,7 @@ namespace Raster {
         virtual std::optional<std::uintmax_t> AbstractGetSize() { return std::nullopt; }
 
         virtual void AbstractRenderDetails() {};
+        virtual void AbstractRenderPopup() {};
     };
 
     using AbstractAsset = std::shared_ptr<AssetBase>;

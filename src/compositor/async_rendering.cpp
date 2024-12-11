@@ -18,6 +18,7 @@ namespace Raster {
         GPU::SetCurrentContext(s_context);
         Compositor::Initialize();
         DoubleBufferingIndex::s_index.Set(0);
+        static int s_renderingPassID = 1;
         while (m_running) {
             if (Workspace::IsProjectLoaded()) {
                 double firstTime = GPU::GetTime();
@@ -30,15 +31,18 @@ namespace Raster {
                     {"INCREMENT_EPF", true},
                     {"RESET_WORKSPACE_STATE", true},
                     {"ALLOW_MEDIA_DECODING", true},
-                    {"ONLY_RENDERING_NODES", true}
+                    {"ONLY_RENDERING_NODES", true},
+                    {"RENDERING_PASS_ID", s_renderingPassID}
                 });
                 project.Traverse({
                     {"RENDERING_PASS", true},
                     {"INCREMENT_EPF", true},
                     {"RESET_WORKSPACE_STATE", false},
                     {"ALLOW_MEDIA_DECODING", false},
-                    {"ONLY_AUDIO_NODES", true}
+                    {"ONLY_AUDIO_NODES", true},
+                    {"RENDERING_PASS_ID", s_renderingPassID}
                 });
+                s_renderingPassID++;
                 Compositor::PerformComposition();
                 DoubleBufferingIndex::s_index.Set((DoubleBufferingIndex::s_index.Get() + 1) % 2);
                 GPU::Flush();

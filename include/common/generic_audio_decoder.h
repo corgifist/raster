@@ -22,6 +22,8 @@ namespace Raster {
         void Seek(float t_second);
         std::optional<float> GetContentDuration();
 
+        void Destroy();
+
     private:
         SharedMutex m_decodingMutex;
     };

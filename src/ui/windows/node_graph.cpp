@@ -766,7 +766,7 @@ namespace Raster {
                                         for (auto& immediateFooter : immediateFooters) {
                                             actualFooter += immediateFooter + "\n";
                                         }
-                                        ImGui::Text(actualFooter.c_str());
+                                        ImGui::TextUnformatted(actualFooter.c_str());
                                     }
                                     ImGui::SetWindowFontScale(1.0f);
                                 Nodes::EndNode();

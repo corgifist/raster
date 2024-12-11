@@ -55,6 +55,7 @@ namespace Raster {
         Json AbstractSerialize();
 
         void AbstractRenderDetails();
+        void AbstractRenderPopup();
 
         std::optional<std::string> AbstractGetResolution();
         std::optional<std::string> AbstractGetPath();

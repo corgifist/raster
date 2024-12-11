@@ -47,6 +47,8 @@ namespace Raster {
         std::string overridenHeader;
         bool enabled, bypassed;
 
+        ~NodeBase();
+
         void SetAttributeValue(std::string t_attribute, std::any t_value);
 
         AbstractPinMap Execute(AbstractPinMap& accumulator, ContextData& t_contextData);

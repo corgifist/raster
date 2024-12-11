@@ -4,8 +4,9 @@
 
 namespace Raster {
     void AudioDecoder::FlushResampler() {
-        audioResampler.pop(audioResampler.delay());
-        audioResampler.pop(0);
+        std::error_code ec;
+        audioResampler.pop(audioResampler.delay(), ec);
+        audioResampler.pop(0, ec);
     }
 
     av::AudioSamples AudioDecoder::DecodeOneFrame() {
@@ -41,12 +42,15 @@ namespace Raster {
     void AudioDecoder::SeekDecoder(float t_second) {
         if (!audioDecoderCtx.isOpened()) return;
         float currentTime = t_second + timeOffset / Workspace::GetProject().framerate;
-        auto rational = audioDecoderCtx.timeBase().getValue();
-        avcodec_flush_buffers(audioDecoderCtx.raw());
+        auto rational = targetAudioStream.timeBase().getValue();
         formatCtx.seek((int64_t) (currentTime) * (int64_t)rational.den / (int64_t) rational.num, targetAudioStream.index(), AVSEEK_FLAG_ANY);
+        avcodec_flush_buffers(audioDecoderCtx.raw());
         cacheValid = false;
         needsSeeking = false;
         FlushResampler();
-        DecodeOneFrame();
+         av::AudioSamples seekSamples;
+        while ((seekSamples = DecodeOneFrame())) {
+            if (seekSamples.pts().seconds() >= currentTime) break;
+        }  
     }
 };

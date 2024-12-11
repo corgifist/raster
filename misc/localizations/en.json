@@ -266,5 +266,6 @@
     "AUDIO_CHANNELS_COUNT": "Audio Channels Count",
     "USE_LOW_LATENCY_MODE": "Use Low Latency Mode",
     "USING_LOW_LATENCY_PERFORMANCE_PROFILE": "Using Low Latency Performance Profile",
-    "USING_CONSERVATIVE_PERFORMANCE_PROFILE": "Using Conservative Performance Profile"
+    "USING_CONSERVATIVE_PERFORMANCE_PROFILE": "Using Conservative Performance Profile",
+    "DECODING_IN_PROGRESS": "Decoding in Progress"
 }

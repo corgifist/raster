@@ -1,5 +1,3 @@
-#include <stdexcept>
-
 #include "avlog.h"
 #include "avutils.h"
 #include "averror.h"

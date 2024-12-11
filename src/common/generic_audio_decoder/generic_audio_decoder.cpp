@@ -10,6 +10,7 @@ namespace Raster {
         this->assetID = 0;
         this->decoderContexts = std::make_shared<std::unordered_map<float, int>>();
         this->seekTarget = std::make_shared<float>();
+        *this->seekTarget = 0;
     }
 
     static SharedAudioDecoder AllocateDecoderContext(int t_decoderID) {
@@ -90,7 +91,7 @@ namespace Raster {
             } 
         }
 
-        if (decoder->needsSeeking && decoder->formatCtx.isOpened()) {
+        if (decoder->needsSeeking && decoder->formatCtx.isOpened() && decoder->audioDecoderCtx.isOpened()) {
             decoder->SeekDecoder(*seekTarget);
         }
 
@@ -127,6 +128,7 @@ namespace Raster {
                 }
                 decoder->audioDecoderCtx = av::AudioDecoderContext(decoder->targetAudioStream);
                 decoder->audioDecoderCtx.open(av::Codec());
+                decoder->audioDecoderCtx.setRefCountedFrames(true);
                 decoder->audioResampler.init(av::ChannelLayout(AudioInfo::s_channels).layout(), AudioInfo::s_sampleRate, AV_SAMPLE_FMT_FLT,
                                                         decoder->audioDecoderCtx.channelLayout(), decoder->audioDecoderCtx.sampleRate(), decoder->audioDecoderCtx.sampleFormat());
                 decoder->needsSeeking = true;
@@ -170,12 +172,19 @@ namespace Raster {
     }
 
     void GenericAudioDecoder::Seek(float t_second) {
-        SharedLockGuard decodingGuard(m_decodingMutex);
         *seekTarget = t_second;
         for (auto& decodingPair : *decoderContexts) {
             auto decoder = AllocateDecoderContext(decodingPair.second);
             decoder->needsSeeking = true;
             decoder->cacheValid = false;
+        }
+    }
+
+    void GenericAudioDecoder::Destroy() {
+        for (auto& context : *decoderContexts) {
+            if (AudioDecoders::DecoderExists(context.second)) {
+                AudioDecoders::DestroyDecoder(context.second);
+            }
         }
     }
 

@@ -34,6 +34,7 @@ namespace Raster {
 
     void AssetManagerUI::RenderAssetPopup(AbstractAsset& t_asset) {
         auto& project = Workspace::GetProject();
+        t_asset->RenderPopup();
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_PLUS, Localization::GetString("REIMPORT_ASSET").c_str()).c_str())) {
             auto originalAsset = t_asset;
             auto assetCandidate = ImportAsset();

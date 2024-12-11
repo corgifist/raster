@@ -205,38 +205,17 @@ namespace Raster {
 		return std::log(p_linear) * (float)8.6858896380650365530225783783321;
 	}
 
-    // Precise implementation of sleeping for some amount of seconds
-    // ExperimentalSleepFor combines inaccurate c++'s sleep_for function and resource-intensive spin-locking
-    // to achieve precise sleep_for function without burdening the CPU
-    // Taken from: https://blat-blatnik.github.io/computerBear/making-accurate-sleep-function/
-    static void ExperimentalSleepFor(double seconds) {
-        using namespace std;
-        using namespace std::chrono;
+    typedef std::chrono::high_resolution_clock clock;
+    template <typename T>
+    using duration = std::chrono::duration<T>;
 
-        static double estimate = 5e-3;
-        static double mean = 5e-3;
-        static double m2 = 0;
-        static int64_t count = 1;
-
-        while (seconds > estimate) {
-            auto start = high_resolution_clock::now();
-            this_thread::sleep_for(milliseconds(1));
-            auto end = high_resolution_clock::now();
-
-            double observed = (end - start).count() / 1e9;
-            seconds -= observed;
-
-            ++count;
-            double delta = observed - mean;
-            mean += delta / count;
-            m2   += delta * (observed - mean);
-            double stddev = sqrt(m2 / (count - 1));
-            estimate = mean + stddev;
+    static void ExperimentalSleepFor(double dt)
+    {
+        static constexpr duration<double> MinSleepDuration(0);
+        clock::time_point start = clock::now();
+        while (duration<double>(clock::now() - start).count() < dt) {
+            std::this_thread::sleep_for(MinSleepDuration);
         }
-
-        // spin lock
-        auto start = high_resolution_clock::now();
-        while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
     }
 
     template< typename T >

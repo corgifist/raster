@@ -47,6 +47,39 @@ namespace Raster {
                     m_metadata.push_back({pair.key(), pair.value()});
                 }
 
+                bool containsAttachedPicture = false;
+                int attachedPictureStreamIndex = -1;
+                for (int i = 0; i < m_formatCtx.streamsCount(); i++) {
+                    auto stream = m_formatCtx.stream(i);
+                    if (stream.raw()->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+                        containsAttachedPicture = true;
+                        attachedPictureStreamIndex = stream.index();
+                        break;
+                    }
+                }
+
+                if (containsAttachedPicture) {
+                    auto packet = m_formatCtx.readPacket();
+                    if (packet && packet.streamIndex() == attachedPictureStreamIndex) {
+                        auto videoDecoder = av::VideoDecoderContext(m_formatCtx.stream(attachedPictureStreamIndex));
+                        auto inputFrame = videoDecoder.decode(packet);
+
+                        av::VideoRescaler rescaler(
+                            videoDecoder.width(), videoDecoder.height(), AV_PIX_FMT_RGB0
+                        );
+                        auto rescaledFrame = rescaler.rescale(inputFrame);
+                        
+                        if (m_attachedPicTexture.has_value()) {
+                            GPU::DestroyTexture(m_attachedPicTexture.value());
+                        }
+                        auto attachedPicTexture = GPU::GenerateTexture(rescaledFrame.width(), rescaledFrame.height(), 4, TexturePrecision::Usual, true);
+                        GPU::UpdateTexture(attachedPicTexture, 0, 0, rescaledFrame.width(), rescaledFrame.height(), 4, rescaledFrame.data());
+                        GPU::GenerateMipmaps(attachedPicTexture);
+
+                        m_attachedPicTexture = attachedPicTexture;
+                    }
+                }
+
                 for (int i = 0; i < m_formatCtx.streamsCount(); i++) {
                     auto stream = m_formatCtx.stream(i);
                     bool attachedPic = stream.raw()->disposition & AV_DISPOSITION_ATTACHED_PIC;
@@ -64,24 +97,31 @@ namespace Raster {
                         
                         m_streamInfos.push_back(info);
 
-                        if (attachedPic) {
-                            auto packet = m_formatCtx.readPacket();
-                            if (packet && packet.streamIndex() == i) {
-                                auto inputFrame = videoDecoder.decode(packet);
+                        if (!m_attachedPicTexture) {
+                            m_formatCtx.seek({(int64_t) (m_formatCtx.duration().seconds()) / 2, {1, 1}});
+                            avcodec_flush_buffers(videoDecoder.raw());
+                            std::error_code ec;
+                            while (true) {
+                                auto pkt = m_formatCtx.readPacket();
+                                if (!pkt) break;
+                                if (pkt.streamIndex() != stream.index()) continue;
+                                auto decodedFrame = videoDecoder.decode(pkt, ec);
+                                if (ec && ec.value() == AVERROR(EAGAIN)) continue;
+                                if (decodedFrame) {
+                                    av::VideoRescaler videoRescaler(videoDecoder.width(), videoDecoder.height(), AV_PIX_FMT_RGB0);
+                                    auto rescaledFrame = videoRescaler.rescale(decodedFrame);
+                                    if (rescaledFrame) {
+                                        if (m_attachedPicTexture.has_value()) {
+                                            GPU::DestroyTexture(m_attachedPicTexture.value());
+                                        }
+                                        auto attachedPicTexture = GPU::GenerateTexture(rescaledFrame.width(), rescaledFrame.height(), 4, TexturePrecision::Usual, true);
+                                        GPU::UpdateTexture(attachedPicTexture, 0, 0, rescaledFrame.width(), rescaledFrame.height(), 4, rescaledFrame.data());
+                                        GPU::GenerateMipmaps(attachedPicTexture);
 
-                                av::VideoRescaler rescaler(
-                                    videoDecoder.width(), videoDecoder.height(), AV_PIX_FMT_RGB0
-                                );
-                                auto rescaledFrame = rescaler.rescale(inputFrame);
-                                
-                                if (m_attachedPicTexture.has_value()) {
-                                    GPU::DestroyTexture(m_attachedPicTexture.value());
+                                        m_attachedPicTexture = attachedPicTexture;
+                                        break;
+                                    }
                                 }
-                                auto attachedPicTexture = GPU::GenerateTexture(rescaledFrame.width(), rescaledFrame.height(), 4, TexturePrecision::Usual, true);
-                                GPU::UpdateTexture(attachedPicTexture, 0, 0, rescaledFrame.width(), rescaledFrame.height(), 4, rescaledFrame.data());
-                                GPU::GenerateMipmaps(attachedPicTexture);
-
-                                m_attachedPicTexture = attachedPicTexture;
                             }
                         }
                     } else if (stream.isAudio()) {
@@ -187,7 +227,7 @@ namespace Raster {
                     if (std::holds_alternative<VideoStreamInfo>(stream)) {
                         auto info = std::get<VideoStreamInfo>(stream);
                         ImGui::Text("%s %s: %ix%i", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str(), info.width, info.height);
-                        ImGui::Text("%s %s: %i", ICON_FA_CIRCLE_INFO, Localization::GetString("BITRATE").c_str(), info.bitrate);
+                        ImGui::Text("%s %s: %i Kb", ICON_FA_CIRCLE_INFO, Localization::GetString("BITRATE").c_str(), info.bitrate);
                         ImGui::Text("%s %s: %s", ICON_FA_DROPLET, Localization::GetString("PIXEL_FORMAT").c_str(), info.pixelFormatName.c_str());
                         ImGui::Text("%s %s: %s", ICON_FA_AUDIO_DESCRIPTION, Localization::GetString("CODEC_NAME").c_str(), info.codecName.c_str());
                     } else if (std::holds_alternative<AudioStreamInfo>(stream)) {
@@ -199,20 +239,22 @@ namespace Raster {
                     }
                     ImGui::Unindent();
                 }
-                if (UIHelpers::CustomTreeNode(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("METADATA").c_str()))) {
-                    ImGui::Indent();
-                    for (auto& pair : m_metadata) {
-                        ImGui::BulletText("%s: ", pair.first.c_str());
-                        ImGui::SameLine();
-                        ImGui::Text("%s", pair.second.c_str());
-                        if (ImGui::IsItemClicked()) {
-                            ImGui::SetClipboardText(pair.second.c_str());
-                        }
-                        ImGui::SetItemTooltip("%s %s '%s'", ICON_FA_COPY, Localization::GetString("CLICK_TO_COPY").c_str(), pair.first.c_str());
-                    }
-                    ImGui::Unindent();
-                }
             }
+        }
+    }
+
+    void MediaAsset::AbstractRenderPopup() {
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("METADATA").c_str()).c_str())) {
+            for (auto& pair : m_metadata) {
+                ImGui::BulletText("%s: ", pair.first.c_str());
+                ImGui::SameLine();
+                ImGui::Text("%s", pair.second.c_str());
+                if (ImGui::IsItemClicked()) {
+                    ImGui::SetClipboardText(pair.second.c_str());
+                }
+                ImGui::SetItemTooltip("%s %s '%s'", ICON_FA_COPY, Localization::GetString("CLICK_TO_COPY").c_str(), pair.first.c_str());
+            }
+            ImGui::EndMenu();
         }
     }
 };
@@ -228,7 +270,9 @@ extern "C" {
             .packageName = RASTER_PACKAGED "media_asset",
             .icon = ICON_FA_IMAGES,
             .extensions = {
-                "m4a", "mp3", "ogg", "wav", "flac", "aac"
+                "m4a", "mp3", "ogg", "wav", "flac", "aac", 
+                "webm", "mkv", "flv", "mp4", "avi", "wmv","m4v",
+                "amv", "mpg", "mpeg", "mp2", "3gp"
             }
         };
     }
