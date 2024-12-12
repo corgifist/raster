@@ -48,5 +48,5 @@ void main() {
 
     uv -= 0.5;
     uv.x *= uResolution.x / uResolution.y;
-    gUV = vec4(uv, 1., 1.);
+    gUV = vec4(uv, uResolution.x / uResolution.y, 1.0);
 }

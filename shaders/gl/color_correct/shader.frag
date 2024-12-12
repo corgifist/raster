@@ -207,7 +207,7 @@ void main() {
         if (_hue != 0.0) fragColor = shiftHue(fragColor.rgb, _hue);
     } else discard;
 
-    fragColor.a *= uOpacity;
+    fragColor = mix(color, fragColor, uOpacity);
 
     gColor = fragColor;
 }

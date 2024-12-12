@@ -44,7 +44,7 @@ void main() {
     result = mix(texture(uTexture, uv), result, uOpacity);
 
     gColor = result;
-    gUV = vec4(uv, 1.0, 1.0);
-    gUV.z = uResolution.x / uResolution.y;
-    gUV.xy = (uv - 0.5) * (uResolution.x / uResolution.y);
+    uv -= 0.5;
+    uv.x *= uResolution.x / uResolution.y;
+    gUV = vec4(uv, uResolution.x / uResolution.y, 1.0);
 }

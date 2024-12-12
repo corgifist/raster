@@ -69,5 +69,7 @@ void main() {
  
 	gColor = Blur(uv * vec2(1.0, -1.0), uRadius);
     uv.y = 1.0 - uv.y;
-    gUV = vec4(uv, 1.0, 1.0);
+    uv -= 0.5;
+    uv.x *= uResolution.x / uResolution.y;
+    gUV = vec4(uv, uResolution.x / uResolution.y, 1.0);
 }

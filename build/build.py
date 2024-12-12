@@ -147,11 +147,8 @@ build_modules = [
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui]],
     ["rendering/solid2d", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/echo", node, [raster_common, raster_gpu, raster_compositor]],
-    ["rendering/checkerboard", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/tracking_motion_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/merge", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui, raster_font]],
-    ["rendering/brightness_contrast_saturation_vibrance_hue", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui]],
-    ["rendering/hashed_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/decode_video_asset", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],

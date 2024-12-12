@@ -200,7 +200,6 @@ namespace Raster {
                     }
                     decoder->currentlyDecoding = true;
                     decoder->percentage = (videoFrame.pts().seconds() - firstTimestmap) / ((targetFrame - firstTimestmap * decoder->framerate) / decoder->framerate);
-                    DUMP_VAR(decoder->percentage);
                     // RASTER_LOG("skipping frames: " << videoFrame.pts().seconds() << " to " << decoder->targetFrame / decoder->framerate);
                 } 
                 decoder->percentage = 1;

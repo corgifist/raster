@@ -102,7 +102,7 @@ namespace Raster {
     std::optional<std::string> DecodeVideoAsset::Footer() {
         auto percentageCandidate = m_decoder.GetDecodingProgress();
         if (percentageCandidate) {
-            return FormatString("%s: %i%%", Localization::GetString("DECODING_IN_PROGRESS").c_str(), std::clamp((int) (*percentageCandidate * 100), 0, 100));
+            return FormatString("%s %s: %i%%", ICON_FA_VIDEO, Localization::GetString("DECODING_IN_PROGRESS").c_str(), std::clamp((int) (*percentageCandidate * 100), 0, 100));
         }
         return std::nullopt;
     }

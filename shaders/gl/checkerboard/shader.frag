@@ -38,7 +38,9 @@ void main() {
         }
 
         gColor = mix(uFirstColor, uSecondColor, mask);
-        gUV = vec4(uv, 1.0, 1.0);
+        gColor.a *= uOpacity;
+        uv -= 0.5;
+        gUV = vec4(uv, uResolution.x / uResolution.y, 1.0);
     } else {
         vec4 uvPixel = texture(uUVTexture, screenUV);
         if (uvPixel.a != 0.0) {
@@ -58,8 +60,8 @@ void main() {
                 }
 
                 gColor = mix(uFirstColor, uSecondColor, mask);
-                // gColor = uvPixel;
-                gUV = vec4(uv, uvPixel.z, 1.0);
+                gColor = mix(texture(uColorTexture, screenUV), gColor, uOpacity);
+                gUV = uvPixel;
             } else discard;
         } else discard;
     }
