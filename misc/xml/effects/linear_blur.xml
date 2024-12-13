@@ -4,7 +4,7 @@
     <attributes>
         <attribute name="Base" type="Framebuffer"/>
         <attribute name="Angle" type="float" value="0.0"/>
-        <attribute name="Intensity" type="float" value="1.0"/>
+        <attribute name="Intensity" type="float" value="0.0"/>
         <attribute name="Opacity" type="float" value="1.0"/>
         <attribute name="Samples" type="int" value="80"/>
     </attributes>

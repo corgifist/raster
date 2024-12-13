@@ -5,6 +5,7 @@ namespace Raster {
         this->position = this->anchor = glm::vec2(0);
         this->size = glm::vec2(1);
         this->angle = 0.0f;
+        this->scale = 1.0f;
 
         this->parentTransform = nullptr;
     }
@@ -19,6 +20,8 @@ namespace Raster {
         this->anchor = {
             t_data["Anchor"][0], t_data["Anchor"][1]
         };
+        if (t_data.contains("Scale")) this->scale = t_data["Scale"];
+        else this->scale = 1.0f;
         this->angle = t_data["Angle"];
         this->parentTransform = nullptr;
     }
@@ -30,7 +33,7 @@ namespace Raster {
         transform = glm::translate(transform, glm::vec3(anchor, 0.0f));
         transform = glm::rotate(transform, glm::radians(-angle), glm::vec3(0, 0, 1));
         transform = glm::translate(transform, glm::vec3(-anchor, 0.0f)); 
-        transform = glm::scale(transform, glm::vec3(size, 1.0f));  
+        transform = glm::scale(transform, glm::vec3(size * scale, 1.0f));  
         return GetParentMatrix() * transform;
     }
 
@@ -63,7 +66,8 @@ namespace Raster {
             {"Position", {position.x, position.y}},
             {"Size", {size.x, size.y}},
             {"Anchor", {anchor.x, anchor.y}},
-            {"Angle", angle}
+            {"Angle", angle},
+            {"Scale", scale}
         };
     }
 };

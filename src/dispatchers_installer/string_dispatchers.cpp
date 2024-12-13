@@ -125,6 +125,7 @@ namespace Raster {
         ImGui::BeginChild("##transformInfoContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
             ImGui::Text("%s Position: %0.2f; %0.2f", ICON_FA_UP_DOWN_LEFT_RIGHT, transform.position.x, transform.position.y);
             ImGui::Text("%s Size: %0.2f; %0.2f", ICON_FA_SCALE_BALANCED, transform.size.x, transform.size.y);
+            ImGui::Text("%s Scale: %0.2f", ICON_FA_EXPAND, transform.scale);
             ImGui::Text("%s Anchor: %0.2f; %0.2f", ICON_FA_ANCHOR, transform.anchor.x, transform.anchor.y);
             ImGui::Text("%s Angle: %0.2f", ICON_FA_ROTATE, transform.angle);
         ImGui::EndChild();

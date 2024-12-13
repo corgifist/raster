@@ -227,6 +227,13 @@ namespace Raster {
             }
 
             ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s Scale", ICON_FA_EXPAND);
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(cursorX);
+            ImGui::DragFloat("##dragScale", &transform.scale, 0.05f);
+            isItemEdited = isItemEdited || ImGui::IsItemEdited();
+
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Anchor", ICON_FA_ANCHOR);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);

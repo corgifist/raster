@@ -71,6 +71,11 @@ namespace Raster {
         auto gradientsAttribute = gradientsNode.node();
         int gradientsCount = gradientsAttribute.attribute("count").as_int();
         m_gradientBuffers = std::vector<std::optional<ArrayBuffer>>(gradientsCount);
+
+        auto samplerSettingsNode = m_document->select_node("/effect/samplers");
+        auto samplerSettingsAttribute = samplerSettingsNode.node();
+        int samplerSettingsCount = samplerSettingsAttribute.attribute("count").as_int();
+        m_samplers = std::vector<Sampler>(samplerSettingsCount);
     }
 
     XMLEffectProvider::~XMLEffectProvider() {
@@ -78,6 +83,10 @@ namespace Raster {
             if (gradientBuffer) {
                 GPU::DestroyBuffer(*gradientBuffer);
             }
+        }
+
+        for (auto& sampler : m_samplers) {
+            if (sampler.handle) GPU::DestroySampler(sampler);
         }
     }
 
@@ -101,12 +110,20 @@ namespace Raster {
             }
         }
 
+        for (auto& sampler : m_samplers) {
+            if (!sampler.handle) {
+                sampler = GPU::GenerateSampler();
+            }
+        }
+
         std::vector<Framebuffer> swappedFramebuffers(m_framebuffers.size());
 
         auto renderingNode = m_document->select_node("/effect/rendering").node();
         int resultFramebuffer = renderingNode.attribute("result").as_int();
 
         m_cachedValues.clear();
+
+        std::vector<int> targetUnboundSamplers;
 
         for (auto pass : renderingNode.children("pass")) {
             int targetFramebuffer = pass.attribute("framebuffer").as_int();
@@ -177,15 +194,40 @@ namespace Raster {
                 for (auto attachment : uniform.children("attachment")) {
                     int attachmentIndex = attachment.attribute("index").as_int();
                     int unitIndex = attachment.attribute("unit").as_int();
+                    std::string availabilityUniformName = attachment.attribute("availability").as_string();
                     auto attributeName = attachment.attribute("attribute").as_string();
                     std::optional<Framebuffer> attributeCandidate = TextureInteroperability::GetFramebuffer(GetDynamicCachedAttribute(attributeName, t_contextData));
+                    bool wasBound = false;
                     if (attributeCandidate) {
                         auto& attributeValue = *attributeCandidate;
                         if (attachmentIndex >= 0 && attachmentIndex < attributeValue.attachments.size()) {
                             GPU::BindTextureToShader(shaderStage, uniformName, attributeValue.attachments.at(attachmentIndex), unitIndex);
+                            wasBound = true;
                         }
                     }
+
+                    if (!availabilityUniformName.empty()) GPU::SetShaderUniform(shaderStage, availabilityUniformName, wasBound);
                 }
+            }
+
+            for (auto& sampler : pass.children("sampler")) {
+                auto attributeName = sampler.attribute("attribute").as_string();
+                auto slotIndex = sampler.attribute("slot").as_int();
+                auto unitIndex = sampler.attribute("unit").as_int();
+                auto samplerSettingsCandidate = GetCachedAttribute<SamplerSettings>(attributeName, t_contextData);
+
+                if (!samplerSettingsCandidate) continue;
+                if (slotIndex < 0 || slotIndex >= m_samplers.size()) continue;
+                auto samplerObject = m_samplers[slotIndex];
+                auto& samplerSettings = *samplerSettingsCandidate;
+                GPU::SetSamplerTextureFilteringMode(samplerObject, TextureFilteringOperation::Magnify, samplerSettings.filteringMode);
+                GPU::SetSamplerTextureFilteringMode(samplerObject, TextureFilteringOperation::Minify, samplerSettings.filteringMode);
+
+                GPU::SetSamplerTextureWrappingMode(samplerObject, TextureWrappingAxis::S, samplerSettings.wrappingMode);
+                GPU::SetSamplerTextureWrappingMode(samplerObject, TextureWrappingAxis::T, samplerSettings.wrappingMode);
+
+                GPU::BindSampler(samplerObject, unitIndex);
+                targetUnboundSamplers.push_back(unitIndex);
             }
 
             for (auto& gradient : pass.children("gradient1d")) {
@@ -220,6 +262,10 @@ namespace Raster {
                 GPU::DrawArrays(count);
             }
         }
+
+        for (auto& unboundSampler : targetUnboundSamplers) {
+            GPU::BindSampler(std::nullopt, unboundSampler);
+        } 
 
         TryAppendAbstractPinMap(result, renderingNode.attribute("pin").as_string(), swappedFramebuffers.at(resultFramebuffer));
 

@@ -71,6 +71,7 @@ namespace Raster {
             return std::nullopt;
         };
 
+        std::vector<Sampler> m_samplers;
         std::vector<Pipeline> m_pipelines;
         std::vector<ManagedFramebuffer> m_framebuffers;
         std::vector<std::optional<ArrayBuffer>> m_gradientBuffers;

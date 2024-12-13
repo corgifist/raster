@@ -9,6 +9,7 @@ namespace Raster {
     struct Transform2D {
         glm::vec2 position, size, anchor;
         float angle;
+        float scale;
 
         std::shared_ptr<Transform2D> parentTransform;
 

@@ -3,7 +3,7 @@
     
     <attributes>
         <attribute name="Base" type="Framebuffer"/>
-        <attribute name="Radius" type="float" value="0.5"/>
+        <attribute name="Radius" type="float" value="0.0"/>
         <attribute name="HashOffset" type="glm::vec2" value="0.0;0.0"/>
         <attribute name="Opacity" type="float" value="1.0"/>
         <attribute name="Samples" type="int" value="30"/>
