@@ -451,6 +451,6 @@ namespace Raster {
             }
         }
         t_attribute = transform;
-        return !transformChanged || !positionDragAlreadyActive; 
+        return !transformChanged; 
     }
 };
