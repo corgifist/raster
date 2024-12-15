@@ -941,6 +941,13 @@ namespace Raster {
                     }
                 }
                 
+                std::unordered_map<int, AbstractNode> newNodes;
+                for (auto& pair : copiedComposition.nodes) {
+                    newNodes[pair.second->nodeID] = pair.second;
+                }
+
+                copiedComposition.nodes = newNodes;
+
                 for (auto& pair : copiedComposition.nodes) {
                     auto& node = pair.second;
                     if (node->flowInputPin.has_value()) {

@@ -30,6 +30,7 @@ namespace Raster {
         static Json SerializeBool(std::any& t_value);
         static Json SerializeGenericResolution(std::any& t_value);
         static Json SerializeGradient1D(std::any& t_value);
+        static Json SerializeChoice(std::any& t_value);
 
         static std::any DeserializeInt(Json t_data);
         static std::any DeserializeFloat(Json t_data);
@@ -43,5 +44,6 @@ namespace Raster {
         static std::any DeserializeBool(Json t_data);
         static std::any DeserializeGenericResolution(Json t_data);
         static std::any DeserializeGradient1D(Json t_data);
+        static std::any DeserializeChoice(Json t_data);
     };
 };

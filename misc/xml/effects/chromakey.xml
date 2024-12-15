@@ -1,0 +1,105 @@
+<effect>
+    <description name="Chroma Key" packageName="chroma_key" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="KeyColor" type="glm::vec4" value="0.0;1.0;0.0;1.0"/>
+        <attribute name="LowerTolerance" type="float" value="0.12"/>
+        <attribute name="UpperTolerance" type="float" value="0.25"/>
+        <attribute name="GarbageTexture" type="Texture"/>
+        <attribute name="CoreTexture" type="Texture"/>
+        <attribute name="Highlights" type="float" value="1.0"/>
+        <attribute name="Shadows" type="float" value="1.0"/>
+        <attribute name="InvertMask" type="bool" value="false"/>
+        <attribute name="MaskOnly" type="bool" value="false"/>
+    </attributes>
+
+    <pins>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="chromakey/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uColorKey" stage="fragment">
+                <value attribute="KeyColor" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uMaskOnly" stage="fragment">
+                <value attribute="MaskOnly" type="bool"/>
+            </uniform>
+            <uniform name="uUpperTolerance" stage="fragment">
+                <value attribute="UpperTolerance" type="float"/>
+            </uniform>
+            <uniform name="uLowerTolerance" stage="fragment">
+                <value attribute="LowerTolerance" type="float"/>
+            </uniform>
+            <uniform name="uInvert" stage="fragment">
+                <value attribute="InvertMask" type="bool"/>
+            </uniform>
+            <uniform name="uHighlights" stage="fragment">
+                <value attribute="Highlights" type="float"/>
+            </uniform>
+            <uniform name="uShadows" stage="fragment">
+                <value attribute="Shadows" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uGarbageTexture" stage="fragment">
+                <attachment attribute="GarbageTexture" index="0" unit="1" availability="uGarbageAvailable"/>
+            </uniform>
+            <uniform name="uCoreTexture" stage="fragment">
+                <attachment attribute="CoreTexture" index="0" unit="2" availability="uCoreAvailable"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="KeyColor">
+            <icon icon="ICON_FA_DROPLET"/>
+            <sliderStep step="0.01"/>
+        </property>
+
+        <property name="LowerTolerance">
+            <icon icon="ICON_FA_ARROW_DOWN"/>
+            <sliderStep step="0.5"/>
+            <sliderBase base="100"/>
+        </property>
+
+        <property name="UpperTolerance">
+            <icon icon="ICON_FA_ARROW_UP"/>
+            <sliderStep step="0.5"/>
+            <sliderBase base="100"/>
+        </property>        
+
+        <property name="Highlights">
+            <icon icon="ICON_FA_SUN"/>
+            <sliderStep step="0.5"/>
+            <sliderBase base="100"/>
+        </property>
+
+        <property name="Shadows">
+            <icon icon="ICON_FA_SUN"/>
+            <sliderStep step="0.5"/>
+            <sliderBase base="100"/>
+        </property>
+
+        <property name="InvertMask">
+            <icon icon="ICON_FA_CHESS_BOARD"/>
+        </property>
+
+        <property name="MaskOnly">
+            <icon icon="ICON_FA_CHESS_BOARD"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_CHESS_BOARD" />
+</effect>

@@ -46,6 +46,7 @@ namespace Raster {
         std::string libraryName;
         std::string overridenHeader;
         bool enabled, bypassed;
+        std::optional<glm::vec2> nodePosition;
 
         ~NodeBase();
 

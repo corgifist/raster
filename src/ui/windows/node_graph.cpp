@@ -614,7 +614,21 @@ namespace Raster {
                                 }
                                 s_maxOutputPinX = maxOutputXCandidate;
 
+                                static std::unordered_map<int, bool> s_wasShown;
                                 Nodes::BeginNode(node->nodeID);
+                                    if (s_wasShown.find(node->nodeID) == s_wasShown.end()) {
+                                        s_wasShown[node->nodeID] = false;
+                                    }
+                                    bool& nodeWasShown = s_wasShown[node->nodeID];
+                                    if (!nodeWasShown && node->nodePosition) {
+                                        auto& targetNodePosition = *node->nodePosition;
+                                        Nodes::SetNodePosition(node->nodeID, ImVec2(targetNodePosition.x, targetNodePosition.y));
+                                        nodeWasShown = true;
+                                    }
+                                    {
+                                        auto currentNodePosition = Nodes::GetNodePosition(node->nodeID);
+                                        node->nodePosition = {currentNodePosition.x, currentNodePosition.y};
+                                    }
                                     for (auto& deferredNodeCreationInfo : s_deferredNodeCreations) {
                                         if (deferredNodeCreationInfo.nodeID == node->nodeID) {
                                             Nodes::SetNodePosition(node->nodeID, deferredNodeCreationInfo.position);

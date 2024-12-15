@@ -9,11 +9,9 @@
 #include "compositor/texture_interoperability.h"
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
-#include <memory>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
+#include "common/choice.h"
+#include "common/dispatchers.h"
+#include <typeindex>
 
 namespace Raster {
 
@@ -90,6 +88,13 @@ namespace Raster {
         }
     }
 
+    static std::string GetNameByType(std::type_index t_index) {
+        if (Workspace::s_typeNames.find(t_index) != Workspace::s_typeNames.end()) {
+            return Workspace::s_typeNames[t_index];
+        }
+        return t_index.name();
+    } 
+
     AbstractPinMap XMLEffectProvider::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         if (m_pipelines.empty()) {
@@ -156,6 +161,16 @@ namespace Raster {
                     std::optional<std::any> attributeCandidate = GetDynamicCachedAttribute(attributeName, t_contextData);
                     if (attributeCandidate) {
                         auto& attributeValue = *attributeCandidate;
+                        if (Workspace::GetTypeName(attributeValue) != type) {
+                            for (auto& conversionDispatcher : Dispatchers::s_conversionDispatchers) {
+                                if (conversionDispatcher.from == attributeValue.type() && GetNameByType(conversionDispatcher.to) == type) {
+                                    auto conversionCandidate = conversionDispatcher.function(attributeValue);
+                                    if (conversionCandidate) {
+                                        attributeValue = *conversionCandidate;
+                                    }
+                                }
+                            }
+                        }
 
 #define UNIFORM_CLAUSE(t_real_type, t_str_type) \
     if (attributeValue.type() == typeid(t_real_type) && t_str_type == type)  { \
@@ -316,6 +331,12 @@ namespace Raster {
         }
         if (t_type == "Gradient1D") {
             return Gradient1D();
+        }
+        if (t_type == "Texture") {
+            return Texture();
+        }
+        if (t_type == "Choice") {
+            return Choice(SplitString(t_value, ";"), 0);
         }
         throw std::runtime_error("could not make dynamic value from " + t_type + " " + t_value);
     }

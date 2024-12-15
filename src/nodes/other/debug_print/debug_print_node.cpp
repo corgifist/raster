@@ -1,6 +1,7 @@
 #include "common/common.h"
 #include "font/font.h"
 #include "raster.h"
+#include "common/choice.h"
 
 #include "debug_print_node.h"
 #include "../../../ImGui/imgui.h"
@@ -11,6 +12,9 @@ namespace Raster {
         NodeBase::Initialize();
         NodeBase::GenerateFlowPins();
         SetupAttribute("ArbitraryValue", std::string("EEE"));
+        SetupAttribute("ChoiceTest", Choice({
+            "A", "B", "C", "D"
+        }, 0));
 
         AddOutputPin("ExposedOutput");
         AddOutputPin("EEEEE");
@@ -28,6 +32,7 @@ namespace Raster {
 
     void DebugPrintNode::AbstractRenderProperties() {
         RenderAttributeProperty("ArbitraryValue");
+        RenderAttributeProperty("ChoiceTest");
     }
 
     bool DebugPrintNode::AbstractDetailsAvailable() {

@@ -10,6 +10,7 @@
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
 #include "common/node_category.h"
+#include "common/choice.h"
 #include <filesystem>
 #include <string>
 
@@ -62,7 +63,8 @@ namespace Raster {
         RASTER_TYPE_NAME(AssetID),
         RASTER_TYPE_NAME(GenericAudioDecoder),
         RASTER_TYPE_NAME(GenericResolution),
-        RASTER_TYPE_NAME(Gradient1D)
+        RASTER_TYPE_NAME(Gradient1D),
+        RASTER_TYPE_NAME(Choice)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {
@@ -248,6 +250,10 @@ namespace Raster {
                 node->bypassed = data["Bypassed"];
                 if (data.contains("OverridenHeader")) {
                     node->overridenHeader = data["OverridenHeader"];
+                }
+                if (!data["NodePosition"].is_null()) {
+                    auto nodePosition = data["NodePosition"];
+                    node->nodePosition = glm::vec2(nodePosition[0], nodePosition[1]);
                 }
                 if (data.contains("NodeData") && !data["NodeData"].is_null()) {
                     node->AbstractLoadSerialized(data["NodeData"]);

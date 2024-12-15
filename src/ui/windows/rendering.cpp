@@ -165,9 +165,16 @@ namespace Raster {
                             }
                             attributesCount = attributes.size();
                             int attributeSearchIndex = 0;
+                            bool found = true;
                             for (auto& attribute : attributes) {
-                                if (attribute == selectedPin) break;
+                                if (attribute == selectedPin) {
+                                    found = true;
+                                    break;
+                                }
                                 attributeSearchIndex++;
+                            }
+                            if (!found) {
+                                attributeSearchIndex = 0;
                             }
                             selectedAttributeIndex = attributeSearchIndex;
 
@@ -177,10 +184,13 @@ namespace Raster {
                             }
                             ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
                             try {
-                                ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
-                                ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
-                                ImGui::PopItemWidth();
-                                selectedPin = transformedAttributes[selectedAttributeIndex];
+                                if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size()) {
+                                    ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
+                                    ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
+                                    ImGui::PopItemWidth();
+                                }
+                                if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size())
+                                    selectedPin = transformedAttributes[selectedAttributeIndex];
                             } catch (...) {
                                 // TODO: investigate this further
                             }

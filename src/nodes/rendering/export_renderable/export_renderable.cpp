@@ -20,10 +20,11 @@ namespace Raster {
         AbstractPinMap result = {};
 
         auto renderableCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Renderable", t_contextData));
-        if (renderableCandidate.has_value() && renderableCandidate.value().handle) {
+        auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+        if (renderableCandidate.has_value() && renderableCandidate.value().handle && compositionCandidate) {
             auto& renderable = renderableCandidate.value();
-            auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
             auto& bundles = Compositor::s_bundles;
+            auto& composition = *compositionCandidate;
             if (bundles.Get().find(composition->id) == bundles.Get().end()) {
                 bundles.Get()[composition->id] = {};
             }

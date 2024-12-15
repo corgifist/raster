@@ -13,6 +13,7 @@
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
 #include "common/item_aligner.h"
+#include "common/choice.h"
 
 namespace Raster {
 
@@ -600,14 +601,27 @@ namespace Raster {
         t_value = value;
     }
 
-
-
     void AttributeDispatchers::DispatchGradient1DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<Gradient1D>(t_value);
         auto& project = Workspace::GetProject();
 
         UIHelpers::RenderGradient1DEditor(value);
 
+        t_value = value;
+    }
+
+    void AttributeDispatchers::DispatchChoiceAttribute(NodeBase *t_owner, std::string t_attribute, std::any &t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<Choice>(t_value);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+
+        std::vector<const char*> transformedChoices;
+        for (auto& variant : value.variants) {
+            transformedChoices.push_back(variant.c_str());
+        }
+
+        ImGui::Combo("##choiceBox", &value.selectedVariant, transformedChoices.data(), transformedChoices.size());
         t_value = value;
     }
 

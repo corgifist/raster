@@ -1,4 +1,5 @@
 #include "common/dynamic_serialization.h"
+#include "common/choice.h"
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
@@ -21,7 +22,8 @@ namespace Raster {
         RASTER_TYPE_NAME(GenericAudioDecoder),
         RASTER_TYPE_NAME(bool),
         RASTER_TYPE_NAME(GenericResolution),
-        RASTER_TYPE_NAME(Gradient1D)
+        RASTER_TYPE_NAME(Gradient1D),
+        RASTER_TYPE_NAME(Choice)
     };
 
     std::unordered_map<std::type_index, SerializationFunction> DynamicSerialization::s_serializers = {
@@ -36,7 +38,8 @@ namespace Raster {
         {TYPE_CONTAINER(GenericAudioDecoder), DynamicSerialization::SerializeGenericAudioDecoder},
         {TYPE_CONTAINER(bool), DynamicSerialization::SerializeBool},
         {TYPE_CONTAINER(GenericResolution), DynamicSerialization::SerializeGenericResolution},
-        {TYPE_CONTAINER(Gradient1D), DynamicSerialization::SerializeGradient1D}
+        {TYPE_CONTAINER(Gradient1D), DynamicSerialization::SerializeGradient1D},
+        {TYPE_CONTAINER(Choice), DynamicSerialization::SerializeChoice}
     };
 
     std::unordered_map<std::string, DeserializationFunction> DynamicSerialization::s_deserializers = {
@@ -51,7 +54,8 @@ namespace Raster {
         {TYPE_NAME(GenericAudioDecoder), DynamicSerialization::DeserializeGenericAudioDecoder},
         {TYPE_NAME(bool), DynamicSerialization::DeserializeBool},
         {TYPE_NAME(GenericResolution), DynamicSerialization::DeserializeGenericResolution},
-        {TYPE_NAME(Gradient1D), DynamicSerialization::DeserializeGradient1D}
+        {TYPE_NAME(Gradient1D), DynamicSerialization::DeserializeGradient1D},
+        {TYPE_NAME(Choice), DynamicSerialization::DeserializeChoice}
     };
 
     Json DynamicSerialization::SerializeInt(std::any& t_value) {
@@ -113,6 +117,10 @@ namespace Raster {
         return std::any_cast<Gradient1D>(t_value).Serialize();
     }
 
+    Json DynamicSerialization::SerializeChoice(std::any &t_value) {
+        return std::any_cast<Choice>(t_value).Serialize();
+    }
+
     std::any DynamicSerialization::DeserializeInt(Json t_data) {
         return t_data.get<int>();
     }
@@ -161,6 +169,10 @@ namespace Raster {
 
     std::any DynamicSerialization::DeserializeGradient1D(Json t_data) {
         return Gradient1D(t_data);
+    }
+
+    std::any DynamicSerialization::DeserializeChoice(Json t_data) {
+        return Choice(t_data);
     }
 
     std::optional<Json> DynamicSerialization::Serialize(std::any& t_value) {

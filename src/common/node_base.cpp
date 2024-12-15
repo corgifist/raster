@@ -1,5 +1,6 @@
 #include "common/common.h"
 #include "common/transform2d.h"
+#include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
 #include "app/app.h"
 #include "font/font.h"
@@ -12,6 +13,7 @@
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
 #include "raster.h"
+#include "common/choice.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -29,7 +31,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_VOLUME_HIGH " " ICON_FA_GEARS, GenericAudioDecoder), GenericAudioDecoder()},
         {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), AudioSamples()},
         {TYPE_NAME(ICON_FA_IMAGE " " ICON_FA_EXPAND, GenericResolution), GenericResolution()},
-        {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), Gradient1D()}
+        {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), Gradient1D()},
+        {TYPE_NAME(ICON_FA_QUESTION, Choice), Choice()}
     };
 
     NodeBase::~NodeBase() {
@@ -290,6 +293,11 @@ namespace Raster {
             data["PackageName"] = nodeImplementation.value().description.packageName;
         }
 
+        data["NodePosition"] = nullptr;
+        if (nodePosition) {
+            data["NodePosition"] = {nodePosition->x, nodePosition->y};
+        }
+
         data["Enabled"] = enabled;
         data["Bypassed"] = bypassed;
         data["OverridenHeader"] = overridenHeader;
@@ -343,7 +351,9 @@ namespace Raster {
             if (dynamicAttribute.type() != typeid(T)) {
                 if (dynamicAttribute.type() == typeid(GenericAudioDecoder)) {
                     auto& project = Workspace::GetProject();
-                    auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
+                    auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+                    if (!compositionCandidate) return std::nullopt;
+                    auto& composition = *compositionCandidate;
                     *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.currentFrame - composition->beginFrame) / project.framerate;
                     if (typeid(T) == typeid(AudioSamples)) {
                         auto decoder = std::any_cast<GenericAudioDecoder>(dynamicAttribute);
@@ -468,7 +478,9 @@ namespace Raster {
             for (auto& attribute : m_attributes.GetReference()) {
                 if (attribute.second.type() == typeid(GenericAudioDecoder)) {
                     auto decoder = std::any_cast<GenericAudioDecoder>(attribute.second);
-                    auto composition = Workspace::GetCompositionByNodeID(nodeID).value();
+                    auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+                    if (!compositionCandidate) continue;
+                    auto& composition = *compositionCandidate;
                     auto& project = Workspace::GetProject();
                     decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
                     attribute.second = decoder;

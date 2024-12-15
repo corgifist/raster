@@ -11,6 +11,7 @@
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
+#include "common/choice.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -30,7 +31,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(GenericAudioDecoder), AttributeDispatchers::DispatchGenericAudioDecoderAttribute},
             {ATTRIBUTE_TYPE(AudioSamples), AttributeDispatchers::DispatchAudioSamplesAttribute},
             {ATTRIBUTE_TYPE(GenericResolution), AttributeDispatchers::DispatchGenericResolutionAttribute},
-            {ATTRIBUTE_TYPE(Gradient1D), AttributeDispatchers::DispatchGradient1DAttribute}
+            {ATTRIBUTE_TYPE(Gradient1D), AttributeDispatchers::DispatchGradient1DAttribute},
+            {ATTRIBUTE_TYPE(Choice), AttributeDispatchers::DispatchChoiceAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -75,7 +77,8 @@ namespace Raster {
             {TYPE_PAIR(int, float), ConversionDispatchers::ConvertIntToFloat},
             {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4},
             {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture},
-            {TYPE_PAIR(GenericResolution, glm::vec2), ConversionDispatchers::ConvertGenericResolutionToVec2}
+            {TYPE_PAIR(GenericResolution, glm::vec2), ConversionDispatchers::ConvertGenericResolutionToVec2},
+            {TYPE_PAIR(Choice, int), ConversionDispatchers::ConvertChoiceToInt}
         };
     }
 };

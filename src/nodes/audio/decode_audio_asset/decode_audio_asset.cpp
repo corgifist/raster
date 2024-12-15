@@ -61,7 +61,10 @@ namespace Raster {
 
     void DecodeAudioAsset::AbstractOnTimelineSeek() {
         auto& project = Workspace::GetProject();
-        m_decoder.Seek((project.GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame) / project.framerate);
+        auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+        if (!compositionCandidate) return;
+        auto& composition = *compositionCandidate;
+        m_decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
     }
 
     std::optional<float> DecodeAudioAsset::AbstractGetContentDuration() {

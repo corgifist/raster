@@ -1,0 +1,54 @@
+<effect>
+    <description name="Despill" packageName="despill" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="KeyColor" type="Choice" value="Green;Blue"/>
+        <attribute name="Method" type="Choice" value="Average;Double Red Average;Double Average;Limit"/>
+        <attribute name="PreserveLuminance" type="bool" value="false"/>
+    </attributes>
+
+    <pins>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="despill/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uColor" stage="fragment">
+                <value attribute="KeyColor" type="int"/>
+            </uniform>
+            <uniform name="uMethod" stage="fragment">
+                <value attribute="Method" type="int"/>
+            </uniform>
+            <uniform name="uPreserveLuminance" stage="fragment">
+                <value attribute="PreserveLuminance" type="bool"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColorTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="KeyColor">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="Method">
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+        <property name="PreserveLuminance">
+            <icon icon="ICON_FA_SUN"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_DROPLET_SLASH" />
+</effect>

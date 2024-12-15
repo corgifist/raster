@@ -98,7 +98,8 @@ namespace Raster {
                         m_streamInfos.push_back(info);
 
                         if (!m_attachedPicTexture) {
-                            m_formatCtx.seek({(int64_t) (m_formatCtx.duration().seconds()) / 2, {1, 1}});
+                            auto rational = stream.timeBase().getValue();
+                            m_formatCtx.seek((int64_t) (m_formatCtx.duration().seconds() / 2) * (int64_t)rational.den / (int64_t) rational.num, stream.index(), AVSEEK_FLAG_BACKWARD);
                             avcodec_flush_buffers(videoDecoder.raw());
                             std::error_code ec;
                             while (true) {

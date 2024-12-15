@@ -22,8 +22,11 @@ namespace Raster {
         if (attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
             auto& project = Workspace::s_project.value();
-            auto parentComposition = Workspace::GetCompositionByNodeID(nodeID).value();
-            TryAppendAbstractPinMap(result, "Value", attribute->Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition));
+            auto parentCompositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+            if (parentCompositionCandidate) {
+                auto parentComposition = *parentCompositionCandidate;
+                TryAppendAbstractPinMap(result, "Value", attribute->Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition));
+            }
         }
         return result;
     }
