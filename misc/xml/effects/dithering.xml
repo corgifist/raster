@@ -1,0 +1,54 @@
+<effect>
+    <description name="Dithering" packageName="dithering" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="DitheringMask" type="Framebuffer"/>
+        <attribute name="Size" type="float" value="8.0"/>
+        <attribute name="Opacity" type="float" value="1.0"/>
+    </attributes>
+
+    <pins>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="dithering/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0">
+            <uniform name="uSize" stage="fragment">
+                <value attribute="Size" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColor" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uDitherTexture" stage="fragment">
+                <attachment attribute="DitheringMask" index="0" unit="1" availability="uDitherTextureAvailable"/>
+            </uniform>
+            <uniform name="uOpacity" stage="fragment">
+                <value attribute="Opacity" type="float"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Size">
+            <icon icon="ICON_FA_EXPAND"/>
+        </property>
+        <property name="Opacity">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_BRAILLE" />
+</effect>
