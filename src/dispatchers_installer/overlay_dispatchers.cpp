@@ -1,5 +1,8 @@
 #include "overlay_dispatchers.h"
+#include "common/randomizer.h"
 #include "common/transform2d.h"
+#include <cfloat>
+#include <cmath>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
@@ -14,23 +17,65 @@
 
 namespace Raster {
 
+    struct ObjectDrag {
+        int id;
+        glm::vec2 position;
+        glm::vec2 dragAxis;
+        float angle;
+        bool isActive;
+        bool xDrag;
+
+        ObjectDrag() {
+            this->id = Randomizer::GetRandomInteger();
+            this->position = glm::vec2(0.5, 0);
+            this->dragAxis = glm::vec2(0);
+            this->isActive = false;
+            this->xDrag = true;
+        }
+
+        ObjectDrag(glm::vec2 t_position, glm::vec2 t_dragAxis, float t_angle, bool t_xDrag) : ObjectDrag() {
+            this->position = t_position;
+            this->dragAxis = t_dragAxis;
+            this->isActive = false;
+            this->angle = t_angle;
+            this->xDrag = t_xDrag;
+        }
+    };
+
     struct Transform2DOverlayState {
-        bool yDragActive;
-        bool xDragActive;
-        bool positionDragActive;
-        bool anchorDragging;
-        bool rotatorActive;
-        bool ySecondaryDragActive;
-        bool xSecondaryDragActive;
+
+        std::vector<ObjectDrag> drags;
+        std::vector<ObjectDrag> angleDrags;
+        ObjectDrag anchorDrag;
+        ObjectDrag positionDrag;
 
         Transform2DOverlayState() {
-            this->yDragActive = false;
-            this->xDragActive = false;
-            this->positionDragActive = false;
-            this->anchorDragging = false;
-            this->rotatorActive = false;
-            this->ySecondaryDragActive = false;
-            this->xSecondaryDragActive = false;
+            this->drags.push_back(ObjectDrag(glm::vec2(1, 0), glm::vec2(1, 0), 0, true));
+            this->drags.push_back(ObjectDrag(glm::vec2(0, 1), glm::vec2(0, -1), 90, false));
+            this->drags.push_back(ObjectDrag(glm::vec2(-1, 0), glm::vec2(-1, 0), 180, true));
+            this->drags.push_back(ObjectDrag(glm::vec2(0, -1), glm::vec2(0, 1), 270, false));
+
+            this->angleDrags.push_back(ObjectDrag(glm::vec2(1, -1), glm::vec2(0, 0), FLT_MIN, false));
+            this->angleDrags.push_back(ObjectDrag(glm::vec2(1, 1), glm::vec2(0, 0), FLT_MIN, false));
+            this->angleDrags.push_back(ObjectDrag(glm::vec2(-1, 1), glm::vec2(0, 0), FLT_MIN, false));
+            this->angleDrags.push_back(ObjectDrag(glm::vec2(-1, -1), glm::vec2(0, 0), FLT_MIN, false));
+
+            this->anchorDrag = ObjectDrag();
+            this->positionDrag = ObjectDrag();
+        }
+
+        bool AnyOtherDragActive(int t_excludeDrag = -1) {
+            if (anchorDrag.id != t_excludeDrag && anchorDrag.isActive) return true;
+            if (positionDrag.id != t_excludeDrag && positionDrag.isActive) return true;
+            for (auto& drag : drags) {
+                if (drag.id == t_excludeDrag) continue;
+                if (drag.isActive) return true;
+            }
+            for (auto& drag : angleDrags) {
+                if (drag.id == t_excludeDrag) continue;
+                if (drag.isActive) return true;
+            }
+            return false;
         }
     };
 
@@ -41,6 +86,11 @@ namespace Raster {
 
     static bool MouseHoveringBounds(RectBounds bounds) {
         return ImGui::IsMouseHoveringRect(bounds.UL, bounds.BR);
+    }
+
+    glm::mat2 rotate2d(float _angle){
+        return glm::mat2(cos(_angle),-sin(_angle),
+                    sin(_angle),cos(_angle));
     }
 
     std::string OverlayDispatchers::s_attributeName = "";
@@ -66,8 +116,6 @@ namespace Raster {
             glm::vec2(1, 1)
         };
 
-        float angle = int(transform.angle) % 360;
-
         std::vector<glm::vec2> transformedPoints;
         for (auto& point : rectPoints) {
             glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(point, 0, 1);
@@ -81,6 +129,14 @@ namespace Raster {
             screenSpacePoints.push_back(NDCToScreen(point, t_regionSize));
         }
 
+        ImVec4 outlineColor = ImVec4(1, 1, 1, 1);
+        outlineColor.w = 1.0f;
+        for (int i = 0; i < screenSpacePoints.size(); i++) {
+            auto& point = screenSpacePoints[i];
+            auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
+            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 2);
+        }
+
         auto stringID = attributeCandidate.has_value() ? std::to_string(t_attributeID) : std::to_string(t_attributeID) + s_attributeName;
         Transform2DOverlayState* overlayState = nullptr;
         if (attributeCandidate.has_value()) {
@@ -92,55 +148,6 @@ namespace Raster {
             overlayState = &s_attributeStates[stringID];
         }
 
-        bool& yDragActive = overlayState->yDragActive;
-        bool& xDragActive = overlayState->xDragActive;
-        bool& positionDragActive = overlayState->positionDragActive;
-        bool& anchorDragging = overlayState->anchorDragging;
-        bool& rotatorActive = overlayState->rotatorActive;
-        bool& ySecondaryDragActive = overlayState->ySecondaryDragActive;
-        bool& xSecondaryDragActive = overlayState->xSecondaryDragActive;
-
-        static std::optional<glm::vec2> startPosition;
-
-        ImVec4 outlineColor = ImVec4(1, 1, 1, 1);
-        outlineColor.w = 1.0f;
-        for (int i = 0; i < screenSpacePoints.size(); i++) {
-            auto& point = screenSpacePoints[i];
-            auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
-            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 2);
-        }
-
-        auto resizeXDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(1, 0, 0, 1);
-        auto resizeXDragNDC = glm::vec2(resizeXDragNDC4.x, resizeXDragNDC4.y);
-        auto screenXDrag = NDCToScreen(resizeXDragNDC, t_regionSize);
-        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenXDrag.x, screenXDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
-
-        auto resizeYDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(0, 1, 0, 1);
-        auto resizeYDragNDC = glm::vec2(resizeYDragNDC4.x, resizeYDragNDC4.y);
-        auto screenYDrag = NDCToScreen(resizeYDragNDC, t_regionSize);
-        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenYDrag.x, screenYDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
-
-        auto resizeYSecondaryDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(0, -1, 0, 1);
-        auto resizeYSecondaryDragNDC = glm::vec2(resizeYSecondaryDragNDC4.x, resizeYSecondaryDragNDC4.y);
-        auto screenYSecondaryDrag = NDCToScreen(resizeYSecondaryDragNDC, t_regionSize);
-        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenYSecondaryDrag.x, screenYSecondaryDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
-        
-        auto resizeXSecondaryDragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(-1, 0, 0, 1);
-        auto resizeXSecondaryDragNDC = glm::vec2(resizeXSecondaryDragNDC4.x, resizeXSecondaryDragNDC4.y);
-        auto screenXSecondaryDrag = NDCToScreen(resizeXSecondaryDragNDC, t_regionSize);
-        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenXSecondaryDrag.x, screenXSecondaryDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
-        
-        glm::mat4 anchorTransformMatrix = glm::identity<glm::mat4>();
-        anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.position, 0));
-        anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.anchor, 0));
-        anchorTransformMatrix = transform.GetParentMatrix() * anchorTransformMatrix;
-
-        glm::vec4 anchorPointNDC4 = project.GetProjectionMatrix(true) * anchorTransformMatrix * glm::vec4(0, 0, 0, 1);
-        glm::vec2 anchorPointScreen = glm::vec2(anchorPointNDC4.x, anchorPointNDC4.y);
-        anchorPointScreen = NDCToScreen(anchorPointScreen, t_regionSize);
-        
-        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{anchorPointScreen.x, anchorPointScreen.y}, ANCHOR_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(outlineColor));
-        
         if (attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
             if (attribute->packageName == RASTER_PACKAGED "transform2d_attribute") {
@@ -151,28 +158,6 @@ namespace Raster {
             }
         }
 
-        RectBounds xCircleBounds(
-            ImVec2{screenXDrag.x - DRAG_CIRCLE_RADIUS, screenXDrag.y - DRAG_CIRCLE_RADIUS},
-            ImVec2(DRAG_CIRCLE_RADIUS * 2, DRAG_CIRCLE_RADIUS * 2)
-        );
-
-        glm::vec2 beginAxis;
-        glm::vec2 endAxis;
-        if (IsInBounds((int) angle, 0, 90)) {
-            beginAxis = glm::vec2(1, 0);
-            endAxis = glm::vec2(0, -1);
-        } else if (IsInBounds((int) angle, 90, 180)) {
-            beginAxis = glm::vec2(0, -1);
-            endAxis = glm::vec2(-1, 0);
-        } else if (IsInBounds((int) angle, 180, 270)) {
-            beginAxis = glm::vec2(-1, 0);
-            endAxis = glm::vec2(0, 1);
-        } else {
-            beginAxis = glm::vec2(0, 1);
-            endAxis = glm::vec2(1, 0);
-        }
-        glm::vec2 rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
-
         if (!project.customData.contains("Transform2DAttributeData")) {
             project.customData["Transform2DAttributeData"] = {};
         }
@@ -182,195 +167,117 @@ namespace Raster {
         }
         bool linkedSize = customData[stringID];
 
-        static bool positionDragAlreadyActive = false;
+        for (auto& drag : overlayState->drags) {
+            auto dragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(drag.position.x, drag.position.y, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+        
+            // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
 
-        if ((MouseHoveringBounds(xCircleBounds) || xDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !yDragActive && !positionDragActive && !anchorDragging && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
-            transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
-            if (linkedSize) {
-                transform.size.y = transform.size.x;
+            glm::vec2 rotateAxises = rotate2d(transform.DecomposeRotation()) * drag.dragAxis;
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                if (drag.xDrag) {
+                    transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
+                } else {
+                    transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
+                }
+
+                if (linkedSize) {
+                    transform.size.x = transform.size.y;
+                }
+                transformChanged = true;
+                drag.isActive = true;
+            } else drag.isActive = false;
+            if (MouseHoveringBounds(dragBounds) && ImGui::IsWindowFocused()) {
+                ImGui::SetMouseCursor(glm::abs(rotateAxises.x) >= glm::abs(rotateAxises.y) ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
             }
-            transformChanged = true;
-            xDragActive = true;
-            positionDragAlreadyActive = true;
-        } else {
-            xDragActive = false;
-        }
-        if (MouseHoveringBounds(xCircleBounds)) {
-            ImGui::SetTooltip(ICON_FA_LEFT_RIGHT " Increase/Decrease Width");
         }
 
-        RectBounds yCircleBounds(
-            ImVec2{screenYDrag.x - DRAG_CIRCLE_RADIUS, screenYDrag.y - DRAG_CIRCLE_RADIUS},
-            ImVec2(DRAG_CIRCLE_RADIUS * 2, DRAG_CIRCLE_RADIUS * 2)
-        );
+        glm::mat4 anchorTransformMatrix = glm::identity<glm::mat4>();
+        anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.position, 0));
+        anchorTransformMatrix = glm::translate(anchorTransformMatrix, glm::vec3(transform.anchor, 0));
+        anchorTransformMatrix = transform.GetParentMatrix() * anchorTransformMatrix;
 
-        if (IsInBounds((int) angle, 0, 90)) {
-            beginAxis = glm::vec2(0, -1);
-            endAxis = glm::vec2(-1, 0);
-        } else if (IsInBounds((int) angle, 90, 180)) {
-            beginAxis = glm::vec2(-1, 0);
-            endAxis = glm::vec2(0, 1);
-        } else if (IsInBounds((int) angle, 180, 270)) {
-            beginAxis = glm::vec2(0, 1);
-            endAxis = glm::vec2(1, 0);
-        } else {
-            beginAxis = glm::vec2(1, 0);
-            endAxis = glm::vec2(0, -1);
-        }
-        rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
-
-        if ((MouseHoveringBounds(yCircleBounds) || yDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !anchorDragging && !positionDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
-            transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
-            if (linkedSize) {
-                transform.size.x = transform.size.y;
-            }
-            transformChanged = true;
-            yDragActive = true;
-            positionDragAlreadyActive = true;
-            ImGui::SetTooltip("%s Increase/Decrease Height", ICON_FA_UP_DOWN);
-        } else {
-            yDragActive = false;
-        }
-
-        RectBounds ySecondaryCircleBounds(
-            ImVec2{screenYSecondaryDrag.x - DRAG_CIRCLE_RADIUS, screenYSecondaryDrag.y - DRAG_CIRCLE_RADIUS},
-            ImVec2(DRAG_CIRCLE_RADIUS * 2, DRAG_CIRCLE_RADIUS * 2)
-        );
-
-        if (IsInBounds((int) angle, 0, 90)) {
-            beginAxis = glm::vec2(0, 1);
-            endAxis = glm::vec2(1, 0);
-        } else if (IsInBounds((int) angle, 90, 180)) {
-            beginAxis = glm::vec2(1, 0);
-            endAxis = glm::vec2(0, -1);
-        } else if (IsInBounds((int) angle, 180, 270)) {
-            beginAxis = glm::vec2(0, -1);
-            endAxis = glm::vec2(-1, 0);
-        } else {
-            beginAxis = glm::vec2(-1, 0);
-            endAxis = glm::vec2(0, 1);
-        }
-        rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
-
-        if ((MouseHoveringBounds(ySecondaryCircleBounds) || ySecondaryDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !yDragActive && !anchorDragging && !positionDragActive && !rotatorActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.y += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
-            transform.size.y += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
-            if (linkedSize) {
-                transform.size.x = transform.size.y;
-            }
-            transformChanged = true;
-            ySecondaryDragActive = true;
-            positionDragAlreadyActive = true;
-            ImGui::SetTooltip("%s Increase/Decrease Height", ICON_FA_UP_DOWN);
-        } else {
-            ySecondaryDragActive = false;
-        }
-
-        RectBounds xSecondaryCircleBounds(
-            ImVec2{screenXSecondaryDrag.x - DRAG_CIRCLE_RADIUS, screenXSecondaryDrag.y - DRAG_CIRCLE_RADIUS},
-            ImVec2(DRAG_CIRCLE_RADIUS * 2, DRAG_CIRCLE_RADIUS * 2)
-        );
-
-        if (IsInBounds((int) angle, 0, 90)) {
-            beginAxis = glm::vec2(-1, 0);
-            endAxis = glm::vec2(0, 1);
-        } else if (IsInBounds((int) angle, 90, 180)) {
-            beginAxis = glm::vec2(0, 1);
-            endAxis = glm::vec2(1, 0);
-        } else if (IsInBounds((int) angle, 180, 270)) {
-            beginAxis = glm::vec2(1, -0);
-            endAxis = glm::vec2(0, -1);
-        } else {
-            beginAxis = glm::vec2(0, -1);
-            endAxis = glm::vec2(-1, 0);
-        }
-        rotateAxises = glm::mix(beginAxis, endAxis, float((int(angle) % 91) / 90.0f));
-
-        if ((MouseHoveringBounds(xSecondaryCircleBounds) || xSecondaryDragActive)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !yDragActive && !anchorDragging && !positionDragActive && !rotatorActive && !ySecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
-            transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
-            if (linkedSize) {
-                transform.size.y = transform.size.x;
-            }
-            transformChanged = true;
-            xSecondaryDragActive = true;
-            positionDragAlreadyActive = true;
-            ImGui::SetTooltip("%s Increase/Decrease Width", ICON_FA_LEFT_RIGHT);
-        } else {
-            xSecondaryDragActive = false;
-        }
-
+        glm::vec4 anchorPointNDC4 = project.GetProjectionMatrix(true) * anchorTransformMatrix * glm::vec4(0, 0, 0, 1);
+        glm::vec2 anchorPointScreen = glm::vec2(anchorPointNDC4.x, anchorPointNDC4.y);
+        anchorPointScreen = NDCToScreen(anchorPointScreen, t_regionSize);
+        
         RectBounds anchorPointBounds(
-            ImVec2{anchorPointScreen.x, anchorPointScreen.y} - ImVec2(ANCHOR_LOGIC_RADIUS * t_zoom, ANCHOR_LOGIC_RADIUS * t_zoom),
-            ImVec2(ANCHOR_LOGIC_RADIUS * t_zoom, ANCHOR_LOGIC_RADIUS * t_zoom)
+            ImVec2{anchorPointScreen.x, anchorPointScreen.y} - ImVec2(ANCHOR_LOGIC_RADIUS * t_zoom * 3 / 2.0f, ANCHOR_LOGIC_RADIUS * t_zoom * 3 / 2.0f),
+            ImVec2(ANCHOR_LOGIC_RADIUS * 3 * t_zoom, ANCHOR_LOGIC_RADIUS * 3 * t_zoom)
         );
-        if ((MouseHoveringBounds(anchorPointBounds) || anchorDragging)  && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !xDragActive && !yDragActive && !positionDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            ImGui::SetTooltip("%s Move Anchor Point", ICON_FA_ANCHOR);
-            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            transform.anchor.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x;
-            transform.anchor.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y;
-            transformChanged = true;
-            anchorDragging = true;
-            positionDragAlreadyActive = true;
-        } else {
-            anchorDragging = false;
-        }
 
+        ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{anchorPointScreen.x, anchorPointScreen.y}, ANCHOR_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(anchorPointBounds) ? outlineColor * 0.9f : outlineColor));
+
+        if ((MouseHoveringBounds(anchorPointBounds) || overlayState->anchorDrag.isActive) && !overlayState->AnyOtherDragActive(overlayState->anchorDrag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) ) {
+            transform.anchor.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.anchor.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+            transformChanged = true;
+            overlayState->anchorDrag.isActive = true;
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
+        } else overlayState->anchorDrag.isActive = false;
+
+        float aspectRatio = t_regionSize.x / t_regionSize.y;
         glm::vec4 centerPointNDC4(0, 0, 0, 1);
         centerPointNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * centerPointNDC4;
         glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
         centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
-        glm::vec2 transformScreenSize(transform.size.x * t_regionSize.x, transform.size.y * t_regionSize.y);
+        glm::vec2 transformScreenSize(transform.size.x / aspectRatio * t_regionSize.x, transform.size.y * t_regionSize.y);
 
         RectBounds positionDragBounds(
             {centerPointScreen.x - transformScreenSize.x / 2.0f, centerPointScreen.y - transformScreenSize.y / 2.0f},
             {transformScreenSize.x, transformScreenSize.y}
         );
-        ImGui::ItemAdd(ImRect(positionDragBounds.UL, positionDragBounds.BR), ImGui::GetID("##transformContainer"));
-        if ((MouseHoveringBounds(positionDragBounds) || positionDragActive) && ImGui::IsWindowFocused() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left] && !anchorDragging && !xDragActive && !yDragActive && !rotatorActive && !ySecondaryDragActive && !xSecondaryDragActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            transform.position.x += ImGui::GetIO().MouseDelta.x / (t_regionSize.x / t_zoom) * 2 * (project.preferredResolution.x / project.preferredResolution.y);
-            transform.position.y += -ImGui::GetIO().MouseDelta.y / (t_regionSize.y / t_zoom) * 2;
-            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            ImGui::SetTooltip("%s Move Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
+        // DrawRect(positionDragBounds, ImVec4(1, 0, 0, 1));
 
+        if ((MouseHoveringBounds(positionDragBounds) || overlayState->positionDrag.isActive) && !overlayState->AnyOtherDragActive(overlayState->positionDrag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+            transform.position.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+            transform.position.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
             transformChanged = true;
-            positionDragActive = true;
-            positionDragAlreadyActive = true;
-        } else {
-            positionDragActive = false;
-        }
+            overlayState->positionDrag.isActive = true;
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
+        } else overlayState->positionDrag.isActive = false;
 
-        static std::optional<float> startAngle;
-        if (ImGui::IsKeyDown(ImGuiKey_R) && ImGui::IsWindowFocused()) {
-            if (!startAngle.has_value()) startAngle = transform.angle;
-            if (ImGui::BeginTooltip()) {
-                ImGui::Text("%s Rotation", ICON_FA_ROTATE);
-                ImGui::Text("%s %0.1f -> %0.1f", ICON_FA_CIRCLE_INFO, startAngle.value(), transform.angle);
-                ImGui::EndTooltip();
-            }
-            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-            transform.angle += ImGui::GetIO().MouseDelta.x * 0.3f;
-            if (IsInBounds(transform.angle, -2.0f, 2.0f)) transform.angle = 0;
-            transformChanged = true;
-        } else startAngle = std::nullopt;
-
-        if (ImGui::IsKeyDown(ImGuiKey_P) && ImGui::IsWindowFocused()) {
-            if (!startPosition.has_value()) startPosition = transform.position;
-            if (ImGui::BeginTooltip()) {
-                auto& position = startPosition.value();
-                ImGui::Text("%s Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
-                ImGui::Text("%s (%0.1f; %0.1f) -> (%0.1f; %0.1f)", ICON_FA_CIRCLE_INFO, position.x, position.y, transform.position.x, transform.position.y);
-                ImGui::EndTooltip();
-            }
-            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            transform.position += glm::vec2(
-                ImGui::GetIO().MouseDelta.x / t_regionSize.x,
-                -ImGui::GetIO().MouseDelta.y / t_regionSize.y
+        for (auto& drag : overlayState->angleDrags) {
+            auto dragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(drag.position.x, drag.position.y, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
             );
-            transformChanged = true;
-        } else startPosition = std::nullopt;
+            ImVec2 mousePos = ImGui::GetMousePos();
+            glm::vec4 angleCenterPoint4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(0, 0, 0, 1);
+            glm::vec2 angleCenterPoint = glm::vec2(angleCenterPoint4.x, angleCenterPoint4.y);
+            angleCenterPoint = NDCToScreen(angleCenterPoint, t_regionSize);
+            angleCenterPoint.x += ImGui::GetCursorScreenPos().x;
+            angleCenterPoint.y += ImGui::GetCursorScreenPos().y;
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                auto angle = glm::degrees(std::atan2(angleCenterPoint.y - mousePos.y, angleCenterPoint.x - mousePos.x));
+                DUMP_VAR(angleCenterPoint.x);
+                DUMP_VAR(angle);
+                if (drag.angle == FLT_MIN) {
+                    drag.angle = angle;
+                }
+
+                transform.angle += angle - drag.angle;
+
+                drag.angle = angle;
+                transformChanged = true;
+                drag.isActive = true;
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+            } else {
+                drag.isActive = false;
+                drag.angle = FLT_MIN;
+            }
+        }
 
         if (transformChanged && attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
@@ -385,59 +292,6 @@ namespace Raster {
             }
         }
 
-        if (attributeCandidate.has_value()) {
-            auto& attribute = attributeCandidate.value();
-            ImVec2 reservedCursor = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({0, 30});
-            ImGui::SetWindowFontScale(0.8f);
-            ImGui::Text("%s %s | %s Transform2D", ICON_FA_LINK, attribute->name.c_str(), ICON_FA_UP_DOWN_LEFT_RIGHT);
-            if (linkedSize) ImGui::Text("%s Linked Size", ICON_FA_TRIANGLE_EXCLAMATION);
-            ImGui::Text("%s Position: %0.2f; %0.2f", ICON_FA_UP_DOWN_LEFT_RIGHT, transform.position.x, transform.position.y);
-            ImGui::Text("%s Size: %0.2f; %0.2f", ICON_FA_SCALE_BALANCED, transform.size.x, transform.size.y);
-            ImGui::Text("%s Anchor: %0.2f; %0.2f", ICON_FA_ANCHOR, transform.anchor.x, transform.anchor.y);
-            ImGui::Text("%s Angle: %0.2f", ICON_FA_ROTATE, transform.angle);
-            ImGui::SetWindowFontScale(1.0f);
-            ImGui::SetCursorPos(reservedCursor);
-        }
-
-        if (!project.selectedAttributes.empty() && t_attributeID == project.selectedAttributes.back()) {
-            for (int i = project.compositions.size(); i --> 0;) {
-                auto& composition = project.compositions[i];
-                bool exitLoop = false;
-                for (auto& attribute : composition.attributes) {
-                    if (attribute->packageName != RASTER_PACKAGED "transform2d_attribute") continue;
-                    auto value = attribute->Get(project.currentFrame - composition.beginFrame, &composition);
-                    auto hitTransform = std::any_cast<Transform2D>(value);
-                    glm::vec4 centerPointNDC4(0, 0, 0, 1);
-                    centerPointNDC4 = project.GetProjectionMatrix(true) * hitTransform.GetTransformationMatrix() * centerPointNDC4;
-                    glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
-                    centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
-                    glm::vec2 transformScreenSize(hitTransform.size.x * t_regionSize.x, hitTransform.size.y * t_regionSize.y);
-
-                    RectBounds hitBounds(
-                        {centerPointScreen.x - transformScreenSize.x / 2.0f, centerPointScreen.y - transformScreenSize.y / 2.0f},
-                        {transformScreenSize.x, transformScreenSize.y}
-                    );
-                    if (MouseHoveringBounds(hitBounds) && ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left] && ImGui::IsWindowFocused() && !positionDragAlreadyActive && ImGui::GetIO().MouseDelta == ImVec2(0, 0)) {
-                        if (!ImGui::GetIO().KeyCtrl) {
-                            project.selectedAttributes = {attribute->id};
-                        } else {
-                            auto& selectedAttributes = project.selectedAttributes;
-                            auto attributeIterator = std::find(selectedAttributes.begin(), selectedAttributes.end(), attribute->id);
-                            if (attributeIterator == selectedAttributes.end()) {
-                                selectedAttributes.push_back(attribute->id);
-                            } else {
-                                selectedAttributes.erase(attributeIterator);
-                            }
-                        }
-                        exitLoop = true;
-                        break;
-                    }
-                }
-                if (exitLoop) break;
-            }
-            positionDragAlreadyActive = false;
-        }
 
         if (attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();

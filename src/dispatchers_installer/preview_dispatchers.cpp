@@ -224,7 +224,7 @@ namespace Raster {
 
             static float zoomPower;
 
-            if (imageDrag.GetDragDistance(imageDragDistance) && imageDragAllowed) {
+            if (imageDrag.GetDragDistance(imageDragDistance) && imageDragAllowed && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 imageOffset = imageOffset + ImGui::GetIO().MouseDelta;
             } else imageDrag.Deactivate();
             if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {

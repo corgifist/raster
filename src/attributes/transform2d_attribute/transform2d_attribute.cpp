@@ -30,6 +30,7 @@ namespace Raster {
         result.size = glm::mix(a.size, b.size, t);
         result.anchor = glm::mix(a.anchor, b.anchor, t);
         result.angle = glm::mix(a.angle, b.angle, t);
+        result.scale = glm::mix(a.scale, b.scale, t);
 
         auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
         if (parentAttributeCandidate.has_value()) {
