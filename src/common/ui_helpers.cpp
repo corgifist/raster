@@ -730,7 +730,8 @@ namespace Raster {
                     std::string resolutionName = FormatString("%s %s %ix%i", ICON_FA_EXPAND, preset.name.c_str(), (int) preset.size.x, (int) preset.size.y);
                     if (!s_resolutionFilter.empty() && LowerCase(resolutionName).find(LowerCase(s_resolutionFilter)) == std::string::npos) continue;
                     if (ImGui::MenuItem(resolutionName.c_str())) {
-                        t_project.preferredResolution = preset.size;
+                        signedPreferredResolution[0] = preset.size.x;
+                        signedPreferredResolution[1] = preset.size.y;
                         ImGui::CloseCurrentPopup();
                     }
                     if (ImGui::IsItemHovered() && ImGui::BeginTooltip()) {
