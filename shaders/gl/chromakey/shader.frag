@@ -98,21 +98,21 @@ void main() {
 
     mask = clamp(mask, 0.0, 1.0);
 
-    /* if (uGarbageAvailable) {
+     if (uGarbageAvailable) {
         // Force anything we want to remove to be 0.0
         vec4 garbage = texture(uGarbageTexture, uv);
         // Assumes garbage is achromatic
         mask -= garbage.r;
         mask = clamp(mask, 0.0, 1.0);
-    } */
+    } 
 
-    /* if (uCoreAvailable) {
+    if (uCoreAvailable) {
         // Force anything we want to keep to be 1.0
         vec3 core = texture(uCoreTexture, uv).rgb;
         // Assumes core is achromatic
         mask += core.r;
         mask = clamp(mask, 0.0, 1.0);
-    } */
+    } 
 
     // Crush blacks and push whites
     mask = uShadows * (uHighlights * mask - 1.0) + 1.0;

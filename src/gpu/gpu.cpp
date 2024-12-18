@@ -1,4 +1,5 @@
 #include "gpu/gpu.h"
+#include <mutex>
 
 #define GLAD_GLES2_IMPLEMENTATION
 #include "gles2.h"
@@ -19,6 +20,7 @@
 #define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
 
 namespace Raster {
+
 
     GPUInfo GPU::info{};
     Shader GPU::s_basicShader;
