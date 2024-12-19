@@ -116,6 +116,8 @@ namespace Raster {
             glm::vec2(1, 1)
         };
 
+        auto originalTransformationMatrix = transform.GetTransformationMatrix();
+
         std::vector<glm::vec2> transformedPoints;
         for (auto& point : rectPoints) {
             glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(point, 0, 1);
@@ -168,7 +170,7 @@ namespace Raster {
         bool linkedSize = customData[stringID];
 
         for (auto& drag : overlayState->drags) {
-            auto dragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(drag.position.x, drag.position.y, 0, 1);
+            auto dragNDC4 = project.GetProjectionMatrix(true) * originalTransformationMatrix * glm::vec4(drag.position.x, drag.position.y, 0, 1);
             auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
             auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
             RectBounds dragBounds(
@@ -226,7 +228,7 @@ namespace Raster {
 
         float aspectRatio = t_regionSize.x / t_regionSize.y;
         glm::vec4 centerPointNDC4(0, 0, 0, 1);
-        centerPointNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * centerPointNDC4;
+        centerPointNDC4 = project.GetProjectionMatrix(true) * originalTransformationMatrix * centerPointNDC4;
         glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
         centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
         glm::vec2 transformScreenSize(transform.size.x / aspectRatio * t_regionSize.x, transform.size.y * t_regionSize.y);
@@ -246,7 +248,7 @@ namespace Raster {
         } else overlayState->positionDrag.isActive = false;
 
         for (auto& drag : overlayState->angleDrags) {
-            auto dragNDC4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(drag.position.x, drag.position.y, 0, 1);
+            auto dragNDC4 = project.GetProjectionMatrix(true) * originalTransformationMatrix * glm::vec4(drag.position.x, drag.position.y, 0, 1);
             auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
             auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
             RectBounds dragBounds(
@@ -254,15 +256,13 @@ namespace Raster {
                 ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
             );
             ImVec2 mousePos = ImGui::GetMousePos();
-            glm::vec4 angleCenterPoint4 = project.GetProjectionMatrix(true) * transform.GetTransformationMatrix() * glm::vec4(0, 0, 0, 1);
+            glm::vec4 angleCenterPoint4 = project.GetProjectionMatrix(true) * originalTransformationMatrix * glm::vec4(0, 0, 0, 1);
             glm::vec2 angleCenterPoint = glm::vec2(angleCenterPoint4.x, angleCenterPoint4.y);
             angleCenterPoint = NDCToScreen(angleCenterPoint, t_regionSize);
             angleCenterPoint.x += ImGui::GetCursorScreenPos().x;
             angleCenterPoint.y += ImGui::GetCursorScreenPos().y;
             if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
                 auto angle = glm::degrees(std::atan2(angleCenterPoint.y - mousePos.y, angleCenterPoint.x - mousePos.x));
-                DUMP_VAR(angleCenterPoint.x);
-                DUMP_VAR(angle);
                 if (drag.angle == FLT_MIN) {
                     drag.angle = angle;
                 }
