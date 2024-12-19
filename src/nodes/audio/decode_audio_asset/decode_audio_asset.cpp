@@ -112,7 +112,7 @@ extern "C" {
 
     RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
-            .prettyName = "Decode Audio Asset",
+            .prettyName = "Read Audio",
             .packageName = RASTER_PACKAGED "decode_audio_asset",
             .category = Raster::DefaultNodeCategories::s_audio
         };

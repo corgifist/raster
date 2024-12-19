@@ -118,7 +118,7 @@ extern "C" {
 
     RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
-            .prettyName = "Decode Video Asset",
+            .prettyName = "Read Video",
             .packageName = RASTER_PACKAGED "decode_video_asset",
             .category = Raster::DefaultNodeCategories::s_rendering
         };

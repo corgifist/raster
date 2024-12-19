@@ -17,6 +17,7 @@
 #include "compositor/async_rendering.h"
 #include "common/audio_info.h"
 #include "common/ui_helpers.h"
+#include "common/plugins.h"
 
 using namespace av;
 
@@ -46,17 +47,13 @@ namespace Raster {
         AsyncRendering::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
 
-        Workspace::s_configuration = Configuration(ReadJson("misc/config.json"));
-
-        try {
-            Localization::Load(ReadJson(FormatString("misc/localizations/%s.json", Workspace::s_configuration.localizationCode.c_str())));
-        } catch (std::exception ex) {
-            Localization::Load(ReadJson("misc/localizations/en.json"));
-        }
+        Plugins::Initialize();
+        Plugins::EarlyInitialize();
 
         DefaultNodeCategories::Initialize();
         DispatchersInstaller::Initialize();
         Workspace::Initialize();
+        Plugins::WorkspaceInitialize();
 
         ImGuiIO& io = ImGui::GetIO();
 

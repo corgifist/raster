@@ -12,11 +12,12 @@
 #include "easings.h"
 #include "assets.h"
 #include "double_buffered_value.h"
+#include "plugin_base.h"
 
 namespace Raster {
     struct Workspace {
         static std::optional<Project> s_project;
-        static std::mutex s_projectMutex, s_nodesMutex;;
+        static std::mutex s_projectMutex, s_nodesMutex;
         static std::vector<NodeImplementation> s_nodeImplementations;
         static Configuration s_configuration;
 

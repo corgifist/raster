@@ -255,6 +255,19 @@ namespace Raster {
         info.version = std::string((const char*) glGetString(GL_VERSION));
         info.renderer = std::string((const char*) glGetString(GL_RENDERER)) + std::string(" / GLFW ") + glfwGetVersionString();
 
+        GLint maxTextureSize;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+        info.maxTextureSize = maxTextureSize;
+
+        GLint maxViewportDims[2];
+        glGetIntegerv(GL_MAX_VIEWPORT_DIMS, maxViewportDims);
+        info.maxViewportX = maxViewportDims[0];
+        info.maxViewportY = maxViewportDims[1];
+
+        DUMP_VAR(info.maxTextureSize);
+        DUMP_VAR(info.maxViewportX);
+        DUMP_VAR(info.maxViewportY);
+
         std::cout << info.version << std::endl;
         std::cout << info.renderer << std::endl;
 

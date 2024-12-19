@@ -4,11 +4,14 @@
 
 namespace Raster {
     struct Configuration {
-        std::string localizationCode;
-
-        Configuration(Json data);
+    public:
+        Configuration(Json t_data);
         Configuration();
 
+        Json& GetPluginData(std::string t_packageName);
+
         Json Serialize();
+    private:
+        Json m_pluginData;
     };
 };

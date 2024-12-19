@@ -75,6 +75,7 @@ easing = 2
 asset = 3
 attribute = 4
 node = 5
+plugin = 6
 
 ui_deps = [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_font, nfd]
 
@@ -108,6 +109,9 @@ build_modules = [
     ["vec3_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec2_attribute", attribute, [raster_common, raster_ImGui]],
     ["gradient1d_attribute", attribute, [raster_common, raster_ImGui]],
+
+    ["preferences", plugin, [raster_common]],
+    ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
 
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
     ["audio/export_to_audio_bus", node, [raster_common, raster_audio]],
@@ -182,7 +186,7 @@ build_modules = [
 ]
 
 required_folders = [
-    "nodes", "easings", "assets", "attributes"
+    "nodes", "easings", "assets", "attributes", "plugins"
 ]
 
 @entry_point(default=True)
@@ -239,6 +243,8 @@ def get_folder_name_by_module_type(module_type):
         return "assets"
     elif module_type == attribute:
         return "attributes"
+    elif module_type == plugin:
+        return "plugins"
     return None
 
 def check_required_folders():

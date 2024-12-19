@@ -101,6 +101,9 @@
 #define RASTER_GET_CONTEXT_VALUE(t_data, t_key, t_type) \
     ((t_data.find(t_key) != t_data.end()) ? std::any_cast<t_type>(t_data[t_key]) : t_type())
 
+#define RASTER_SPAWN_ABSTRACT(ABSTRACT, T) \
+    ((ABSTRACT) std::make_shared<T>())
+
 namespace Raster {
 
     using Json = nlohmann::json;
@@ -221,6 +224,16 @@ namespace Raster {
     template< typename T >
     std::string NumberToHexadecimal( T i ) {
         return FormatString("%X", i);
+    }
+
+    static std::string GetHomePath() {
+        #if defined(UNIX) || defined(__linux__)
+            return getenv("HOME");
+        #elif #defined(_WIN32)
+            return std::string(getenv("HOMEDRIVE")) + std::string(getenv("HOMEPATH"));
+        #else
+            return "~";
+        #endif
     }
 
 }

@@ -7,6 +7,8 @@ namespace Raster {
     struct GPUInfo {
         std::string renderer;
         std::string version;
+        int maxTextureSize;
+        int maxViewportX, maxViewportY;
 
         void* display;
     };

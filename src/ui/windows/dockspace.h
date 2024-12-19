@@ -16,6 +16,8 @@ namespace Raster {
         void RenderAboutWindow();
         void RenderNewProjectPopup();
 
+        void RenderPreferencesModal();
+
         void Render();
     };
 };

@@ -1,7 +1,9 @@
 #include "dockspace.h"
 #include "build_number.h"
 #include "common/localization.h"
+#include "common/plugins.h"
 #include "font/IconsFontAwesome5.h"
+#include "font/font.h"
 #include "gpu/gpu.h"
 #include "common/ui_helpers.h"
 #include "raster.h"
@@ -35,6 +37,7 @@ namespace Raster {
 
     static Project s_project;
     static std::string s_projectPath;
+    static bool s_preferencesPopupOpened = true;
 
     void DockspaceUI::Render() {
         auto viewport = ImGui::GetMainViewport();
@@ -62,6 +65,7 @@ namespace Raster {
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), 0, nullptr);
 
         bool openProjectInfoEditor = false;
+        bool openPreferencesModal = false;
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER, Localization::GetString("PROJECT").c_str()).c_str())) {
@@ -94,6 +98,10 @@ namespace Raster {
                     auto& project = Workspace::GetProject();
                     WriteFile(project.path + "/project.json", project.Serialize().dump());
                 }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str())) {
+                    openPreferencesModal = true;
+                    s_preferencesPopupOpened = true;
+                }
                 ImGui::Separator();
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("EXIT_RASTER").c_str()).c_str())) {
                     std::exit(0);
@@ -118,7 +126,12 @@ namespace Raster {
             s_project = Project();
         }
 
+        if (openPreferencesModal) {
+            ImGui::OpenPopup(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str());
+        }
+
         RenderNewProjectPopup();
+        RenderPreferencesModal();
 
         ImGui::End();
     }
@@ -142,5 +155,57 @@ namespace Raster {
             s_windowSize = ImGui::GetWindowSize();
             ImGui::EndPopup();
         }
+    }
+
+    static std::vector<std::string> s_pinnedPlugins = {
+        RASTER_PACKAGED "preferences"  
+    };
+
+    void DockspaceUI::RenderPreferencesModal() {
+        static std::string s_selectedPluginPacakge = RASTER_PACKAGED "preferences";
+        static ImVec2 s_pluginButtonSize(150, 0);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
+        if (ImGui::BeginPopupModal(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str(), &s_preferencesPopupOpened)) {
+                ImGui::BeginGroup();
+                    for (auto& pinnedPlugin : s_pinnedPlugins) {
+                        auto pluginCandidate = Plugins::GetPluginByPackageName(pinnedPlugin);
+                        if (pluginCandidate) {
+                            auto& plugin = *pluginCandidate;
+                            if (ImGui::Button(FormatString("%s %s", plugin->Icon().c_str(), plugin->Name().c_str()).c_str(), s_pluginButtonSize)) {
+                                s_selectedPluginPacakge = plugin->PackageName();
+                            }
+                        }
+                    }
+                    for (auto& plugin : Plugins::s_plugins) {
+                        if (std::find(s_pinnedPlugins.begin(), s_pinnedPlugins.end(), plugin->PackageName()) != s_pinnedPlugins.end()) continue;
+                        if (ImGui::Button(FormatString("%s %s", plugin->Icon().c_str(), plugin->Name().c_str()).c_str(), s_pluginButtonSize)) {
+                            s_selectedPluginPacakge = plugin->PackageName();
+                        }
+                    }
+                ImGui::EndGroup();
+                ImGui::SameLine(0, 20);
+                if (ImGui::BeginChild("##pluginProperties", ImGui::GetContentRegionAvail())) {
+                    auto selectedPluginCandidate = Plugins::GetPluginByPackageName(s_selectedPluginPacakge);
+                    if (selectedPluginCandidate) {
+                        auto& plugin = *selectedPluginCandidate;
+                        ImGui::PushFont(Font::s_denseFont);
+                        ImGui::SetWindowFontScale(1.7f);
+                            ImGui::Text("%s %s", plugin->Icon().c_str(), plugin->Name().c_str());
+                        ImGui::SetWindowFontScale(1.0f);
+                        ImGui::PopFont();
+                        ImGui::Text("%s %s", ICON_FA_MESSAGE, plugin->Description().c_str());
+                        ImGui::Separator();
+                        plugin->RenderProperties();
+
+                        std::string footerText = FormatString("%s %s: %s", ICON_FA_BOX_OPEN, Localization::GetString("PACKAGE_NAME").c_str(), plugin->PackageName().c_str());
+                        ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
+                        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - footerSize.x / 2.0f);
+                        ImGui::Text("%s", footerText.c_str());
+                    }
+                }
+                ImGui::EndChild();
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleColor();
     }
 };
