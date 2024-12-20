@@ -11,6 +11,7 @@ namespace Raster {
         static std::vector<AbstractUI> s_windows;
 
         static void Start();
+        static void WriterThread();
         static void InitializeInternals();
         static void RenderLoop();
         static void Terminate();

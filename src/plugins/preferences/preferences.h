@@ -14,6 +14,10 @@ namespace Raster {
 
         void AbstractOnEarlyInitialization();
 
+        void AbstractRenderProperties();
+
+        void AbstractWriteConfigs();
+
         static Json GetDefaultConfiguration();
     };
 };

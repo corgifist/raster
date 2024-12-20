@@ -29,6 +29,10 @@ namespace Raster {
         // should render ui in `Preferences` window
         void RenderProperties();
 
+        // called every second from the writer thread
+        // should be used for saving some information to ~/.raster
+        void WriteConfigs();
+
     private:    
         virtual std::string AbstractName() { return "Empty Plugin"; };
         virtual std::string AbstractDescription() { return "Description of Empty Plugin"; };
@@ -37,6 +41,7 @@ namespace Raster {
         virtual void AbstractRenderProperties() {};
         virtual void AbstractOnEarlyInitialization() {};
         virtual void AbstractOnWorkspaceInitialization() {};
+        virtual void AbstractWriteConfigs() {};
     };
 
     using AbstractPlugin = std::shared_ptr<PluginBase>;

@@ -31,5 +31,7 @@ namespace Raster {
 
         static bool CenteredButton(const char* string, float alignment = 0.5f);
         static bool AnyItemFocused();
+
+        static void RenderJsonEditor(Json& t_object);
     };
 };

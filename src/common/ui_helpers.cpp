@@ -771,4 +771,159 @@ namespace Raster {
     bool UIHelpers::AnyItemFocused() {
         return ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused();
     }
+
+    void UIHelpers::RenderJsonEditor(Json &t_object) {
+
+        static std::vector<std::pair<std::string, Json>> s_defaultValues;
+        if (s_defaultValues.empty()) {
+#define TYPE_PAIR(ICON, NAME) FormatString("%s %s", (ICON), Localization::GetString(NAME).c_str())
+            s_defaultValues = {
+                {TYPE_PAIR(ICON_FA_DIVIDE, "INTEGER"), (int) 0},
+                {TYPE_PAIR(ICON_FA_DIVIDE, "FLOAT"), (float) 0},
+                {TYPE_PAIR(ICON_FA_QUESTION, "BOOLEAN"), false},
+                {TYPE_PAIR(ICON_FA_LIST, "ARRAY"), Json::array()},
+                {TYPE_PAIR(ICON_FA_LIST, "DICTIONARY"), Json::object()}
+            };
+        }
+
+        ImGui::PushItemWidth(300);
+        if (t_object.is_string()) {
+            std::string str = t_object;
+            ImGui::InputText("##inputText", &str);
+            t_object = str;
+        } else if (t_object.is_number_float()) {
+            float f = t_object;
+            ImGui::DragFloat("##dragFloat", &f);
+            t_object = f;
+        } else if (t_object.is_number_integer()) {
+            int i = t_object;
+            ImGui::DragInt("##dragInt", &i);
+            t_object = i;
+        } else if (t_object.is_boolean()) {
+            bool b = t_object;
+            ImGui::Checkbox("##checkbox", &b);
+            t_object = b;
+        } else if (t_object.is_array()) {
+            int index = 0;
+            int targetRemoveElement = -1;
+            std::optional<Json> targetPushElement = std::nullopt;
+            ImGui::BeginGroup();
+            for (auto& element : t_object) {
+                ImGui::PushID(index);
+                    if (ImGui::Button(ICON_FA_TRASH_CAN)) {
+                        targetRemoveElement = index;
+                    }
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("REMOVE_ELEMENT").c_str());
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_PENCIL)) {
+                        ImGui::OpenPopup("##changeValueType");
+                    }
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("CHANGE_VALUE_TYPE").c_str());
+                    ImGui::SameLine();
+                    if (ImGui::BeginPopup("##changeValueType")) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("CHANGE_VALUE_TYPE").c_str()).c_str());
+                        for (auto& pair : s_defaultValues) {
+                            if (ImGui::MenuItem(pair.first.c_str())) {
+                                targetPushElement = pair.second;
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }
+                        ImGui::EndPopup();
+                    }
+                    RenderJsonEditor(element);
+                ImGui::PopID();
+                ImGui::Separator();
+                index++;
+            }
+
+            if (targetRemoveElement > 0) {
+                t_object.erase(targetRemoveElement);
+            }
+
+            if (targetPushElement) {
+                t_object.push_back(*targetPushElement);
+            }
+
+            if (CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_NEW_ELEMENT").c_str()).c_str())) {
+                ImGui::OpenPopup("##newElement");
+            }
+            if (ImGui::BeginPopup("##newElement")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_NEW_ELEMENT").c_str()).c_str());
+                for (auto& pair : s_defaultValues) {
+                    if (ImGui::MenuItem(pair.first.c_str())) {
+                        t_object.push_back(pair.second);
+                    }
+                }
+                ImGui::EndPopup();
+            }
+
+            ImGui::EndGroup();
+        } else if (t_object.is_object()) {
+            Json resultObject = Json::object();
+            int index = 0;
+            for (auto& element : t_object.items()) {
+                std::string keyName = element.key();
+                Json value = element.value();
+                bool mustAddValue = true;
+                ImGui::PushID(index++);
+                    if (ImGui::Button(ICON_FA_TRASH_CAN)) {
+                        mustAddValue = false;
+                    }
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("REMOVE_ELEMENT").c_str());
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FA_PENCIL)) {
+                        ImGui::OpenPopup("##changeValueType");
+                    }
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("CHANGE_VALUE_TYPE").c_str());
+                    ImGui::SameLine();
+                    if (ImGui::BeginPopup("##changeValueType")) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("CHANGE_VALUE_TYPE").c_str()).c_str());
+                        for (auto& pair : s_defaultValues) {
+                            if (ImGui::MenuItem(pair.first.c_str())) {
+                                value = pair.second;
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }
+                        ImGui::EndPopup();
+                    }
+                    if (ImGui::Button(ICON_FA_FONT)) {
+                        ImGui::OpenPopup("##elementRename");
+                    }
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_FONT, Localization::GetString("RENAME_ELEMENT").c_str());
+                    if (ImGui::BeginPopup("##elementRename")) {
+                        ImGui::InputText("##keyName", &keyName);
+                        ImGui::EndPopup();
+                    }
+                    ImGui::SameLine();
+                    ImGui::AlignTextToFramePadding();
+                    bool treeNodeExpanded = ImGui::TreeNodeEx(keyName.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+                    if (treeNodeExpanded) RenderJsonEditor(value);
+                    if (treeNodeExpanded) ImGui::TreePop();
+                    if (mustAddValue) {
+                        resultObject[keyName] = value;
+                    }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+
+            if (CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_NEW_ELEMENT").c_str()).c_str())) {
+                ImGui::OpenPopup("##newElement");
+            }
+            if (ImGui::BeginPopup("##newElement")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_NEW_ELEMENT").c_str()).c_str());
+                static std::string s_newElementName = "New Element";
+                ImGui::InputTextWithHint("##newElementName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("KEY").c_str()).c_str(), &s_newElementName);
+                for (auto& pair : s_defaultValues) {
+                    if (ImGui::MenuItem(pair.first.c_str())) {
+                        t_object[s_newElementName] = pair.second;
+                    }
+                }
+                ImGui::EndPopup();
+            }
+            t_object = resultObject;
+        } else {
+            ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("JSON_PREVIEW_IS_NOT_AVAILABLE").c_str());
+        }
+        ImGui::PopItemWidth();
+    }
 };

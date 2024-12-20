@@ -25,6 +25,9 @@ namespace Raster {
 
     std::vector<AbstractUI> App::s_windows{};
 
+    static std::thread s_writerThread;
+    static bool s_writerThreadRunning = true;
+
     void App::Start() {
         print(RASTER_COMPILER_VERSION_STRING);
         static NFD::Guard s_guard;
@@ -32,14 +35,22 @@ namespace Raster {
         av::set_logging_level(AV_LOG_ERROR);
         RASTER_LOG("ffmpeg version: " << av::getversion());
 
+        s_writerThread = std::thread(App::WriterThread);
+
         DUMP_VAR(Audio::s_backendInfo.name);
         DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
         GPU::SetRenderingFunction(App::RenderLoop);
         
-
         GPU::StartRenderingThread();
         Terminate();
+    }
+
+    void App::WriterThread() {
+        while (s_writerThreadRunning) {
+            Plugins::WriteConfigs();
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
     }
 
     void App::InitializeInternals() {
@@ -266,5 +277,7 @@ namespace Raster {
             Workspace::GetProject().compositions.clear();
         }
         GPU::Terminate();
+        s_writerThreadRunning = false;
+        s_writerThread.join();
     }
 }

@@ -38,4 +38,8 @@ namespace Raster {
     void PluginBase::RenderProperties() {
         AbstractRenderProperties();
     }
+
+    void PluginBase::WriteConfigs() {
+        AbstractWriteConfigs();
+    }
 }

@@ -112,6 +112,7 @@ build_modules = [
 
     ["preferences", plugin, [raster_common]],
     ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
+    ["rendering", plugin, [raster_common, raster_gpu, raster_ImGui, raster_font]],
 
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
     ["audio/export_to_audio_bus", node, [raster_common, raster_audio]],

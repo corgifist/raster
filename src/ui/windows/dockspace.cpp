@@ -158,12 +158,13 @@ namespace Raster {
     }
 
     static std::vector<std::string> s_pinnedPlugins = {
-        RASTER_PACKAGED "preferences"  
+        RASTER_PACKAGED "preferences",
+        RASTER_PACKAGED "rendering"
     };
 
     void DockspaceUI::RenderPreferencesModal() {
         static std::string s_selectedPluginPacakge = RASTER_PACKAGED "preferences";
-        static ImVec2 s_pluginButtonSize(150, 0);
+        static ImVec2 s_pluginButtonSize(200, 0);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
         if (ImGui::BeginPopupModal(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str(), &s_preferencesPopupOpened)) {
                 ImGui::BeginGroup();

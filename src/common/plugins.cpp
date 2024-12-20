@@ -55,4 +55,11 @@ namespace Raster {
         }
         return std::nullopt;
     }
+
+    void Plugins::WriteConfigs() {
+        for (auto& plugin : s_plugins) {
+            plugin->WriteConfigs();
+        }
+    }
+
 };

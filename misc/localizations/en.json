@@ -268,5 +268,22 @@
     "USING_LOW_LATENCY_PERFORMANCE_PROFILE": "Using Low Latency Performance Profile",
     "USING_CONSERVATIVE_PERFORMANCE_PROFILE": "Using Conservative Performance Profile",
     "DECODING_IN_PROGRESS": "Decoding in Progress",
-    "PREFERENCES": "Preferences"
+    "PREFERENCES": "Preferences",
+    "INTEGER": "Integer",
+    "FLOAT": "Float",
+    "BOOLEAN": "Boolean",
+    "ARRAY": "Array",
+    "OBJECT": "Object",
+    "ADD_NEW_ELEMENT": "Add New Element",
+    "CHANGE_VALUE_TYPE": "Change Value Type",
+    "RESET_TO_DEFAULTS": "Reset to Defaults",
+    "JSON_PREVIEW_IS_NOT_AVAILABLE": "JSON Preview is not Available",
+    "KEY": "Key",
+    "REMOVE_ELEMENT": "Remove Element",
+    "RENAME_ELEMENT": "Rename Element",
+    "RENDERER_INFO": "Renderer Info",
+    "RENDERER_NAME": "Renderer Name",
+    "RENDERER_VERSION": "Renderer Version",
+    "MAX_TEXTURE_SIZE": "Max Supported Texture Size",
+    "MAX_VIEWPORT_SIZE": "Max Supported Viewport Size"
 }
