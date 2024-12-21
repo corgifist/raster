@@ -573,22 +573,24 @@ namespace Raster {
             }
         }
 
+        static std::string shaderCachePath = GetHomePath() + "/.raster/shader_cache/";
+
         std::string vendorCache = std::to_string(RSHash(info.renderer));
-        if (!std::filesystem::exists("shader_cache")) {
-            std::filesystem::create_directory("shader_cache");
+        if (!std::filesystem::exists(shaderCachePath)) {
+            std::filesystem::create_directory(shaderCachePath);
         } 
-        if (!std::filesystem::exists("shader_cache/gl/")) {
-            std::filesystem::create_directory("shader_cache/gl/");
+        if (!std::filesystem::exists(shaderCachePath + "gl/")) {
+            std::filesystem::create_directory(shaderCachePath + "gl/");
         }
-        if (!std::filesystem::exists("shader_cache/gl/" + vendorCache + "/")) {
-            std::filesystem::create_directory("shader_cache/gl/" + vendorCache + "/");
+        if (!std::filesystem::exists(shaderCachePath + "gl/" + vendorCache + "/")) {
+            std::filesystem::create_directory(shaderCachePath + "gl/" + vendorCache + "/");
         }
 
         std::string code = ReadFile("shaders/gl/" + name + extension);
         std::string codeHash = std::to_string(RSHash(code));
 
         std::string shaderNameHash = std::to_string(RSHash(name + extension));
-        std::string nameHashPath = "shader_cache/gl/" + vendorCache + "/" + shaderNameHash + ".hash";
+        std::string nameHashPath = shaderCachePath + "gl/" + vendorCache + "/" + shaderNameHash + ".hash";
         
         bool mustReplaceBlob = false;
 
@@ -596,7 +598,7 @@ namespace Raster {
             std::string savedCodeHash = ReadFile(nameHashPath);
             if (savedCodeHash == codeHash) {
                 std::cout << "found cached version of " << name << std::endl;
-                std::string programBinaryString = ReadFile("shader_cache/gl/" + vendorCache + "/" + shaderNameHash + ".bin");
+                std::string programBinaryString = ReadFile(shaderCachePath + "gl/" + vendorCache + "/" + shaderNameHash + ".bin");
                 std::vector<GLbyte> programBinary(programBinaryString.begin(), programBinaryString.end());
 
                 GLint formats;
@@ -654,7 +656,7 @@ namespace Raster {
             glGetProgramBinary(program, length, nullptr, &binaryFormats, programBinary.data());
 
             WriteFile(nameHashPath, codeHash);
-            WriteFile("shader_cache/gl/" + vendorCache + "/" + shaderNameHash + ".bin", std::string(programBinary.begin(), programBinary.end()));
+            WriteFile(shaderCachePath + "gl/" + vendorCache + "/" + shaderNameHash + ".bin", std::string(programBinary.begin(), programBinary.end()));
             std::cout << "saving cached program binary of " << name << std::endl;
         }
 

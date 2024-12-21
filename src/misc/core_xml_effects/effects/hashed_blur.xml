@@ -1,0 +1,69 @@
+<effect>
+    <description name="Hashed Blur" packageName="hashed_blur" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Radius" type="float" value="0.0"/>
+        <attribute name="HashOffset" type="glm::vec2" value="0.0;0.0"/>
+        <attribute name="Opacity" type="float" value="1.0"/>
+        <attribute name="Samples" type="int" value="30"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="hashed_blur/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0.0;0.0;0.0;0.0">
+            <uniform name="uRadius" stage="fragment">
+                <value attribute="Radius" type="float"/>
+            </uniform>
+            <uniform name="uHashOffset" stage="fragment">
+                <value attribute="HashOffset" type="glm::vec2"/>
+            </uniform>
+            <uniform name="uIterations" stage="fragment">
+                <value attribute="Samples" type="int"/>
+            </uniform>
+            <uniform name="uOpacity" stage="fragment">
+                <value attribute="Opacity" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Radius">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_PERCENTAGE"/>
+        </property>
+
+        <property name="HashOffset">
+            <icon icon="ICON_FA_UP_DOWN_LEFT_RIGHT"/>
+        </property>
+
+        <property name="Opacity">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+
+        <property name="Samples">
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_DROPLET" />
+</effect>

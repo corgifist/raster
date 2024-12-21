@@ -1,0 +1,67 @@
+<effect>
+    <description name="Linear Gradient" packageName="linear_gradient" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Gradient" type="Gradient1D"/>
+        <attribute name="UseYPlane" type="bool" value="false"/>
+        <attribute name="Opacity" type="float" value="1.0"/>
+        <attribute name="OnlyScreenSpaceRendering" type="bool" value="false"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1"/>
+    <gradients1d count="1"/>
+    <shaders>
+        <shader vertex="basic" fragment="linear_gradient/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0">
+            <uniform name="uUseYPlane" stage="fragment">
+                <value attribute="UseYPlane" type="bool"/>
+            </uniform>
+            <uniform name="uScreenSpaceRendering" stage="fragment">
+                <screenSpaceRendering attribute="Base" override="OnlyScreenSpaceRendering"/>
+            </uniform>
+            <uniform name="uOpacity" stage="fragment">
+                <value attribute="Opacity" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColorTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uUVTexture" stage="fragment">
+                <attachment attribute="Base" index="1" unit="1"/>
+            </uniform>
+            <gradient1d attribute="Gradient" slot="0" unit="0"/>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="UseYPlane">
+            <icon icon="ICON_FA_UP_DOWN"/>
+        </property>
+        <property name="Gradient">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="Opacity">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="OnlyScreenSpaceRendering">
+            <icon icon="ICON_FA_IMAGE"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_LEFT_RIGHT" />
+</effect>

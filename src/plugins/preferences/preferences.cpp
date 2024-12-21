@@ -56,7 +56,7 @@ namespace Raster {
         std::string localizationCode = pluginData["LocalizationCode"];
         try {
             DUMP_VAR(localizationCode);
-            Localization::Load(ReadJson(FormatString("misc/localizations/%s.json", localizationCode.c_str())));
+            Localization::Load(ReadJson(FormatString("localizations/%s.json", localizationCode.c_str())));
         } catch (...) {
             RASTER_LOG("failed to load localization '" << localizationCode << "'");
         }

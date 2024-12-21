@@ -15,8 +15,13 @@ namespace Raster {
             GPU::GenerateShader(ShaderType::Fragment, "compositor/shader")
         );
 
-        s_blending = Blending(ReadJson("misc/blending.json"));
-        s_blending.GenerateBlendingPipeline();
+        try {
+            s_blending = Blending(ReadJson("blending.json"));
+            s_blending.GenerateBlendingPipeline();
+        } catch (std::exception& e) {
+            print("failed to initialize blending pipeline!");
+            print("\t" << e.what());
+        }
     }
 
     void Compositor::PerformComposition(std::vector<int> t_allowedCompositions) {

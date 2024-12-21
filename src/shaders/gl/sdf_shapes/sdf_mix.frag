@@ -1,0 +1,3 @@
+float fSDFMix(vec2 uv) {
+    return mix(SDF_MIX_FIRST_FUNCTION_PLACEHOLDER(uv), SDF_MIX_SECOND_FUNCTION_PLACEHOLDER(uv), uSDFMixPhase);
+}

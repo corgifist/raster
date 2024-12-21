@@ -1,6 +1,7 @@
 from hash_build import *
-set_std_cxx("20")
-info(f"current platform: {get_platform()}")
+set_std_cxx("17")
+current_platform = get_platform()
+info(f"current platform: {current_platform}")
 
 ffmpeg_libraries_list = "libavcodec libavformat libavutil libavdevice libavfilter libswscale libswresample"
 global_include_paths.append("include/")
@@ -78,6 +79,8 @@ node = 5
 plugin = 6
 
 ui_deps = [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_font, nfd]
+
+build_environment = "dist/.build/"
 
 build_modules = [
     ["ImGui", shared, [freetype2]],
@@ -186,19 +189,67 @@ build_modules = [
     ["other/dummy_audio_mixer", node, [raster_common]]
 ]
 
+pak_targets = [
+    ["core", build_environment, "dist/paks/"],
+    ["core_localization", "src/misc/core_localizations", "dist/paks/"],
+    ["core_xml_effects", "src/misc/core_xml_effects", "dist/paks/"],
+    ["core_blending", "src/misc/core_blending", "dist/paks/"]
+]
+
 required_folders = [
     "nodes", "easings", "assets", "attributes", "plugins"
 ]
 
+def ensure_folder_exists(path):
+    if path_exists(path):
+        rmdir(path)
+    if not path_exists(path):
+        mkdir(path)
+
+def clean_folder(path):
+    if path_exists(path):
+        rmdir(path)
+    ensure_folder_exists(path)
+
 @entry_point(default=True)
 def build():
     info("building raster")
+
+    ensure_folder_exists("dist/")
+    ensure_folder_exists("dist/paks/")
+    ensure_folder_exists(build_environment)
 
     write_build_number()
     check_required_folders()
     build_nfd()
     for module in build_modules:
         build_module(module)
+
+    move_core_libraries()
+    copy_shaders_to_core_pack()
+    build_starter()
+    create_paks()
+
+    rmdir(build_environment)
+
+def create_paks():
+    for pak in pak_targets:
+        build_pak(pak)
+
+def build_pak(pak):
+    name = pak[0]
+    input = pak[1]
+    output = pak[2]
+    create_pak_from_directory(name, input, output)
+
+def build_starter():
+    info("building starter")
+    starter_files = glob_files("src/starter/", "cpp") + glob_files("src/starter/", "c")
+    starter_deps = [
+
+    ]
+    starter_objects = compile_files(starter_files)
+    link_executable(starter_objects, executable_name="dist/starter", local_linker_flags=starter_deps, cxx=True)
 
 def build_nfd():
     info("building NFD")
@@ -209,6 +260,14 @@ def build_nfd():
 
     nfd_objects = compile_files(nfd_files)
     link_shared_library(nfd_objects, executable_name="raster_nfd", local_linker_flags=nfd_deps)
+
+def move_core_libraries():
+    core_files = glob_files(".", shared_library_extension, False)
+    for file in core_files:
+        mv(file, build_environment + os.path.basename(file))
+
+def copy_shaders_to_core_pack():
+    shutil.copytree("src/shaders", build_environment + "shaders/")
 
 def build_module(module):
     module_name = module[0]
@@ -221,19 +280,21 @@ def build_module(module):
     glob_path = f"src/{module_name}/"
     if folder_name is not None:
         glob_path = f"src/{folder_name}/{module_name}"
-    module_files = glob_files(glob_path, "cpp")
+    module_files = glob_files(glob_path, "cpp") + glob_files(glob_path, "c")
     
-    linker_flags = ["-lpthread"]
+    linker_flags = []
     if len(module) > 2:
         linker_flags += module[2]
     objects = compile_files(module_files)
     output_path = "raster_" + module_name
     if folder_name is not None:
-        output_path = f"{folder_name}/raster_{hash_string(module_name)}"
-    link_objects(objects, output_path, linker_flags, executable_type=executable_type, cxx=True, log_linker_commands=True)
+        output_path = f"raster_{hash_string(module_name)}"
+    link_objects(objects, output_path, linker_flags, executable_type=executable_type, cxx=True)
 
     if folder_name is not None:
-        mv(process_shared_library_name(output_path), f"{folder_name}/{path_basename(process_shared_library_name(output_path))}")
+        mv(process_shared_library_name(output_path), f"{build_environment}{folder_name}/{path_basename(process_shared_library_name(output_path))}")
+    if module_type == binary:
+        mv(output_path, f"{build_environment}/{output_path}{'' if len(executale_extension) == 0 else '.' + executale_extension}")
 
 def get_folder_name_by_module_type(module_type):
     if module_type == node:
@@ -250,14 +311,14 @@ def get_folder_name_by_module_type(module_type):
 
 def check_required_folders():
     for folder in required_folders:
-        if not path_exists(folder + "/"):
-            mkdir(folder + "/")
+        if not path_exists(build_environment + folder + "/"):
+            mkdir(build_environment + folder + "/")
             info(f"creating {folder}/ folder")
 
 def remove_required_folders():
     for folder in required_folders:
-        if path_exists(folder + "/"):
-            rmdir(folder + "/")
+        if path_exists(build_environment + folder + "/"):
+            rmdir(build_environment + folder + "/")
             info(f"removing {folder}/ folder")
 
 def write_build_number():
@@ -268,6 +329,13 @@ def write_build_number():
         incremented_number = int(bn_second_parts[2]) + 1
         bn_file.write("#pragma once\n#define BUILD_NUMBER " + str(incremented_number))
         info(f"current build number: {incremented_number}")
+
+def create_pak_from_directory(name, input, output):
+    info("creating pak from " + input)
+    shutil.make_archive(name, 'zip', input)
+    if not path_exists(output + "/" + name +  '.pak'):
+        create_file(output + "/" + name +  '.pak')
+    mv(name + '.zip', output + "/" + name +  '.pak')
 
 @entry_point
 def clean():

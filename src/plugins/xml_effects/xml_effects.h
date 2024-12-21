@@ -12,5 +12,6 @@ namespace Raster {
         std::string AbstractPackageName();
 
         void AbstractOnWorkspaceInitialization();
+        void LoadXMLEffects();
     };
 };

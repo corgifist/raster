@@ -20,15 +20,20 @@ def get_platform():
 shared_library_prefix = ""
 shared_library_extension = ""
 
+executale_extension = ""
+
 if get_platform() == "linux" or "bsd" in get_platform():
     shared_library_prefix = "lib"
     shared_library_extension = "so"
+    executale_extension = ""
 elif get_platform() == "darwin":
     shared_library_prefix = "lib"
     shared_library_extension = "dylib"
+    executale_extension = ""
 elif get_platform() == "windows":
     shared_library_prefix = ""
     shared_library_extension = "dll"
+    executale_extension = "exe"
 
 compilation_database = []
 
@@ -93,14 +98,14 @@ def register_entry_point(name: str, function: typing.Callable, warn_on_redefinit
 def get_scope_functions():
     return dict(globals(), **locals())
 
-def glob_files_gen(root: pathlib.Path, ext):
+def glob_files_gen(root: pathlib.Path, ext, recursive=True):
     for item in root.iterdir():
         yield item
-        if item.is_dir():
+        if item.is_dir() and recursive:
             yield from glob_files_gen(item, ext)
 
 # returns a list of all filed within some folder
-def glob_files(root: str, ext: str | typing.List[str]):
+def glob_files(root: str, ext: str | typing.List[str], recursive=True):
     if type(ext) is list:
         acc = []
         for extension in ext:
@@ -108,7 +113,7 @@ def glob_files(root: str, ext: str | typing.List[str]):
 
         return list(set(acc))
 
-    files = list(glob_files_gen(pathlib.Path(root), ext))
+    files = list(glob_files_gen(pathlib.Path(root), ext, recursive=recursive))
     files = list(map(lambda x: x.__str__(), files))
     files = list(filter(lambda x: x.endswith("." + ext), files))
     return files

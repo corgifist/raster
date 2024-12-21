@@ -3,6 +3,7 @@
 #include "common/plugin_base.h"
 #include "font/IconsFontAwesome5.h"
 #include "raster.h"
+#include <exception>
 
 namespace Raster {
 
@@ -24,8 +25,8 @@ namespace Raster {
         return RASTER_PACKAGED "xml_effects_plugin";
     }
 
-    void XMLEffectsPlugin::AbstractOnWorkspaceInitialization() {
-        auto xmlIterator = std::filesystem::directory_iterator("misc/xml/effects");
+    void XMLEffectsPlugin::LoadXMLEffects() {
+        auto xmlIterator = std::filesystem::directory_iterator("effects");
         for (auto& entry : xmlIterator) {
             std::function<AbstractNode()> spawnFunction = [entry]() {
                 return std::make_shared<XMLEffectProvider>(entry.path().string());
@@ -36,7 +37,7 @@ namespace Raster {
                 print("failed to load xml effect '" << entry << "'");
                 continue;
             }
-            print("loading xml effect '" << entry << "'");
+            print("loading xml effect '" << entry.path().string() << "'");
 
             auto description = doc.child("effect").child("description");
             auto packaged = description.attribute("packaged").as_bool();
@@ -51,6 +52,15 @@ namespace Raster {
             implementation.description.category = DefaultNodeCategories::s_rendering;
 
             Workspace::s_nodeImplementations.push_back(implementation);
+        }
+    }
+
+    void XMLEffectsPlugin::AbstractOnWorkspaceInitialization() {
+        try {
+            LoadXMLEffects();
+        } catch (std::exception& e) {
+            print("failed to load xml effects!");
+            print("\t" << e.what());
         }
     }
 };
