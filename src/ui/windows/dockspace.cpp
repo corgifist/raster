@@ -7,6 +7,10 @@
 #include "gpu/gpu.h"
 #include "common/ui_helpers.h"
 #include "raster.h"
+#include <filesystem>
+#include "../../ImGui/imgui_stdlib.h"
+
+#define LAYOUT_DRAG_DROP_PAYLOAD "LAYOUT_DRAG_DROP_PAYLOAD"
 
 namespace Raster {
 
@@ -28,6 +32,35 @@ namespace Raster {
         return w;
     }
 
+    static Json CreateLayout(std::string t_name) {
+        return {
+            {"ID", Randomizer::GetRandomInteger()},
+            {"Name", t_name}
+        };
+    }
+
+    static void LoadLayout(int id) {
+        auto& preferences = Workspace::s_configuration.GetPluginData(RASTER_PACKAGED "preferences");
+        int previousSelectedLayout = preferences["SelectedLayout"];
+        preferences["SelectedLayout"] = id;
+        std::string layoutPath = GetHomePath() + "/.raster/layouts/" + std::to_string(id);
+        if (!std::filesystem::exists(layoutPath)) {
+            std::filesystem::create_directories(layoutPath);
+        }
+        if (!std::filesystem::exists(layoutPath + "/layout.ini")) {
+            std::string previousLayoutPath = GetHomePath() + "/.raster/layouts/" + std::to_string(previousSelectedLayout);
+            std::string newLayoutContent = "";
+            if (std::filesystem::exists(previousLayoutPath + "/layout.ini")) {
+                newLayoutContent = ReadFile(previousLayoutPath + "/layout.ini");
+            }
+            WriteFile(layoutPath + "/layout.ini", newLayoutContent);
+        }
+        ImGui::LoadIniSettingsFromDisk((layoutPath + "/layout.ini").c_str());
+        static std::string s_persistentIniFilename;
+        s_persistentIniFilename = layoutPath + "/layout.ini";
+        ImGui::GetIO().IniFilename = s_persistentIniFilename.c_str();
+    }
+
     void DockspaceUI::RenderAboutWindow() {
         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("ABOUT").c_str()).c_str());
         ImGui::Text("%s %s: %s (%i)", ICON_FA_SCREWDRIVER, Localization::GetString("BUILD_NUMBER").c_str(), NumberToHexadecimal(BUILD_NUMBER).c_str(), BUILD_NUMBER);
@@ -38,6 +71,7 @@ namespace Raster {
     static Project s_project;
     static std::string s_projectPath;
     static bool s_preferencesPopupOpened = true;
+    static bool s_layoutsPopupOpened = true;
 
     void DockspaceUI::Render() {
         auto viewport = ImGui::GetMainViewport();
@@ -66,6 +100,7 @@ namespace Raster {
 
         bool openProjectInfoEditor = false;
         bool openPreferencesModal = false;
+        bool openLayoutEditorModal = false;
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER, Localization::GetString("PROJECT").c_str()).c_str())) {
@@ -109,6 +144,21 @@ namespace Raster {
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_ALIGN_CENTER, Localization::GetString("LAYOUTS").c_str()).c_str())) {
+                auto& preferences = Workspace::s_configuration.GetPluginData(RASTER_PACKAGED "preferences");
+                for (auto& layout : preferences["Layouts"]) {
+                    int id = layout["ID"];
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ALIGN_CENTER, layout["Name"].get<std::string>().c_str()).c_str())) {
+                        LoadLayout(id);
+                    }
+                }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_LAYOUTS").c_str()).c_str())) {
+                    openLayoutEditorModal = true;
+                    s_layoutsPopupOpened = true;
+                }
+                ImGui::EndMenu();
+            }
+
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("ABOUT").c_str()).c_str())) {
                 RenderAboutWindow();
                 ImGui::EndMenu();
@@ -130,10 +180,95 @@ namespace Raster {
             ImGui::OpenPopup(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str());
         }
 
+        if (openLayoutEditorModal) {
+            ImGui::OpenPopup(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_LAYOUTS").c_str()).c_str());
+        }
+
         RenderNewProjectPopup();
         RenderPreferencesModal();
+        RenderLayoutsModal();
 
         ImGui::End();
+    }
+
+    void DockspaceUI::RenderLayoutsModal() {
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
+        if (ImGui::BeginPopupModal(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_LAYOUTS").c_str()).c_str(), &s_layoutsPopupOpened)) {
+            auto& preferences = Workspace::s_configuration.GetPluginData(RASTER_PACKAGED "preferences");
+            static std::string s_searchFilter = "";
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_searchFilter);
+            ImGui::PopItemWidth();
+            ImGui::Separator();
+            int index = 0;
+            int targetRemoveIndex = -1;
+            std::pair<int, int> targetSwapPair = {-1, -1};
+            for (auto& layout : preferences["Layouts"]) {
+                std::string layoutName = layout["Name"];
+                if (!s_searchFilter.empty() && LowerCase(layoutName).find(LowerCase(s_searchFilter)) == std::string::npos) {
+                    index++;
+                    continue;
+                }
+                ImGui::PushID(index);
+                if (ImGui::Button(ICON_FA_LIST)) {}
+                ImGui::SameLine();
+                ImGui::SetItemTooltip("%s %s", ICON_FA_LIST, Localization::GetString("REORDER_LAYOUTS").c_str());
+                if (ImGui::BeginDragDropSource()) {
+                    ImGui::SetDragDropPayload(LAYOUT_DRAG_DROP_PAYLOAD, &index, sizeof(index));
+                    ImGui::Text("%s %s", ICON_FA_ALIGN_CENTER, layoutName.c_str());
+                    ImGui::EndDragDropSource();
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(LAYOUT_DRAG_DROP_PAYLOAD)) {
+                        int from = *((int*) payload->Data);
+                        int to = index;
+                        targetSwapPair = {from, to};
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                if (ImGui::Button(ICON_FA_TRASH_CAN)) {
+                    targetRemoveIndex = index;
+                }
+                ImGui::SetItemTooltip("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("REMOVE_LAYOUT").c_str());
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_SCREWDRIVER)) {
+                    LoadLayout(layout["ID"]);
+                }
+                ImGui::SameLine();
+                ImGui::SetItemTooltip("%s %s", ICON_FA_SCREWDRIVER, Localization::GetString("LOAD_LAYOUT").c_str());
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                ImGui::InputTextWithHint("##layoutName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("LAYOUT_NAME").c_str()).c_str(), &layoutName);
+                ImGui::PopItemWidth();
+                layout["Name"] = layoutName;
+                ImGui::PopID();
+                index++;
+            }
+            if (targetSwapPair.first >= 0 && targetSwapPair.second >= 0) {
+                std::swap(preferences["Layouts"][targetSwapPair.first], preferences["Layouts"][targetSwapPair.second]);
+            }    
+            if (targetRemoveIndex > 0) {
+                preferences["Layouts"].erase(targetRemoveIndex);
+            }
+            static std::string s_newLayoutName = "New Layout";
+            if (UIHelpers::CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_NEW_LAYOUT").c_str()).c_str())) {
+                ImGui::OpenPopup("##newLayout");
+                s_newLayoutName = "New Layout";
+            }
+            if (ImGui::BeginPopup("##newLayout")) {
+                ImGui::InputTextWithHint("##newLayoutName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("LAYOUT_NAME").c_str()).c_str(), &s_newLayoutName);
+                ImGui::SameLine();
+                if (ImGui::Button(Localization::GetString("OK").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+                    preferences["Layouts"].push_back(CreateLayout(s_newLayoutName));
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            if (index == 0) {
+                UIHelpers::RenderNothingToShowText();
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleColor();
     }
 
     void DockspaceUI::RenderNewProjectPopup() {

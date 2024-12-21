@@ -18,6 +18,8 @@ namespace Raster {
 
         void RenderPreferencesModal();
 
+        void RenderLayoutsModal();
+
         void Render();
     };
 };

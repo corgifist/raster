@@ -2,6 +2,7 @@
 #include "common/configuration.h"
 #include "common/localization.h"
 #include "common/plugin_base.h"
+#include "common/randomizer.h"
 #include "font/IconsFontAwesome5.h"
 #include "common/workspace.h"
 #include "raster.h"
@@ -9,6 +10,14 @@
 #include "common/ui_helpers.h"
 
 namespace Raster {
+
+    static Json CreateLayout(std::string t_name) {
+        return {
+            {"ID", Randomizer::GetRandomInteger()},
+            {"Name", t_name}
+        };
+    }
+
     std::string PreferencesPlugin::AbstractName() {
         return "Preferences";
     }
@@ -36,6 +45,10 @@ namespace Raster {
             WriteFile(internalRasterFolder + "config.json", Configuration().Serialize().dump());
         }
 
+        if (!std::filesystem::exists(internalRasterFolder + "layouts/")) {
+            std::filesystem::create_directory(internalRasterFolder + "layouts/");
+        }
+
         auto savedConfig = ReadJson(internalRasterFolder + "config.json");
         auto defaultConfiguration = GetDefaultConfiguration();
         if (!savedConfig["PluginData"].contains(RASTER_PACKAGED "preferences")) {
@@ -53,6 +66,11 @@ namespace Raster {
         if (pluginData.empty()) {
             pluginData = GetDefaultConfiguration();
         }
+        if (pluginData["Layouts"].empty()) {
+            pluginData["Layouts"] = Json::array();
+            pluginData["Layouts"].push_back(CreateLayout("Main Layout"));
+            pluginData["SelectedLayout"] = pluginData["Layouts"][0]["ID"];
+        }
         std::string localizationCode = pluginData["LocalizationCode"];
         try {
             DUMP_VAR(localizationCode);
@@ -68,7 +86,6 @@ namespace Raster {
     }
 
     void PreferencesPlugin::AbstractRenderProperties() {
-        // static std::optional<std::vector<float>> s_cachedLocalizationCodes;
         auto& pluginData = GetPluginData();
         
         UIHelpers::RenderJsonEditor(pluginData);
@@ -81,7 +98,9 @@ namespace Raster {
     Json PreferencesPlugin::GetDefaultConfiguration() {
         return {
             {"LocalizationCode", "en"},
-            {"LocalizationSearchPaths", {"."}}
+            {"LocalizationSearchPaths", {"."}},
+            {"Layouts", Json::array()},
+            {"SelectedLayout", -1}
         };
     }
 };

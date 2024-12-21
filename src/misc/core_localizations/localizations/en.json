@@ -285,5 +285,12 @@
     "RENDERER_NAME": "Renderer Name",
     "RENDERER_VERSION": "Renderer Version",
     "MAX_TEXTURE_SIZE": "Max Supported Texture Size",
-    "MAX_VIEWPORT_SIZE": "Max Supported Viewport Size"
+    "MAX_VIEWPORT_SIZE": "Max Supported Viewport Size",
+    "LAYOUTS": "Layouts",
+    "EDIT_LAYOUTS": "Edit Layouts",
+    "REMOVE_LAYOUT": "Remove Layout",
+    "LAYOUT_NAME": "Layout Name",
+    "ADD_NEW_LAYOUT": "Add New Layout",
+    "LOAD_LAYOUT": "Load Layout",
+    "REORDER_LAYOUTS": "Reorder Layouts"
 }

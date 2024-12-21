@@ -1,4 +1,6 @@
 #include "gpu/gpu.h"
+#include "raster.h"
+#include <filesystem>
 #include <mutex>
 
 #define GLAD_GLES2_IMPLEMENTATION
@@ -574,6 +576,10 @@ namespace Raster {
         }
 
         static std::string shaderCachePath = GetHomePath() + "/.raster/shader_cache/";
+
+        if (!std::filesystem::exists(GetHomePath() + "/.raster/")) {
+            std::filesystem::create_directory(GetHomePath() + "/.raster/");
+        }
 
         std::string vendorCache = std::to_string(RSHash(info.renderer));
         if (!std::filesystem::exists(shaderCachePath)) {

@@ -1,4 +1,5 @@
 #include "app/app.h"
+#include "common/configuration.h"
 #include "gpu/gpu.h"
 #include "gpu/async_upload.h"
 #include "font/font.h"
@@ -18,6 +19,7 @@
 #include "common/audio_info.h"
 #include "common/ui_helpers.h"
 #include "common/plugins.h"
+#include "raster.h"
 
 using namespace av;
 
@@ -71,6 +73,23 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+        auto& preferencesData = Workspace::s_configuration.GetPluginData(RASTER_PACKAGED "preferences");
+        if (!preferencesData.contains("SelectedLayout")) {
+            preferencesData["SelectedLayout"] = -1;
+        }
+
+        int currentLayoutID = preferencesData["SelectedLayout"];
+        if (currentLayoutID > 0) {
+            static std::string targetLayoutPath = GetHomePath() + "/.raster/layouts/" + std::to_string(currentLayoutID) + "/layout.ini";
+            if (std::filesystem::exists(targetLayoutPath)) {
+                io.IniFilename = targetLayoutPath.c_str();
+                ImGui::LoadIniSettingsFromDisk(io.IniFilename);
+                RASTER_LOG("loading layout " << io.IniFilename);
+            }
+        } else {
+            RASTER_LOG("no layout was applied");
+        }
 
         ImFontConfig fontCfg = {};
 
