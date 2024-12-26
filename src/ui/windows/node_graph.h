@@ -27,7 +27,7 @@ namespace Raster {
         void ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);
 
         void ShowLabel(std::string t_label, ImU32 t_color);
-        void RenderInputPin(GenericPin& pin, bool flow = false);
-        void RenderOutputPin(GenericPin& pin, bool flow = false);
+        void RenderInputPin(AbstractNode node, GenericPin& pin, bool flow = false);
+        void RenderOutputPin(AbstractNode node, GenericPin& pin, bool flow = false);
     };
 };

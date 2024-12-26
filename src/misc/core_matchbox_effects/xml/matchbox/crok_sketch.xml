@@ -1,0 +1,76 @@
+<ShaderNodePreset SupportsAdaptiveDegradation="False" SupportsAction="True" SupportsTransition="False" SupportsTimeline="False" TimelineUseBack="False" MatteProvider="False" CommercialUsePermitted="False" ShaderType="Matchbox" SoftwareVersion="2016.0.0" LimitInputsToTexture="True" Version="1.0" Description="
+This Matchbox shader creates a sketch type look
+
+Setup:
+
+- Fill / Outline: select what mode you would like to use
+- Blend Outline: blend outline and and out
+- Blend Fill: blend fill in and out
+
+- Strokes: amount of strokes
+- Steps: precision amount
+- Amount: offsetting the strokes
+
+- Blend Modes: selec the diffferent blending modes
+
+
+Demo clip: https://vimeo.com/189508413
+
+Shader developer: flockaroo
+
+Based on: shadertoy.com/view/XtVGD1
+This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+
+Matchbox version by ivar@inferno-op.com" Name="Sketch" HelpLink="https://vimeo.com/189508413">
+   <Shader OutputBitDepth="Output" Index="1">
+		 <Uniform Index="0" NoInput="Error" Tooltip="" InputType="Front" DisplayName="Front" InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="front">
+       </Uniform>
+ 		<Uniform Index="1" NoInput="White" Tooltip="" InputType="Strength" DisplayName="Noise" InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="noise">
+       </Uniform>
+		<Uniform Max="32" Min="1" Default="7" Inc="1" Tooltip="" Row="0" Col="1" Page="0" Type="int" ChannelName="AngleNum" DisplayName="Strokes" Name="AngleNum">
+      </Uniform>
+		<Uniform Max="64" Min="1" Default="18" Inc="1" Tooltip="" Row="1" Col="1" Page="0" Type="int" ChannelName="SampNum" DisplayName="Steps" Name="SampNum">
+      </Uniform>
+		<Uniform Max="1000000.0" Min="-1000000.0" Default="400.0" Inc="1.00" Tooltip="" Row="2" Col="1" Page="0" Type="float" ChannelName="amount" DisplayName="Amount" Name="amount">
+	        </Uniform>
+		<Uniform Row="4" Col="1" Page="0" Default="True" Tooltip="" Type="bool" ChannelName="vignette" DisplayName="Enable Vignette" Name="vignette">
+	        </Uniform>
+			<Uniform Max="1000" Min="0" Default="0" Inc="0" Tooltip="" Row="0" Col="0" Page="0" DisplayName="Fill / Outline" Type="int" Name="style" ValueType="Popup">
+				<PopupEntry Title="Both" Value="0">
+		             </PopupEntry>
+				<PopupEntry Title="Outline" Value="1">
+		             </PopupEntry>
+		 		<PopupEntry Title="Fill" Value="2">
+		 	         </PopupEntry>
+			</Uniform>
+		<Uniform Max="1000" Min="0" Default="0" Inc="1" Tooltip="" Row="3" Col="0" Page="0" DisplayName="Paper" Type="int" Name="paper" ValueType="Popup">
+			<PopupEntry Title="None" Value="0">
+	             </PopupEntry>
+			<PopupEntry Title="Karo" Value="1">
+	             </PopupEntry>
+		</Uniform>
+        <Uniform Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="4" Col="0" Page="0" Type="float" ChannelName="p_amount" DisplayName="Amount" Name="p_amount"
+			UIConditionSource="paper" UIConditionValue="1" UIConditionType="Hide">
+        </Uniform>
+        <Uniform Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="1" Col="0" Page="0" Type="float" ChannelName="out_blend" DisplayName="Blend Outline" Name="out_blend"
+			UIConditionSource="style" UIConditionValue="0" UIConditionType="Show">
+        </Uniform>
+        <Uniform Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="1" Col="0" Page="0" Type="float" ChannelName="out_blend2" DisplayName="Blend" Name="out_blend2"
+			UIConditionSource="style" UIConditionValue="1" UIConditionType="Show">
+        </Uniform>
+        <Uniform Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="2" Col="0" Page="0" Type="float" ChannelName="fill_blend" DisplayName="Blend Fill" Name="fill_blend"
+			UIConditionSource="style" UIConditionValue="0" UIConditionType="Show">
+        </Uniform>
+        <Uniform Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="1" Col="0" Page="0" Type="float" ChannelName="fill_blend2" DisplayName="Blend" Name="fill_blend2"
+			UIConditionSource="style" UIConditionValue="2" UIConditionType="Show">
+        </Uniform>
+	</Shader>
+	<Page Name="General" Page="0">
+		<Col Name="Setup" Col="0" Page="0">
+    </Col>
+    <Col Name="Sketch Look" Col="1" Page="0">
+    </Col>
+    <Col Name="Blending" Col="2" Page="0">
+    </Col>
+	</Page>
+</ShaderNodePreset>

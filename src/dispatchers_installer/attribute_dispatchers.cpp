@@ -42,6 +42,7 @@ namespace Raster {
         std::string format = "";
         float step = FLT_MAX;
         float base = 1.0f;
+        bool disableSlider;
         if (t_metadata.has_value()) {
             auto& metadata = t_metadata.value();
             for (auto& info : metadata) {
@@ -57,12 +58,14 @@ namespace Raster {
                 }
                 if (info.type() == typeid(SliderStepMetadata)) {
                     step = std::any_cast<SliderStepMetadata>(info).step;
+                    disableSlider = true;
                 }
                 if (info.type() == typeid(SliderBaseMetadata)) {
                     base = std::any_cast<SliderBaseMetadata>(info).base;
                 }
             }
         }
+        if (disableSlider) isSlider = false;
 
         ParsedMetadata result;
         result.isSlider = isSlider;

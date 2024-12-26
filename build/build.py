@@ -115,6 +115,7 @@ build_modules = [
 
     ["preferences", plugin, [raster_common]],
     ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
+    ["matchbox_effects", plugin, [raster_common, raster_gpu, raster_compositor, raster_image, raster_ImGui]],
     ["rendering", plugin, [raster_common, raster_gpu, raster_ImGui, raster_font]],
 
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
@@ -193,6 +194,7 @@ pak_targets = [
     ["core", build_environment, "dist/paks/"],
     ["core_localization", "src/misc/core_localizations", "dist/paks/"],
     ["core_xml_effects", "src/misc/core_xml_effects", "dist/paks/"],
+    ["core_matchbox_effects", "src/misc/core_matchbox_effects", "dist/paks/"],
     ["core_blending", "src/misc/core_blending", "dist/paks/"]
 ]
 
@@ -227,6 +229,11 @@ def build():
 
     move_core_libraries()
     copy_shaders_to_core_pack()
+    if path_exists("src/misc/matchbox_shaders.pak"):
+        info("moving matchbox_shaders.pak to dist/paks/")
+        if path_exists("dist/paks/matchbox_shaders.pak"):
+            rm("dist/paks/matchbox_shaders.pak")
+        shutil.copy("src/misc/matchbox_shaders.pak", "dist/paks/matchbox_shaders.pak")
     build_starter()
     create_paks()
 

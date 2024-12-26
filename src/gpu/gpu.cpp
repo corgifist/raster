@@ -714,23 +714,33 @@ namespace Raster {
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, int i) {
-        glProgramUniform1i(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), i);
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform1i(HANDLE_TO_GLUINT(shader.handle), location, i);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec4 vec) {
-        glProgramUniform4f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), vec.x, vec.y, vec.z, vec.w);
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform4f(HANDLE_TO_GLUINT(shader.handle), location, vec.x, vec.y, vec.z, vec.w);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec2 vec) {
-        glProgramUniform2f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), vec.x, vec.y);
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform2f(HANDLE_TO_GLUINT(shader.handle), location, vec.x, vec.y);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, float f) {
-        glProgramUniform1f(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), f);
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform1f(HANDLE_TO_GLUINT(shader.handle), location, f);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::mat4 mat) {
-        glProgramUniformMatrix4fv(HANDLE_TO_GLUINT(shader.handle), GetShaderUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniformMatrix4fv(HANDLE_TO_GLUINT(shader.handle), location, 1, GL_FALSE, &mat[0][0]);
     }
 
     void GPU::BindPipeline(Pipeline pipeline) {

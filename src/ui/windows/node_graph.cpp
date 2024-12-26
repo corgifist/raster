@@ -84,8 +84,8 @@ namespace Raster {
         }
     }
 
-    void NodeGraphUI::RenderInputPin(GenericPin& pin, bool flow) {
-        ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+    void NodeGraphUI::RenderInputPin(AbstractNode node, GenericPin& pin, bool flow) {
+        ImVec2 linkedAttributeSize = ImGui::CalcTextSize(node->GetAttributeName(pin.linkedAttribute).c_str());
         std::any cachedValue = std::nullopt;
         {
             // RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
@@ -131,7 +131,7 @@ namespace Raster {
         ImGui::SameLine(0, 0.0f);
         ImGui::SetWindowFontScale(s_pinTextScale);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.5f);
-            std::string linkedAttributeText = pin.linkedAttribute;
+            std::string linkedAttributeText = node->GetAttributeName(pin.linkedAttribute);
             auto nodeCandidate = Workspace::GetNodeByPinID(pin.pinID);
             if (nodeCandidate.has_value()) {
                 auto& node = nodeCandidate.value();
@@ -166,8 +166,8 @@ namespace Raster {
         InvalidateOutputPinCache(t_pinID);
     }
 
-    void NodeGraphUI::RenderOutputPin(GenericPin& pin, bool flow) {
-        ImVec2 linkedAttributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+    void NodeGraphUI::RenderOutputPin(AbstractNode node, GenericPin& pin, bool flow) {
+        ImVec2 linkedAttributeSize = ImGui::CalcTextSize(node->GetAttributeName(pin.linkedAttribute).c_str());
 
         std::any cachedValue = std::nullopt;
         {
@@ -229,7 +229,7 @@ namespace Raster {
         ImGui::SetWindowFontScale(s_pinTextScale);
             ImGui::SetCursorPosY(reservedCursor + 2.5f);
             ImGui::SetCursorPosX((s_originalCursor.x + iconCursorX) - linkedAttributeSize.x * s_pinTextScale);
-            ImGui::Text(pin.linkedAttribute.c_str());
+            ImGui::Text(node->GetAttributeName(pin.linkedAttribute).c_str());
         ImGui::SetWindowFontScale(1.0f);
     }
 
@@ -595,7 +595,7 @@ namespace Raster {
                                 attributesList = std::vector<std::string>(set.begin(), set.end());
                                 for (auto& pin : attributesList) {
                                     ImGui::SetWindowFontScale(s_pinTextScale);
-                                        auto attributeSize = ImGui::CalcTextSize(pin.c_str());
+                                        auto attributeSize = ImGui::CalcTextSize(node->GetAttributeName(pin).c_str());
                                     ImGui::SetWindowFontScale(1.0f);
                                     if (attributeSize.x > maxInputXCandidate) {
                                         maxInputXCandidate = attributeSize.x;
@@ -606,7 +606,7 @@ namespace Raster {
                                 float maxOutputXCandidate = 0;
                                 for (auto& pin : node->outputPins) {
                                     ImGui::SetWindowFontScale(s_pinTextScale);
-                                        auto attributeSize = ImGui::CalcTextSize(pin.linkedAttribute.c_str());
+                                        auto attributeSize = ImGui::CalcTextSize(node->GetAttributeName(pin.linkedAttribute).c_str());
                                     ImGui::SetWindowFontScale(1.0f);
                                     if (attributeSize.x > maxOutputXCandidate) {
                                         maxOutputXCandidate = attributeSize.x;
@@ -721,11 +721,11 @@ namespace Raster {
                                         ImGui::SetWindowFontScale(1.0f);
                                     }
                                     if (node->flowInputPin.has_value()) {
-                                        RenderInputPin(node->flowInputPin.value(), true);
+                                        RenderInputPin(node, node->flowInputPin.value(), true);
                                     }
                                     if (node->flowOutputPin.has_value()) {
                                         ImGui::SameLine();
-                                        RenderOutputPin(node->flowOutputPin.value(), true);
+                                        RenderOutputPin(node, node->flowOutputPin.value(), true);
                                     }
                                     float headerY = ImGui::GetCursorPosY();
 
@@ -735,12 +735,12 @@ namespace Raster {
                                     // Pins Rendering
                                     if (!exposeAllPins && !drawLastLine) {
                                         for (auto& pin : node->inputPins) {
-                                            RenderInputPin(pin);
+                                            RenderInputPin(node, pin);
                                         }
                                     } else if (exposeAllPins || drawLastLine) {
                                         std::vector<std::string> excludedAttributes;
                                         for (auto& pin : node->inputPins) {
-                                            RenderInputPin(pin);
+                                            RenderInputPin(node, pin);
                                             excludedAttributes.push_back(pin.linkedAttribute);
                                         }
                                         for (auto& attribute : node->GetAttributesList()) {
@@ -756,14 +756,14 @@ namespace Raster {
                                             exposure.node = node;
                                             exposures[placeholderPin.pinID] = exposure;
 
-                                            RenderInputPin(placeholderPin);
+                                            RenderInputPin(node, placeholderPin);
                                         }
                                     }
 
 
                                     ImGui::SetCursorPosY(headerY);
                                     for (auto& pin : node->outputPins) {
-                                        RenderOutputPin(pin);
+                                        RenderOutputPin(node, pin);
                                     }
 
                                     // Footer Rendering
@@ -1024,7 +1024,7 @@ namespace Raster {
                                         attributeIndex++;
                                     }
 
-                                    ImGui::BulletText("%s", attribute.c_str());
+                                    ImGui::BulletText("%s", node->GetAttributeName(attribute).c_str());
 
                                     if (ImGui::IsItemHovered() && attributeValue.has_value()) {
                                         s_outerTooltip = attributeValue.value();

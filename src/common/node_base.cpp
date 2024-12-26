@@ -129,7 +129,7 @@ namespace Raster {
                             icon = std::any_cast<IconMetadata>(metadata).icon;
                         }
                     }
-                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s", icon.c_str(), t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+                    bool attributeTreeExpanded = ImGui::TreeNodeEx(FormatString("%s %s##%s", icon.c_str(), GetAttributeName(t_attribute).c_str(), t_attribute.c_str()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
                 ImGui::SetWindowFontScale(1.0f);
             ImGui::PopFont();
             ImGui::SameLine();
@@ -201,7 +201,7 @@ namespace Raster {
                             ImGui::SetCursorPosX(originalCursorX);
                         }
                         dispatcherWasFound = true;
-                        dispatcher.second(this, t_attribute, dynamicCandidate, isAttributeExposed, t_metadata);
+                        dispatcher.second(this, GetAttributeName(t_attribute), dynamicCandidate, isAttributeExposed, t_metadata);
                         if (!usingCachedAttribute) attributes[t_attribute] = dynamicCandidate;
                     } 
                 }
@@ -467,6 +467,17 @@ namespace Raster {
                 persistentPins.erase(pinIterator);
             }
         }
+    }
+
+    void NodeBase::SetAttributeAlias(std::string t_attributeName, std::string t_attributeAlias) {
+        m_attributeAliases[t_attributeName] = t_attributeAlias;
+    }
+
+    std::string NodeBase::GetAttributeName(std::string t_attributeName) {
+        if (m_attributeAliases.find(t_attributeName) != m_attributeAliases.end()) {
+            return m_attributeAliases[t_attributeName];
+        }
+        return t_attributeName;
     }
 
     bool NodeBase::DoesAudioMixing() {

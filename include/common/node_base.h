@@ -93,6 +93,7 @@ namespace Raster {
         void OnTimelineSeek();
         void ClearImmediateFooters();
         std::vector<std::string> GetImmediateFooters();
+        std::string GetAttributeName(std::string t_attributeName);
 
         protected:
         SynchronizedValue<std::unordered_map<std::string, std::any>> m_attributes;
@@ -134,8 +135,11 @@ namespace Raster {
 
         void PushImmediateFooter(std::string t_footer);
 
+        void SetAttributeAlias(std::string t_attributeName, std::string t_alias);
+
         private:
         DoubleBufferedValue<std::unordered_map<std::string, std::any>> m_attributesCache;
+        std::unordered_map<std::string, std::string> m_attributeAliases;
         std::vector<std::string> m_attributesOrder;
 
         bool ExecutingInAudioContext(ContextData& t_data);
