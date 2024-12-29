@@ -3,10 +3,11 @@
 #include "common/audio_discretization_options.h"
 #include "raster.h"
 #include "typedefs.h"
-#include "assets.h"
 #include "audio_bus.h"
 #include "thread_unique_value.h"
 #include "audio_discretization_options.h"
+#include "asset_base.h"
+#include "project_color_precision.h"
 
 namespace Raster {
     struct Project {
@@ -17,6 +18,7 @@ namespace Raster {
         ThreadUniqueValue<std::vector<float>> timeTravelStack;
         bool playing, looping;
         AudioDiscretizationOptions audioOptions;
+        ProjectColorPrecision colorPrecision;
 
         glm::vec2 preferredResolution;
         glm::vec4 backgroundColor;

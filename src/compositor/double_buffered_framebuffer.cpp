@@ -9,8 +9,8 @@ namespace Raster {
     }
 
     DoubleBufferedFramebuffer::DoubleBufferedFramebuffer(int width, int height, TexturePrecision precision) {
-        this->m_back = Compositor::GenerateCompatibleFramebuffer({width, height});
-        this->m_front = Compositor::GenerateCompatibleFramebuffer({width, height});
+        this->m_back = Compositor::GenerateCompatibleFramebuffer({width, height}, precision);
+        this->m_front = Compositor::GenerateCompatibleFramebuffer({width, height}, precision);
         this->width = width;
         this->height = height;
         this->m_index = 0;

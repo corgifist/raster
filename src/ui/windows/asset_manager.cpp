@@ -315,8 +315,9 @@ namespace Raster {
                             ImGui::PushStyleColor(ImGuiCol_ChildBg, childBgColor);
                             if (ImGui::BeginChild("##assetChild", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
                                 auto textureCandidate = asset->GetPreviewTexture();
+                                bool assetReady = asset->IsReady();
                                 ImVec2 previewSize = ImVec2(50, 50);
-                                if (textureCandidate.has_value()) {
+                                if (textureCandidate.has_value() && assetReady) {
                                     auto& texture = textureCandidate.value();
                                     ImVec2 fitSize = FitRectInRect(ImVec2(50, 50), ImVec2(texture.width, texture.height));
                                     ImGui::SetCursorPosX(previewSize.x / 2.0f - fitSize.x / 2.0f);
@@ -328,32 +329,32 @@ namespace Raster {
                                         auto& assetImplementation = assetImplementationCandidate.value();
                                         ImGui::PushFont(Font::s_denseFont);
                                         ImGui::SetWindowFontScale(previewSize.y / ImGui::GetFontSize());
-                                        ImGui::Text("%s", assetImplementation.description.icon.c_str());
+                                        ImGui::Text("%s", assetReady ? assetImplementation.description.icon.c_str() : ICON_FA_SPINNER);
                                         ImGui::SetWindowFontScale(1.0f);
                                         ImGui::PopFont();
                                     }
                                 }
                                 ImGui::SameLine(0, 12);
-                                if (ImGui::BeginChild("##assetInfoChild", ImGui::GetContentRegionAvail())) {
-                                    auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
-                                    if (assetImplementationCandidate.has_value()) {
-                                        auto& assetImplementation = assetImplementationCandidate.value();
-                                        auto durationCandidate = asset->GetDuration();
-                                        auto resolutionCandidate = asset->GetResolution();
-                                        auto sizeCandidate = asset->GetSize();
-                                        auto pathCandidate = asset->GetPath();
-                                        ImGui::Text("%s %s", assetImplementation.description.icon.c_str(), asset->name.c_str());
-                                        ImGui::Text("%s %s | %s %s | %s %s | %s %s", ICON_FA_STOPWATCH, durationCandidate.value_or("-").c_str(), 
-                                                                                    ICON_FA_EXPAND, resolutionCandidate.value_or("-").c_str(), 
-                                                                                    ICON_FA_SCALE_BALANCED, sizeCandidate.has_value() ? ConvertToHRSize(sizeCandidate.value()).c_str() : "-", 
-                                                                                    ICON_FA_FOLDER_OPEN, pathCandidate.value_or("-").c_str());
-                                        ImGui::SetItemTooltip("%s %s | %s %s | %s %s | %s %s", ICON_FA_STOPWATCH, durationCandidate.value_or("-").c_str(), 
-                                                                                    ICON_FA_EXPAND, resolutionCandidate.value_or("-").c_str(), 
-                                                                                    ICON_FA_SCALE_BALANCED, sizeCandidate.has_value() ? ConvertToHRSize(sizeCandidate.value()).c_str() : "-", 
-                                                                                    ICON_FA_FOLDER_OPEN, pathCandidate.value_or("-").c_str());
-                                    }
+
+                                ImGui::BeginGroup();
+                                auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                                if (assetImplementationCandidate.has_value()) {
+                                    auto& assetImplementation = assetImplementationCandidate.value();
+                                    auto durationCandidate = asset->GetDuration();
+                                    auto resolutionCandidate = asset->GetResolution();
+                                    auto sizeCandidate = asset->GetSize();
+                                    auto pathCandidate = asset->GetPath();
+                                    ImGui::Text("%s %s", assetImplementation.description.icon.c_str(), asset->name.c_str());
+                                    ImGui::Text("%s %s | %s %s | %s %s | %s %s", ICON_FA_STOPWATCH, durationCandidate.value_or("-").c_str(), 
+                                                                                ICON_FA_EXPAND, resolutionCandidate.value_or("-").c_str(), 
+                                                                                ICON_FA_SCALE_BALANCED, sizeCandidate.has_value() ? ConvertToHRSize(sizeCandidate.value()).c_str() : "-", 
+                                                                                ICON_FA_FOLDER_OPEN, pathCandidate.value_or("-").c_str());
+                                    ImGui::SetItemTooltip("%s %s | %s %s | %s %s | %s %s", ICON_FA_STOPWATCH, durationCandidate.value_or("-").c_str(), 
+                                                                                ICON_FA_EXPAND, resolutionCandidate.value_or("-").c_str(), 
+                                                                                ICON_FA_SCALE_BALANCED, sizeCandidate.has_value() ? ConvertToHRSize(sizeCandidate.value()).c_str() : "-", 
+                                                                                ICON_FA_FOLDER_OPEN, pathCandidate.value_or("-").c_str());
                                 }  
-                                ImGui::EndChild();
+                                ImGui::EndGroup();
                             }
                             ImGui::EndChild();
                             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {

@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "compositor/compositor.h"
 #include "font/font.h"
 #include "raster.h"
 
@@ -41,12 +42,12 @@ namespace Raster {
         if (backgroundColorCandidate.has_value() && resolutionCandidate.has_value()) {
             auto& backgroundColor = backgroundColorCandidate.value();
             auto requiredResolution = resolutionCandidate.value() * Compositor::previewResolutionScale;
-            if (!m_internalFramebuffer.has_value() || m_internalFramebuffer.value().width != (int) requiredResolution.x || m_internalFramebuffer.value().height != (int) requiredResolution.y) {
+            if (!m_internalFramebuffer.has_value() || m_internalFramebuffer.value().width != (int) requiredResolution.x || m_internalFramebuffer.value().height != (int) requiredResolution.y || m_internalFramebuffer.value().Get().attachments[0].precision != Compositor::s_colorPrecision) {
                 if (m_internalFramebuffer.has_value()) {
                     auto& framebuffer = m_internalFramebuffer.value();
                     framebuffer.Destroy();
                 }
-                m_internalFramebuffer = Compositor::GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution);
+                m_internalFramebuffer = Compositor::GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution, Compositor::s_colorPrecision);
             }
 
             if (m_internalFramebuffer.has_value() && s_pipeline.has_value()) {

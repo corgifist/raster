@@ -1,4 +1,5 @@
 #include "common/audio_discretization_options.h"
+#include "common/project_color_precision.h"
 #include "raster.h"
 #include "common/common.h"
 
@@ -22,6 +23,11 @@ namespace Raster {
         this->looping = data["Looping"];
         if (data.contains("AudioDiscretizationOptions")) {
             this->audioOptions = AudioDiscretizationOptions(data["AudioDiscretizationOptions"]);
+        }
+        if (data.contains("ColorPrecision")) {
+            this->colorPrecision = static_cast<ProjectColorPrecision>(data["ColorPrecision"].get<int>());
+        } else {
+            this->colorPrecision = ProjectColorPrecision::Half;
         }
         this->selectedCompositions = data["SelectedCompositions"].get<std::vector<int>>();
         this->selectedAttributes = data["SelectedAttributes"].get<std::vector<int>>();
@@ -60,6 +66,7 @@ namespace Raster {
         this->customData = {
             {"Placeholder", true}
         };
+        this->colorPrecision = ProjectColorPrecision::Half;
 
         AudioBus mainBus;
         mainBus.main = true;
@@ -149,6 +156,7 @@ namespace Raster {
         data["SelectedAssets"] = selectedAssets;
         data["CustomData"] = customData;
         data["AudioDiscretizationOptions"] = audioOptions.Serialize();
+        data["ColorPrecision"] = static_cast<int>(colorPrecision);
 
         data["Compositions"] = {};
         for (auto& composition : compositions) {

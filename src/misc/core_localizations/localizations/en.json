@@ -292,5 +292,13 @@
     "LAYOUT_NAME": "Layout Name",
     "ADD_NEW_LAYOUT": "Add New Layout",
     "LOAD_LAYOUT": "Load Layout",
-    "REORDER_LAYOUTS": "Reorder Layouts"
+    "REORDER_LAYOUTS": "Reorder Layouts",
+    "BPC": "Bits per Color",
+    "BIT": "Bit",
+    "BYTE": "Byte",
+    "HALF_FLOAT": "Half Float",
+    "FULL_FLOAT": "Full Float",
+    "bpc": "bpc",
+    "PROJECT_COLOR_PRECISION": "Project Color Precision",
+    "BITS": "Bits"
 }

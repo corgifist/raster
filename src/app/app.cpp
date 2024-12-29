@@ -1,5 +1,6 @@
 #include "app/app.h"
 #include "common/configuration.h"
+#include "common/project_color_precision.h"
 #include "gpu/gpu.h"
 #include "gpu/async_upload.h"
 #include "font/font.h"
@@ -247,6 +248,12 @@ namespace Raster {
             }
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
+
+                TexturePrecision targetPrecision = TexturePrecision::Usual;
+                if (project.colorPrecision == ProjectColorPrecision::Half) targetPrecision = TexturePrecision::Half;
+                if (project.colorPrecision == ProjectColorPrecision::Full) targetPrecision = TexturePrecision::Full;
+                Compositor::s_colorPrecision = targetPrecision;
+
                 Audio::s_currentOptions = project.audioOptions;
                 if (!UIHelpers::AnyItemFocused()) {
                     if (Audio::UpdateAudioInstance()) {

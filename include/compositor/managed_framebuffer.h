@@ -18,7 +18,7 @@ namespace Raster {
 
     private:
         void EnsureResolutionConstraints(std::optional<Framebuffer> t_framebuffer);
-        void InstantiateInternalFramebuffer(uint32_t width, uint32_t height);
+        void InstantiateInternalFramebuffer(uint32_t width, uint32_t height, TexturePrecision precision);
         void DestroyInternalFramebuffer();
 
         DoubleBufferedFramebuffer m_internalFramebuffer;

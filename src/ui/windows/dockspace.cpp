@@ -166,8 +166,34 @@ namespace Raster {
 
             std::string rightAlignedText = FormatString("%s %i FPS (%0.2f ms)", ICON_FA_GEARS, (int) ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
             ImVec2 rightAlignedTextSize = ImGui::CalcTextSize(rightAlignedText.c_str());
-            ImGui::SetCursorPosX(ImGui::GetWindowSize().x - rightAlignedTextSize.x - ImGui::GetStyle().WindowPadding.x);
+            float fpsCursorX =ImGui::GetWindowSize().x - rightAlignedTextSize.x - ImGui::GetStyle().WindowPadding.x;
+            ImGui::SetCursorPosX(fpsCursorX);
             ImGui::Text("%s", rightAlignedText.c_str());
+
+            std::string bpcText = FormatString("%s %s %s", ICON_FA_DROPLET, Workspace::IsProjectLoaded() ? std::to_string(static_cast<int>(Workspace::GetProject().colorPrecision)).c_str() : "-", Localization::GetString("bpc").c_str());
+            ImVec2 bpcTextSize = ImGui::CalcTextSize(bpcText.c_str());
+            ImGui::SetCursorPosX(fpsCursorX - ImGui::GetStyle().FramePadding.x - bpcTextSize.x);
+            if (ImGui::BeginMenu(bpcText.c_str())) {
+                if (!Workspace::IsProjectLoaded()) {
+                    UIHelpers::RenderNothingToShowText();
+                } else {
+                    auto& project = Workspace::GetProject();
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_DROPLET, Localization::GetString("BPC").c_str()).c_str());
+                    if (ImGui::MenuItem(FormatString("%s %i %s (%s)", ICON_FA_DROPLET, 8, Localization::GetString("BITS").c_str(), Localization::GetString("BYTE").c_str()).c_str())) {
+                        project.colorPrecision = ProjectColorPrecision::Usual;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %i %s (%s)", ICON_FA_DROPLET, 16, Localization::GetString("BITS").c_str(), Localization::GetString("HALF_FLOAT").c_str()).c_str())) {
+                        project.colorPrecision = ProjectColorPrecision::Half;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %i %s (%s)", ICON_FA_DROPLET, 32, Localization::GetString("BITS").c_str(), Localization::GetString("FULL_FLOAT").c_str()).c_str())) {
+                        project.colorPrecision = ProjectColorPrecision::Full;
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndMainMenuBar();
         }
 

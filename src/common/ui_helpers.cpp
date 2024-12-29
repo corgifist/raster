@@ -8,6 +8,7 @@
 #include "../ImGui/imgui_drag.h"
 #include "common/item_aligner.h"
 #include "common/localization.h"
+#include "common/project_color_precision.h"
 #include "font/IconsFontAwesome5.h"
 #include "raster.h"
 
@@ -749,6 +750,29 @@ namespace Raster {
         ImGui::DragInt2("##preferredResolution", signedPreferredResolution);
         ImGui::PopItemWidth();
         t_project.preferredResolution = {signedPreferredResolution[0], signedPreferredResolution[1]};
+
+        ImGui::Text("%s %s: ", ICON_FA_DROPLET, Localization::GetString("PROJECT_COLOR_PRECISION").c_str());
+        ImGui::SameLine();
+        s_aligner.AlignCursor();
+        if (ImGui::Button(FormatString("%i %s###bitsPerColor", static_cast<int>(t_project.colorPrecision), Localization::GetString("BPC").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
+            ImGui::OpenPopup("##bitsPerColorPopup");
+        }
+        if (ImGui::BeginPopup("##bitsPerColorPopup")) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_DROPLET, Localization::GetString("BPC").c_str()).c_str());
+            if (ImGui::MenuItem(FormatString("%s %i %s (%s)", ICON_FA_DROPLET, 8, Localization::GetString("BITS").c_str(), Localization::GetString("BYTE").c_str()).c_str())) {
+                t_project.colorPrecision = ProjectColorPrecision::Usual;
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::MenuItem(FormatString("%s %i %s (%s)", ICON_FA_DROPLET, 16, Localization::GetString("BITS").c_str(), Localization::GetString("HALF_FLOAT").c_str()).c_str())) {
+                t_project.colorPrecision = ProjectColorPrecision::Half;
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::MenuItem(FormatString("%s %i %s (%s)", ICON_FA_DROPLET, 32, Localization::GetString("BITS").c_str(), Localization::GetString("FULL_FLOAT").c_str()).c_str())) {
+                t_project.colorPrecision = ProjectColorPrecision::Full;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
 
         ImGui::Text("%s %s ", ICON_FA_DROPLET, Localization::GetString("PROJECT_BACKGROUND_COLOR").c_str());
         ImGui::SameLine();

@@ -1,8 +1,10 @@
 #include "compositor/compositor.h"
+#include "gpu/gpu.h"
 
 namespace Raster {
     std::optional<DoubleBufferedFramebuffer> Compositor::primaryFramebuffer;
     float Compositor::previewResolutionScale = 1.0f;
+    TexturePrecision Compositor::s_colorPrecision = TexturePrecision::Half;
 
     DoubleBufferedValue<std::unordered_map<int, RenderableBundle>> Compositor::s_bundles;
     std::vector<CompositorTarget> Compositor::s_targets;
@@ -87,22 +89,22 @@ namespace Raster {
             }
             auto requiredResolution = GetRequiredResolution();
             auto framebuffer = primaryFramebuffer.value();
-            if (requiredResolution.x != framebuffer.Get().width || requiredResolution.y != framebuffer.Get().height) {
+            if (requiredResolution.x != framebuffer.Get().width || requiredResolution.y != framebuffer.Get().height || s_colorPrecision != framebuffer.Get().attachments[0].precision) {
                 ResizePrimaryFramebuffer(requiredResolution);
             }
             s_targets.clear();
         }        
     }
 
-    Framebuffer Compositor::GenerateCompatibleFramebuffer(glm::vec2 t_resolution) {
+    Framebuffer Compositor::GenerateCompatibleFramebuffer(glm::vec2 t_resolution, std::optional<TexturePrecision> t_precision) {
         return GPU::GenerateFramebuffer(t_resolution.x, t_resolution.y, std::vector<Texture>{
-            GPU::GenerateTexture(t_resolution.x, t_resolution.y, 4, TexturePrecision::Usual),
+            GPU::GenerateTexture(t_resolution.x, t_resolution.y, 4, t_precision.value_or(s_colorPrecision)),
             GPU::GenerateTexture(t_resolution.x, t_resolution.y, 4, TexturePrecision::Half)
         });
     }
 
-    DoubleBufferedFramebuffer Compositor::GenerateCompatibleDoubleBufferedFramebuffer(glm::vec2 t_resolution) {
-        return DoubleBufferedFramebuffer(t_resolution.x, t_resolution.y);
+    DoubleBufferedFramebuffer Compositor::GenerateCompatibleDoubleBufferedFramebuffer(glm::vec2 t_resolution, std::optional<TexturePrecision> t_precision) {
+        return DoubleBufferedFramebuffer(t_resolution.x, t_resolution.y, t_precision.value_or(s_colorPrecision));
     }
 
     void Compositor::EnsureResolutionConstraintsForFramebuffer(Framebuffer& t_fbo) {
@@ -111,7 +113,7 @@ namespace Raster {
             t_fbo = GenerateCompatibleFramebuffer(requiredResolution);
             return;
         }
-        if (t_fbo.width != requiredResolution.x || t_fbo.height != requiredResolution.y) {
+        if (t_fbo.width != requiredResolution.x || t_fbo.height != requiredResolution.y || t_fbo.attachments[0].precision != s_colorPrecision) {
             GPU::DestroyFramebufferWithAttachments(t_fbo);
             t_fbo = GenerateCompatibleFramebuffer(requiredResolution);
         }
@@ -123,7 +125,7 @@ namespace Raster {
             t_fbo = GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution);
             return;
         }
-        if (t_fbo.Get().width != requiredResolution.x || t_fbo.Get().height != requiredResolution.y) {
+        if (t_fbo.Get().width != requiredResolution.x || t_fbo.Get().height != requiredResolution.y || t_fbo.Get().attachments[0].precision != s_colorPrecision) {
             t_fbo.Destroy();
             t_fbo = GenerateCompatibleDoubleBufferedFramebuffer(requiredResolution);
         }
