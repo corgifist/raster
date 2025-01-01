@@ -266,6 +266,10 @@ namespace Raster {
         info.maxViewportX = maxViewportDims[0];
         info.maxViewportY = maxViewportDims[1];
 
+        GLint maxUniformComponents;
+        glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxUniformComponents);
+        DUMP_VAR(maxUniformComponents);
+
         DUMP_VAR(info.maxTextureSize);
         DUMP_VAR(info.maxViewportX);
         DUMP_VAR(info.maxViewportY);

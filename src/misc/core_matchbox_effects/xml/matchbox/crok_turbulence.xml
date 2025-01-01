@@ -1,0 +1,54 @@
+<ShaderNodePreset SupportsAdaptiveDegradation="0" Description="
+This Matchbox shader creates a water turbulence texture.
+
+Setup:
+
+- Detail: turbulence steps
+- Zoom: zoom in and out
+- Speed: speed of the wave pattern
+- Offset: offsets wave pattern
+- Position: wave pattern position
+- Colour: colour of the generated pattern
+
+Demo clip: https://vimeo.com/84510250
+
+Shader developer: joltz0r
+
+Based on http://glsl.heroku.com/e#12595.1
+
+Matchbox version by ivar@inferno-op.com" Name="Turbulence">
+   <Shader OutputBitDepth="Output" Index="1">
+      <Uniform Max="100" Min="1" Default="15" Inc="1" Tooltip="" Row="0" Col="0" Page="0" DisplayName="Detail" Type="int" Name="Detail">
+      </Uniform>
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="2.0" Inc="0.01" Tooltip="" Row="1" Col="0" Page="0" DisplayName="Zoom" Type="float" Name="Zoom">
+      </Uniform>
+       <Uniform ResDependent="None" Max="10.0" Min="-10.0" Default="3.0" Inc="0.01" Tooltip="" Row="0" Col="1" Page="0" DisplayName="Speed" Type="float" Name="Speed">
+      </Uniform>
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.0" Inc="0.01" Tooltip="" Row="1" Col="1" Page="0" DisplayName="Offset" Type="float" Name="Offset">
+      </Uniform>      
+      <Uniform Inc="0.01" Tooltip="" Row="0" Col="2" Page="0" DisplayName="Position" Type="vec2" Name="Position">
+         <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="15.0">
+         </SubUniform>
+         <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="24.0">
+         </SubUniform>
+      </Uniform>
+      <Uniform Inc="0.01" Tooltip="" Row="0" Col="3" Page="0" DisplayName="Colour" ValueType="Colour" Type="vec3" Name="Colour">
+         <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.3">
+         </SubUniform>
+         <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.5">
+         </SubUniform>
+         <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.95">
+         </SubUniform>
+      </Uniform>
+   </Shader>
+   <Page Name="Setup" Page="0">
+      <Col Name="Turbulence" Col="0" Page="0">
+      </Col>
+      <Col Name="Timing" Col="1" Page="0">
+      </Col>
+      <Col Name="Position" Col="2" Page="0">
+      </Col>
+      <Col Name="Colour" Col="3" Page="0">
+      </Col>
+   </Page>
+</ShaderNodePreset>
