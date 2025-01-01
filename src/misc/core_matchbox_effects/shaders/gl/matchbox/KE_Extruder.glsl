@@ -389,8 +389,9 @@ void main( void ){
     
     // Camera Setup.
 	vec3 lk = vec3(0, 0, 0);//vec3(0, -.25, iTime);  // "Look At" position.
-	vec3 ro = lk + vec3(-.5*.3*cos(iTime/2.), -.5*.2*sin(iTime/2.), -2); // Camera position, doubling as the ray origin.
- 
+	// vec3 ro = lk + vec3(-.5*.3*cos(iTime/2.), -.5*.2*sin(iTime/2.), -2); // Camera position, doubling as the ray origin.
+    vec3 ro = lk + vec3(vec2(0.), -2.);
+
     // Light positioning. One is just in front of the camera, and the other is in front of that.
  	vec3 lp = ro + vec3(1.5, 2, -1);// Put it a bit in front of the camera.
 	
@@ -545,5 +546,5 @@ void main( void ){
     
     // Rought gamma correction.
 	gl_FragColor = vec4(sqrt(max(col, 0.)), 1);
-	
+    // gl_FragColor = texture(back, gl_FragCoord.xy / vec2(adsk_result_w, adsk_result_h));
 }

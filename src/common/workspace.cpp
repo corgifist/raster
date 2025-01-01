@@ -172,12 +172,12 @@ namespace Raster {
     }
 
     std::optional<AbstractNode> Workspace::AddNode(std::string t_nodeName) {
-        RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
         auto node = InstantiateNode(t_nodeName);
         if (node.has_value()) {
             auto compositionsCandidate = GetSelectedCompositions();
             if (compositionsCandidate.has_value()) {
                 auto& result = node.value();
+                RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
                 compositionsCandidate.value()[0]->nodes[result->nodeID] = result;
             }
         }

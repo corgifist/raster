@@ -9,6 +9,7 @@
 #include "raster.h"
 #include <filesystem>
 #include "../../ImGui/imgui_stdlib.h"
+#include "common/layouts.h"
 
 #define LAYOUT_DRAG_DROP_PAYLOAD "LAYOUT_DRAG_DROP_PAYLOAD"
 
@@ -55,7 +56,7 @@ namespace Raster {
             }
             WriteFile(layoutPath + "/layout.ini", newLayoutContent);
         }
-        ImGui::LoadIniSettingsFromDisk((layoutPath + "/layout.ini").c_str());
+        Layouts::RequestLayout((layoutPath + "/layout.ini").c_str());
         static std::string s_persistentIniFilename;
         s_persistentIniFilename = layoutPath + "/layout.ini";
         ImGui::GetIO().IniFilename = s_persistentIniFilename.c_str();

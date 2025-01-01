@@ -619,6 +619,16 @@ namespace Raster {
                                     if (s_wasShown.find(node->nodeID) == s_wasShown.end()) {
                                         s_wasShown[node->nodeID] = false;
                                     }
+                                    for (auto& deferredNodeCreationInfo : s_deferredNodeCreations) {
+                                        if (deferredNodeCreationInfo.nodeID == node->nodeID) {
+                                            Nodes::SetNodePosition(node->nodeID, deferredNodeCreationInfo.position);
+                                            node->nodePosition = glm::vec2(deferredNodeCreationInfo.position.x, deferredNodeCreationInfo.position.y);
+                                            if (deferredNodeCreationInfo.mustBeSelected) {
+                                                Nodes::SelectNode(node->nodeID);
+                                                s_mustNavigateToSelection = true;
+                                            }
+                                        }
+                                    }
                                     bool& nodeWasShown = s_wasShown[node->nodeID];
                                     if (!nodeWasShown && node->nodePosition) {
                                         auto& targetNodePosition = *node->nodePosition;
@@ -628,15 +638,6 @@ namespace Raster {
                                     {
                                         auto currentNodePosition = Nodes::GetNodePosition(node->nodeID);
                                         node->nodePosition = {currentNodePosition.x, currentNodePosition.y};
-                                    }
-                                    for (auto& deferredNodeCreationInfo : s_deferredNodeCreations) {
-                                        if (deferredNodeCreationInfo.nodeID == node->nodeID) {
-                                            Nodes::SetNodePosition(node->nodeID, deferredNodeCreationInfo.position);
-                                            if (deferredNodeCreationInfo.mustBeSelected) {
-                                                Nodes::SelectNode(node->nodeID);
-                                                s_mustNavigateToSelection = true;
-                                            }
-                                        }
                                     }
                                     s_maxRuntimeInputPinX = 0;
                                     s_originalCursor = ImGui::GetCursorScreenPos();

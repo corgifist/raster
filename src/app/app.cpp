@@ -21,6 +21,7 @@
 #include "common/ui_helpers.h"
 #include "common/plugins.h"
 #include "raster.h"
+#include "common/layouts.h"
 
 using namespace av;
 
@@ -85,7 +86,7 @@ namespace Raster {
             static std::string targetLayoutPath = GetHomePath() + "/.raster/layouts/" + std::to_string(currentLayoutID) + "/layout.ini";
             if (std::filesystem::exists(targetLayoutPath)) {
                 io.IniFilename = targetLayoutPath.c_str();
-                ImGui::LoadIniSettingsFromDisk(io.IniFilename);
+                Layouts::RequestLayout(io.IniFilename);
                 RASTER_LOG("loading layout " << io.IniFilename);
             }
         } else {
@@ -241,6 +242,11 @@ namespace Raster {
             constructedTitle += " - " + project.name;
         }
         GPU::SetWindowTitle(constructedTitle);
+
+        auto requestedLayout = Layouts::GetRequestedLayout();
+        if (requestedLayout) {
+            ImGui::LoadIniSettingsFromDisk(requestedLayout->c_str());
+        }
 
         GPU::BeginFrame();
             if (Workspace::s_project.has_value() && !UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Space)) {
