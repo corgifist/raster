@@ -183,6 +183,7 @@ namespace Raster {
 
         static void SetShaderUniform(Shader shader, std::string name, int i);
         static void SetShaderUniform(Shader shader, std::string name, glm::vec4 vec);
+        static void SetShaderUniform(Shader shader, std::string name, glm::vec3 vec);
         static void SetShaderUniform(Shader shader, std::string name, glm::vec2 vec);
         static void SetShaderUniform(Shader shader, std::string name, float f);
         static void SetShaderUniform(Shader shader, std::string name, glm::mat4 mat);

@@ -1,0 +1,236 @@
+<ShaderNodePreset SupportsAdaptiveDegradation="False" SupportsAction="False" SupportsTransition="False" SupportsTimeline="False" TimelineUseBack="False" MatteProvider="False" CommercialUsePermitted="True" ShaderType="Matchbox" SoftwareVersion="2017.0.0" LimitInputsToTexture="True" Version="1.3" Description="
+This Matchbox creates Light Leaks style effects.
+
+
+Input:
+- Front: front clip
+- Matte: matte clip which will add to the luma key
+- Strength: will drive the Chromatic abberation amount
+
+Setup:
+- Amount: amount of light leak applied
+- Softness: blur the lightleaks in x / y
+- Tint: tint colour for the light leaks
+- Saturation: dial in original saturation for the light leaks
+
+- Density: adjust the denisity of the flicker noise
+- Speed: adjust the speed of the flicker
+- Offset: offset the flicker in time
+
+- Min Input: min input of the luma key
+- Max Input: max input of the luma key
+
+- Light Leak Only: outputs the light leak only
+
+- Enable: Enable chromatic abberations
+- Amount: amount of chromatic abberations applied
+- Itterations: itterations steps for the abberations
+- Center: adjust the center of the chromatic abberations
+
+- Amount: adjust the noise amount of the atmosphere
+- Scale: adjust the scale of the noise
+- Speed: adjust the speed of the noise
+
+- Brightness: adjust noise brightness
+- Contrast: adjust contrast of the brightness
+
+
+Demo clip: http://vimeo.com/122851892
+
+Matchbox version by ivar@inferno-op.com" Name="crok lightleak">
+   <Shader OutputBitDepth="Output" Index="1">
+       <Uniform Index="0" NoInput="Error" InputType="Front" Tooltip="" DisplayName="Front" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="front">
+       </Uniform>
+      <Uniform Index="1" NoInput="White" InputType="Matte" Tooltip="" DisplayName="Matte" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="matte">
+      </Uniform>
+
+   </Shader>
+   <Shader OutputBitDepth="Output" Index="2">
+       <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass1">
+       </Uniform>
+       <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.66" Inc="0.01" Tooltip="" Row="0" Col="2" Page="0" Type="float" DisplayName="Min Input" Name="minInput">
+       </Uniform>
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="1" Col="2" Page="0" Type="float" DisplayName="Max Input" Name="maxInput">
+      </Uniform>
+   </Shader>
+
+
+   <Shader OutputBitDepth="Output" Index="3">
+       <Uniform Max="100" Min="1" Default="10" Inc="1" Tooltip="" Row="0" Col="1" Page="0" Type="int" DisplayName="Density" Name="bubbles">
+       </Uniform>
+       <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="3.0" Inc="0.01" Tooltip="" Row="1" Col="1" Page="0" Type="float" DisplayName="Speed" Name="Speed">
+       </Uniform>
+	   <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.0" Inc="0.01" Tooltip="" Row="2" Col="1" Page="0" Type="float" DisplayName="Offset" Name="Offset">
+       </Uniform>
+   </Shader>
+
+
+   <Shader OutputBitDepth="Output" Index="4">
+       <Uniform ResDependent="None" Max="100.0" Min="0.0" Default="50.0" Inc="0.01" Tooltip="" Row="0" Col="0" Page="2" Type="float" DisplayName="Amount" Name="noise">
+       </Uniform>
+	  <Uniform ResDependent="None" Max="100.0" Min="0.0" Default="0.1" Inc="0.01" Tooltip="" Row="1" Col="0" Page="2" Type="float" DisplayName="Scale" Name="zoom">
+      </Uniform>
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.15" Inc="0.01" Tooltip="" Row="2" Col="0" Page="2" Type="float" DisplayName="Speed" Name="f_speed">
+      </Uniform>
+
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="0" Col="1" Page="2" Type="float" DisplayName="Brightness" Name="brightness">
+      </Uniform>
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="1" Col="1" Page="2" Type="float" DisplayName="Contrast" Name="contrast">
+      </Uniform>
+   </Shader>
+
+
+   <Shader OutputBitDepth="Output" Index="5">
+       <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass2">
+       </Uniform>
+       <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass3">
+       </Uniform>
+    </Shader>
+
+
+    <Shader OutputBitDepth="Output" Index="6">
+        <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass5">
+        </Uniform>
+      <Uniform Index="2" NoInput="White" Tooltip="" DisplayName="Strength" InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="strength_matte">
+      </Uniform>
+
+       <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="15.0" Inc="0.01" Tooltip="" Row="0" Col="0" Page="1" Type="float" DisplayName="Amount" Name="c1_chromatic_abb">
+       </Uniform>
+       <Uniform Max="30" Min="3" Default="5" Inc="1" Tooltip="" Row="2" Col="0" Page="1" Type="int" DisplayName="Iterations" Name="c1_num_iter">
+       </Uniform>
+       <Uniform Inc="0.01" Tooltip="" Row="3" Col="0" Page="1" IconType="Light" Type="vec2" DisplayName="Center" Name="c1_center">
+          <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.5">
+          </SubUniform>
+          <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.1">
+          </SubUniform>
+       </Uniform>
+       <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.3" Inc="0.01" Tooltip="" Row="1" Col="0" Page="1" Type="float" DisplayName="Distortion" Name="c1_d_amount">
+       </Uniform>
+    </Shader>
+
+
+    <Shader OutputBitDepth="Output" Index="7">
+        <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass1">
+        </Uniform>
+        <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass6">
+        </Uniform>
+        <Uniform Index="2" Tooltip="" DisplayName="Strength" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="strength_matte">
+          <Duplicate>
+          </Duplicate>
+        </Uniform>
+       <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="15.0" Inc="0.01" Tooltip="" Row="0" Col="1" Page="1" Type="float" DisplayName="Amount" Name="c2_chromatic_abb">
+       </Uniform>
+       <Uniform Max="30" Min="3" Default="7" Inc="1" Tooltip="" Row="2" Col="1" Page="1" Type="int" DisplayName="Iterations" Name="c2_num_iter">
+       </Uniform>
+       <Uniform Inc="0.01" Tooltip="" Row="3" Col="1" Page="1" IconType="Light" Type="vec2" DisplayName="Center" Name="c2_center">
+          <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.3">
+          </SubUniform>
+          <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.9">
+          </SubUniform>
+       </Uniform>
+       <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.3" Inc="0.01" Tooltip="" Row="1" Col="1" Page="1" Type="float" DisplayName="Distortion" Name="c2_d_amount">
+       </Uniform>
+    </Shader>
+
+    <Shader OutputBitDepth="Output" Index="8">
+       <Uniform ResDependent="None" Max="500.0" Min="0.0" Default="0.0" Inc="0.1" Tooltip="" Row="2" Col="0" Page="0" DisplayName="Softness Y" Type="float" Name="y_blur">
+       </Uniform>
+       <Uniform Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass7">
+       </Uniform>
+    </Shader>
+    <Shader OutputBitDepth="Output" Index="9">
+       <Uniform ResDependent="None" Max="500.0" Min="0.0" Default="0.0" Inc="0.1" Tooltip="" Row="1" Col="0" Page="0" DisplayName="Softness X" Type="float" Name="x_blur">
+       </Uniform>
+       <Uniform Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass7">
+       </Uniform>
+    </Shader>
+
+
+    <Shader OutputBitDepth="Output" Index="10">
+        <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass1">
+        </Uniform>
+		<Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass4">
+         </Uniform>
+         <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass9">
+         </Uniform>
+
+         <Uniform Default="17" ValueType="Popup"
+     	     Tooltip="Blend Modes"
+     	     Row="3" Col="2" Page="0" Type="int"
+     	     DisplayName="Blend Modes" Name="blendMode">
+           <PopupEntry Title="No Blending" Value="-1">
+           </PopupEntry>
+           <PopupEntry Title="Min/Lighten" Value="30">
+           </PopupEntry>
+           <PopupEntry Title="Mutliply" Value="2">
+           </PopupEntry>
+           <PopupEntry Title="Max/Darken" Value="29">
+           </PopupEntry>
+           <PopupEntry Title="Screen" Value="17">
+           </PopupEntry>
+           <PopupEntry Title="Add" Value="0">
+           </PopupEntry>
+           <PopupEntry Title="Subtract" Value="1">
+           </PopupEntry>
+           <PopupEntry Title="Overlay" Value="18">
+           </PopupEntry>
+           <PopupEntry Title="Soft Light" Value="13">
+           </PopupEntry>
+           <PopupEntry Title="Hard Light" Value="14">
+           </PopupEntry>
+           <PopupEntry Title="Spotlight" Value="11">
+           </PopupEntry>
+           <PopupEntry Title="Difference" Value="19">
+           </PopupEntry>
+           <PopupEntry Title="Exclusion" Value="20">
+           </PopupEntry>
+           <PopupEntry Title="Linear Burn" Value="10">
+           </PopupEntry>
+           <PopupEntry Title="Lighter Color" Value="33">
+           </PopupEntry>
+           <PopupEntry Title="Linear Light" Value="32">
+           </PopupEntry>
+           <PopupEntry Title="Pin Light" Value="15">
+           </PopupEntry>
+         </Uniform>
+
+         <Uniform ResDependent="None" Max="100.0" Min="0.0" Default="1.0" Inc="0.01" Tooltip="" Row="0" Col="0" Page="0" DisplayName="Amount" Type="float" Name="l_blend">
+         </Uniform>
+    <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.3" Inc="0.01" Tooltip="" Row="4" Col="0" Page="0" Type="float" DisplayName="Saturation" Name="c_sat">
+    </Uniform>
+    <Uniform Inc="0.01" Tooltip="" Row="3" Col="0" Page="0" IconType="None" ValueType="Colour" Type="vec3" DisplayName="Tint" Name="c_tint">
+       <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.6">
+       </SubUniform>
+       <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.5">
+       </SubUniform>
+       <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.3">
+       </SubUniform>
+    </Uniform>
+
+    <Uniform Row="4" Col="2" Page="0" Default="False" Tooltip="" Type="bool" DisplayName="Output Light Leak Only" Name="leak_only">
+    </Uniform>
+
+	</Shader>
+   <Page Name="General" Page="0">
+      <Col Name="Light Leak" Col="0" Page="0">
+      </Col>
+      <Col Name="Flicker" Col="1" Page="0">
+      </Col>
+      <Col Name="Input / Output" Col="2" Page="0">
+      </Col>
+   </Page>
+   <Page Name="Chromatic" Page="1">
+      <Col Name="1st Chromatic Abberration" Col="0" Page="1">
+      </Col>
+      <Col Name="2nd Chromatic Abberration" Col="1" Page="1">
+      </Col>
+   </Page>
+   <Page Name="Atmosphere" Page="2">
+      <Col Name="Noise" Col="0" Page="2">
+      </Col>
+      <Col Name="Colour" Col="1" Page="2">
+      </Col>
+   </Page>
+
+
+</ShaderNodePreset>

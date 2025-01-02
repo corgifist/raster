@@ -709,8 +709,6 @@ namespace Raster {
         }
         auto& uniformsMap = shaderRegistry[shader.handle];
         if (uniformsMap.find(name) != uniformsMap.end()) {
-            if (uniformsMap[name] < 0) {
-            }
             return uniformsMap[name];
         }
         uniformsMap[name] = glGetUniformLocation(HANDLE_TO_GLUINT(shader.handle), name.c_str());
@@ -720,25 +718,31 @@ namespace Raster {
     void GPU::SetShaderUniform(Shader shader, std::string name, int i) {
         auto location = GetShaderUniformLocation(shader, name);
         if (location < 0) return;
-        glProgramUniform1i(HANDLE_TO_GLUINT(shader.handle), location, i);
+        glProgramUniform1iv(HANDLE_TO_GLUINT(shader.handle), location, 1, &i);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec4 vec) {
         auto location = GetShaderUniformLocation(shader, name);
         if (location < 0) return;
-        glProgramUniform4f(HANDLE_TO_GLUINT(shader.handle), location, vec.x, vec.y, vec.z, vec.w);
+        glProgramUniform4fv(HANDLE_TO_GLUINT(shader.handle), location, 1, glm::value_ptr(vec));
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec3 vec) {
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform3fv(HANDLE_TO_GLUINT(shader.handle), location, 1, glm::value_ptr(vec));
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::vec2 vec) {
         auto location = GetShaderUniformLocation(shader, name);
         if (location < 0) return;
-        glProgramUniform2f(HANDLE_TO_GLUINT(shader.handle), location, vec.x, vec.y);
+        glProgramUniform2fv(HANDLE_TO_GLUINT(shader.handle), location, 1, glm::value_ptr(vec));
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, float f) {
         auto location = GetShaderUniformLocation(shader, name);
         if (location < 0) return;
-        glProgramUniform1f(HANDLE_TO_GLUINT(shader.handle), location, f);
+        glProgramUniform1fv(HANDLE_TO_GLUINT(shader.handle), location, 1, &f);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::mat4 mat) {
@@ -748,7 +752,7 @@ namespace Raster {
     }
 
     void GPU::BindPipeline(Pipeline pipeline) {
-        glUseProgram(0);
+        // glUseProgram(0);
         glBindProgramPipeline(HANDLE_TO_GLUINT(pipeline.handle));
     }
 

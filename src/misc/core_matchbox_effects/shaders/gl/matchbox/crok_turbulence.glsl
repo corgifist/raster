@@ -27,6 +27,6 @@ void main( void ) {
 	}
 	c /= float(Detail);
 	c = 1.5-sqrt(pow(c,3.*0.5));
-	gl_FragColor = vec4(vec3(c*c*c*c*Colour.r,c*c*c*c*Colour.g,c*c*c*c*Colour.b), 1.0);
+	gl_FragColor = vec4(c*c*c*c*Colour, 1.0);
 
 }

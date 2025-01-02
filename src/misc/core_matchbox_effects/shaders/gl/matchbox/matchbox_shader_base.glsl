@@ -15,6 +15,10 @@ float adsk_getLuminance( in vec3 color ) {
     return (0.2126*color.r + 0.7152*color.g + 0.0722*color.b);
 }
 
+vec4 adsk_getBlendedValue( int blendType, vec4 srcColor, vec4 dstColor ) {
+    return 1. - (1. - srcColor) * (1. - dstColor);
+}
+
 bool adsk_isSceneLinear() {
     return true;
 }

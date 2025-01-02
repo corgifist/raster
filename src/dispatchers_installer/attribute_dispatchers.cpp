@@ -271,9 +271,9 @@ namespace Raster {
         if (!interpretAsColor) {
             std::string formattedAttribute = FormatString("##%s", t_attribute.c_str());
             if (!metadata.isSlider) {
-                ImGui::DragFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
+                ImGui::DragFloat3(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderStep, 0, 0, GetMetadataFormat(metadata).c_str());
             } else {
-                ImGui::SliderFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
+                ImGui::SliderFloat3(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
             }
         } else {
             ImGui::PushItemWidth(200);
