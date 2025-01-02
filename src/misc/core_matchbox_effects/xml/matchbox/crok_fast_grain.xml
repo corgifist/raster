@@ -1,0 +1,42 @@
+<ShaderNodePreset SupportsAdaptiveDegradation="0" LimitInputsToTexture="True" Description="This Matchbox shader simulates a film like grain.
+
+Input:
+- Front: source clip
+
+Setup:
+- Amount : how much grain is applied
+- Size : grain size
+- Coloured Grain : enables coloured grain
+- Colour : colour saturation of the grain
+- Luma : brightness of the grain
+
+Shader developer: martins upitis
+
+Based on http://devlog-martinsh.blogspot.fr/2013/05/image-imperfections-and-film-grain-post.html
+
+This work is licensed under a Creative Commons Attribution 3.0 Unported License.
+You are free to share, modify and adapt it for your needs, and even use it for commercial use.
+
+Matchbox version by ivar@inferno-op.com" Name="Fast Grain">
+   <Shader OutputBitDepth="Output" Index="1">
+      <Uniform ResDependent="None" Max="10.0" Min="0.0" Default="1.0" Inc="0.001" Tooltip="" Row="0" Col="0" Page="0" DisplayName="Amount" Type="float" Name="grainamount">
+      </Uniform>
+      <Uniform Row="0" Col="1" Page="0" Default="False" Tooltip="" DisplayName="Coloured Grain" Type="bool" Name="colored">
+      </Uniform>
+      <Uniform Index="0" NoInput="Error" Tooltip="" DisplayName="Front" InputType="Front" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_REPEAT" GL_TEXTURE_WRAP_S="GL_REPEAT" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="source">
+      </Uniform>
+      <Uniform ResDependent="None" Max="10.0" Min="1.0" Default="1.0" Inc="0.005" Tooltip="" Row="1" Col="0" Page="0" DisplayName="Size" Type="float" Name="grain_size">
+      </Uniform>
+      <Uniform ResDependent="None" Max="3.0" Min="0.0" Default="0.6" Inc="0.005" Tooltip="" Row="1" Col="1" Page="0" DisplayName="Colour" Type="float" Name="coloramount">
+      </Uniform>
+      <Uniform ResDependent="None" Max="5.0" Min="0.0" Default="1.0" Inc="0.01" Tooltip="" Row="2" Col="1" Page="0" DisplayName="Luma" Type="float" Name="lumamount">
+      </Uniform>
+	  
+   </Shader>
+   <Page Name="Film Grain" Page="0">
+      <Col Name="Structure" Col="0" Page="0">
+      </Col>
+      <Col Name="Colour" Col="1" Page="0">
+      </Col>
+   </Page>
+</ShaderNodePreset>

@@ -65,13 +65,12 @@ namespace Raster {
         std::string m_relativePath;
         std::string m_originalPath;
 
-        av::FormatContext m_formatCtx;
-
         bool m_formatCtxWasOpened;
         std::optional<Texture> m_attachedPicTexture;
         std::vector<StreamInfo> m_streamInfos;
         std::vector<std::pair<std::string, std::string>> m_metadata;
         std::optional<std::future<bool>> m_copyFuture;
         std::optional<std::uintmax_t> m_cachedSize;
+        std::optional<float> m_cachedDuration;
     };
 };

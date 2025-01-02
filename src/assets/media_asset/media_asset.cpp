@@ -33,24 +33,26 @@ namespace Raster {
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str());
         if (m_copyFuture.has_value() && !IsFutureReady(m_copyFuture.value())) return false;
         if (m_formatCtxWasOpened) return true;
-        if (std::filesystem::exists(absolutePath) && !std::filesystem::is_directory(absolutePath) && !m_formatCtx.isOpened() && !m_formatCtxWasOpened) {
+        av::FormatContext formatCtx;
+        if (std::filesystem::exists(absolutePath) && !std::filesystem::is_directory(absolutePath) && !formatCtx.isOpened() && !m_formatCtxWasOpened) {
             std::error_code ec;
-            m_formatCtx.openInput(absolutePath, ec);
+            formatCtx.openInput(absolutePath, ec);
             if (ec) {
                 std::cout << "failed to open formatCtx! " << av::error2string(ec.value()) << std::endl;
             } 
-            if (m_formatCtx.isOpened()) {
-                m_formatCtx.findStreamInfo();
+            if (formatCtx.isOpened()) {
+                m_cachedDuration = formatCtx.duration().seconds();
+                formatCtx.findStreamInfo();
 
-                av::Dictionary metadataDictionary(m_formatCtx.raw()->metadata, false);
+                av::Dictionary metadataDictionary(formatCtx.raw()->metadata, false);
                 for (auto& pair : metadataDictionary) {
                     m_metadata.push_back({pair.key(), pair.value()});
                 }
 
                 bool containsAttachedPicture = false;
                 int attachedPictureStreamIndex = -1;
-                for (int i = 0; i < m_formatCtx.streamsCount(); i++) {
-                    auto stream = m_formatCtx.stream(i);
+                for (int i = 0; i < formatCtx.streamsCount(); i++) {
+                    auto stream = formatCtx.stream(i);
                     if (stream.raw()->disposition & AV_DISPOSITION_ATTACHED_PIC) {
                         containsAttachedPicture = true;
                         attachedPictureStreamIndex = stream.index();
@@ -59,9 +61,9 @@ namespace Raster {
                 }
 
                 if (containsAttachedPicture) {
-                    auto packet = m_formatCtx.readPacket();
+                    auto packet = formatCtx.readPacket();
                     if (packet && packet.streamIndex() == attachedPictureStreamIndex) {
-                        auto videoDecoder = av::VideoDecoderContext(m_formatCtx.stream(attachedPictureStreamIndex));
+                        auto videoDecoder = av::VideoDecoderContext(formatCtx.stream(attachedPictureStreamIndex));
                         auto inputFrame = videoDecoder.decode(packet);
 
                         av::VideoRescaler rescaler(
@@ -80,8 +82,8 @@ namespace Raster {
                     }
                 }
 
-                for (int i = 0; i < m_formatCtx.streamsCount(); i++) {
-                    auto stream = m_formatCtx.stream(i);
+                for (int i = 0; i < formatCtx.streamsCount(); i++) {
+                    auto stream = formatCtx.stream(i);
                     bool attachedPic = stream.raw()->disposition & AV_DISPOSITION_ATTACHED_PIC;
                     if (stream.isVideo()) {
                         auto videoDecoder = av::VideoDecoderContext(stream);
@@ -99,11 +101,11 @@ namespace Raster {
 
                         if (!m_attachedPicTexture) {
                             auto rational = stream.timeBase().getValue();
-                            m_formatCtx.seek((int64_t) (m_formatCtx.duration().seconds() / 2) * (int64_t)rational.den / (int64_t) rational.num, stream.index(), AVSEEK_FLAG_BACKWARD);
+                            formatCtx.seek((int64_t) (formatCtx.duration().seconds() / 2) * (int64_t)rational.den / (int64_t) rational.num, stream.index(), AVSEEK_FLAG_BACKWARD);
                             avcodec_flush_buffers(videoDecoder.raw());
                             std::error_code ec;
                             while (true) {
-                                auto pkt = m_formatCtx.readPacket();
+                                auto pkt = formatCtx.readPacket();
                                 if (!pkt) break;
                                 if (pkt.streamIndex() != stream.index()) continue;
                                 auto decodedFrame = videoDecoder.decode(pkt, ec);
@@ -169,8 +171,8 @@ namespace Raster {
 
     std::optional<std::string> MediaAsset::AbstractGetDuration() {
         std::string acc = "";
-        if (m_formatCtx.isOpened()) {
-            auto duration = m_formatCtx.duration().seconds();
+        if (m_cachedDuration) {
+            auto duration = *m_cachedDuration;
             acc = FormatString("%i:%i", (int) (duration / 60), (int) ((int) duration % 60));
         }
         if (acc.empty()) acc = "-";
@@ -205,41 +207,39 @@ namespace Raster {
     }
 
     void MediaAsset::AbstractRenderDetails() {
-        if (m_formatCtx.isOpened()) {
-            if (m_streamInfos.empty()) {
-                ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_STREAMS_FOUND").c_str());
-            }
-            if (!m_metadata.empty()) {
-                int streamIndex = 0;
-                for (auto& stream : m_streamInfos) {
-                    std::string icon = ICON_FA_QUESTION;
-                    std::string streamName = "";
-                    if (std::holds_alternative<VideoStreamInfo>(stream)) {
-                        icon = ICON_FA_VIDEO;
-                        streamName = Localization::GetString("VIDEO_STREAM");
-                    } else if (std::holds_alternative<AudioStreamInfo>(stream)) {
-                        icon = ICON_FA_VOLUME_HIGH;
-                        streamName = Localization::GetString("AUDIO_STREAM");
-                    }
-
-                    ImGui::Text("%s %s #%i", icon.c_str(), streamName.c_str(), streamIndex++);
-                    ImGui::Indent();
-
-                    if (std::holds_alternative<VideoStreamInfo>(stream)) {
-                        auto info = std::get<VideoStreamInfo>(stream);
-                        ImGui::Text("%s %s: %ix%i", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str(), info.width, info.height);
-                        ImGui::Text("%s %s: %i Kb", ICON_FA_CIRCLE_INFO, Localization::GetString("BITRATE").c_str(), info.bitrate);
-                        ImGui::Text("%s %s: %s", ICON_FA_DROPLET, Localization::GetString("PIXEL_FORMAT").c_str(), info.pixelFormatName.c_str());
-                        ImGui::Text("%s %s: %s", ICON_FA_AUDIO_DESCRIPTION, Localization::GetString("CODEC_NAME").c_str(), info.codecName.c_str());
-                    } else if (std::holds_alternative<AudioStreamInfo>(stream)) {
-                        auto info = std::get<AudioStreamInfo>(stream);
-                        ImGui::Text("%s %s: %i", ICON_FA_FILE_WAVEFORM, Localization::GetString("SAMPLE_RATE").c_str(), info.sampleRate);
-                        ImGui::Text("%s %s: %i Kb", ICON_FA_CIRCLE_INFO, Localization::GetString("BITRATE").c_str(), info.bitrate / 1024);
-                        ImGui::Text("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("SAMPLE_FORMAT").c_str(), info.sampleFormatName.c_str());
-                        ImGui::Text("%s %s: %s", ICON_FA_AUDIO_DESCRIPTION, Localization::GetString("CODEC_NAME").c_str(), info.codecName.c_str());
-                    }
-                    ImGui::Unindent();
+        if (m_streamInfos.empty()) {
+            ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("NO_STREAMS_FOUND").c_str());
+        }
+        if (!m_metadata.empty()) {
+            int streamIndex = 0;
+            for (auto& stream : m_streamInfos) {
+                std::string icon = ICON_FA_QUESTION;
+                std::string streamName = "";
+                if (std::holds_alternative<VideoStreamInfo>(stream)) {
+                    icon = ICON_FA_VIDEO;
+                    streamName = Localization::GetString("VIDEO_STREAM");
+                } else if (std::holds_alternative<AudioStreamInfo>(stream)) {
+                    icon = ICON_FA_VOLUME_HIGH;
+                    streamName = Localization::GetString("AUDIO_STREAM");
                 }
+
+                ImGui::Text("%s %s #%i", icon.c_str(), streamName.c_str(), streamIndex++);
+                ImGui::Indent();
+
+                if (std::holds_alternative<VideoStreamInfo>(stream)) {
+                    auto info = std::get<VideoStreamInfo>(stream);
+                    ImGui::Text("%s %s: %ix%i", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str(), info.width, info.height);
+                    ImGui::Text("%s %s: %i Kb", ICON_FA_CIRCLE_INFO, Localization::GetString("BITRATE").c_str(), info.bitrate);
+                    ImGui::Text("%s %s: %s", ICON_FA_DROPLET, Localization::GetString("PIXEL_FORMAT").c_str(), info.pixelFormatName.c_str());
+                    ImGui::Text("%s %s: %s", ICON_FA_AUDIO_DESCRIPTION, Localization::GetString("CODEC_NAME").c_str(), info.codecName.c_str());
+                } else if (std::holds_alternative<AudioStreamInfo>(stream)) {
+                    auto info = std::get<AudioStreamInfo>(stream);
+                    ImGui::Text("%s %s: %i", ICON_FA_FILE_WAVEFORM, Localization::GetString("SAMPLE_RATE").c_str(), info.sampleRate);
+                    ImGui::Text("%s %s: %i Kb", ICON_FA_CIRCLE_INFO, Localization::GetString("BITRATE").c_str(), info.bitrate / 1024);
+                    ImGui::Text("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("SAMPLE_FORMAT").c_str(), info.sampleFormatName.c_str());
+                    ImGui::Text("%s %s: %s", ICON_FA_AUDIO_DESCRIPTION, Localization::GetString("CODEC_NAME").c_str(), info.codecName.c_str());
+                }
+                ImGui::Unindent();
             }
         }
     }

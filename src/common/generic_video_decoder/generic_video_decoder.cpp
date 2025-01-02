@@ -2,13 +2,62 @@
 
 #include "video_decoder.h"
 #include "video_decoders.h"
-#include <cstdint>
-#include <glm/fwd.hpp>
-#include <libavcodec/avcodec.h>
-#include <libavutil/pixfmt.h>
-#include <optional>
+extern "C" {
+#define ARENA_IMPLEMENTATION
+#include "arena.h"
+}
+
+#define PREFERRED_VIDEO_CACHE_SIZE 1536 // 1024 MB
 
 namespace Raster {
+
+    struct VideoCacheEntry {
+        uint8_t* data;
+        std::string assetPath;
+        size_t frame;
+    };
+
+    Arena* s_videoCache = nullptr;
+    std::vector<VideoCacheEntry> s_videoCacheEntries;
+
+    static void AllocateCache(size_t t_bytes) {
+        s_videoCache = arena_create(t_bytes);
+        if (!s_videoCache) {
+            RASTER_LOG("failed to allocate " << t_bytes << " bytes for video cache (" << t_bytes / (1024 * 1024) << " MB)");
+            RASTER_LOG("trying to allocate fewer bytes");
+            AllocateCache(t_bytes / 2);
+        } else {
+            RASTER_LOG("allocated " << t_bytes << " bytes for video cache (" << t_bytes / (1024 * 1024) << " MB)");
+        }
+    }
+
+    static void InitializeCache() {
+        if (!s_videoCache) {
+            AllocateCache(PREFERRED_VIDEO_CACHE_SIZE * 1024 * 1024);
+        }
+    }
+
+    static void CacheVideoFrame(uint8_t* data, size_t t_frame, std::string t_assetPath, ImageAllocation& t_imageAllocation) {
+        auto videoPtr = arena_alloc(s_videoCache, t_imageAllocation.allocationSize);
+        // DUMP_VAR(t_imageAllocation.allocationSize);
+        // DUMP_VAR(s_videoCache->size);
+        if (videoPtr) {
+            memcpy(videoPtr, data, t_imageAllocation.allocationSize);
+            VideoCacheEntry newEntry;
+            newEntry.data = (uint8_t*) videoPtr;
+            newEntry.assetPath = t_assetPath;
+            newEntry.frame = t_frame;
+            s_videoCacheEntries.push_back(newEntry);
+            // RASTER_LOG("caching video frame");
+        } else {
+            // RASTER_LOG("failed to allocate cached video frame");
+            arena_clear(s_videoCache);
+            s_videoCacheEntries.clear();
+            CacheVideoFrame(data, t_frame, t_assetPath, t_imageAllocation);
+        }
+
+    }
+
     GenericVideoDecoder::GenericVideoDecoder() {
         this->assetID = 0;
         this->decoderContexts = std::make_shared<std::unordered_map<float, int>>();
@@ -149,6 +198,8 @@ namespace Raster {
             Destroy();
             return false;
         }
+
+        InitializeCache();
         
         SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
@@ -167,12 +218,19 @@ namespace Raster {
                 decoder->videoRescaler = av::VideoRescaler(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), InterpretVideoFramePrecision(targetPrecision),
                                                             decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), decoder->videoDecoderCtx.pixelFormat());
             }
+
             int elementSize = 1;
             if (targetPrecision == VideoFramePrecision::Half) elementSize = 2;
             if (targetPrecision == VideoFramePrecision::Full) elementSize = 4;
             if (!t_imageAllocation.Get() || 
                 (t_imageAllocation.width != decoder->videoDecoderCtx.width() || t_imageAllocation.height != decoder->videoDecoderCtx.height() || t_imageAllocation.elementSize != elementSize)) {
                 t_imageAllocation.Allocate(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), elementSize);
+            }
+            for (auto& entry : s_videoCacheEntries) {
+                if (entry.frame == targetFrame && entry.assetPath == decoder->assetPath) {
+                    memcpy(t_imageAllocation.Get(), entry.data, t_imageAllocation.allocationSize);
+                    return true;
+                }    
             }
             int64_t frameDifference = targetFrame - decoder->lastLoadedFrame;
             int64_t reservedLastLoadedFrame = decoder->lastLoadedFrame;
@@ -210,6 +268,9 @@ namespace Raster {
                 if (videoFrame) {
                     videoFrame = decoder->videoRescaler.rescale(videoFrame);
                     memcpy(t_imageAllocation.Get(), videoFrame.data(), t_imageAllocation.allocationSize);
+
+                    // saving video to cache
+                    CacheVideoFrame(videoFrame.data(), targetFrame, decoder->assetPath, t_imageAllocation);
                     return true;
                 } 
             }

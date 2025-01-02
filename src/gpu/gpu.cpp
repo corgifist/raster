@@ -302,7 +302,6 @@ namespace Raster {
             }
         });
         while (!GPU::MustTerminate()) {
-            // TODO: investigate mysterious crash while resizing
             glfwPollEvents();
             auto targetTitle = s_targetTitle.Get();
             static std::string s_cachedTitle = "";

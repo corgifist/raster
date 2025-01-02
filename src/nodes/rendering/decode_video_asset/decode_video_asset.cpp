@@ -56,6 +56,7 @@ namespace Raster {
                     m_videoTexture = GPU::GenerateTexture(m_imageAllocation.width, m_imageAllocation.height, 4, targetTexturePrecision);
                 }
                 GPU::UpdateTexture(m_videoTexture, 0, 0, m_videoTexture.width, m_videoTexture.height, 4, m_imageAllocation.Get());
+                GPU::GenerateMipmaps(m_videoTexture);
             }
         }
 

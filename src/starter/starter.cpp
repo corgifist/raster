@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     std::string paksFolder = "./paks/";
     if (!std::filesystem::exists(paksFolder + "core.pak")) {
         print("paks/core.pak file is not found!");
-        print("paks/core.pak contains core libraries the binary of Raster itself");
+        print("paks/core.pak contains core libraries and the binary of Raster itself");
         print("without paks/core.pak starter has nothing to execute");
         return 1;
     }
