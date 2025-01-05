@@ -39,6 +39,7 @@ namespace Raster {
             auto originalAsset = t_asset;
             auto assetCandidate = ImportAsset();
             if (assetCandidate.has_value()) {
+                t_asset->Delete();
                 t_asset = assetCandidate.value();
                 t_asset->id = originalAsset->id;
             }

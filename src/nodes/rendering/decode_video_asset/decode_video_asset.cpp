@@ -49,14 +49,17 @@ namespace Raster {
             m_decoder.targetPrecision = targetPrecision;
             auto decodingResult = m_decoder.DecodeFrame(m_imageAllocation, RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS_ID", int), (project.currentFrame - composition->beginFrame) / project.framerate);
             if (decodingResult) {
-                if (!m_videoTexture.handle || (m_videoTexture.width != m_imageAllocation.width || m_videoTexture.height != m_imageAllocation.height)) {
+                if (!m_videoTexture.handle || (m_videoTexture.width != m_imageAllocation.width || m_videoTexture.height != m_imageAllocation.height || m_videoTexture.channels != m_imageAllocation.channels)) {
                     if (m_videoTexture.handle) {
                         GPU::DestroyTexture(m_videoTexture);
                     }
-                    m_videoTexture = GPU::GenerateTexture(m_imageAllocation.width, m_imageAllocation.height, 4, targetTexturePrecision);
+                    m_videoTexture = GPU::GenerateTexture(m_imageAllocation.width, m_imageAllocation.height, m_imageAllocation.channels, targetTexturePrecision);
                 }
-                GPU::UpdateTexture(m_videoTexture, 0, 0, m_videoTexture.width, m_videoTexture.height, 4, m_imageAllocation.Get());
-                GPU::GenerateMipmaps(m_videoTexture);
+                // RASTER_LOG("updating texture");
+                if (m_imageAllocation.data) {
+                    GPU::UpdateTexture(m_videoTexture, 0, 0, m_videoTexture.width, m_videoTexture.height, m_imageAllocation.channels, m_imageAllocation.data);
+                }
+                // GPU::GenerateMipmaps(m_videoTexture);
             }
         }
 

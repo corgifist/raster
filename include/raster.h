@@ -56,7 +56,7 @@
 
 #if defined(UNIX) || defined(__linux__)
     #define RASTER_DL_EXPORT
-#elif #defined(_WIN32)
+#elif defined(_WIN32)
     #define RASTER_DL_EXPORT __declspec(dllexport)
 #endif
 
@@ -82,6 +82,12 @@
     #define RASTER_COMPILER_VERSION _MSC_FULL_VER
 #else
     #error Cannot determine valid COMPILER_FMT / COMPILER_VERSION implementation for your compiler :(
+#endif
+
+#if defined(UNIX) || defined(__linux__)
+#include <unistd.h>
+#elif defined(_WIN32)
+#include <windows.h>
 #endif
 
 // use this macro to get info about the compiler
@@ -229,7 +235,7 @@ namespace Raster {
     static std::string GetHomePath() {
         #if defined(UNIX) || defined(__linux__)
             return getenv("HOME");
-        #elif #defined(_WIN32)
+        #elif defined(_WIN32)
             return std::string(getenv("HOMEDRIVE")) + std::string(getenv("HOMEPATH"));
         #else
             return "~";
@@ -246,5 +252,31 @@ namespace Raster {
 
         return path;
     }
+
+#if defined(UNIX) || defined(__linux__)
+    #include <unistd.h>
+
+    static unsigned long long GetRamAmount() {
+        long pages = sysconf(_SC_PHYS_PAGES);
+        long page_size = sysconf(_SC_PAGE_SIZE);
+        return pages * page_size;
+    }
+#elif defined(_WIN32)
+    #include <windows.h>
+
+    static unsigned long long GetRamAmount()
+    {
+        MEMORYSTATUSEX status;
+        status.dwLength = sizeof(status);
+        GlobalMemoryStatusEx(&status);
+        return status.ullTotalPhys;
+    }
+#else
+    static unsigned long long GetRamAmount() {
+        return 0;
+    }
+#endif
+
+
 
 }

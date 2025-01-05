@@ -11,31 +11,24 @@ namespace Raster {
     };
 
     struct ImageAllocation {
-        ImageAllocation() : m_data(nullptr), allocationSize(0), width(0), height(0), elementSize(0) {}
-        void Allocate(size_t t_width, size_t t_height, size_t t_elementSize) {
+        ImageAllocation() : data(nullptr), allocationSize(0), width(0), height(0), channels(0), elementSize(0) {}
+        void Allocate(size_t t_width, size_t t_height, size_t t_channels, size_t t_elementSize) {
             Deallocate();
-            allocationSize = t_width * t_height * 4 * t_elementSize;
-            m_data = new uint8_t[allocationSize];
+            allocationSize = t_width * t_height * t_channels * t_elementSize;
             width = t_width;
             height = t_height;
             elementSize = t_elementSize;
+            channels = t_channels;
         }
 
         void Deallocate() {
-            if (m_data) {
-                delete[] m_data;
-                width = height = elementSize = 0;
-            }
-        }
-        
-        uint8_t* Get() {
-            return (uint8_t*) m_data;
+            width = height = channels = elementSize = 0;
+            data = nullptr;
         }
         
         size_t allocationSize;
-        size_t width, height, elementSize;
-    private:
-        uint8_t* m_data;
+        size_t width, height, channels, elementSize;
+        uint8_t* data;
     };
 
     struct GenericVideoDecoder {
@@ -45,6 +38,9 @@ namespace Raster {
         VideoFramePrecision targetPrecision;
 
         GenericVideoDecoder();
+
+        // size in MB (Megabytes)
+        static void InitializeCache(size_t t_size = 512);
 
         void SetVideoAsset(int t_assetID);
         bool DecodeFrame(ImageAllocation& t_imageAllocation, int t_renderPassID, std::optional<float> t_targetFrame = std::nullopt);

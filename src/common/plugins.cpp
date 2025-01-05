@@ -3,6 +3,7 @@
 #include "common/configuration.h"
 #include "common/libraries.h"
 #include "common/plugin_base.h"
+#include "raster.h"
 #include <filesystem>
 
 namespace Raster {
@@ -25,13 +26,23 @@ namespace Raster {
     }
 
     void Plugins::EarlyInitialize() {
+        auto preferencesPluginCandidate = GetPluginByPackageName(RASTER_PACKAGED "preferences");
+        if (preferencesPluginCandidate) {
+            (*preferencesPluginCandidate)->OnEarlyInitialization();
+        }
         for (auto& plugin : s_plugins) {
+            if (plugin->PackageName() == RASTER_PACKAGED "preferences") continue;
             plugin->OnEarlyInitialization();
         }
     }
 
     void Plugins::WorkspaceInitialize() {
+        auto preferencesPluginCandidate = GetPluginByPackageName(RASTER_PACKAGED "preferences");
+        if (preferencesPluginCandidate) {
+            (*preferencesPluginCandidate)->OnWorkspaceInitialization();
+        }
         for (auto& plugin : s_plugins) {
+            if (plugin->PackageName() == RASTER_PACKAGED "preferences") continue;
             plugin->OnWorkspaceInitialization();
         }
     }

@@ -1,28 +1,29 @@
 #include "common/generic_video_decoder.h"
 
+#include "raster.h"
 #include "video_decoder.h"
 #include "video_decoders.h"
-extern "C" {
-#define ARENA_IMPLEMENTATION
-#include "arena.h"
-}
+#include "cache_allocator.h"
+#include "cache_allocator.h"
+#include <libavutil/frame.h>
+#include <libavutil/pixfmt.h>
 
 #define PREFERRED_VIDEO_CACHE_SIZE 1536 // 1024 MB
 
 namespace Raster {
-
     struct VideoCacheEntry {
         uint8_t* data;
         std::string assetPath;
         size_t frame;
     };
 
-    Arena* s_videoCache = nullptr;
+    FreeListAllocator s_cacheAllocator;
     std::vector<VideoCacheEntry> s_videoCacheEntries;
 
     static void AllocateCache(size_t t_bytes) {
-        s_videoCache = arena_create(t_bytes);
-        if (!s_videoCache) {
+        s_cacheAllocator = FreeListAllocator(t_bytes, FreeListAllocator::FIND_FIRST);
+        s_cacheAllocator.Init();
+        if (!s_cacheAllocator.m_start_ptr) {
             RASTER_LOG("failed to allocate " << t_bytes << " bytes for video cache (" << t_bytes / (1024 * 1024) << " MB)");
             RASTER_LOG("trying to allocate fewer bytes");
             AllocateCache(t_bytes / 2);
@@ -31,16 +32,26 @@ namespace Raster {
         }
     }
 
-    static void InitializeCache() {
-        if (!s_videoCache) {
-            AllocateCache(PREFERRED_VIDEO_CACHE_SIZE * 1024 * 1024);
+    void GenericVideoDecoder::InitializeCache(size_t t_size) {
+        if (!s_cacheAllocator.m_start_ptr) {
+            AllocateCache(t_size * 1024 * 1024);
         }
     }
 
-    static void CacheVideoFrame(uint8_t* data, size_t t_frame, std::string t_assetPath, ImageAllocation& t_imageAllocation) {
-        auto videoPtr = arena_alloc(s_videoCache, t_imageAllocation.allocationSize);
-        // DUMP_VAR(t_imageAllocation.allocationSize);
-        // DUMP_VAR(s_videoCache->size);
+    static AVPixelFormat correct_for_deprecated_pixel_format(AVPixelFormat pix_fmt) {
+        switch (pix_fmt) {
+            case AV_PIX_FMT_YUVJ420P: return AV_PIX_FMT_YUV420P;
+            case AV_PIX_FMT_YUVJ422P: return AV_PIX_FMT_YUV422P;
+            case AV_PIX_FMT_YUVJ444P: return AV_PIX_FMT_YUV444P;
+            case AV_PIX_FMT_YUVJ440P: return AV_PIX_FMT_YUV440P;
+            default:                  return pix_fmt;
+        }
+    }
+
+    // returns pointer to newly cached frame
+    static uint8_t* CacheVideoFrame(uint8_t* data, size_t t_frame, std::string t_assetPath, ImageAllocation& t_imageAllocation) {
+        if (!s_cacheAllocator.m_start_ptr) return nullptr;
+        auto videoPtr = s_cacheAllocator.Allocate(t_imageAllocation.allocationSize);
         if (videoPtr) {
             memcpy(videoPtr, data, t_imageAllocation.allocationSize);
             VideoCacheEntry newEntry;
@@ -48,14 +59,19 @@ namespace Raster {
             newEntry.assetPath = t_assetPath;
             newEntry.frame = t_frame;
             s_videoCacheEntries.push_back(newEntry);
-            // RASTER_LOG("caching video frame");
+            return newEntry.data;
         } else {
-            // RASTER_LOG("failed to allocate cached video frame");
-            arena_clear(s_videoCache);
-            s_videoCacheEntries.clear();
-            CacheVideoFrame(data, t_frame, t_assetPath, t_imageAllocation);
+            // deallocate the oldest cache entry
+            if (!s_videoCacheEntries.empty()) {
+                auto& firstEntry = s_videoCacheEntries[0];
+                s_cacheAllocator.Free(firstEntry.data);
+                s_videoCacheEntries.erase(s_videoCacheEntries.begin());
+                return CacheVideoFrame(data, t_frame, t_assetPath, t_imageAllocation);
+            } else {
+                RASTER_LOG("caching video frame failed despite having zero cache entries");
+            }
         }
-
+        return nullptr;
     }
 
     GenericVideoDecoder::GenericVideoDecoder() {
@@ -120,9 +136,21 @@ namespace Raster {
         if (t_precision == VideoFramePrecision::Half) {
             return AV_PIX_FMT_RGBAF16;
         }
-        return AV_PIX_FMT_RGBA;
+        return AV_PIX_FMT_RGB24;
     }
-
+    
+    static size_t InterpretVideoFrameChannels(VideoFramePrecision t_precision) {
+        if (t_precision == VideoFramePrecision::Full) {
+            return 4;
+        }
+        if (t_precision == VideoFramePrecision::Half) {
+            return 4;
+        }
+        if (t_precision == VideoFramePrecision::Usual) {
+            return 3;
+        }
+        return 3;
+    }
     void GenericVideoDecoder::SetVideoAsset(int t_assetID) {
         if (t_assetID == assetID) {
             return;
@@ -160,9 +188,7 @@ namespace Raster {
                 }
             }
 
-
             if (streamWasFound) {
-
                 // collecting all keyframes
                 while (true) {
                     auto pkt = decoder->formatCtx.readPacket();
@@ -172,19 +198,18 @@ namespace Raster {
                         decoder->keyframes.push_back(pkt.pts().seconds() * decoder->targetVideoStream.frameRate().getDouble());
                     }
                 }
-                decoder->formatCtx.seek({0, {1, 1}});
-
                 if (decoder->videoDecoderCtx.isOpened()) {
                     decoder->videoDecoderCtx.close();
                 }
+                decoder->formatCtx.seek({0, {1, 1}});
                 decoder->videoDecoderCtx = av::VideoDecoderContext(decoder->targetVideoStream);
                 decoder->framerate = decoder->targetVideoStream.frameRate().getDouble();
                 decoder->videoDecoderCtx.setRefCountedFrames(true);
                 av::Dictionary options;
                 options.set("threads", "auto");
                 decoder->videoDecoderCtx.open(options);
-                decoder->videoRescaler = av::VideoRescaler(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), InterpretVideoFramePrecision(targetPrecision),
-                                                            decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), decoder->videoDecoderCtx.pixelFormat());
+                decoder->videoRescaler = av::VideoRescaler(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), correct_for_deprecated_pixel_format(InterpretVideoFramePrecision(targetPrecision)),
+                                                            decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), correct_for_deprecated_pixel_format(decoder->videoDecoderCtx.pixelFormat()));
                 decoder->needsSeeking = true;
             }
 
@@ -198,8 +223,6 @@ namespace Raster {
             Destroy();
             return false;
         }
-
-        InitializeCache();
         
         SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
@@ -214,21 +237,18 @@ namespace Raster {
         if (decoder->formatCtx.isOpened() && decoder->videoDecoderCtx.isOpened()) {
             if (decoder->videoRescaler.dstWidth() != decoder->videoDecoderCtx.width() || 
                 decoder->videoRescaler.dstHeight() != decoder->videoDecoderCtx.height() ||
-                decoder->videoRescaler.dstPixelFormat() != InterpretVideoFramePrecision(targetPrecision)) {
-                decoder->videoRescaler = av::VideoRescaler(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), InterpretVideoFramePrecision(targetPrecision),
-                                                            decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), decoder->videoDecoderCtx.pixelFormat());
+                decoder->videoRescaler.dstPixelFormat() != correct_for_deprecated_pixel_format(InterpretVideoFramePrecision(targetPrecision))) {
+                decoder->videoRescaler = av::VideoRescaler(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), correct_for_deprecated_pixel_format(InterpretVideoFramePrecision(targetPrecision)),
+                                                            decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), correct_for_deprecated_pixel_format(decoder->videoDecoderCtx.pixelFormat()));
             }
 
             int elementSize = 1;
             if (targetPrecision == VideoFramePrecision::Half) elementSize = 2;
             if (targetPrecision == VideoFramePrecision::Full) elementSize = 4;
-            if (!t_imageAllocation.Get() || 
-                (t_imageAllocation.width != decoder->videoDecoderCtx.width() || t_imageAllocation.height != decoder->videoDecoderCtx.height() || t_imageAllocation.elementSize != elementSize)) {
-                t_imageAllocation.Allocate(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), elementSize);
-            }
+            t_imageAllocation.Allocate(decoder->videoDecoderCtx.width(), decoder->videoDecoderCtx.height(), InterpretVideoFrameChannels(targetPrecision), elementSize);
             for (auto& entry : s_videoCacheEntries) {
                 if (entry.frame == targetFrame && entry.assetPath == decoder->assetPath) {
-                    memcpy(t_imageAllocation.Get(), entry.data, t_imageAllocation.allocationSize);
+                    t_imageAllocation.data = entry.data;
                     return true;
                 }    
             }
@@ -262,17 +282,16 @@ namespace Raster {
                 } 
                 decoder->percentage = 1;
                 decoder->currentlyDecoding = false;
+                // DUMP_VAR(videoFrame.width());
 
                 // DUMP_VAR(videoFrame.pts().seconds());
+                if (!videoFrame) return false;
+                
+                videoFrame = decoder->videoRescaler.rescale(videoFrame);   
+                if (!videoFrame) return false;
 
-                if (videoFrame) {
-                    videoFrame = decoder->videoRescaler.rescale(videoFrame);
-                    memcpy(t_imageAllocation.Get(), videoFrame.data(), t_imageAllocation.allocationSize);
-
-                    // saving video to cache
-                    CacheVideoFrame(videoFrame.data(), targetFrame, decoder->assetPath, t_imageAllocation);
-                    return true;
-                } 
+                t_imageAllocation.data = CacheVideoFrame(videoFrame.data(), targetFrame, decoder->assetPath, t_imageAllocation);
+                return true;
             }
         }
 

@@ -300,5 +300,8 @@
     "FULL_FLOAT": "Full Float",
     "bpc": "bpc",
     "PROJECT_COLOR_PRECISION": "Project Color Precision",
-    "BITS": "Bits"
+    "BITS": "Bits",
+    "VIDEO_CACHING_ENABLED": "Video Caching Enabled",
+    "MAX_VIDEO_CACHE_SIZE": "Max Video Cache Size",
+    "VIDEO_CACHE_SIZE_APPROXIMATION": "%i MB can approximately hold %i 1920x1080 RGB8 pictures"
 }
