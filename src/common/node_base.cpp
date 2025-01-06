@@ -14,6 +14,7 @@
 #include "common/gradient_1d.h"
 #include "raster.h"
 #include "common/choice.h"
+#include "common/rendering.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -202,6 +203,10 @@ namespace Raster {
                         }
                         dispatcherWasFound = true;
                         dispatcher.second(this, GetAttributeName(t_attribute), dynamicCandidate, isAttributeExposed, t_metadata);
+                        if (ImGui::IsItemEdited()) {
+                            Rendering::ForceRenderFrame();
+                            RASTER_LOG("attribute edited");
+                        }
                         if (!usingCachedAttribute) attributes[t_attribute] = dynamicCandidate;
                     } 
                 }

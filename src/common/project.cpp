@@ -2,6 +2,7 @@
 #include "common/project_color_precision.h"
 #include "raster.h"
 #include "common/common.h"
+#include "common/rendering.h"
 
 namespace Raster {
     Project::Project(Json data) {
@@ -129,6 +130,7 @@ namespace Raster {
     }
 
     void Project::OnTimelineSeek() {
+        Rendering::ForceRenderFrame();
         for (auto& composition : compositions) {
             composition.OnTimelineSeek();
         }

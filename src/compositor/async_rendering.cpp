@@ -1,4 +1,7 @@
 #include "compositor/async_rendering.h"
+#include "common/rendering.h"
+#include <ratio>
+#include <thread>
 
 namespace Raster {
     void* AsyncRendering::s_context = nullptr;
@@ -21,10 +24,15 @@ namespace Raster {
         static int s_renderingPassID = 1;
         while (m_running) {
             if (Workspace::IsProjectLoaded()) {
-                double firstTime = GPU::GetTime();
-
                 auto& project = Workspace::GetProject();
+                while ((!project.playing && !Rendering::MustRenderFrame()) && m_running) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(3));
+                    continue;
+                }
+                if (!m_running) break;
+                Rendering::CancelRenderFrame();
                 Compositor::EnsureResolutionConstraints();
+                double firstTime = GPU::GetTime();
                 Compositor::s_bundles.Get().clear();
                 project.Traverse({
                     {"RENDERING_PASS", true},
@@ -56,7 +64,8 @@ namespace Raster {
                     ExperimentalSleepFor(idealTimeDifference / 1000.0);
                 }
                 double finalTime = GPU::GetTime();
-                m_allowRendering = false;
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
         }
     }

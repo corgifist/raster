@@ -22,6 +22,7 @@
 #include "common/plugins.h"
 #include "raster.h"
 #include "common/layouts.h"
+#include "common/rendering.h"
 
 using namespace av;
 
@@ -269,6 +270,7 @@ namespace Raster {
                     }
                 }
                 if (project.playing) {
+                    Rendering::ForceRenderFrame();
                     auto projectLength = project.GetProjectLength();
                     if (project.currentFrame >= projectLength) {
                         if (project.looping) {
@@ -310,6 +312,7 @@ namespace Raster {
         if (Workspace::s_project.has_value()) {
             Workspace::GetProject().compositions.clear();
         }
+        Audio::Terminate();
         GPU::Terminate();
         s_writerThreadRunning = false;
         s_writerThread.join();

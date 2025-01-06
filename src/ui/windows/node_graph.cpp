@@ -647,8 +647,9 @@ namespace Raster {
                                     if (s_maxInputPinX + s_maxOutputPinX > s_headerSize.x) {
                                         s_headerSize.x = s_maxInputPinX + s_maxOutputPinX;
                                     }
-                                    if (node->Footer().has_value()) {
-                                        auto footer = node->Footer().value();
+                                    auto footerCandidate = node->Footer();
+                                    if (footerCandidate) {
+                                        auto footer = *footerCandidate;
                                         auto immediateFooters = node->GetImmediateFooters();
                                         if (!immediateFooters.empty()) {
                                             footer += "\n";

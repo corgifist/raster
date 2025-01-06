@@ -53,9 +53,8 @@ namespace Raster {
             if (result && result.pts().timestamp() == av::NoPts) { 
                 result.setPts(pkt.pts());
             }
-            if (result && result.width() > 0 && result.height() > 0 && !result.isNull()) break;
+            if (result && result.width() > 0 && result.height() > 0) break;
             if (ec.value() == AVERROR(EAGAIN)) continue;
-            break;
         }
         return result;
     }

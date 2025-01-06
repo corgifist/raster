@@ -15,6 +15,8 @@ namespace Raster {
 
         static void Initialize();
 
+        static void Terminate();
+
         // creates new audio instance
         // should not be called if audio instance already exists, cause it
         // will cause memory leaks or other side effects 

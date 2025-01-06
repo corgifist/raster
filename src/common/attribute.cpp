@@ -9,6 +9,7 @@
 #include "common/workspace.h"
 #include "common/dispatchers.h"
 #include "common/easings.h"
+#include "common/rendering.h"
 
 namespace Raster {
 
@@ -268,6 +269,7 @@ namespace Raster {
                 bool isItemEdited = false;
                 currentValue = AbstractRenderLegend(t_composition, currentValue, isItemEdited);
                 shouldAddKeyframe = shouldAddKeyframe || isItemEdited;
+                if (shouldAddKeyframe) Rendering::ForceRenderFrame();
             ImGui::PopItemWidth();
         ImGui::PopID();
 

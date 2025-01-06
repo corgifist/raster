@@ -146,6 +146,12 @@ namespace Raster {
         s_backendInfo.version = MA_VERSION_STRING;
     }
 
+    void Audio::Terminate() {
+        if (IsAudioInstanceActive()) {
+            TerminateAudioInstance();
+        }
+    }
+
     void Audio::CreateAudioInstance() {
         ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
         deviceConfig.playback.format = ma_format_f32;

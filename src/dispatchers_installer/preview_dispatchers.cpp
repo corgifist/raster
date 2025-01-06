@@ -1,4 +1,6 @@
 #include "common/common.h"
+#include "common/localization.h"
+#include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
@@ -11,6 +13,7 @@
 #include "common/audio_samples.h"
 #include "string_dispatchers.h"
 #include "image/image.h"
+#include "common/rendering.h"
 
 namespace Raster {
 
@@ -254,6 +257,10 @@ namespace Raster {
                     endImageOffset = ImVec2(0, 0);
                     animationPercentage = 0.0f;
                 }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ROTATE, Localization::GetString("FORCE_RENDER_FRAME").c_str()).c_str())) {
+                    Rendering::ForceRenderFrame();
+                }
+                ImGui::Separator();
                 if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE_TO_DISK").c_str()).c_str())) {
                     bool mustBeSaved = false;
                     ImagePrecision targetPrecision = ImagePrecision::Usual;

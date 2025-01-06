@@ -1,4 +1,5 @@
 #include "common/easing_base.h"
+#include "common/rendering.h"
 
 namespace Raster {
     void EasingBase::Initialize() {

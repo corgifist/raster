@@ -5,8 +5,6 @@
 #include "video_decoders.h"
 #include "cache_allocator.h"
 #include "cache_allocator.h"
-#include <libavutil/frame.h>
-#include <libavutil/pixfmt.h>
 
 #define PREFERRED_VIDEO_CACHE_SIZE 1536 // 1024 MB
 
@@ -190,6 +188,7 @@ namespace Raster {
 
             if (streamWasFound) {
                 // collecting all keyframes
+                decoder->formatCtx.seek({0, {1, 1}});
                 while (true) {
                     auto pkt = decoder->formatCtx.readPacket();
                     if (!pkt) break;
