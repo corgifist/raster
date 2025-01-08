@@ -1,5 +1,6 @@
 #include "common/audio_bus.h"
 #include "common/workspace.h"
+#include "common/audio_info.h"
 
 namespace Raster {
     AudioBus::AudioBus() {
@@ -16,6 +17,12 @@ namespace Raster {
         this->redirectID = t_data["RedirectID"];
         this->main = t_data["Main"];
         if (t_data.contains("ColorMark")) this->colorMark = t_data["ColorMark"];
+    }
+
+    void AudioBus::ValidateBuffers() {
+        if (samples.size() != AudioInfo::s_periodSize * AudioInfo::s_channels) {
+            samples.resize(AudioInfo::s_periodSize * AudioInfo::s_channels);
+        }
     }
 
     Json AudioBus::Serialize() {

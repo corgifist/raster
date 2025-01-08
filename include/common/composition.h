@@ -28,6 +28,7 @@ namespace Raster {
         void OnTimelineSeek();
 
         std::vector<int> GetUsedAudioBuses();
+        bool DoesAudioMixing();
 
         Json Serialize();
     };

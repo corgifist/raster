@@ -1,3 +1,4 @@
+#include "common/composition.h"
 #include "raster.h"
 #include "common/common.h"
 
@@ -80,7 +81,7 @@ namespace Raster {
             }
         }
         if (audioMixing && !audioEnabled) return;
-        if (!IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) return;
+        if (!IsInBounds(project.GetCorrectCurrentTime(), beginFrame - 1, endFrame + 1)) return;
         if (!enabled) return;
         AbstractPinMap accumulator;
         for (auto& pair : nodes) {
@@ -102,6 +103,14 @@ namespace Raster {
                 }
             }
         }
+    }
+
+    bool Composition::DoesAudioMixing() {
+        for (auto& node : nodes) {
+            if (!node.second->enabled || node.second->bypassed) continue;
+            if (node.second->DoesAudioMixing()) return true;
+        }
+        return false;
     }
 
     std::vector<int> Composition::GetUsedAudioBuses() {

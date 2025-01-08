@@ -1,4 +1,6 @@
 #include "timeline.h"
+#include "common/localization.h"
+#include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "common/attributes.h"
 #include "common/ui_shared.h"
@@ -6,6 +8,8 @@
 #include "compositor/blending.h"
 #include "common/transform2d.h"
 #include "common/dispatchers.h"
+#include "common/rendering.h"
+#include "common/waveform_manager.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -537,6 +541,44 @@ namespace Raster {
             DrawRect(forwardBoundsDrag, forwardDragColor);
             DrawRect(backwardBoundsDrag, backwardDragColor);
 
+            auto& waveformRecordsSync = WaveformManager::GetRecords();
+            waveformRecordsSync.Lock();
+            auto& waveformRecords = waveformRecordsSync.GetReference();
+            if (waveformRecords.find(t_id) != waveformRecords.end()) {
+                auto originalButtonCursor = ImGui::GetCursorPos();
+                ImGui::SetCursorPos(buttonCursor);
+                auto& waveformRecord = waveformRecords[t_id];
+                ImVec2 originalCursor = ImGui::GetCursorScreenPos();
+                ImVec2 layerEndCursor = {originalCursor.x + composition->endFrame * s_pixelsPerFrame, originalCursor.y};
+                float pixelAdvance = (float) waveformRecord.precision / (float) AudioInfo::s_sampleRate * project.framerate * s_pixelsPerFrame;
+                float advanceAccumulator = 0;
+                ImVec4 waveformColor = buttonColor * 0.7f;
+                waveformColor.w = 1.0f;
+                for (size_t i = 0; i < waveformRecord.data.size(); i++) {
+                    if (advanceAccumulator > (composition->endFrame - composition->beginFrame) * s_pixelsPerFrame) break;
+                    if (originalCursor.x < s_splitterState * s_rootWindowSize.x) {
+                        originalCursor.x += pixelAdvance;
+                        advanceAccumulator += pixelAdvance;
+                        continue;
+                    }
+                    if (originalCursor.x > ImGui::GetWindowSize().x + s_splitterState * s_rootWindowSize.x) break;
+                    float average = glm::abs(waveformRecord.data[i]);
+                    float averageInPixels = average * LAYER_HEIGHT;
+                    float invertedAverageInPixels = LAYER_HEIGHT - averageInPixels;
+                    ImVec2 bottomRight = originalCursor;
+                    bottomRight.y += LAYER_HEIGHT;
+                    bottomRight.x += pixelAdvance;
+                    ImVec2 upperLeft = originalCursor;
+                    upperLeft.y += invertedAverageInPixels;
+                    ImGui::GetWindowDrawList()->AddRectFilled(upperLeft, bottomRight, ImGui::GetColorU32(waveformColor));
+                    // RASTER_LOG("drawing waveform");
+                    originalCursor.x += pixelAdvance;
+                    advanceAccumulator += pixelAdvance;
+                }
+                ImGui::SetCursorPos(originalButtonCursor);
+            }
+            waveformRecordsSync.Unlock();
+
             auto& bundles = Compositor::s_bundles.GetFrontValue();
             if (bundles.find(t_id) != bundles.end()) {
                 auto& bundle = bundles[t_id];
@@ -733,6 +775,7 @@ namespace Raster {
         }
         RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
+        WaveformManager::EraseRecord(composition->id);
     }
 
     void TimelineUI::AppendSelectedCompositions(Composition* composition) {
@@ -785,12 +828,14 @@ namespace Raster {
                 ImGui::InputTextWithHint("##attributeSearchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &attributeFilter);
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
                     t_composition->opacityAttributeID = -1;
+                    Rendering::ForceRenderFrame();
                 }
                 for (auto& attribute : t_composition->attributes) {
                     if (!attributeFilter.empty() && attribute->name.find(attributeFilter) == std::string::npos) continue;
                     ImGui::PushID(attribute->id);
                         if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == attribute->id ? ICON_FA_CHECK " " : "", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
                             t_composition->opacityAttributeID = attribute->id;
+                            Rendering::ForceRenderFrame();
                         } 
                     ImGui::PopID();
                 }
@@ -799,6 +844,7 @@ namespace Raster {
             ImGui::SameLine(0, 2.0f);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SliderFloat("##compositionOpacity", &opacity, 0, 1);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
             ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("COMPOSITION_OPACITY").c_str());
             ImGui::PopItemWidth();
             if (!attributeOpacityUsed) t_composition->opacity = opacity;
@@ -811,12 +857,14 @@ namespace Raster {
                 auto& blending = Compositor::s_blending;
                 if (ImGui::MenuItem(FormatString("%s %s Normal", t_composition->blendMode.empty() ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
                     t_composition->blendMode = "";
+                    Rendering::ForceRenderFrame();
                 }
                 for (auto& mode : blending.modes) {
                     auto& project = Workspace::s_project.value();
                     if (!blendFilter.empty() && mode.name.find(blendFilter) == std::string::npos) continue;
                     if (ImGui::MenuItem(FormatString("%s %s %s", t_composition->blendMode == mode.codename ? ICON_FA_CHECK : "", Font::GetIcon(mode.icon).c_str(), mode.name.c_str()).c_str())) {
                         t_composition->blendMode = mode.codename;
+                        Rendering::ForceRenderFrame();
                     }
                     if (ImGui::BeginItemTooltip()) {
                         auto& bundles = Compositor::s_bundles;
@@ -882,6 +930,8 @@ namespace Raster {
                 if (compositionCandidate.has_value()) {
                     auto& composition = compositionCandidate.value();
                     composition->enabled = !composition->enabled;
+                    Rendering::ForceRenderFrame();
+                    WaveformManager::RequestWaveformRefresh(composition->id);
                 }
             }
         }
@@ -890,6 +940,9 @@ namespace Raster {
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
             ProcessResizeToMatchContentDurationAction();
+        }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("RECOMPUTE_AUDIO_WAVEFORM").c_str()).c_str())) {
+            ProcessRecomputeAudioWaveformAction();
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+C")) {
             ProcessCopyAction();
@@ -972,7 +1025,9 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         for (auto& composition : s_copyCompositions) {
             project.compositions.push_back(composition);
+            WaveformManager::RequestWaveformRefresh(composition.id);
         }
+        Rendering::ForceRenderFrame();
     }
 
     void TimelineUI::ProcessDeleteAction() {
@@ -983,15 +1038,19 @@ namespace Raster {
             if (compositionCandidate.has_value()) {
                 DeleteComposition(compositionCandidate.value());
             }
+            WaveformManager::EraseRecord(compositionID);
         }
+        Rendering::ForceRenderFrame();
     }
 
     void TimelineUI::ProcessResizeToMatchContentDurationAction() {
         auto& project = Workspace::GetProject();
+        Rendering::ForceRenderFrame();
         for (auto& compositionID : project.selectedCompositions) {
             auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
             if (compositionCandidate.value()) {
                 auto& composition = compositionCandidate.value();
+                WaveformManager::RequestWaveformRefresh(composition->id);
                 std::optional<float> contentDuration = std::nullopt;
                 for (auto& node : composition->nodes) {
                     auto durationCandidate = node.second->GetContentDuration();
@@ -1014,6 +1073,14 @@ namespace Raster {
         }
     }
 
+    void TimelineUI::ProcessRecomputeAudioWaveformAction() {
+        auto& project = Workspace::GetProject();
+        for (auto& compositionID : project.selectedCompositions) {
+            WaveformManager::RequestWaveformRefresh(compositionID);
+        }
+        Rendering::ForceRenderFrame();
+    }
+
     void TimelineUI::ProcessAudioMixingAction() {
         auto& project = Workspace::GetProject();
         for (auto& compositionID : project.selectedCompositions) {
@@ -1021,6 +1088,7 @@ namespace Raster {
             if (compositionCandidate.value()) {
                 auto& composition = compositionCandidate.value();
                 composition->audioEnabled = !composition->audioEnabled;
+                WaveformManager::RequestWaveformRefresh(compositionID);
             }
         }
     }
@@ -1046,6 +1114,7 @@ namespace Raster {
                 auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
                 if (attributeCandidate.has_value()) {
                     t_composition->attributes.push_back(attributeCandidate.value());
+                    Rendering::ForceRenderFrame();
                     if (!t_parentTreeID && s_compositionTrees.find(t_composition->id) != s_compositionTrees.end()) {
                         t_parentTreeID = s_compositionTrees[t_composition->id];
                     }
@@ -1268,11 +1337,13 @@ namespace Raster {
                 ImGui::SameLine();
                 if (ImGui::Button(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF)) {
                     composition.enabled = !composition.enabled;
+                    WaveformManager::RequestWaveformRefresh(composition.id);
                 }
                 ImGui::SetItemTooltip(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITION").c_str());
                 ImGui::SameLine();
                 if (ImGui::Button(composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF)) {
                     composition.audioEnabled = !composition.audioEnabled;
+                    WaveformManager::RequestWaveformRefresh(composition.id);
                 }
                 ImGui::SetItemTooltip("%s %s", composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_AUDIO_MIXING").c_str());
                 ImGui::SameLine();

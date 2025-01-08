@@ -55,8 +55,15 @@ namespace Raster {
         void Traverse(ContextData t_data = {});
         void OnTimelineSeek();
 
+        // using SetFakeTime() / ResetFakeTime() you can fake current frame of project
+        // without changine Project::currentFrame field 
+        void ResetFakeTime();
+        void SetFakeTime(float t_frame);
+
         glm::mat4 GetProjectionMatrix(bool inverted = false);
 
         Json Serialize();
+    private:
+        ThreadUniqueValue<std::optional<float>> m_fakeTime;
     };
 };

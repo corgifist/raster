@@ -4,11 +4,14 @@
 #include "common/audio_info.h"
 #include "common/audio_samples.h"
 #include "audio_decoders.h"
+#include "common/typedefs.h"
+#include "raster.h"
 
 namespace Raster {
     GenericAudioDecoder::GenericAudioDecoder() {
         this->assetID = 0;
         this->decoderContexts = std::make_shared<std::unordered_map<float, int>>();
+        this->waveformDecoderContexts = std::make_shared<std::unordered_map<float, int>>();
         this->seekTarget = std::make_shared<float>();
         *this->seekTarget = 0;
     }
@@ -22,9 +25,13 @@ namespace Raster {
         return AudioDecoders::GetDecoder(t_decoderID);
     }
 
-    static SharedAudioDecoder GetDecoderContext(GenericAudioDecoder* t_decoder) {
+    static std::shared_ptr<std::unordered_map<float, int>> GetSuitableDecoderContexts(GenericAudioDecoder* t_decoder, ContextData t_contextData) {
+        return RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool) ? t_decoder->waveformDecoderContexts : t_decoder->decoderContexts;
+    }
+
+    static SharedAudioDecoder GetDecoderContext(GenericAudioDecoder* t_decoder, ContextData t_contextData) {
         std::vector<float> deadDecoders;
-        for (auto& context : *t_decoder->decoderContexts) {
+        for (auto& context : *GetSuitableDecoderContexts(t_decoder, t_contextData)) {
             auto decoder = AllocateDecoderContext(context.second);
             decoder->health--;
             if (decoder->health < 0) {
@@ -33,27 +40,27 @@ namespace Raster {
         }
 
         for (auto& deadDecoder : deadDecoders) {
-            auto correspondingDecoderID = (*t_decoder->decoderContexts)[deadDecoder];
+            auto correspondingDecoderID = (*GetSuitableDecoderContexts(t_decoder, t_contextData))[deadDecoder];
             auto decoderIterator = AudioDecoders::s_decoders.find(correspondingDecoderID);
             if (decoderIterator != AudioDecoders::s_decoders.end()) {
                 AudioDecoders::s_decoders.erase(correspondingDecoderID);
-                t_decoder->decoderContexts->erase(deadDecoder);
+                GetSuitableDecoderContexts(t_decoder, t_contextData)->erase(deadDecoder);
             }
         }
 
         auto& project = Workspace::GetProject();
         auto currentOffset = project.GetTimeTravelOffset();
-        if (t_decoder->decoderContexts->find(currentOffset) != t_decoder->decoderContexts->end()) {
-            auto allocatedDecoder = AllocateDecoderContext((*t_decoder->decoderContexts)[currentOffset]);
+        if (GetSuitableDecoderContexts(t_decoder, t_contextData)->find(currentOffset) != GetSuitableDecoderContexts(t_decoder, t_contextData)->end()) {
+            auto allocatedDecoder = AllocateDecoderContext((*GetSuitableDecoderContexts(t_decoder, t_contextData))[currentOffset]);
             allocatedDecoder->health = MAX_GENERIC_AUDIO_DECODER_LIFESPAN;
             allocatedDecoder->timeOffset = currentOffset;
-            allocatedDecoder->id = (*t_decoder->decoderContexts)[currentOffset];
+            allocatedDecoder->id = (*GetSuitableDecoderContexts(t_decoder, t_contextData))[currentOffset];
             return allocatedDecoder;
         }
         
         int newDecoderID = Randomizer::GetRandomInteger();
         auto newDecoder = AllocateDecoderContext(newDecoderID);
-        (*t_decoder->decoderContexts)[currentOffset] = newDecoderID;
+        (*GetSuitableDecoderContexts(t_decoder, t_contextData))[currentOffset] = newDecoderID;
         newDecoder->health = MAX_GENERIC_AUDIO_DECODER_LIFESPAN;
         newDecoder->timeOffset = currentOffset;
         newDecoder->id = newDecoderID;
@@ -65,23 +72,23 @@ namespace Raster {
         SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
 
-        auto decoder = GetDecoderContext(this);
+        auto decoder = GetDecoderContext(this, {});
         if (decoder->cacheValid) return decoder->cache.Get().GetCachedSamples();
         return std::nullopt;
     }
 
-    std::optional<AudioSamples> GenericAudioDecoder::DecodeSamples(int audioPassID) {
+    std::optional<AudioSamples> GenericAudioDecoder::DecodeSamples(int audioPassID, ContextData t_contextData) {
         SharedLockGuard guard(m_decodingMutex);
         auto& project = Workspace::GetProject();
 
-        auto decoder = GetDecoderContext(this);
+        auto decoder = GetDecoderContext(this, t_contextData);
 
         if (decoder->lastAudioPassID + 1 != audioPassID) {
             decoder->needsSeeking = true;
             decoder->cacheValid = false;
         }
         if (decoder->lastAudioPassID != audioPassID) decoder->cacheValid = false;
-        if (decoder->cacheValid) {
+        if (decoder->cacheValid && !RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool)) {
             decoder->cache.Lock();
             auto cachedSamples = decoder->cache.GetReference().GetCachedSamples();
             decoder->cache.Unlock();
@@ -91,8 +98,13 @@ namespace Raster {
             } 
         }
 
-        if (decoder->needsSeeking && decoder->formatCtx.isOpened() && decoder->audioDecoderCtx.isOpened()) {
+        if (decoder->needsSeeking && decoder->formatCtx.isOpened() && decoder->audioDecoderCtx.isOpened() && !RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool)) {
             decoder->SeekDecoder(*seekTarget);
+        }
+
+        if (RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_FIRST_PASS", bool)) {
+            decoder->SeekDecoder(0.0);
+            RASTER_LOG("waveform first pass seek");
         }
 
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
@@ -105,7 +117,7 @@ namespace Raster {
 
         if (assetPathCandidate.has_value() && assetPathCandidate.value() != decoder->assetPath) {
             auto& assetPath = assetPathCandidate.value();
-            print("opening format context");    
+            // print("opening format context");    
 
             decoder->formatCtx.close();
             decoder->formatCtx.openInput(FormatString("%s/%s", project.path.c_str(), assetPath.c_str()));
@@ -164,7 +176,7 @@ namespace Raster {
                 decoder->cacheValid = true;
                 return samples;
             } else {
-                print("samples are invalid");
+                RASTER_LOG("decoded audio samples are invalid");
             }
         }
 
@@ -182,6 +194,11 @@ namespace Raster {
 
     void GenericAudioDecoder::Destroy() {
         for (auto& context : *decoderContexts) {
+            if (AudioDecoders::DecoderExists(context.second)) {
+                AudioDecoders::DestroyDecoder(context.second);
+            }
+        }
+        for (auto& context : *waveformDecoderContexts) {
             if (AudioDecoders::DecoderExists(context.second)) {
                 AudioDecoders::DestroyDecoder(context.second);
             }

@@ -23,6 +23,7 @@
 #include "raster.h"
 #include "common/layouts.h"
 #include "common/rendering.h"
+#include "common/waveform_manager.h"
 
 using namespace av;
 
@@ -72,6 +73,8 @@ namespace Raster {
         DispatchersInstaller::Initialize();
         Workspace::Initialize();
         Plugins::WorkspaceInitialize();
+
+        WaveformManager::Initialize();
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -313,6 +316,7 @@ namespace Raster {
             Workspace::GetProject().compositions.clear();
         }
         Audio::Terminate();
+        WaveformManager::Terminate();
         GPU::Terminate();
         s_writerThreadRunning = false;
         s_writerThread.join();

@@ -71,6 +71,7 @@ namespace Raster {
 
         static std::string GetTypeName(std::any& t_value);
 
+        static void OpenProject(std::string t_path);
         static Project& GetProject();
         static bool IsProjectLoaded();
     };

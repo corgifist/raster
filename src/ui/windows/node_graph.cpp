@@ -1,10 +1,12 @@
 #include "node_graph.h"
+#include "common/waveform_manager.h"
 #include "font/font.h"
 #include "common/ui_shared.h"
 #include "common/dispatchers.h"
 #include "raster.h"
 #include "timeline.h"
 #include "asset_manager.h"
+#include "common/rendering.h"
 
 namespace Raster {
 
@@ -82,6 +84,7 @@ namespace Raster {
         if (s_inputPinCache.find(t_pinID) != s_inputPinCache.end()) {
             s_inputPinCache.erase(t_pinID);
         }
+        Rendering::ForceRenderFrame();
     }
 
     void NodeGraphUI::RenderInputPin(AbstractNode node, GenericPin& pin, bool flow) {
@@ -159,11 +162,22 @@ namespace Raster {
         if (s_outputPinCache.find(t_pinID) != s_outputPinCache.end()) {
             s_outputPinCache.erase(t_pinID);
         }
+        Rendering::ForceRenderFrame();
     }
 
     static void InvalidatePinCache(int t_pinID) {
         InvalidateInputPinCache(t_pinID);
         InvalidateOutputPinCache(t_pinID);
+        Rendering::ForceRenderFrame();
+        auto nodeCandidate = Workspace::GetNodeByPinID(t_pinID);
+        if (nodeCandidate) {
+            auto& node = *nodeCandidate;
+            auto compositionCandidate = Workspace::GetCompositionByNodeID(node->nodeID);
+            if (compositionCandidate) {
+                auto& composition = *compositionCandidate;
+                WaveformManager::RequestWaveformRefresh(composition->id);
+            }
+        }
     }
 
     void NodeGraphUI::RenderOutputPin(AbstractNode node, GenericPin& pin, bool flow) {
@@ -330,6 +344,7 @@ namespace Raster {
             }
         }
         s_copyAccumulator.clear();
+        Rendering::ForceRenderFrame();
     }
 
     void NodeGraphUI::Render() {
@@ -924,6 +939,7 @@ namespace Raster {
                                         if (Nodes::AcceptDeletedItem()) {
                                             auto nodeIterator = s_currentComposition->nodes.find(rawNodeID);
                                             if (nodeIterator != s_currentComposition->nodes.end()) {
+                                                Rendering::ForceRenderFrame();
                                                 s_currentComposition->nodes.erase(nodeIterator);
                                             }
                                         }
@@ -938,6 +954,7 @@ namespace Raster {
                                         if (pin.has_value()) {
                                             auto correctedPin = pin.value();
                                             InvalidatePinCache(correctedPin.connectedPinID);
+                                            Rendering::ForceRenderFrame();
                                             correctedPin.connectedPinID = -1;
                                             Workspace::UpdatePinByID(correctedPin, correctedPin.pinID);
                                             InvalidatePinCache(correctedPin.pinID);
@@ -988,10 +1005,12 @@ namespace Raster {
                             ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
                             ImGui::Text("%s %s: %i", ICON_FA_GEARS, Localization::GetString("EXECUTIONS_PER_FRAME").c_str(), node->executionsPerFrame.GetFrontValue());
                             if (ImGui::Button(FormatString("%s %s", node->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
+                                Rendering::ForceRenderFrame();
                                 node->enabled = !node->enabled;
                             }
                             ImGui::SameLine(0, 2);
                             if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
+                                Rendering::ForceRenderFrame();
                                 node->bypassed = !node->bypassed;
                             }
                             if (node->DoesAudioMixing()) {
@@ -1035,8 +1054,10 @@ namespace Raster {
                                     ImGui::PushID(id++);
                                     if (ImGui::SmallButton(FormatString("%s %s", isAttributeExposed ? ICON_FA_LINK_SLASH : ICON_FA_LINK, Localization::GetString(isAttributeExposed ? "HIDE" : "EXPOSE").c_str()).c_str())) {
                                         if (!isAttributeExposed) {
+                                            Rendering::ForceRenderFrame();
                                             node->AddInputPin(attribute);
                                         } else {
+                                            Rendering::ForceRenderFrame();
                                             node->inputPins.erase(node->inputPins.begin() + attributeIndex);
                                         }
                                     }
@@ -1066,6 +1087,7 @@ namespace Raster {
                                                 int attributeIndex = 0;
                                                 for (auto& attribute : composition->attributes) {
                                                     if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
+                                                        Rendering::ForceRenderFrame();
                                                         composition->attributes.erase(composition->attributes.begin() + attributeIndex);
                                                         break;
                                                     }
@@ -1087,6 +1109,7 @@ namespace Raster {
                                                         exposedAttribute->internalAttributeName += (exposedAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
                                                         exposedAttribute->name = attribute;
                                                         s_currentComposition->attributes.push_back(exposedAttribute);
+                                                        Rendering::ForceRenderFrame();
                                                     }
                                                 }
                                             }
@@ -1137,6 +1160,7 @@ namespace Raster {
                                 ImGui::EndMenu();
                             }
                             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_NODES").c_str()).c_str(), "Delete")) {
+                                Rendering::ForceRenderFrame();
                                 Nodes::DeleteNode(node->nodeID);
                             }
                             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_NODES").c_str()).c_str(), "Ctrl+C")) {

@@ -92,9 +92,9 @@ namespace Raster {
         frame = std::floor(frame);
         framerate = std::floor(framerate);
         int transformedFrame = frame / framerate;
-        float minutes = transformedFrame / 60;
-        float seconds = transformedFrame % 60;
-        return FormatString("%02i:%02i", (int) minutes, (int) seconds);
+        int minutes = transformedFrame / 60;
+        int seconds = transformedFrame % 60;
+        return FormatString("%02i:%02i", minutes, seconds);
     }
 
     glm::mat4 Project::GetProjectionMatrix(bool invert) {
@@ -103,10 +103,15 @@ namespace Raster {
     }
 
     float Project::GetCorrectCurrentTime() {
+        auto& fakeTime = m_fakeTime.Get();
+        if (fakeTime) {
+            return *fakeTime + GetTimeTravelOffset();
+        }
         return currentFrame + GetTimeTravelOffset();
     }
 
     float Project::GetTimeTravelOffset() {
+        if (timeTravelStack.Get().empty()) return 0.0;
         return std::reduce(timeTravelStack.Get().begin(), timeTravelStack.Get().end());
     }
 
@@ -115,6 +120,7 @@ namespace Raster {
     }
 
     void Project::ResetTimeTravel() {
+        if (timeTravelStack.Get().empty()) return;
         timeTravelStack.Get().pop_back();
     }
 
@@ -127,6 +133,16 @@ namespace Raster {
         }
 
         timeTravelStack.Get().clear();
+    }
+
+    void Project::SetFakeTime(float t_frame) {
+        auto& fakeTime = m_fakeTime.Get();
+        fakeTime = t_frame;
+    }
+
+    void Project::ResetFakeTime() {
+        auto& fakeTime = m_fakeTime.Get();
+        fakeTime = std::nullopt;
     }
 
     void Project::OnTimelineSeek() {

@@ -41,8 +41,8 @@ namespace Raster {
                 std::cout << "failed to open formatCtx! " << av::error2string(ec.value()) << std::endl;
             } 
             if (formatCtx.isOpened()) {
-                m_cachedDuration = formatCtx.duration().seconds();
                 formatCtx.findStreamInfo();
+                m_cachedDuration = formatCtx.duration().seconds();
 
                 av::Dictionary metadataDictionary(formatCtx.raw()->metadata, false);
                 for (auto& pair : metadataDictionary) {
@@ -64,6 +64,7 @@ namespace Raster {
                     auto packet = formatCtx.readPacket();
                     if (packet && packet.streamIndex() == attachedPictureStreamIndex) {
                         auto videoDecoder = av::VideoDecoderContext(formatCtx.stream(attachedPictureStreamIndex));
+                        videoDecoder.open();
                         auto inputFrame = videoDecoder.decode(packet);
 
                         av::VideoRescaler rescaler(

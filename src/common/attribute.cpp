@@ -6,6 +6,7 @@
 #include "../ImGui/imgui_stripes.h"
 #include "common/ui_shared.h"
 #include "common/composition.h"
+#include "common/waveform_manager.h"
 #include "common/workspace.h"
 #include "common/dispatchers.h"
 #include "common/easings.h"
@@ -269,7 +270,10 @@ namespace Raster {
                 bool isItemEdited = false;
                 currentValue = AbstractRenderLegend(t_composition, currentValue, isItemEdited);
                 shouldAddKeyframe = shouldAddKeyframe || isItemEdited;
-                if (shouldAddKeyframe) Rendering::ForceRenderFrame();
+                if (shouldAddKeyframe) {
+                    Rendering::ForceRenderFrame();
+                    WaveformManager::RequestWaveformRefresh(t_composition->id);
+                }
             ImGui::PopItemWidth();
         ImGui::PopID();
 

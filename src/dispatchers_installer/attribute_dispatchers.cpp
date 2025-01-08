@@ -3,6 +3,7 @@
 #include "../ImGui/imgui_stdlib.h"
 #include "../ImGui/imgui_drag.h"
 #include "attribute_dispatchers.h"
+#include "common/project.h"
 #include "overlay_dispatchers.h"
 #include "common/transform2d.h"
 #include "../ImGui/imgui_stripes.h"
@@ -14,6 +15,7 @@
 #include "common/generic_resolution.h"
 #include "common/item_aligner.h"
 #include "common/choice.h"
+#include "common/rendering.h"
 
 namespace Raster {
 
@@ -113,6 +115,9 @@ namespace Raster {
         } else {
             ImGui::InputTextMultiline(FormatString("##%s", t_attribute.c_str()).c_str(), &string);
         }
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
 
         isMultilineDict[attributeID] = isMultiline;
         t_value = string;
@@ -131,6 +136,9 @@ namespace Raster {
         } else {
             ImGui::SliderFloat(formattedAttribute.c_str(), &f, metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
         }
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
         f /= metadata.base;
         t_value = f;
     }
@@ -139,6 +147,7 @@ namespace Raster {
         auto& project = Workspace::GetProject();
         auto composition = Workspace::GetCompositionByNodeID(t_owner->nodeID).value();
         int i = std::any_cast<int>(t_value);
+        int originalValue = i;
         ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
@@ -196,7 +205,9 @@ namespace Raster {
         ImGui::PopID();
         ImGui::PopID();
 
-
+        if (i != originalValue) {
+            Rendering::ForceRenderFrame();
+        }
         t_value = i;
     }
 
@@ -236,6 +247,9 @@ namespace Raster {
             ImGui::PushItemWidth(200);
                 ImGui::ColorPicker4("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
             ImGui::PopItemWidth();
+        }
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
         }
         v /= metadata.base;
         t_value = v;
@@ -280,6 +294,9 @@ namespace Raster {
                 ImGui::ColorPicker3("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
             ImGui::PopItemWidth();
         }
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
         v /= metadata.base;
         t_value = v;
 
@@ -318,6 +335,9 @@ namespace Raster {
         } else {
             ImGui::SliderFloat2(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
         }
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
         v /= metadata.base;
         if (linkedSize) {
             if (reservedVector.x != v.x) {
@@ -346,6 +366,7 @@ namespace Raster {
         ImGui::PopStyleVar();
 
         auto transform = std::any_cast<Transform2D>(t_value);
+        auto originalTransform = transform;
 
         auto& project = Workspace::s_project.value();
         if (!project.customData.contains("Transform2DAttributeData")) {
@@ -412,6 +433,10 @@ namespace Raster {
             ImGui::DragFloat("##dragAngle", &transform.angle, 0.5f);
         ImGui::EndChild();
 
+        if (transform.GetTransformationMatrix() != originalTransform.GetTransformationMatrix()) {
+            Rendering::ForceRenderFrame();
+        }
+
         t_value = transform;
     }
 
@@ -443,6 +468,9 @@ namespace Raster {
         ImGui::Text("%s %s: ", ICON_FA_IMAGE, Localization::GetString("WRAPPING_MODE").c_str());
         ImGui::SameLine();
         ImGui::Combo("##wrappingModes", &selectedWrappingMode, wrappingRawStringModes.data(), wrappingRawStringModes.size());
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
 
         samplerSettings.wrappingMode = wrappingModes[selectedWrappingMode];
 
@@ -481,11 +509,15 @@ namespace Raster {
         ImGui::Text("%s", t_attribute.c_str());
         ImGui::SameLine();
         ImGui::Checkbox(FormatString("##%s", t_attribute.c_str()).c_str(), &value);
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
         t_value = value;
     }
 
     void AttributeDispatchers::DispatchAssetIDAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<AssetID>(t_value);
+        auto originalValue = value;
         auto assetCandidate = Workspace::GetAssetByAssetID(value.id);
         StringDispatchers::DispatchAssetIDValue(t_value);
         ImGui::AlignTextToFramePadding();
@@ -497,11 +529,15 @@ namespace Raster {
         }
         static std::string assetFilter = "";
         UIHelpers::SelectAsset(value.id, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetFilter);
+        if (value.id != originalValue.id) {
+            Rendering::ForceRenderFrame();
+        }
         t_value = value;
     }
 
     void AttributeDispatchers::DispatchGenericAudioDecoderAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<GenericAudioDecoder>(t_value);
+        auto originalAssetID = value.assetID;
         auto assetCandidate = Workspace::GetAssetByAssetID(value.assetID);
         auto cachedSamplesCandidate = value.GetCachedSamples();
         if (cachedSamplesCandidate.has_value()) {
@@ -538,6 +574,9 @@ namespace Raster {
         }
         static std::string assetFilter = "";
         UIHelpers::SelectAsset(value.assetID, assetCandidate.has_value() ? assetCandidate.value()->name : "", &assetFilter);
+        if (originalAssetID != value.assetID) {
+            Rendering::ForceRenderFrame();
+        }
         t_value = value;
     }
 
@@ -565,6 +604,7 @@ namespace Raster {
 
     void AttributeDispatchers::DispatchGenericResolutionAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto value = std::any_cast<GenericResolution>(t_value);
+        auto originalResolution = value.CalculateResolution();
         auto resolution = value.CalculateResolution();
         std::string resolutionText = FormatString("%ix%i (%0.2f)", (int) resolution.x, (int) resolution.y, (float) resolution.x / (float) resolution.y);
         auto glmFitResolution = FitRectInRect(glm::vec2(ImGui::GetContentRegionAvail().x, 200), resolution);
@@ -601,6 +641,10 @@ namespace Raster {
 
         value.aspectRatio = glm::max(0.001f, value.aspectRatio);
 
+        if (value.CalculateResolution() != originalResolution) {
+            Rendering::ForceRenderFrame();
+        }
+
         t_value = value;
     }
 
@@ -608,7 +652,9 @@ namespace Raster {
         auto value = std::any_cast<Gradient1D>(t_value);
         auto& project = Workspace::GetProject();
 
-        UIHelpers::RenderGradient1DEditor(value);
+        if (UIHelpers::RenderGradient1DEditor(value)) {
+            Rendering::ForceRenderFrame();
+        }
 
         t_value = value;
     }
@@ -625,6 +671,9 @@ namespace Raster {
         }
 
         ImGui::Combo("##choiceBox", &value.selectedVariant, transformedChoices.data(), transformedChoices.size());
+        if (ImGui::IsItemEdited()) {
+            Rendering::ForceRenderFrame();
+        }
         t_value = value;
     }
 

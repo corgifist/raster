@@ -10,6 +10,7 @@
 #include <filesystem>
 #include "../../ImGui/imgui_stdlib.h"
 #include "common/layouts.h"
+#include "common/waveform_manager.h"
 
 #define LAYOUT_DRAG_DROP_PAYLOAD "LAYOUT_DRAG_DROP_PAYLOAD"
 
@@ -121,10 +122,7 @@ namespace Raster {
                     GPU::GetNFDWindowHandle(&window);
                     nfdresult_t result = NFD::PickFolder(path, nullptr, window);
                     if (result == NFD_OKAY) {
-                        if (std::filesystem::exists(std::string(path.get()) + "/project.json")) {
-                                Workspace::s_project = Project(ReadJson(std::string(path.get()) + "/project.json"));
-                                Workspace::s_project.value().path = std::string(path.get()) + "/";
-                        }
+                        Workspace::OpenProject(path.get());
                     }
                 }
                 std::string saveProject = Workspace::IsProjectLoaded() ? 
@@ -141,6 +139,16 @@ namespace Raster {
                 ImGui::Separator();
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("EXIT_RASTER").c_str()).c_str())) {
                     std::exit(0);
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("TOOLS").c_str()).c_str())) {
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("RECOMPUTE_ALL_AUDIO_WAVEFORMS").c_str()).c_str(), nullptr, false, Workspace::IsProjectLoaded())) {
+                    auto& project = Workspace::GetProject();
+                    for (auto& composition : project.compositions) {
+                        WaveformManager::RequestWaveformRefresh(composition.id);
+                    }
                 }
                 ImGui::EndMenu();
             }

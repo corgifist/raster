@@ -9,6 +9,7 @@
 #include "common/node_category.h"
 #include "common/choice.h"
 #include "common/plugins.h"
+#include "common/waveform_manager.h"
 
 
 namespace Raster {
@@ -606,6 +607,21 @@ namespace Raster {
         return std::nullopt;
     }
 
+    void Workspace::OpenProject(std::string t_path) {
+        try {
+            if (std::filesystem::exists(t_path + "/project.json")) {
+                Workspace::s_project = Project(ReadJson(t_path + "/project.json"));
+                Workspace::s_project.value().path = t_path + "/";
+
+                auto& project = Workspace::GetProject();
+                for (auto& composition : project.compositions) {
+                    WaveformManager::RequestWaveformRefresh(composition.id);
+                }
+            }
+        } catch (...) {
+            RASTER_LOG("failed to open project: " << t_path);
+        }
+    }
 
     Project& Workspace::GetProject() {
         return s_project.value();

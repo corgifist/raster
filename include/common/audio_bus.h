@@ -10,10 +10,14 @@ namespace Raster {
         bool main;
         std::string name;
         std::vector<float> samples;
+        std::vector<float> waveformSamples;
         uint32_t colorMark;
 
         AudioBus();
         AudioBus(Json t_data);
+
+        // ensures samples buffer is large enough to hold audio samples
+        void ValidateBuffers();
 
         Json Serialize();
     };

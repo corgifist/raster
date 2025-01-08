@@ -203,10 +203,6 @@ namespace Raster {
                         }
                         dispatcherWasFound = true;
                         dispatcher.second(this, GetAttributeName(t_attribute), dynamicCandidate, isAttributeExposed, t_metadata);
-                        if (ImGui::IsItemEdited()) {
-                            Rendering::ForceRenderFrame();
-                            RASTER_LOG("attribute edited");
-                        }
                         if (!usingCachedAttribute) attributes[t_attribute] = dynamicCandidate;
                     } 
                 }
@@ -364,7 +360,7 @@ namespace Raster {
                         auto decoder = std::any_cast<GenericAudioDecoder>(dynamicAttribute);
                         bool isAudioPass = RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool);
                         int audioPassID = RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int);
-                        auto samplesCandidate = decoder.DecodeSamples(isAudioPass ? audioPassID : AudioInfo::s_audioPassID);
+                        auto samplesCandidate = decoder.DecodeSamples(isAudioPass ? audioPassID : AudioInfo::s_audioPassID, t_contextData);
                         if (samplesCandidate.has_value()) {
                             dynamicAttribute = samplesCandidate.value();
                         }

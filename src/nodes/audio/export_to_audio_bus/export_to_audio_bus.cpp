@@ -3,6 +3,8 @@
 #include "audio/audio.h"
 #include "common/generic_audio_decoder.h"
 #include "common/audio_info.h"
+#include "common/waveform_manager.h"
+#include "raster.h"
 
 namespace Raster {
 
@@ -20,11 +22,17 @@ namespace Raster {
 
     AbstractPinMap ExportToAudioBus::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
+        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
+        if (RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool) && samplesCandidate && samplesCandidate->samples) {
+            auto& samples = *samplesCandidate;
+            WaveformManager::PushWaveformSamples(samples.samples);
+            // RASTER_LOG("pushing waveform samples");
+            return {};
+        }
         if (!Audio::IsAudioInstanceActive()) return result;
         auto& project = Workspace::GetProject();
 
         auto busIDCandidate = GetAttribute<int>("BusID", t_contextData);
-        auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
         
         if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) return {};
         if (busIDCandidate.has_value() && samplesCandidate.has_value() && samplesCandidate.value().samples && project.playing) {
@@ -42,15 +50,17 @@ namespace Raster {
             m_lastUsedAudioBusID = busID;
             auto& samples = samplesCandidate.value();
 
-            if (busCandidate.has_value()) {
-                auto& bus = busCandidate.value();
-                if (bus->samples.size() != 4096 * AudioInfo::s_channels) {
-                    bus->samples.resize(4096 * AudioInfo::s_channels);
+            if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool)) {
+                if (busCandidate.has_value()) {
+                    auto& bus = busCandidate.value();
+                    bus->ValidateBuffers();
+                    auto rawSamples = samples.samples->data();
+                    for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
+                        bus->samples[i] += rawSamples[i];
+                    }
                 }
-                auto rawSamples = samples.samples->data();
-                for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
-                    bus->samples[i] += rawSamples[i];
-                }
+            } else if (!samples.samples->empty()) {
+                WaveformManager::PushWaveformSamples(samples.samples);
             }
 
         }

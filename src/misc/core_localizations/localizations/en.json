@@ -304,5 +304,8 @@
     "VIDEO_CACHING_ENABLED": "Video Caching Enabled",
     "MAX_VIDEO_CACHE_SIZE": "Max Video Cache Size",
     "VIDEO_CACHE_SIZE_APPROXIMATION": "%i MB can approximately hold %i 1920x1080 RGB8 pictures",
-    "FORCE_RENDER_FRAME": "Force Render Frame"
+    "FORCE_RENDER_FRAME": "Force Render Frame",
+    "TOOLS": "Tools",
+    "RECOMPUTE_ALL_AUDIO_WAVEFORMS": "Recompute All Audio Waveforms",
+    "RECOMPUTE_AUDIO_WAVEFORM": "Recompute Audio Waveform"
 }

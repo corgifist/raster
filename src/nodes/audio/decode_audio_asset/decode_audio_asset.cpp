@@ -41,7 +41,7 @@ namespace Raster {
         }
 
         *m_decoder.seekTarget = project.currentFrame / project.framerate;
-        auto samplesCandidate = m_decoder.DecodeSamples(RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int));
+        auto samplesCandidate = m_decoder.DecodeSamples(RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int), t_contextData);
         if (samplesCandidate.has_value()) {
             auto resampledSamples = samplesCandidate.value();
             auto samplesPtr = resampledSamples.samples->data();
