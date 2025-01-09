@@ -146,25 +146,6 @@ namespace Raster {
         ImVec2 textMin = bb.Min + style.FramePadding;
         ImVec2 textMax = bb.Max - style.FramePadding;
 
-        ImVec2 reservedCursor = ImGui::GetCursorPos();
-
-        ImVec2 labelCursor = {
-            baseCursor.x + size.x / 2.0f - label_size.x / 2.0f,
-            baseCursor.y + size.y / 2.0f - label_size.y / 2.0f
-        };
-        if (labelCursor.x - ImGui::GetScrollX() <= style.FramePadding.x) {
-            labelCursor.x = ImGui::GetScrollX() + style.FramePadding.x;
-        }
-        if (labelCursor.x - ImGui::GetScrollX() >= ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x) {
-            labelCursor.x = ImGui::GetScrollX() + ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x;
-        }
-
-        ImGui::PushClipRect(bb.Min, bb.Max, true);
-        ImGui::SetCursorPos(labelCursor);
-        ImGui::Text("%s", label);
-        ImGui::SetCursorPos(reservedCursor);
-        ImGui::PopClipRect();
-
         // Automatically close popups
         //if (pressed && !(flags & ImGuiButtonFlags_DontClosePopups) && (window->Flags & ImGuiWindowFlags_Popup))
         //    CloseCurrentPopup();
@@ -456,7 +437,8 @@ namespace Raster {
             else compositionIcons += ICON_FA_VOLUME_OFF;
             compositionIcons += " ";
             compositionIcons += ICON_FA_LAYER_GROUP;
-            bool compositionPressed = ClampedButton(FormatString("%s %s", compositionIcons.c_str(), composition->name.c_str()).c_str(), buttonSize, 0, compositionHovered, composition);
+            std::string compositionLabel = FormatString("%s %s", compositionIcons.c_str(), composition->name.c_str());
+            bool compositionPressed = ClampedButton(compositionLabel.c_str(), buttonSize, 0, compositionHovered, composition);
             if (compositionHovered) {
                 s_anyCompositionWasPressed = true;
             }
@@ -566,7 +548,7 @@ namespace Raster {
                     float averageInPixels = average * LAYER_HEIGHT;
                     float invertedAverageInPixels = LAYER_HEIGHT - averageInPixels;
                     ImVec2 bottomRight = originalCursor;
-                    bottomRight.y += LAYER_HEIGHT;
+                    bottomRight.y += LAYER_HEIGHT - 1;
                     bottomRight.x += pixelAdvance;
                     ImVec2 upperLeft = originalCursor;
                     upperLeft.y += invertedAverageInPixels;
@@ -580,6 +562,7 @@ namespace Raster {
             waveformRecordsSync.Unlock();
 
             auto& bundles = Compositor::s_bundles.GetFrontValue();
+            ImVec2 bundlePreviewSize(0, 0);
             if (bundles.find(t_id) != bundles.end()) {
                 auto& bundle = bundles[t_id];
                 if (bundle.primaryFramebuffer.handle) {
@@ -595,6 +578,7 @@ namespace Raster {
                     upperLeft.x = glm::max(upperLeft.x, legendWidth);
                     bottomRight.x = glm::max(bottomRight.x, legendWidth + rectSize.x);
                     bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
+                    bundlePreviewSize = bottomRight - upperLeft;
                     auto reservedCursor = ImGui::GetCursorPos();
                     ImGui::SetCursorScreenPos(upperLeft);
                     ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 14, 214, bottomRight - upperLeft);
@@ -610,6 +594,33 @@ namespace Raster {
                     }
                     ImGui::SetCursorPos(reservedCursor);
                 }
+            }
+
+            {
+                ImVec2 reservedCursor = ImGui::GetCursorPos();
+                ImGui::SetCursorPos(buttonCursor);
+                ImRect bb(ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + buttonSize);
+                ImVec2 baseCursor = buttonCursor;
+                ImVec2 size = buttonSize;
+                auto& style = ImGui::GetStyle();
+                ImVec2 label_size = ImGui::CalcTextSize(compositionLabel.c_str());
+
+                ImVec2 labelCursor = {
+                    baseCursor.x + size.x / 2.0f - label_size.x / 2.0f,
+                    baseCursor.y + size.y / 2.0f - label_size.y / 2.0f
+                };
+                if (labelCursor.x - ImGui::GetScrollX() <= style.FramePadding.x + bundlePreviewSize.x) {
+                    labelCursor.x = ImGui::GetScrollX() + style.FramePadding.x + bundlePreviewSize.x;
+                }
+                if (labelCursor.x - ImGui::GetScrollX() >= ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x) {
+                    labelCursor.x = ImGui::GetScrollX() + ImGui::GetWindowSize().x - style.FramePadding.x - label_size.x;
+                }
+
+                ImGui::PushClipRect(bb.Min, bb.Max, true);
+                ImGui::SetCursorPos(labelCursor);
+                ImGui::Text("%s", compositionLabel.c_str());
+                ImGui::SetCursorPos(reservedCursor);
+                ImGui::PopClipRect();
             }
 
             if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
