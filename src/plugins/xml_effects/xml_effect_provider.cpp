@@ -159,6 +159,8 @@ namespace Raster {
                     std::string type = value.attribute("type").as_string();
 
                     std::optional<std::any> attributeCandidate = GetDynamicCachedAttribute(attributeName, t_contextData);
+                    GPU::BindPipeline(m_pipelines.at(targetShader));
+                    GPU::BindFramebuffer(framebuffer);
                     if (attributeCandidate) {
                         auto& attributeValue = *attributeCandidate;
                         if (Workspace::GetTypeName(attributeValue) != type) {
@@ -212,6 +214,8 @@ namespace Raster {
                     std::string availabilityUniformName = attachment.attribute("availability").as_string();
                     auto attributeName = attachment.attribute("attribute").as_string();
                     std::optional<Framebuffer> attributeCandidate = TextureInteroperability::GetFramebuffer(GetDynamicCachedAttribute(attributeName, t_contextData));
+                    GPU::BindPipeline(m_pipelines.at(targetShader));
+                    GPU::BindFramebuffer(framebuffer);
                     bool wasBound = false;
                     if (attributeCandidate) {
                         auto& attributeValue = *attributeCandidate;

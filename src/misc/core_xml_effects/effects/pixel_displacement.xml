@@ -1,0 +1,52 @@
+<effect>
+    <description name="Pixel Displacement" packageName="pixel_displacement" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="DisplacementMap" type="Framebuffer"/>
+        <attribute name="Strength" type="glm::vec2" value="0.0;0.0"/>
+        <attribute name="SamplerSettings" type="SamplerSettings"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <samplers count="1"/>
+    <shaders>
+        <shader vertex="basic" fragment="pixel_displacement/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uDisplacementStrength" stage="fragment">
+                <value attribute="Strength" type="glm::vec2"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uDisplace" stage="fragment">
+                <attachment attribute="DisplacementMap" index="0" unit="1"/>
+            </uniform>
+            <sampler attribute="SamplerSettings" slot="0" unit="0"/>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Strength">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_PERCENT"/>
+        </property>
+        <property name="SamplerSettings">
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_UP_DOWN_LEFT_RIGHT" />
+</effect>

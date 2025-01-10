@@ -4,6 +4,7 @@
 #include "common/transform2d.h"
 #include "common/dispatchers.h"
 #include "compositor/async_rendering.h"
+#include "common/rendering.h"
 
 namespace Raster {
     void RenderingUI::Render() {
@@ -131,18 +132,23 @@ namespace Raster {
                         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("PREVIEW_RESOLUTION").c_str()).c_str());
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("FULL").c_str()).c_str())) {
                             previewResolutionScale = 1.0f;
+                            Rendering::ForceRenderFrame();
                         }
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("HALF").c_str()).c_str())) {
                             previewResolutionScale = 0.5f;
+                            Rendering::ForceRenderFrame();
                         }
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("THIRD").c_str()).c_str())) {
                             previewResolutionScale = 0.3f;
+                            Rendering::ForceRenderFrame();
                         }
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("QUARTER").c_str()).c_str())) {
                             previewResolutionScale = 0.2f;
+                            Rendering::ForceRenderFrame();
                         }
                         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("CUSTOM").c_str()).c_str())) {
                             ImGui::SliderFloat("##customResolution", &previewResolutionScale, 0.1f, 1.0f, "%0.2f");
+                            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
                             ImGui::EndMenu();
                         }
                         ImGui::EndPopup();
