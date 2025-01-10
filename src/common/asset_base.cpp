@@ -56,6 +56,10 @@ namespace Raster {
         return AbstractGetPath();
     }
 
+    void AssetBase::RenderPreviewOverlay(glm::vec2 t_regionSize) {
+        AbstractRenderPreviewOverlay(t_regionSize);
+    }
+
     void AssetBase::Delete() {
         AbstractDelete();
     }

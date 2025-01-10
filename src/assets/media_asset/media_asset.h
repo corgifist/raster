@@ -3,6 +3,7 @@
 #include "common/assets.h"
 #include "gpu/gpu.h"
 #include "../../ImGui/imgui.h"
+#include "../../ImGui/imgui_internal.h"
 #include "font/font.h"
 
 #include "../../avcpp/av.h"
@@ -40,11 +41,19 @@ namespace Raster {
 
     using StreamInfo = std::variant<AudioStreamInfo, VideoStreamInfo>;
 
+    struct AudioWaveformData {
+        std::shared_ptr<std::vector<std::vector<float>>> streamData;
+
+        AudioWaveformData() : streamData(nullptr) {}
+    };
+
     struct MediaAsset : public AssetBase {
     public:
         MediaAsset();
 
     private:
+        static AudioWaveformData CalculateWaveformsForPath(std::string t_path);
+
         bool AbstractIsReady();
 
         void AbstractImport(std::string t_path);
@@ -62,6 +71,8 @@ namespace Raster {
         std::optional<std::string> AbstractGetDuration();
         std::optional<uintmax_t> AbstractGetSize();
 
+        void AbstractRenderPreviewOverlay(glm::vec2 t_regionSize);
+
         std::string m_relativePath;
         std::string m_originalPath;
 
@@ -72,5 +83,8 @@ namespace Raster {
         std::optional<std::future<bool>> m_copyFuture;
         std::optional<std::uintmax_t> m_cachedSize;
         std::optional<float> m_cachedDuration;
+        std::optional<AudioWaveformData> m_waveformData;
+        std::optional<std::future<AudioWaveformData>> m_waveformFuture;
+        int m_selectedWaveform;
     };
 };

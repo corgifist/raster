@@ -28,6 +28,8 @@ namespace Raster {
         std::optional<std::string> GetDuration();
         std::optional<std::string> GetPath();
 
+        void RenderPreviewOverlay(glm::vec2 t_regionSize);
+
         bool IsReady();
 
         void Delete();
@@ -46,6 +48,8 @@ namespace Raster {
         virtual std::optional<std::string> AbstractGetDuration() { return std::nullopt; }
 
         virtual std::optional<std::string> AbstractGetPath() { return std::nullopt; }
+
+        virtual void AbstractRenderPreviewOverlay(glm::vec2 t_regionSize) { }
 
         virtual void AbstractLoad(Json t_data) {}
         virtual Json AbstractSerialize() { return {}; };

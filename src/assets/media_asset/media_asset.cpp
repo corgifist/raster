@@ -1,12 +1,23 @@
 #include "media_asset.h"
 #include "common/workspace.h"
 #include "common/ui_helpers.h"
+#include "raster.h"
+#include <random>
+
+extern "C" {
+#include <libavutil/samplefmt.h>
+}
+
+#define WAVEFORM_PRECISION 2048
 
 namespace Raster {
+
     MediaAsset::MediaAsset() {
         AssetBase::Initialize();
         this->name = "Media Asset";
         this->m_formatCtxWasOpened = false;
+        this->m_waveformFuture = std::nullopt;
+        this->m_selectedWaveform = 0;
     }
 
     void MediaAsset::AbstractImport(std::string t_path) {
@@ -32,13 +43,17 @@ namespace Raster {
     bool MediaAsset::AbstractIsReady() {
         std::string absolutePath = FormatString("%s/%s", Workspace::GetProject().path.c_str(), m_relativePath.c_str());
         if (m_copyFuture.has_value() && !IsFutureReady(m_copyFuture.value())) return false;
+        if (m_waveformFuture.has_value() && IsFutureReady(*m_waveformFuture)) {
+            m_waveformData = m_waveformFuture->get();
+            m_waveformFuture = std::nullopt;
+        }
         if (m_formatCtxWasOpened) return true;
         av::FormatContext formatCtx;
         if (std::filesystem::exists(absolutePath) && !std::filesystem::is_directory(absolutePath) && !formatCtx.isOpened() && !m_formatCtxWasOpened) {
             std::error_code ec;
             formatCtx.openInput(absolutePath, ec);
             if (ec) {
-                std::cout << "failed to open formatCtx! " << av::error2string(ec.value()) << std::endl;
+                std::cout << "failed to open formatCtx " << av::error2string(ec.value()) << std::endl;
             } 
             if (formatCtx.isOpened()) {
                 formatCtx.findStreamInfo();
@@ -83,6 +98,7 @@ namespace Raster {
                     }
                 }
 
+                bool hasAnyAudioStreams = false;
                 for (int i = 0; i < formatCtx.streamsCount(); i++) {
                     auto stream = formatCtx.stream(i);
                     bool attachedPic = stream.raw()->disposition & AV_DISPOSITION_ATTACHED_PIC;
@@ -129,6 +145,7 @@ namespace Raster {
                             }
                         }
                     } else if (stream.isAudio()) {
+                        hasAnyAudioStreams = true;
                         auto audioDecoder = av::AudioDecoderContext(stream);
                         audioDecoder.open(Codec());
                         AudioStreamInfo info;
@@ -141,10 +158,98 @@ namespace Raster {
                     }
 
                 }
+                if (hasAnyAudioStreams) {
+                    m_waveformFuture = std::async(std::launch::async, MediaAsset::CalculateWaveformsForPath, absolutePath);
+                }
             }
             m_formatCtxWasOpened = true;
         }
         return m_formatCtxWasOpened;
+    }
+
+    AudioWaveformData MediaAsset::CalculateWaveformsForPath(std::string t_path) {
+        av::FormatContext formatCtx;
+        formatCtx.openInput(t_path);
+        if (!formatCtx.isOpened()) return AudioWaveformData();
+        AudioWaveformData waveformData;
+        waveformData.streamData = std::make_shared<std::vector<std::vector<float>>>();
+
+        formatCtx.findStreamInfo();
+        for (int i = 0; i < formatCtx.streamsCount(); i++) {
+            auto stream = formatCtx.stream(i);
+            if (!stream.isAudio()) continue;
+            auto audioDecoder = av::AudioDecoderContext(stream);
+            audioDecoder.open();
+            av::AudioResampler audioResampler(av::ChannelLayout(1).layout(), audioDecoder.sampleRate(), AV_SAMPLE_FMT_FLT,
+                                            audioDecoder.channelLayout(), audioDecoder.sampleRate(), audioDecoder.sampleFormat());
+            auto sampleRate = audioDecoder.sampleRate();
+            std::vector<float> waveformSamples;
+            while (true) {
+                auto pkt = formatCtx.readPacket();
+                if (!pkt) break;
+                if (pkt.streamIndex() != stream.index()) continue;
+                auto samples = audioDecoder.decode(pkt);
+                if (!samples) break;
+                audioResampler.push(samples);
+                auto stepSamples = audioResampler.pop(WAVEFORM_PRECISION);
+                if (!stepSamples) continue;
+                float waveformAverage = 0.0;
+                for (int i = 0; i < WAVEFORM_PRECISION; i++) {
+                    float sample = std::abs(((float*) stepSamples.data())[i]);
+                    sample = std::clamp(sample, 0.0f, 1.0f);
+/*                     float convertedDecibel = std::abs(60 - std::min(std::abs(LinearToDecibel(std::abs(sample))), 60.0f));
+                    waveformAverage = (waveformAverage + convertedDecibel) / 2.0f;  */
+                    waveformAverage = (waveformAverage + sample) / 2.0f;
+                }
+                // waveformAverage /= 60.0f;
+                waveformSamples.push_back(waveformAverage);
+            }
+            DUMP_VAR(waveformSamples.size());
+            waveformData.streamData->push_back(waveformSamples);
+        }
+        return waveformData;
+    }
+
+#define WAVEFORM_PREVIEW_HEIGHT 15
+
+    void MediaAsset::AbstractRenderPreviewOverlay(glm::vec2 t_regionSize) {
+        if (!m_waveformData) return;
+        if (!m_waveformData->streamData) return;
+        if (m_waveformData->streamData->empty()) return;
+        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+        
+        ImVec2 frameMin = cursorPos;
+        frameMin.y += t_regionSize.y - WAVEFORM_PREVIEW_HEIGHT;
+        ImVec2 frameMax = cursorPos + ImVec2(t_regionSize.x, t_regionSize.y);
+        ImGui::RenderFrame(frameMin, frameMax, ImGui::GetColorU32(ImGuiCol_PopupBg));
+        auto& waveform = m_waveformData->streamData->at(m_selectedWaveform);
+        auto waveformStep = waveform.size() / (size_t) t_regionSize.x;
+        float pixelAdvance = 0.0f;
+        float advanceStep = 1.0f;
+        ImVec2 clipMin = frameMin;
+        clipMin.x += 1.0f;
+        ImVec2 clipMax = frameMax;
+        clipMax.x -= 1.0f;
+        ImGui::GetWindowDrawList()->PushClipRect(clipMin, clipMax);
+        for (size_t i = 0; i < waveform.size(); i += waveformStep) {
+            float waveformAverage = 0.0;
+            for (size_t subIndex = i; subIndex < i + waveformStep; subIndex++) {
+                if (subIndex >= waveform.size()) break;
+                waveformAverage = (waveformAverage + std::abs(waveform[subIndex])) / 2.0f;
+            }
+
+            ImVec2 waveformMin = frameMin;
+            waveformMin.x += pixelAdvance;
+            waveformMin.y += (1.0 - waveformAverage) * WAVEFORM_PREVIEW_HEIGHT;
+
+            ImVec2 waveformMax = frameMin;
+            waveformMax.x += pixelAdvance + advanceStep;
+            waveformMax.y += WAVEFORM_PREVIEW_HEIGHT;
+
+            ImGui::GetWindowDrawList()->AddRectFilled(waveformMin, waveformMax, ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
+            pixelAdvance += advanceStep;
+        }
+        ImGui::GetWindowDrawList()->PopClipRect();
     }
 
     std::optional<Texture> MediaAsset::AbstractGetPreviewTexture() {

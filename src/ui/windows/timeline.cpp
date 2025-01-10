@@ -551,7 +551,7 @@ namespace Raster {
                     bottomRight.y += LAYER_HEIGHT - 1;
                     bottomRight.x += pixelAdvance;
                     ImVec2 upperLeft = originalCursor;
-                    upperLeft.y += invertedAverageInPixels;
+                    upperLeft.y += invertedAverageInPixels + 1;
                     ImGui::GetWindowDrawList()->AddRectFilled(upperLeft, bottomRight, ImGui::GetColorU32(waveformColor));
                     // RASTER_LOG("drawing waveform");
                     originalCursor.x += pixelAdvance;

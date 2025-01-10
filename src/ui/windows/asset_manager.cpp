@@ -185,8 +185,11 @@ namespace Raster {
                             ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - fitSize / 2.0f);
                             static bool imageHovered = false;
                             float factor = imageHovered ? 0.7f : 1.0f;
+                            // auto imageCursor = ImGui::GetCursorPos();
                             ImGui::Image((ImTextureID) texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(factor));
                             imageHovered = ImGui::IsItemHovered();
+                            ImGui::SetCursorPos({0, 0});
+                            asset->RenderPreviewOverlay(glm::vec2(assetPreviewSize.x, assetPreviewSize.y));
                             if (imageHovered && ImGui::IsWindowFocused() && ImGui::GetIO().MouseClicked[ImGuiMouseButton_Left]) {
                                 ImGui::OpenPopup("##assetPreviewTextureMaximized");
                             }

@@ -104,7 +104,7 @@ namespace Raster {
 
         if (RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_FIRST_PASS", bool)) {
             decoder->SeekDecoder(0.0);
-            RASTER_LOG("waveform first pass seek");
+            // RASTER_LOG("waveform first pass seek");
         }
 
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
@@ -176,7 +176,7 @@ namespace Raster {
                 decoder->cacheValid = true;
                 return samples;
             } else {
-                RASTER_LOG("decoded audio samples are invalid");
+                // RASTER_LOG("decoded audio samples are invalid");
             }
         }
 

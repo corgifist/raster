@@ -93,7 +93,7 @@ namespace Raster {
         if (s_waveformSamplesBuffer.size() != AudioInfo::s_periodSize * AudioInfo::s_channels) {
             s_waveformSamplesBuffer.resize(AudioInfo::s_periodSize * AudioInfo::s_channels);
         }
-        DUMP_VAR(t_compositionID);
+        // DUMP_VAR(t_compositionID);
         if (compositionCandidate) {
             auto& composition = *compositionCandidate;
             if (!composition->enabled || !composition->audioEnabled || !composition->DoesAudioMixing()) {
@@ -107,7 +107,7 @@ namespace Raster {
             bool firstCall = true;
             while (true) {
                 if (!IsInBounds(currentFakeTime, composition->beginFrame - 1, composition->endFrame + 1)) {
-                    RASTER_LOG("fake time is out of bounds: " << currentFakeTime);
+                    // RASTER_LOG("fake time is out of bounds: " << currentFakeTime);
                     break;
                 }
                 if (!composition->enabled) break;
@@ -115,6 +115,7 @@ namespace Raster {
                 project.SetFakeTime(currentFakeTime);
                 // DUMP_VAR(currentFakeTime);
                 ClearWaveformSamples();
+                RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
                 composition->Traverse({
                     {"AUDIO_PASS", true},
                     {"AUDIO_PASS_ID", waveformPassID++},
@@ -142,7 +143,7 @@ namespace Raster {
                         }
 
                         // DUMP_VAR(waveformAverage);
-                        accumulatedWaveform.push_back(waveformAverage);
+                        accumulatedWaveform.push_back(std::clamp(waveformAverage, 0.0f, 1.0f));
                     } else {
                         // RASTER_LOG("audio accumulator samples are invalid");
                         break;
