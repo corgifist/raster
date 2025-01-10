@@ -3,7 +3,7 @@
 
 LUMA MATTE
 
-Pull a luma key based on a specific luminance value." Name="LUMA_MATTE">
+Pull a luma key based on a specific luminance value." Name="Luma Key">
 	<Shader OutputBitDepth="Output" Index="1">
 		<Uniform ResDependent="None" Max="2000000.0" Min="-1.0" Default="1.0" Inc="0.01" Tooltip="Crush or open up shadows." Row="0" Col="1" Page="0" Type="float" DisplayName="Blacks" Name="aperture">
       </Uniform>
