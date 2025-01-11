@@ -1,0 +1,58 @@
+<effect>
+    <description name="Drop Shadow" packageName="drop_shadow" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Directions" type="float" value="15.0"/>
+        <attribute name="Quality" type="float" value="5.0"/>
+        <attribute name="Size" type="float" value="8.0"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="drop_shadow/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uDirections" stage="fragment">
+                <value attribute="Directions" type="float"/>
+            </uniform>
+            <uniform name="uQuality" stage="fragment">
+                <value attribute="Quality" type="float"/>
+            </uniform>
+            <uniform name="uSize" stage="fragment">
+                <value attribute="Size" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Directions">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_LEFT_RIGHT"/>
+        </property>
+        <property name="Quality">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+        <property name="Size">
+            <sliderStep step="0.01"/>
+            <icon icon="ICON_FA_EXPAND"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_SQUARE" />
+</effect>

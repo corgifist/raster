@@ -1,0 +1,150 @@
+<ShaderNodePreset
+  SupportsAdaptiveDegradation="0"
+  LimitInputsToTexture="True"
+  Description="
+This Matchbox shader creates chromatic aberrations and a barrel distortion.
+
+Version: 1.9
+
+Input:
+
+- Front: source clip
+- Chromatic Aberration Strength: Chromatic Aberration Strength matte
+- Distortion Strength: Distortion Strength matte
+
+Output:
+
+- Result: result clip
+- Matte: alpha channel
+
+Setup:
+
+- Amount: blur amount
+- Iterations: number of steps to create the blur
+- Saturation: Blend in/out the chroma offset
+- Center: center of the effect
+- Add Distortion: enable additional distortion
+- Amount: amount of applied distortion
+
+Based on: https://www.shadertoy.com/view/XssGz8
+To the extent possible under law, the author has waived all copyright and related or neighboring rights to this work.
+
+Demo clip: http://vimeo.com/89781715
+
+Matchbox version by Kyle Obley and ivar@inferno-op.com"
+  Name="Chroma Warp">
+
+  <Shader OutputBitDepth="Output" Index="1">
+    <Uniform
+      Index="0"
+      NoInput="Error"
+      Tooltip=""
+      DisplayName="Front"
+      InputType="Front"
+      InputColor="67, 77, 83"
+      Mipmaps="False"
+      GL_TEXTURE_WRAP_T="GL_REPEAT"
+      GL_TEXTURE_WRAP_S="GL_REPEAT"
+      GL_TEXTURE_MAG_FILTER="GL_LINEAR"
+      GL_TEXTURE_MIN_FILTER="GL_LINEAR"
+      Type="sampler2D"
+      Name="front"></Uniform>
+  </Shader>
+  <Shader OutputBitDepth="Output" Index="2">
+    <Uniform
+      Index="1"
+      NoInput="White"
+      Tooltip=""
+      DisplayName="C.A. Strength"
+      InputType="Matte"
+      Mipmaps="False"
+      GL_TEXTURE_WRAP_T="GL_REPEAT"
+      GL_TEXTURE_WRAP_S="GL_REPEAT"
+      GL_TEXTURE_MAG_FILTER="GL_LINEAR"
+      GL_TEXTURE_MIN_FILTER="GL_LINEAR"
+      Type="sampler2D"
+      Name="chroma_strength"></Uniform>
+  </Shader>
+  <Shader OutputBitDepth="Output" Index="3">
+    <Uniform
+      Index="2"
+      NoInput="White"
+      Tooltip=""
+      DisplayName="Dist Strength"
+      InputType="Matte"
+      Mipmaps="False"
+      GL_TEXTURE_WRAP_T="GL_REPEAT"
+      GL_TEXTURE_WRAP_S="GL_REPEAT"
+      GL_TEXTURE_MAG_FILTER="GL_LINEAR"
+      GL_TEXTURE_MIN_FILTER="GL_LINEAR"
+      Type="sampler2D"
+      Name="distort_strength"></Uniform>
+  </Shader>
+  <Shader OutputBitDepth="Output" Index="4">
+    <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_REPEAT" GL_TEXTURE_WRAP_S="GL_REPEAT" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass1"></Uniform>
+    <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_REPEAT" GL_TEXTURE_WRAP_S="GL_REPEAT" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass2"></Uniform>
+    <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="0" Col="0" Page="0" DisplayName="Amount" Type="float" Name="chromatic_abb"></Uniform>
+    <Uniform Max="2048" Min="0" Default="48" Inc="1" Tooltip="" Row="1" Col="0" Page="0" DisplayName="Iterations" Type="int" Name="num_iter"></Uniform>
+    <Uniform Inc="0.01" Tooltip="" Row="3" Col="0" Page="0" DisplayName="Center" Type="vec2" Name="center">
+      <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.50"></SubUniform>
+      <SubUniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="0.50"></SubUniform>
+    </Uniform>
+    <Uniform ResDependent="None" Max="1.0" Min="0.0" Default="1.0" Inc="0.01" Tooltip="" Row="2" Col="0" Page="0" DisplayName="Saturation" Type="float" Name="off_chroma"></Uniform>
+    <Uniform Row="0" Col="2" Page="0" Default="False" Tooltip="" DisplayName="Invert C.A. Matte" Type="bool" Name="inv_ca_matte"></Uniform>
+  </Shader>
+  <Shader OutputBitDepth="Output" Index="5">
+    <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass4"></Uniform>
+    <Uniform Row="1" Col="2" Page="0" Default="False" Tooltip="" DisplayName="invert Distort Matte" Type="bool" Name="inv_dis_matte" UIConditionSource="add_distortion" UIConditionValue="1" UIConditionInvert="False" UIConditionType="Hide"></Uniform>
+    <Uniform Type="float" ChannelName="off_chroma" DisplayName="off_chroma" Name="off_chroma">
+      <Duplicate></Duplicate>
+    </Uniform>
+    <Uniform Type="vec2" ChannelName="center" DisplayName="center" Name="center">
+      <Duplicate></Duplicate>
+    </Uniform>
+    <Uniform
+      ResDependent="None"
+      Max="1000000.0"
+      Min="-1000000.0"
+      Default="1.0"
+      Inc="0.01"
+      Tooltip=""
+      Row="1"
+      Col="1"
+      Page="0"
+      DisplayName="Amount"
+      Type="float"
+      Name="d_amount"
+      UIConditionSource="add_distortion"
+      UIConditionValue="1"
+      UIConditionInvert="False"
+      UIConditionType="Hide"></Uniform>
+    <Uniform InputColor="67, 77, 83" Mipmaps="False" GL_TEXTURE_WRAP_T="GL_CLAMP_TO_EDGE" GL_TEXTURE_WRAP_S="GL_CLAMP_TO_EDGE" GL_TEXTURE_MAG_FILTER="GL_LINEAR" GL_TEXTURE_MIN_FILTER="GL_LINEAR" Type="sampler2D" Name="adsk_results_pass3"></Uniform>
+    <Uniform Type="int" ChannelName="num_iter" DisplayName="num_iter" Name="num_iter">
+      <Duplicate></Duplicate>
+    </Uniform>
+    <Uniform Row="0" Col="1" Page="0" Default="False" Tooltip="" DisplayName="Enable" Type="bool" Name="add_distortion"></Uniform>
+    <Uniform
+      ResDependent="None"
+      Max="1000000.0"
+      Min="-1000000.0"
+      Default="0.5"
+      Inc="0.01"
+      Tooltip=""
+      Row="2"
+      Col="1"
+      Page="0"
+      DisplayName="Chroma"
+      Type="float"
+      Name="ca_amt"
+      UIConditionSource="add_distortion"
+      UIConditionValue="1"
+      UIConditionInvert="False"
+      UIConditionType="Hide"></Uniform>
+  </Shader>
+
+  <Page Name="General" Page="0">
+    <Col Name="Chromatic Aberration" Col="0" Page="0"></Col>
+    <Col Name="Distortion" Col="1" Page="0"></Col>
+    <Col Name="Input / Output" Col="2" Page="0"></Col>
+  </Page>
+</ShaderNodePreset>

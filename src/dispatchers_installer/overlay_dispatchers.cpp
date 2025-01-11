@@ -183,6 +183,7 @@ namespace Raster {
 
             glm::vec2 rotateAxises = rotate2d(transform.DecomposeRotation()) * drag.dragAxis;
             if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                auto reservedSize = transform.size;
                 if (drag.xDrag) {
                     transform.size.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * rotateAxises.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
                     transform.size.x += ImGui::GetIO().MouseDelta.y / t_regionSize.y * rotateAxises.y * 2;
@@ -192,7 +193,11 @@ namespace Raster {
                 }
 
                 if (linkedSize) {
-                    transform.size.x = transform.size.y;
+                    if (reservedSize.x != transform.size.x) {
+                        transform.size.y = transform.size.x;
+                    } else if (reservedSize.y != transform.size.y) {
+                        transform.size.x = transform.size.y;
+                    }
                 }
                 transformChanged = true;
                 drag.isActive = true;

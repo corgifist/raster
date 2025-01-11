@@ -109,6 +109,7 @@ namespace Raster {
         );
 
         fontCfg.MergeMode = true;
+        fontCfg.GlyphMinAdvanceX = 16.0f * 0.85f;
         io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
             16.0f * 0.85f, &fontCfg, icons_ranges
@@ -117,11 +118,13 @@ namespace Raster {
         fontCfg.RasterizerDensity = 5;
 
         fontCfg.MergeMode = false;
+        fontCfg.GlyphMinAdvanceX = 0;
         Font::s_denseFont = io.Fonts->AddFontFromMemoryCompressedTTF(
                     Font::s_fontBytes.data(), Font::s_fontSize,
                     16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic());
 
         fontCfg.MergeMode = true;
+        fontCfg.GlyphMinAdvanceX = 16.0f * 0.85f;
         io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontAwesomeBytes.data(), Font::s_fontAwesomeSize,
             16.0f * 0.85f, &fontCfg, icons_ranges

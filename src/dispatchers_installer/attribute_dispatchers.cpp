@@ -385,6 +385,7 @@ namespace Raster {
             ImGui::SameLine();
             float cursorX = ImGui::GetCursorPosX();
             ImGui::DragFloat2("##dragPosition", glm::value_ptr(transform.position), 0.05f);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
             ImGui::SameLine(0, 0);
             float dragWidth = ImGui::GetCursorPosX() - cursorX;
             ImGui::NewLine();
@@ -404,6 +405,7 @@ namespace Raster {
             glm::vec2 reservedSize = transform.size;
             ImGui::PushItemWidth(dragWidth - buttonCursor - 2);
                 ImGui::DragFloat2("##dragSize", glm::value_ptr(transform.size), 0.05f);
+                if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
             ImGui::PopItemWidth();
             if (linkedSize) {
                 if (reservedSize.x != transform.size.x) {
@@ -419,18 +421,21 @@ namespace Raster {
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
             ImGui::DragFloat("##dragScale", &transform.scale, 0.05f);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
 
             ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Anchor", ICON_FA_ANCHOR);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
             ImGui::DragFloat2("##dragAnchor", glm::value_ptr(transform.anchor), 0.05f);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
 
             ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Rotation", ICON_FA_ROTATE);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
             ImGui::DragFloat("##dragAngle", &transform.angle, 0.5f);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
         ImGui::EndChild();
 
         if (transform.GetTransformationMatrix() != originalTransform.GetTransformationMatrix()) {

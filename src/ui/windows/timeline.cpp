@@ -578,6 +578,8 @@ namespace Raster {
                     upperLeft.x = glm::max(upperLeft.x, legendWidth);
                     bottomRight.x = glm::max(bottomRight.x, legendWidth + rectSize.x);
                     bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
+                    upperLeft.y += 1;
+                    bottomRight.y -= 1;
                     bundlePreviewSize = bottomRight - upperLeft;
                     auto reservedCursor = ImGui::GetCursorPos();
                     ImGui::SetCursorScreenPos(upperLeft);
