@@ -114,8 +114,8 @@ namespace Raster {
                 if (assetAttributeCandidate.has_value()) {
                     auto& assetAttribute = assetAttributeCandidate.value();
                     auto assetIDCandidate = assetAttribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
-                    if (assetIDCandidate.type() == typeid(int)) {
-                        auto assetID = std::any_cast<int>(assetIDCandidate);
+                    if (assetIDCandidate.type() == typeid(int) || assetIDCandidate.type() == typeid(AssetID)) {
+                        auto assetID = assetIDCandidate.type() == typeid(AssetID) ? std::any_cast<AssetID>(assetIDCandidate).id : std::any_cast<int>(assetIDCandidate);
                         auto testAssetCandidate = Workspace::GetAssetByAssetID(assetID);
                         if (testAssetCandidate.has_value()) {
                             if (transform.parentTransform) {
