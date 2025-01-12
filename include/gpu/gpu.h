@@ -161,6 +161,8 @@ namespace Raster {
         
         static double GetTime();
 
+        static std::vector<std::string> GetDragDropPaths();
+
         static Texture ImportTexture(const char* path);
         static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual, bool mipmapped = false);
         static void GenerateMipmaps(Texture texture);
@@ -190,6 +192,7 @@ namespace Raster {
 
         static void DrawArrays(int count);
 
+        // reads pixels from currently bound framebuffer into void* data
         static void ReadPixels(int x, int y, int w, int h, int channels, TexturePrecision texturePrecision, void* data);
 
         static ArrayBuffer GenerateBuffer(size_t size, ArrayBufferType type = ArrayBufferType::Typical, ArrayBufferUsage usage = ArrayBufferUsage::Static);

@@ -204,7 +204,7 @@ namespace Raster {
                 // waveformAverage /= 60.0f;
                 waveformSamples.push_back(waveformAverage);
             }
-            DUMP_VAR(waveformSamples.size());
+            // DUMP_VAR(waveformSamples.size());
             waveformData.streamData->push_back(waveformSamples);
         }
         return waveformData;

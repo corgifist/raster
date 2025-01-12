@@ -257,6 +257,17 @@ namespace Raster {
             ImGui::LoadIniSettingsFromDisk(requestedLayout->c_str());
         }
 
+        auto dragDropPaths = GPU::GetDragDropPaths();
+        if (Workspace::IsProjectLoaded()) {
+            auto& project = Workspace::GetProject();
+            for (auto& path : dragDropPaths) {
+                auto assetCandidate = Workspace::ImportAsset(path);
+                if (assetCandidate) {
+                    project.assets.push_back(*assetCandidate);
+                }
+            }
+        }
+
         GPU::BeginFrame();
             if (Workspace::s_project.has_value() && !UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Space)) {
                 Workspace::GetProject().playing = !Workspace::GetProject().playing;

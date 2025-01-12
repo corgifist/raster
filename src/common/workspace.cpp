@@ -1,3 +1,4 @@
+#include "common/workspace.h"
 #include "common/common.h"
 #include "gpu/gpu.h"
 #include "common/transform2d.h"
@@ -604,6 +605,37 @@ namespace Raster {
                 }
             }
         }
+        return std::nullopt;
+    }
+
+    std::optional<AbstractAsset> Workspace::ImportAsset(std::string t_path) {
+        if (!Workspace::IsProjectLoaded()) return std::nullopt;
+        auto& project = Workspace::GetProject();
+        std::optional<std::string> assetPackageNameCandidate;
+        std::string pathExtension = GetExtension(t_path);
+        pathExtension = ReplaceString(pathExtension, "\\.", "");
+        for (auto& implementation : Assets::s_implementations) {
+            auto& extensions = implementation.description.extensions;
+            if (std::find(extensions.begin(), extensions.end(), pathExtension) != extensions.end()) {
+                assetPackageNameCandidate = implementation.description.packageName;
+                break;
+            }
+        }
+
+        if (assetPackageNameCandidate.has_value()) {
+            auto& assetPackageName = assetPackageNameCandidate.value();
+            auto assetCandidate = Assets::InstantiateAsset(assetPackageName);
+            if (assetCandidate.has_value()) {
+                auto& asset = assetCandidate.value();
+                asset->Import(t_path);
+                return asset;
+            } else {
+                RASTER_LOG("failed to instantiate '" << *assetPackageNameCandidate << "'");
+            }
+        } else {
+            RASTER_LOG("failed to find suitable asset type for " << t_path);
+        }
+
         return std::nullopt;
     }
 

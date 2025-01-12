@@ -208,6 +208,8 @@ namespace Raster {
     static SynchronizedValue<std::string> s_targetTitle;
     static std::mutex s_resizeMutex;
 
+    static SynchronizedValue<std::vector<std::string>> s_dragDropPaths;
+
     void GPU::Initialize() {
         s_mainThreadID = std::this_thread::get_id();
         if (!glfwInit()) {
@@ -249,9 +251,26 @@ namespace Raster {
         SetupContextState();
 
         glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
-            RASTER_SYNCHRONIZED(s_resizeMutex);
             s_width = width;
             s_height = height;
+        });
+
+        glfwSetDropCallback(display, [](GLFWwindow* d, int pathCount, const char** paths) {
+            std::vector<std::string> dragDropPaths;
+            for (int i = 0; i < pathCount; i++) {
+                dragDropPaths.push_back(paths[i]);
+                s_dragDropPaths.Lock();
+                s_dragDropPaths.GetReference() = dragDropPaths;
+                s_dragDropPaths.Unlock();
+            }
+        });
+
+        glfwSetWindowRefreshCallback(display, [](GLFWwindow* d) {
+            int w, h;
+            glfwGetWindowSize((GLFWwindow*) info.display, &w, &h);
+            glViewport(0, 0, w, h);
+            s_renderingFunction();
+            glfwSwapBuffers((GLFWwindow*) info.display);
         });
 
         info.version = std::string((const char*) glGetString(GL_VERSION));
@@ -280,28 +299,26 @@ namespace Raster {
         s_basicShader = GPU::GenerateShader(ShaderType::Vertex, "basic/shader");
     }
 
+    std::vector<std::string> GPU::GetDragDropPaths() {
+        s_dragDropPaths.Lock();
+        auto result = s_dragDropPaths.GetReference();
+        s_dragDropPaths.GetReference().clear();
+        s_dragDropPaths.Unlock();
+        return result;
+    }
+
     void GPU::SetRenderingFunction(std::function<void()> t_function) {
         s_renderingFunction = t_function;
     }
 
     void GPU::StartRenderingThread() {
         s_running = true;
-        s_renderingThread = std::thread([]() {
-            InitializeImGui();
-            glfwMakeContextCurrent((GLFWwindow*) info.display);
-            static int s_viewportWidth = 0, s_viewportHeight = 0;
-            while (s_running) {
-                if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
-                    RASTER_SYNCHRONIZED(s_resizeMutex);
-                    glViewport(0, 0, s_width, s_height);
-                    s_viewportWidth = s_width;
-                    s_viewportHeight = s_height;
-                }
-                s_renderingFunction();
-                glfwSwapBuffers((GLFWwindow*) info.display);
-            }
-        });
-        while (!GPU::MustTerminate()) {
+        InitializeImGui();
+        glfwMakeContextCurrent((GLFWwindow*) info.display);
+        static int s_viewportWidth = 0, s_viewportHeight = 0;
+        s_running = true;
+        while (s_running) {
+            s_running = !GPU::MustTerminate();
             glfwPollEvents();
             auto targetTitle = s_targetTitle.Get();
             static std::string s_cachedTitle = "";
@@ -309,11 +326,16 @@ namespace Raster {
                 glfwSetWindowTitle((GLFWwindow*) info.display, targetTitle.c_str());
                 s_cachedTitle = targetTitle;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            s_running = true;
+            if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
+                glViewport(0, 0, s_width, s_height);
+                s_viewportWidth = s_width;
+                s_viewportHeight = s_height;
+            }
+            s_renderingFunction();
+            glfwSwapBuffers((GLFWwindow*) info.display);
         }
         s_running = false;
-        s_renderingThread.join();
+        // s_renderingThread.join();
     }
 
     void GPU::Flush() {

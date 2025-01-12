@@ -109,26 +109,7 @@ namespace Raster {
             NFD::UniquePath path;
             auto result = NFD::OpenDialog(path, filePickerFilters.data(), filePickerFilters.size());
             if (result == NFD_OKAY) {
-                std::optional<std::string> assetPackageNameCandidate;
-                std::string pathExtension = GetExtension(path.get());
-                pathExtension = ReplaceString(pathExtension, "\\.", "");
-                for (auto& implementation : Assets::s_implementations) {
-                    auto& extensions = implementation.description.extensions;
-                    if (std::find(extensions.begin(), extensions.end(), pathExtension) != extensions.end()) {
-                        assetPackageNameCandidate = implementation.description.packageName;
-                        break;
-                    }
-                }
-
-                if (assetPackageNameCandidate.has_value()) {
-                    auto& assetPackageName = assetPackageNameCandidate.value();
-                    auto assetCandidate = Assets::InstantiateAsset(assetPackageName);
-                    if (assetCandidate.has_value()) {
-                        auto& asset = assetCandidate.value();
-                        asset->Import(path.get());
-                        return asset;
-                    }
-                }
+                return Workspace::ImportAsset(path.get());
             }
         }
 
