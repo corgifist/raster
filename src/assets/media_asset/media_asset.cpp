@@ -1,8 +1,12 @@
 #include "media_asset.h"
+#include "common/composition.h"
 #include "common/workspace.h"
 #include "common/ui_helpers.h"
 #include "raster.h"
 #include <random>
+#include <variant>
+#include "common/asset_id.h"
+#include "common/waveform_manager.h"
 
 extern "C" {
 #include <libavutil/samplefmt.h>
@@ -250,6 +254,82 @@ namespace Raster {
             pixelAdvance += advanceStep;
         }
         ImGui::GetWindowDrawList()->PopClipRect();
+    }
+
+    void MediaAsset::AbstractOnTimelineDrop() {
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+        bool hasAudioStream = false;
+        bool hasVideoStream = false;
+        for (auto& stream : m_streamInfos) {
+            if (std::holds_alternative<VideoStreamInfo>(stream)) {
+                hasVideoStream = true;
+            }
+            if (std::holds_alternative<AudioStreamInfo>(stream)) {
+                hasAudioStream = true;
+            }
+        }
+        
+        if (hasAudioStream) {
+            Composition audioComposition = Composition();
+            audioComposition.beginFrame = project.currentFrame;
+            audioComposition.endFrame = project.currentFrame + m_cachedDuration.value_or(1) * project.framerate;
+            audioComposition.name = name;
+            if (Workspace::s_colorMarks.find("Light Orange") != Workspace::s_colorMarks.end()) {
+                audioComposition.colorMark = Workspace::s_colorMarks["Light Orange"];
+            }
+
+            auto assetAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "asset_attribute");
+            if (!assetAttributeCandidate) return;
+            auto& assetAttribute = *assetAttributeCandidate;
+            assetAttribute->name = "Audio Asset";
+            assetAttribute->keyframes[0].value = AssetID(id);
+
+            audioComposition.attributes.push_back(assetAttribute);
+
+            auto assetAttributeNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value");
+            if (!assetAttributeNodeCandidate) return;
+            auto& assetAttributeNode = *assetAttributeNodeCandidate;
+            assetAttributeNode->SetAttributeValue("AttributeID", assetAttribute->id);
+
+            auto attributeValuePinCandidate = assetAttributeNode->GetAttributePin("Value");
+            if (!attributeValuePinCandidate) return;
+            auto& attributeValuePin = *attributeValuePinCandidate;
+
+            auto readAudioNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "decode_audio_asset");
+            if (!readAudioNodeCandidate) return;
+            auto& readAudioNode = *readAudioNodeCandidate;
+            readAudioNode->AddInputPin("Asset");
+            readAudioNode->nodePosition = glm::vec2(0, 150);
+            for (auto& pin : readAudioNode->inputPins) {
+                if (pin.linkedAttribute == "Asset") {
+                    pin.connectedPinID = attributeValuePin.pinID;
+                    break;
+                }
+            }
+
+            auto samplesPinCandidate = readAudioNode->GetAttributePin("Samples");
+            if (!samplesPinCandidate) return;
+            auto& samplesPin = *samplesPinCandidate;
+
+            auto exportAudioNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "export_to_audio_bus");
+            if (!exportAudioNodeCandidate) return;
+            auto& exportAudioNode = *exportAudioNodeCandidate;
+            exportAudioNode->nodePosition = glm::vec2(200, 150);
+            for (auto& pin : exportAudioNode->inputPins) {
+                if (pin.linkedAttribute == "Samples") {
+                    pin.connectedPinID = samplesPin.pinID;
+                    break;
+                }
+            }
+
+            audioComposition.nodes[assetAttributeNode->nodeID] = assetAttributeNode;
+            audioComposition.nodes[readAudioNode->nodeID] = readAudioNode;
+            audioComposition.nodes[exportAudioNode->nodeID] = exportAudioNode;
+            project.compositions.push_back(audioComposition);
+            WaveformManager::RequestWaveformRefresh(audioComposition.id);
+        };
+
     }
 
     std::optional<Texture> MediaAsset::AbstractGetPreviewTexture() {

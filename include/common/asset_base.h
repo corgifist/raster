@@ -29,6 +29,7 @@ namespace Raster {
         std::optional<std::string> GetPath();
 
         void RenderPreviewOverlay(glm::vec2 t_regionSize);
+        void OnTimelineDrop();
 
         bool IsReady();
 
@@ -39,6 +40,8 @@ namespace Raster {
     private:
 
         virtual bool AbstractIsReady() { return true; }
+
+        virtual void AbstractOnTimelineDrop() {}
 
         virtual std::optional<Texture> AbstractGetPreviewTexture() { return std::nullopt; }
         virtual void AbstractImport(std::string t_path) {}

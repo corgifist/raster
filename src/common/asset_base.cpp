@@ -8,7 +8,7 @@ namespace Raster {
 
     void AssetBase::Initialize() {
         this->id = Randomizer::GetRandomInteger();
-        this->name = "Uninitialized Asset";
+        this->name = "New Asset";
     }
 
     void AssetBase::RenderDetails() {
@@ -58,6 +58,10 @@ namespace Raster {
 
     void AssetBase::RenderPreviewOverlay(glm::vec2 t_regionSize) {
         AbstractRenderPreviewOverlay(t_regionSize);
+    }
+
+    void AssetBase::OnTimelineDrop() {
+        AbstractOnTimelineDrop();
     }
 
     void AssetBase::Delete() {

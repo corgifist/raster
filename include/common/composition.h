@@ -19,6 +19,11 @@ namespace Raster {
         uint32_t colorMark;
         bool audioEnabled;
 
+        // -1, if locked composition ID is specified, then the composition
+        // will automatically set beginFrame and endFrame to the beginFrame and endFrame
+        // of composition with ID that's equals to lockedCompositionID
+        int lockedCompositionID; 
+
         Composition();
         Composition(Json data);
 

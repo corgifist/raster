@@ -12,7 +12,7 @@ namespace Raster {
         SharedRawAudioSamples samples;
         std::vector<Texture> attachedPictures;
 
-        AudioSamples();
+        AudioSamples() : samples(nullptr), sampleRate(0) {}
     };
 
     using SharedRawInterleavedAudioSamples = SharedRawAudioSamples;

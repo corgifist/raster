@@ -300,6 +300,15 @@ namespace Raster {
                         }
                     }
                 }
+
+                for (auto& composition : project.compositions) {
+                    if (composition.lockedCompositionID < 0) continue;
+                    auto lockedCompositionCandidate = Workspace::GetCompositionByID(composition.lockedCompositionID);
+                    if (!lockedCompositionCandidate) continue;
+                    auto& lockedComposition = *lockedCompositionCandidate;
+                    composition.beginFrame = lockedComposition->beginFrame;
+                    composition.endFrame = lockedComposition->endFrame;
+                }
             }
             GPU::BindFramebuffer(std::nullopt);
             if (Workspace::s_project.has_value()) {

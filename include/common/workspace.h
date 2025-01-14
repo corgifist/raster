@@ -73,6 +73,7 @@ namespace Raster {
 
         static void OpenProject(std::string t_path);
         static std::optional<AbstractAsset> ImportAsset(std::string t_assetPath);
+        static void DeleteComposition(int t_id);
         static Project& GetProject();
         static bool IsProjectLoaded();
     };

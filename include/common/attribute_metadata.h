@@ -5,17 +5,17 @@
 namespace Raster {
     struct SliderRangeMetadata {
         float min, max;
-        SliderRangeMetadata(float t_min, float t_max);
+        SliderRangeMetadata(float t_min, float t_max) : min(t_min), max(t_max) {}
     };
 
     struct FormatStringMetadata {
         std::string format;
-        FormatStringMetadata(std::string t_format);
+        FormatStringMetadata(std::string t_format) : format(t_format) {}
     };
 
     struct SliderStepMetadata {
         float step;
-        SliderStepMetadata(float t_step);
+        SliderStepMetadata(float t_step) : step(t_step) {}
     };
 
     // Name can be a little confusing, but this metadata object simply
@@ -23,7 +23,7 @@ namespace Raster {
     // This setting does nothing if attribute is integer.
     struct SliderBaseMetadata {
         float base;
-        SliderBaseMetadata(float t_step);
+        SliderBaseMetadata(float t_base) : base(t_base) {}
     };
 
     // TODO: this must make vector4 appear as a color4
@@ -35,6 +35,6 @@ namespace Raster {
     struct IconMetadata {
         std::string icon;
 
-        IconMetadata(std::string t_icon);
+        IconMetadata(std::string t_icon) : icon(t_icon) {}
     };
 };

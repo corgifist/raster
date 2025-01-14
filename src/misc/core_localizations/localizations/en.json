@@ -56,10 +56,10 @@
     "NEW_COMPOSITION": "New Composition",
     "REVERT_VIEW": "Revert View",
     "ADD_ATTRIBUTE": "Add Attribute",
-    "SELECT_COMPOSITION": "Select Composition",
+    "SELECT_COMPOSITION": "Select This Composition",
     "DELETE_SELECTED_COMPOSITIONS": "Delete Compositions",
     "NO_ATTRIBUTES": "No Attributes Presented",
-    "EDIT_METADATA": "Edit Metadata",
+    "EDIT_METADATA": "Edit Composition Metadata",
     "COPY_SELECTED_COMPOSITIONS": "Copy Compositions",
     "PASTE_SELECTED_COMPOSITIONS": "Paste Compositions",
     "DUPLICATE_SELECTED_COMPOSITIONS": "Duplicate Compositions",
@@ -221,7 +221,7 @@
     "OPEN_STREAMS_INFO": "Open Streams Info",
     "SAMPLE_FORMAT": "Sample Format",
     "AUDIO_CHANNEL": "Audio Channel",
-    "RESIZE_TO_MATCH_CONTENT_DURATION": "Resize to Match Content Duration",
+    "RESIZE_TO_MATCH_CONTENT_DURATION": "Resize to Content Duration",
     "AUDIO": "Audio",
     "AUDIO_BUSES": "Audio Buses",
     "MAIN": "Main",
@@ -307,5 +307,8 @@
     "FORCE_RENDER_FRAME": "Force Render Frame",
     "TOOLS": "Tools",
     "RECOMPUTE_ALL_AUDIO_WAVEFORMS": "Recompute All Audio Waveforms",
-    "RECOMPUTE_AUDIO_WAVEFORM": "Recompute Audio Waveform"
+    "RECOMPUTE_AUDIO_WAVEFORM": "Recompute Audio Waveform",
+    "LOCK_COMPOSITION_TO_ANOTHER_COMPOSITION": "Lock Composition to Another Composition",
+    "LOCK_COMPOSITION": "Lock Composition",
+    "NO_LOCK": "No Lock"
 }

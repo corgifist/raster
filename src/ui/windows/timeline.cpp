@@ -1,5 +1,6 @@
 #include "timeline.h"
 #include "common/localization.h"
+#include "common/ui_helpers.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "common/attributes.h"
@@ -10,6 +11,7 @@
 #include "common/dispatchers.h"
 #include "common/rendering.h"
 #include "common/waveform_manager.h"
+#include "raster.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -406,6 +408,18 @@ namespace Raster {
         
         ProcessShortcuts();
         ImGui::EndChild();
+
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD)) {
+                auto assetID = *((int*) payload->Data);
+                auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
+                if (assetCandidate) {
+                    auto& asset = *assetCandidate;
+                    asset->OnTimelineDrop();
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
     }
 
     void TimelineUI::RenderComposition(int t_id) {
@@ -433,6 +447,7 @@ namespace Raster {
             ImVec2 buttonSize = ImVec2(std::ceil((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame), LAYER_HEIGHT);
             bool compositionHovered;
             std::string compositionIcons = "";
+            if (composition->lockedCompositionID > 0) compositionIcons += ICON_FA_LOCK " ";
             if (composition->audioEnabled) compositionIcons += ICON_FA_VOLUME_HIGH;
             else compositionIcons += ICON_FA_VOLUME_OFF;
             compositionIcons += " ";
@@ -490,12 +505,12 @@ namespace Raster {
 
             ImGui::SetCursorPos({0, 0});
             RectBounds forwardBoundsDrag(
-                ImVec2(buttonCursor.x + buttonSize.x - dragSize.x, buttonCursor.y + 1),
+                ImVec2(buttonCursor.x + buttonSize.x - dragSize.x, buttonCursor.y),
                 dragSize
             );
 
             RectBounds backwardBoundsDrag(
-                ImVec2(buttonCursor.x, buttonCursor.y + 1), dragSize
+                ImVec2(buttonCursor.x, buttonCursor.y), dragSize
             );
 
             ImVec4 dragColor = buttonColor * 0.7f;
@@ -781,14 +796,7 @@ namespace Raster {
             project.selectedCompositions.erase(selectedCompositionIterator);
         }
 
-        int targetCompositionIndex = 0;
-        for (auto& iterationComposition : project.compositions) {
-            if (composition->id == iterationComposition.id) break;
-            targetCompositionIndex++;
-        }
-        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
-        project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
-        WaveformManager::EraseRecord(composition->id);
+        Workspace::DeleteComposition(composition->id);
     }
 
     void TimelineUI::AppendSelectedCompositions(Composition* composition) {
@@ -934,6 +942,10 @@ namespace Raster {
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_DESCRIPTION").c_str());
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu(FormatString("%s %s", t_composition->lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN, Localization::GetString("LOCK_COMPOSITION").c_str()).c_str())) {
+            RenderLockCompositionPopup(t_composition);
+            ImGui::EndMenu();
+        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("SELECT_COMPOSITION").c_str()).c_str())) {
             AppendSelectedCompositions(t_composition);
         }
@@ -951,12 +963,6 @@ namespace Raster {
         if (ImGui::MenuItem(FormatString("%s %s", t_composition->audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITIONS_AUDIO_MIXING").c_str()).c_str(), "Ctrl+A")) {
             ProcessAudioMixingAction();
         }
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
-            ProcessResizeToMatchContentDurationAction();
-        }
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("RECOMPUTE_AUDIO_WAVEFORM").c_str()).c_str())) {
-            ProcessRecomputeAudioWaveformAction();
-        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+C")) {
             ProcessCopyAction();
         }
@@ -969,6 +975,16 @@ namespace Raster {
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Delete")) {
             ProcessDeleteAction();
+        }
+        ImGui::Separator();   
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LOCK_OPEN, Localization::GetString("UNLOCK_COMPOSITION").c_str()).c_str(), nullptr, false, t_composition->lockedCompositionID > 0)) {
+            t_composition->lockedCompositionID = -1;
+        }     
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
+            ProcessResizeToMatchContentDurationAction();
+        }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("RECOMPUTE_AUDIO_WAVEFORM").c_str()).c_str())) {
+            ProcessRecomputeAudioWaveformAction();
         }
     }
 
@@ -1141,6 +1157,35 @@ namespace Raster {
                 }
             }
         }
+    }
+
+    void TimelineUI::RenderLockCompositionPopup(Composition *t_composition) {
+        auto& project = Workspace::GetProject();
+        ImGui::SeparatorText(FormatString("%s %s", t_composition->lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN, Localization::GetString("LOCK_COMPOSITION").c_str()).c_str());
+        static std::string s_searchFilter = "";
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_searchFilter);
+        ImGui::PopItemWidth();
+        if (ImGui::BeginChild("##compositionCandidates", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LOCK_OPEN, Localization::GetString("NO_LOCK").c_str()).c_str())) {
+                t_composition->lockedCompositionID = -1;
+                ImGui::CloseCurrentPopup();
+            }
+            bool hasCandidates = false;
+            for (auto& composition : project.compositions) {
+                if (composition.id == t_composition->id) continue;
+                if (!s_searchFilter.empty() && LowerCase(composition.name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str()).c_str())) {
+                    t_composition->lockedCompositionID = composition.id;
+                    ImGui::CloseCurrentPopup();
+                }
+                hasCandidates = true;
+            }
+            if (!hasCandidates) {
+                UIHelpers::RenderNothingToShowText();
+            }
+        }
+        ImGui::EndChild();
     }
 
     void TimelineUI::RenderTimelinePopup() {
@@ -1347,6 +1392,15 @@ namespace Raster {
                     targetCompositionDelete = &composition;
                 }
                 ImGui::SetItemTooltip(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_COMPOSITION").c_str()).c_str());
+                ImGui::SameLine();
+                if (ImGui::Button(composition.lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN)) {
+                    ImGui::OpenPopup("##lockCompositionMenu");
+                }
+                ImGui::SetItemTooltip("%s %s", composition.lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN, Localization::GetString("LOCK_COMPOSITION_TO_ANOTHER_COMPOSITION").c_str());
+                if (ImGui::BeginPopup("##lockCompositionMenu")) {
+                    RenderLockCompositionPopup(&composition);
+                    ImGui::EndPopup();
+                }
                 ImGui::SameLine();
                 if (ImGui::Button(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF)) {
                     composition.enabled = !composition.enabled;

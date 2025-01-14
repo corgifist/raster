@@ -16,6 +16,7 @@ namespace Raster {
         this->enabled = true;
         this->colorMark = Workspace::s_colorMarks[Workspace::s_defaultColorMark];
         this->audioEnabled = true;
+        this->lockedCompositionID = -1;
     }
 
     Composition::Composition(Json data) {
@@ -30,6 +31,7 @@ namespace Raster {
         this->enabled = data["Enabled"];
         this->colorMark = data["ColorMark"];
         this->audioEnabled = data.contains("AudioEnabled") ? data["AudioEnabled"].get<bool>() : true;
+        this->lockedCompositionID = data.contains("LockedCompositionID") ? data["LockedCompositionID"].get<int>() : -1;
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -145,6 +147,7 @@ namespace Raster {
         data["Enabled"] = enabled;
         data["ColorMark"] = colorMark;
         data["AudioEnabled"] = audioEnabled;
+        data["LockedCompositionID"] = lockedCompositionID;
         data["Nodes"] = {};
         for (auto& pair : nodes) {
             data["Nodes"].push_back(pair.second->Serialize());

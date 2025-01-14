@@ -11,6 +11,8 @@
 #include "../../ImGui/imgui_drag.h"
 #include "../../ImGui/imgui_stripes.h"
 
+#define ASSET_MANAGER_DRAG_DROP_PAYLOAD "ASSET_MANAGER_DRAG_DROP_PAYLOAD"
+
 namespace Raster {
     struct TimelineUI : public UI {
         void Render();
@@ -24,6 +26,7 @@ namespace Raster {
         static void RenderComposition(int t_id);
         static void RenderCompositionPopup(Composition* composition, ImGuiID t_parentTreeID = 0);
         static void RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID = 0);
+        static void RenderLockCompositionPopup(Composition* t_composition);
 
         static void RenderCompositionsEditor();
         static void RenderLegend();

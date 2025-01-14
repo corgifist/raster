@@ -73,7 +73,8 @@ namespace Raster {
         {"Cyan", RASTER_COLOR32(28, 188, 210, 255)}, 
         {"Teal", RASTER_COLOR32(24, 149, 135, 255)},
         {"Green", RASTER_COLOR32(84, 172, 88, 255)},
-        {"Light Green", RASTER_COLOR32(143, 192, 87, 255)}
+        {"Light Green", RASTER_COLOR32(143, 192, 87, 255)},
+        {"Light Orange", RASTER_COLOR32(211, 145, 72, 255)}
     };
 
     std::vector<int> Workspace::s_persistentPins = {};
@@ -652,6 +653,24 @@ namespace Raster {
             }
         } catch (...) {
             RASTER_LOG("failed to open project: " << t_path);
+        }
+    }
+
+    void Workspace::DeleteComposition(int t_id) {
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+        int targetCompositionIndex = 0;
+        for (auto& iterationComposition : project.compositions) {
+            if (t_id == iterationComposition.id) break;
+            targetCompositionIndex++;
+        }
+        RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+        project.compositions.erase(project.compositions.begin() + targetCompositionIndex);
+        WaveformManager::EraseRecord(t_id);
+        for (auto& composition : project.compositions) {
+            if (composition.lockedCompositionID == t_id) {
+                composition.lockedCompositionID = -1;
+            }
         }
     }
 
