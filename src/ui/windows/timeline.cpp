@@ -23,6 +23,7 @@
 #define ROUND_EVEN(x) std::round( (x) * 0.5f ) * 2.0f
 
 #define LAYER_REARRANGE_DRAG_DROP "LAYER_REARRANGE_DRAG_DROP"
+#define LAYER_LOCK_DRAG_DROP "LAYER_LOCK_DRAG_DROP"
 
 namespace Raster {
 
@@ -427,12 +428,12 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         if (compositionCandidate.has_value()) {
             auto& composition = compositionCandidate.value();
-            auto& selectedComposoitions = project.selectedCompositions;
+            auto& selectedCompositions = project.selectedCompositions;
             ImGui::PushID(composition->id);
             ImGui::SetCursorPosX(std::ceil(composition->beginFrame * s_pixelsPerFrame));
             ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(composition->colorMark);
             bool isCompositionSelected = false;
-            if (std::find(selectedComposoitions.begin(), selectedComposoitions.end(), t_id) != selectedComposoitions.end()) {
+            if (std::find(selectedCompositions.begin(), selectedCompositions.end(), t_id) != selectedCompositions.end()) {
                 buttonColor = 1.1f * buttonColor;
                 isCompositionSelected = true;
             }
@@ -643,7 +644,7 @@ namespace Raster {
             if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
                 s_forwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-                for (auto& selectedComposoitionID : selectedComposoitions) {
+                for (auto& selectedComposoitionID : selectedCompositions) {
                     auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                     if (selectedCompositionCandidate.has_value()) {
                         auto& selectedComposition = selectedCompositionCandidate.value();
@@ -664,7 +665,7 @@ namespace Raster {
                 s_backwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
 
-                for (auto& selectedComposoitionID : selectedComposoitions) {
+                for (auto& selectedComposoitionID : selectedCompositions) {
                     auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                     if (selectedCompositionCandidate.has_value()) {
                         auto& selectedComposition = selectedCompositionCandidate.value();
@@ -685,9 +686,9 @@ namespace Raster {
 
                 float layerDragDistance;
                 if (s_layerDrag.GetDragDistance(layerDragDistance) && !s_timelineRulerDragged) {
-                    for (auto& selectedComposoitionID : selectedComposoitions) {
+                    for (auto& selectedComposoitionID : selectedCompositions) {
                         bool breakDrag = false;
-                        for (auto& testingCompositionID : selectedComposoitions) {
+                        for (auto& testingCompositionID : selectedCompositions) {
                             auto selectedCompositionCandidate = Workspace::GetCompositionByID(testingCompositionID);
                             if (selectedCompositionCandidate.has_value()) {
                                 auto& testingComposition = selectedCompositionCandidate.value();
@@ -697,7 +698,7 @@ namespace Raster {
                                 }
                             }
                         }
-                        if (breakDrag && selectedComposoitions.size() > 1 && layerDragDistance < 0) break;
+                        if (breakDrag && selectedCompositions.size() > 1 && layerDragDistance < 0) break;
                         auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                         if (selectedCompositionCandidate.has_value() && ImGui::IsWindowFocused()) {
                             auto& selectedComposition = selectedCompositionCandidate.value();
@@ -779,11 +780,11 @@ namespace Raster {
 
             if (mustDeleteComposition) {
                 int compositionIndex = 0;
-                for (auto& selectedComposoition : selectedComposoitions) {
+                for (auto& selectedComposoition : selectedCompositions) {
                     if (selectedComposoition == t_id) break;
                     compositionIndex++;
                 }
-                selectedComposoitions.erase(selectedComposoitions.begin() + compositionIndex);
+                selectedCompositions.erase(selectedCompositions.begin() + compositionIndex);
             }
         }
     }
@@ -1174,6 +1175,7 @@ namespace Raster {
             bool hasCandidates = false;
             for (auto& composition : project.compositions) {
                 if (composition.id == t_composition->id) continue;
+                if (composition.lockedCompositionID == t_composition->id) continue;
                 if (!s_searchFilter.empty() && LowerCase(composition.name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str()).c_str())) {
                     t_composition->lockedCompositionID = composition.id;
@@ -1186,6 +1188,23 @@ namespace Raster {
             }
         }
         ImGui::EndChild();
+    }
+
+    void TimelineUI::LockCompositionDragSource(Composition *t_composition) {
+        if (ImGui::BeginDragDropSource()) {
+            ImGui::SetDragDropPayload(LAYER_LOCK_DRAG_DROP, &t_composition->id, sizeof(t_composition->id));
+            ImGui::EndDragDropSource();
+        }
+    }
+
+    void TimelineUI::LockCompositionDragTarget(Composition *t_composition) {
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(LAYER_LOCK_DRAG_DROP)) {
+                int compositionID = *((int*) payload->Data);
+                t_composition->lockedCompositionID = compositionID;
+            }
+            ImGui::EndDragDropTarget();
+        }
     }
 
     void TimelineUI::RenderTimelinePopup() {
@@ -1396,6 +1415,8 @@ namespace Raster {
                 if (ImGui::Button(composition.lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN)) {
                     ImGui::OpenPopup("##lockCompositionMenu");
                 }
+                LockCompositionDragSource(&composition);
+                LockCompositionDragTarget(&composition);
                 ImGui::SetItemTooltip("%s %s", composition.lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN, Localization::GetString("LOCK_COMPOSITION_TO_ANOTHER_COMPOSITION").c_str());
                 if (ImGui::BeginPopup("##lockCompositionMenu")) {
                     RenderLockCompositionPopup(&composition);
@@ -1565,6 +1586,10 @@ namespace Raster {
                     std::swap(*t_composition, *fromComposition);
                 }
             }
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(LAYER_LOCK_DRAG_DROP)) {
+                int compositionID = *((int*) payload->Data);
+                t_composition->lockedCompositionID = compositionID;
+            }
             ImGui::EndDragDropTarget();
         }
     }
@@ -1572,7 +1597,7 @@ namespace Raster {
     float TimelineUI::ProcessLayerScroll() {
         ImGui::SetCursorPos({0, 0});
         float mouseX = GetRelativeMousePos().x - ImGui::GetScrollX();
-        DUMP_VAR(mouseX);
+        // DUMP_VAR(mouseX);
         float eventZone = ImGui::GetWindowSize().x / 10.0f;
         float mouseDeltaX = 5;
         if (mouseX > ImGui::GetWindowSize().x - eventZone && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {

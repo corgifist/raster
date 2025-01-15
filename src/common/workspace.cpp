@@ -11,6 +11,7 @@
 #include "common/choice.h"
 #include "common/plugins.h"
 #include "common/waveform_manager.h"
+#include "common/rendering.h"
 
 
 namespace Raster {
@@ -654,6 +655,7 @@ namespace Raster {
         } catch (...) {
             RASTER_LOG("failed to open project: " << t_path);
         }
+        Rendering::ForceRenderFrame();
     }
 
     void Workspace::DeleteComposition(int t_id) {
@@ -672,6 +674,7 @@ namespace Raster {
                 composition.lockedCompositionID = -1;
             }
         }
+        Rendering::ForceRenderFrame();
     }
 
     Project& Workspace::GetProject() {

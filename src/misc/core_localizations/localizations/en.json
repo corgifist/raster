@@ -310,5 +310,7 @@
     "RECOMPUTE_AUDIO_WAVEFORM": "Recompute Audio Waveform",
     "LOCK_COMPOSITION_TO_ANOTHER_COMPOSITION": "Lock Composition to Another Composition",
     "LOCK_COMPOSITION": "Lock Composition",
-    "NO_LOCK": "No Lock"
+    "NO_LOCK": "No Lock",
+    "UNLOCK_COMPOSITION": "Unlock Composition",
+    "LOCK_COMPOSITION_TO_ANOTHER_FORMAT": "Lock %s to Another Composition"
 }

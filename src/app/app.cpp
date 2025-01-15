@@ -303,6 +303,10 @@ namespace Raster {
 
                 for (auto& composition : project.compositions) {
                     if (composition.lockedCompositionID < 0) continue;
+                    if (composition.lockedCompositionID == composition.id) {
+                        composition.lockedCompositionID = -1;
+                        continue;
+                    }
                     auto lockedCompositionCandidate = Workspace::GetCompositionByID(composition.lockedCompositionID);
                     if (!lockedCompositionCandidate) continue;
                     auto& lockedComposition = *lockedCompositionCandidate;
