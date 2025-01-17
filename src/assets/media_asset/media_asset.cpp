@@ -7,6 +7,7 @@
 #include <variant>
 #include "common/asset_id.h"
 #include "common/waveform_manager.h"
+#include "../../attributes/transform2d_attribute/transform2d_attribute.h"
 
 extern "C" {
 #include <libavutil/samplefmt.h>
@@ -261,8 +262,13 @@ namespace Raster {
         auto& project = Workspace::GetProject();
         bool hasAudioStream = false;
         bool hasVideoStream = false;
+        bool hasAttachedPic = false;
         for (auto& stream : m_streamInfos) {
             if (std::holds_alternative<VideoStreamInfo>(stream)) {
+                if (std::get<VideoStreamInfo>(stream).attachedPic) {
+                    hasAttachedPic = true;
+                    continue;
+                }
                 hasVideoStream = true;
             }
             if (std::holds_alternative<AudioStreamInfo>(stream)) {
@@ -270,6 +276,142 @@ namespace Raster {
             }
         }
         
+        std::optional<Composition> targetAttachedPicComposition;
+        std::optional<Composition> targetVideoComposition;
+        std::optional<Composition> targetAudioComposition;
+
+        if (hasAttachedPic) {
+            Composition attachedPicComposition = Composition();
+            attachedPicComposition.beginFrame = project.currentFrame;
+            attachedPicComposition.endFrame = project.currentFrame + m_cachedDuration.value_or(1) * project.framerate;
+            attachedPicComposition.name = name;
+
+            auto assetTextureNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_asset_texture");
+            if (!assetTextureNodeCandidate) return;
+            auto& assetTextureNode = *assetTextureNodeCandidate;
+            assetTextureNode->AddInputPin("AssetID");
+            auto textureOutputPinCandidate = assetTextureNode->GetAttributePin("Texture");
+            if (!textureOutputPinCandidate) return;
+            auto& textureOutputPin = *textureOutputPinCandidate;
+
+            auto assetAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "asset_attribute");
+            if (!assetAttributeCandidate) return;
+            auto& assetAttribute = *assetAttributeCandidate;
+            assetAttribute->internalAttributeName = FormatString("<%i>.AssetID", assetTextureNode->nodeID);
+            assetAttribute->name = "Attached Picture Asset";
+            assetAttribute->keyframes[0].value = AssetID(id);
+            attachedPicComposition.attributes.push_back(assetAttribute);
+
+            auto layerNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "layer2d");
+            if (!layerNodeCandidate) return;
+            auto& layerNode = *layerNodeCandidate;
+            layerNode->nodePosition = glm::vec2(250, -20);
+            layerNode->AddInputPin("Texture");
+            layerNode->AddInputPin("Transform");
+            for (auto& pin : layerNode->inputPins) {
+                if (pin.linkedAttribute == "Texture") {
+                    pin.connectedPinID = textureOutputPin.pinID;
+                    break;
+                }
+            }
+            auto layerOutputPinCandidate = layerNode->GetAttributePin("Framebuffer");
+            if (!layerOutputPinCandidate) return;
+            auto& layerOutputPin = *layerOutputPinCandidate;
+
+            auto transformAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "transform2d_attribute");
+            if (!transformAttributeCandidate) return;
+            auto& transformAttribute = *transformAttributeCandidate;
+            transformAttribute->name = "Transform";
+            transformAttribute->internalAttributeName = FormatString("<%i>.Transform", layerNode->nodeID);
+            Transform2DAttribute* rawTransformAttribute = (Transform2DAttribute*) transformAttribute.get();
+            rawTransformAttribute->m_parentAssetType = ParentAssetType::Attribute;
+            rawTransformAttribute->m_parentAssetID = assetAttribute->id;
+            attachedPicComposition.attributes.push_back(transformAttribute);
+
+            auto exportNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "export_renderable");
+            if (!exportNodeCandidate) return;
+            auto& exportNode = *exportNodeCandidate;
+            exportNode->nodePosition = glm::vec2(600, -15);
+            for (auto& pin : exportNode->inputPins) {
+                if (pin.linkedAttribute == "Renderable") {
+                    pin.connectedPinID = layerOutputPin.pinID;
+                    break;
+                }
+            }
+
+            attachedPicComposition.nodes[assetTextureNode->nodeID] = assetTextureNode;
+            attachedPicComposition.nodes[layerNode->nodeID] = layerNode;
+            attachedPicComposition.nodes[exportNode->nodeID] = exportNode;
+
+            targetAttachedPicComposition = attachedPicComposition;
+        }
+
+        if (hasVideoStream) {
+            Composition attachedVideoComposition = Composition();
+            attachedVideoComposition.beginFrame = project.currentFrame;
+            attachedVideoComposition.endFrame = project.currentFrame + m_cachedDuration.value_or(1) * project.framerate;
+            attachedVideoComposition.name = name;
+
+            auto readVideoNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "decode_video_asset");
+            if (!readVideoNodeCandidate) return;
+            auto& readVideoNode = *readVideoNodeCandidate;
+            readVideoNode->AddInputPin("Asset");
+            auto textureOutputPinCandidate = readVideoNode->GetAttributePin("Output");
+            if (!textureOutputPinCandidate) return;
+            auto& textureOutputPin = *textureOutputPinCandidate;
+
+            auto assetAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "asset_attribute");
+            if (!assetAttributeCandidate) return;
+            auto& assetAttribute = *assetAttributeCandidate;
+            assetAttribute->internalAttributeName = FormatString("<%i>.AssetID", readVideoNode->nodeID);
+            assetAttribute->name = "Video Asset";
+            assetAttribute->keyframes[0].value = AssetID(id);
+            attachedVideoComposition.attributes.push_back(assetAttribute);
+
+            auto layerNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "layer2d");
+            if (!layerNodeCandidate) return;
+            auto& layerNode = *layerNodeCandidate;
+            layerNode->nodePosition = glm::vec2(250, -20);
+            layerNode->AddInputPin("Texture");
+            layerNode->AddInputPin("Transform");
+            for (auto& pin : layerNode->inputPins) {
+                if (pin.linkedAttribute == "Texture") {
+                    pin.connectedPinID = textureOutputPin.pinID;
+                    break;
+                }
+            }
+            auto layerOutputPinCandidate = layerNode->GetAttributePin("Framebuffer");
+            if (!layerOutputPinCandidate) return;
+            auto& layerOutputPin = *layerOutputPinCandidate;
+
+            auto transformAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "transform2d_attribute");
+            if (!transformAttributeCandidate) return;
+            auto& transformAttribute = *transformAttributeCandidate;
+            transformAttribute->name = "Transform";
+            transformAttribute->internalAttributeName = FormatString("<%i>.Transform", layerNode->nodeID);
+            Transform2DAttribute* rawTransformAttribute = (Transform2DAttribute*) transformAttribute.get();
+            rawTransformAttribute->m_parentAssetType = ParentAssetType::Attribute;
+            rawTransformAttribute->m_parentAssetID = assetAttribute->id;
+            attachedVideoComposition.attributes.push_back(transformAttribute);
+
+            auto exportNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "export_renderable");
+            if (!exportNodeCandidate) return;
+            auto& exportNode = *exportNodeCandidate;
+            exportNode->nodePosition = glm::vec2(600, -15);
+            for (auto& pin : exportNode->inputPins) {
+                if (pin.linkedAttribute == "Renderable") {
+                    pin.connectedPinID = layerOutputPin.pinID;
+                    break;
+                }
+            }
+
+            attachedVideoComposition.nodes[readVideoNode->nodeID] = readVideoNode;
+            attachedVideoComposition.nodes[layerNode->nodeID] = layerNode;
+            attachedVideoComposition.nodes[exportNode->nodeID] = exportNode;
+
+            targetVideoComposition = attachedVideoComposition;
+        }
+
         if (hasAudioStream) {
             Composition audioComposition = Composition();
             audioComposition.beginFrame = project.currentFrame;
@@ -279,34 +421,19 @@ namespace Raster {
                 audioComposition.colorMark = Workspace::s_colorMarks["Light Orange"];
             }
 
+            auto readAudioNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "decode_audio_asset");
+            if (!readAudioNodeCandidate) return;
+            auto& readAudioNode = *readAudioNodeCandidate;
+            readAudioNode->AddInputPin("Asset");
+            readAudioNode->nodePosition = glm::vec2(0, 0);
+
             auto assetAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "asset_attribute");
             if (!assetAttributeCandidate) return;
             auto& assetAttribute = *assetAttributeCandidate;
             assetAttribute->name = "Audio Asset";
             assetAttribute->keyframes[0].value = AssetID(id);
-
+            assetAttribute->internalAttributeName = FormatString("<%i>.Asset", readAudioNode->nodeID);
             audioComposition.attributes.push_back(assetAttribute);
-
-            auto assetAttributeNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value");
-            if (!assetAttributeNodeCandidate) return;
-            auto& assetAttributeNode = *assetAttributeNodeCandidate;
-            assetAttributeNode->SetAttributeValue("AttributeID", assetAttribute->id);
-
-            auto attributeValuePinCandidate = assetAttributeNode->GetAttributePin("Value");
-            if (!attributeValuePinCandidate) return;
-            auto& attributeValuePin = *attributeValuePinCandidate;
-
-            auto readAudioNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "decode_audio_asset");
-            if (!readAudioNodeCandidate) return;
-            auto& readAudioNode = *readAudioNodeCandidate;
-            readAudioNode->AddInputPin("Asset");
-            readAudioNode->nodePosition = glm::vec2(0, 150);
-            for (auto& pin : readAudioNode->inputPins) {
-                if (pin.linkedAttribute == "Asset") {
-                    pin.connectedPinID = attributeValuePin.pinID;
-                    break;
-                }
-            }
 
             auto samplesPinCandidate = readAudioNode->GetAttributePin("Samples");
             if (!samplesPinCandidate) return;
@@ -315,21 +442,34 @@ namespace Raster {
             auto exportAudioNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "export_to_audio_bus");
             if (!exportAudioNodeCandidate) return;
             auto& exportAudioNode = *exportAudioNodeCandidate;
-            exportAudioNode->nodePosition = glm::vec2(200, 150);
+            exportAudioNode->nodePosition = glm::vec2(200, -20);
             for (auto& pin : exportAudioNode->inputPins) {
                 if (pin.linkedAttribute == "Samples") {
                     pin.connectedPinID = samplesPin.pinID;
                     break;
                 }
             }
-
-            audioComposition.nodes[assetAttributeNode->nodeID] = assetAttributeNode;
             audioComposition.nodes[readAudioNode->nodeID] = readAudioNode;
             audioComposition.nodes[exportAudioNode->nodeID] = exportAudioNode;
-            project.compositions.push_back(audioComposition);
-            WaveformManager::RequestWaveformRefresh(audioComposition.id);
+            targetAudioComposition = audioComposition;
         };
 
+
+        if (targetAudioComposition && targetAttachedPicComposition && !targetVideoComposition) {
+            targetAudioComposition->lockedCompositionID = targetAttachedPicComposition->id;
+        } else if (targetVideoComposition && targetAudioComposition && !targetAttachedPicComposition) {
+            targetAudioComposition->lockedCompositionID = targetVideoComposition->id;
+        } else if (targetVideoComposition && targetAudioComposition && targetAttachedPicComposition) {
+            targetAudioComposition->lockedCompositionID = targetVideoComposition->id;
+            targetAttachedPicComposition->lockedCompositionID = targetVideoComposition->id;
+        }
+
+        if (targetAudioComposition) {
+            project.compositions.push_back(*targetAudioComposition);
+            WaveformManager::RequestWaveformRefresh(targetAudioComposition->id);
+        }
+        if (targetVideoComposition) project.compositions.push_back(*targetVideoComposition);
+        if (targetAttachedPicComposition) project.compositions.push_back(*targetAttachedPicComposition);
     }
 
     std::optional<Texture> MediaAsset::AbstractGetPreviewTexture() {

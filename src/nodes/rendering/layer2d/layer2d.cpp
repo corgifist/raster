@@ -18,6 +18,7 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Framebuffer");
+        AddOutputPin("Center");
 
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("Color", glm::vec4(1));
@@ -107,6 +108,7 @@ namespace Raster {
             GPU::BindSampler(std::nullopt);
 
             TryAppendAbstractPinMap(result, "Framebuffer", framebuffer);
+            TryAppendAbstractPinMap(result, "Center", transform.DecomposePosition());
         }
 
         return result;

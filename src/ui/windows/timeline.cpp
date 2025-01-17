@@ -644,7 +644,17 @@ namespace Raster {
             if ((MouseHoveringBounds(forwardBoundsDrag) || s_forwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_backwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged) {
                 s_forwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-                for (auto& selectedComposoitionID : selectedCompositions) {
+                auto modifiedSelectedCompositions = selectedCompositions;
+                for (auto& id : selectedCompositions) {
+                    auto compositionCandidate = Workspace::GetCompositionByID(id);
+                    if (!compositionCandidate) continue;
+                    auto& composition = *compositionCandidate;
+                    if (composition->lockedCompositionID > 0) {
+                        modifiedSelectedCompositions.push_back(composition->lockedCompositionID);
+                    }
+                }
+
+                for (auto& selectedComposoitionID : modifiedSelectedCompositions) {
                     auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                     if (selectedCompositionCandidate.has_value()) {
                         auto& selectedComposition = selectedCompositionCandidate.value();
@@ -664,8 +674,17 @@ namespace Raster {
             if ((MouseHoveringBounds(backwardBoundsDrag) || s_backwardBoundsDrag.isActive) && !s_timelineRulerDragged && !s_layerDrag.isActive && !s_forwardBoundsDrag.isActive && !UIShared::s_timelineAnykeyframeDragged && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 s_backwardBoundsDrag.Activate();
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+                auto modifiedSelectedCompositions = selectedCompositions;
+                for (auto& id : selectedCompositions) {
+                    auto compositionCandidate = Workspace::GetCompositionByID(id);
+                    if (!compositionCandidate) continue;
+                    auto& composition = *compositionCandidate;
+                    if (composition->lockedCompositionID > 0) {
+                        modifiedSelectedCompositions.push_back(composition->lockedCompositionID);
+                    }
+                }
 
-                for (auto& selectedComposoitionID : selectedCompositions) {
+                for (auto& selectedComposoitionID : modifiedSelectedCompositions) {
                     auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                     if (selectedCompositionCandidate.has_value()) {
                         auto& selectedComposition = selectedCompositionCandidate.value();
@@ -686,9 +705,18 @@ namespace Raster {
 
                 float layerDragDistance;
                 if (s_layerDrag.GetDragDistance(layerDragDistance) && !s_timelineRulerDragged) {
-                    for (auto& selectedComposoitionID : selectedCompositions) {
+                    auto modifiedSelectedCompositions = selectedCompositions;
+                    for (auto& id : selectedCompositions) {
+                        auto compositionCandidate = Workspace::GetCompositionByID(id);
+                        if (!compositionCandidate) continue;
+                        auto& composition = *compositionCandidate;
+                        if (composition->lockedCompositionID > 0) {
+                            modifiedSelectedCompositions.push_back(composition->lockedCompositionID);
+                        }
+                    }
+                    for (auto& selectedComposoitionID : modifiedSelectedCompositions) {
                         bool breakDrag = false;
-                        for (auto& testingCompositionID : selectedCompositions) {
+                        for (auto& testingCompositionID : modifiedSelectedCompositions) {
                             auto selectedCompositionCandidate = Workspace::GetCompositionByID(testingCompositionID);
                             if (selectedCompositionCandidate.has_value()) {
                                 auto& testingComposition = selectedCompositionCandidate.value();
@@ -698,7 +726,7 @@ namespace Raster {
                                 }
                             }
                         }
-                        if (breakDrag && selectedCompositions.size() > 1 && layerDragDistance < 0) break;
+                        if (breakDrag && modifiedSelectedCompositions.size() > 1 && layerDragDistance < 0) break;
                         auto selectedCompositionCandidate = Workspace::GetCompositionByID(selectedComposoitionID);
                         if (selectedCompositionCandidate.has_value() && ImGui::IsWindowFocused()) {
                             auto& selectedComposition = selectedCompositionCandidate.value();

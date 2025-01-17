@@ -248,6 +248,7 @@ namespace Raster {
             for (auto& entry : s_videoCacheEntries) {
                 if (entry.frame == targetFrame && entry.assetPath == decoder->assetPath) {
                     t_imageAllocation.data = entry.data;
+                    decoder->lastLoadedFrame = entry.frame;
                     return true;
                 }    
             }

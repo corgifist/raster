@@ -5,7 +5,7 @@
         <attribute name="Base" type="Framebuffer"/>
         <attribute name="Directions" type="float" value="15.0"/>
         <attribute name="Quality" type="float" value="5.0"/>
-        <attribute name="Size" type="float" value="8.0"/>
+        <attribute name="Size" type="float" value="1.0"/>
     </attributes>
 
     <pins>
