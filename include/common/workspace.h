@@ -26,9 +26,7 @@ namespace Raster {
 
         static std::vector<int> s_targetSelectNodes;
 
-        static std::mutex s_pinCacheMutex;
         static DoubleBufferedValue<unordered_dense::map<int, std::any>> s_pinCache;
-        static std::vector<int> s_persistentPins;
         static std::unordered_map<std::type_index, std::string> s_typeNames;
         static std::unordered_map<std::type_index, uint32_t> s_typeColors;
 

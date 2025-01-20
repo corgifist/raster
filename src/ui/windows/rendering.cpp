@@ -237,7 +237,7 @@ namespace Raster {
                             auto pinCandidate = node->GetAttributePin(selectedPin);
                             if (pinCandidate.has_value()) {
                                 auto& pin = pinCandidate.value();
-                                RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+                                // RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
                                 if (Workspace::s_pinCache.GetFrontValue().find(pin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
                                     dispatcherTarget = Workspace::s_pinCache.GetFrontValue()[pin.connectedPinID];
                                 }

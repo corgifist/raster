@@ -52,7 +52,7 @@ namespace Raster {
 
         void SetAttributeValue(std::string t_attribute, std::any t_value);
 
-        AbstractPinMap Execute(AbstractPinMap& accumulator, ContextData& t_contextData);
+        AbstractPinMap Execute(ContextData& t_contextData);
         std::string Header();
 
         bool DetailsAvailable();
@@ -91,8 +91,6 @@ namespace Raster {
         std::optional<float> GetContentDuration();
 
         void OnTimelineSeek();
-        void ClearImmediateFooters();
-        std::vector<std::string> GetImmediateFooters();
         std::string GetAttributeName(std::string t_attributeName);
 
         protected:
@@ -130,11 +128,6 @@ namespace Raster {
 
         void Initialize();
 
-        void MakePinPersistent(std::string t_attribute);
-        void DestroyPersistentPins();
-
-        void PushImmediateFooter(std::string t_footer);
-
         void SetAttributeAlias(std::string t_attributeName, std::string t_alias);
 
         private:
@@ -143,9 +136,6 @@ namespace Raster {
         std::vector<std::string> m_attributesOrder;
 
         bool ExecutingInAudioContext(ContextData& t_data);
-
-        DoubleBufferedValue<std::vector<std::string>> m_immediateFooters;
-        AbstractPinMap m_accumulator;
     };
 
     using AbstractNode = std::shared_ptr<NodeBase>;

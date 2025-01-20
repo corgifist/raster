@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -220,11 +221,15 @@ namespace Raster {
 
     static void ExperimentalSleepFor(double dt)
     {
+#ifdef RASTER_USE_SPIN_LOCK
         static constexpr duration<double> MinSleepDuration(0);
         clock::time_point start = clock::now();
         while (duration<double>(clock::now() - start).count() < dt) {
             std::this_thread::sleep_for(MinSleepDuration);
         }
+#else
+        std::this_thread::sleep_for(std::chrono::milliseconds((int) (dt * 1000)));
+#endif
     }
 
     template< typename T >

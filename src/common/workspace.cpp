@@ -22,7 +22,6 @@ namespace Raster {
     std::vector<NodeImplementation> Workspace::s_nodeImplementations;
     Configuration Workspace::s_configuration;
 
-    std::mutex Workspace::s_pinCacheMutex;
     DoubleBufferedValue<unordered_dense::map<int, std::any>> Workspace::s_pinCache;
 
     std::vector<int> Workspace::s_targetSelectNodes;
@@ -60,7 +59,8 @@ namespace Raster {
         RASTER_TYPE_NAME(GenericAudioDecoder),
         RASTER_TYPE_NAME(GenericResolution),
         RASTER_TYPE_NAME(Gradient1D),
-        RASTER_TYPE_NAME(Choice)
+        RASTER_TYPE_NAME(Choice),
+        RASTER_TYPE_NAME(std::nullopt)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {
@@ -78,7 +78,6 @@ namespace Raster {
         {"Light Orange", RASTER_COLOR32(211, 145, 72, 255)}
     };
 
-    std::vector<int> Workspace::s_persistentPins = {};
     std::string Workspace::s_defaultColorMark = "Teal";
 
     enum class PinLocationSpecification {
@@ -158,7 +157,6 @@ namespace Raster {
     std::optional<Composition*> Workspace::GetCompositionByAttributeID(int t_attributeID) {
         if (!s_project.has_value()) return std::nullopt;
         auto& project = s_project.value();
-        // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
         for (auto& composition : project.compositions) {
             for (auto& attribute : composition.attributes) {
                 if (attribute->id == t_attributeID) return &composition;
@@ -168,7 +166,6 @@ namespace Raster {
     }
 
     void Workspace::UpdatePinCache(AbstractPinMap& t_pinMap) {
-        RASTER_SYNCHRONIZED(s_pinCacheMutex);
         auto& pinCache = s_pinCache.Get();
         for (auto& pair : t_pinMap) {
             pinCache[pair.first] = pair.second;
@@ -236,43 +233,45 @@ namespace Raster {
 
                 if (!data["InputPins"].is_null()) {
                     for (auto& pin : data["InputPins"]) {
-                        bool continueLoop = false;
-                        for (auto& inputPin : node->inputPins) {
-                            if (inputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
-                                continueLoop = true;
+                        for (auto& nodePin : node->inputPins) {
+                            if (nodePin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
+                                nodePin = GenericPin(pin);
+                            }
+                        }
+                    }                    
+                    for (auto& pin : data["InputPins"]) {
+                        bool hasCandidates = false;
+                        for (auto& nodePin : node->inputPins) {
+                            if (nodePin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
+                                hasCandidates = true;
                                 break;
                             }
                         }
-                        if (continueLoop) {
-                            int pinIndex = 0;
-                            for (auto& inputPin : node->inputPins) {
-                                if (inputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) break;
-                                pinIndex++;
-                            }
-                            node->inputPins.erase(node->inputPins.begin() + pinIndex);
+                        if (!hasCandidates) {
+                            node->inputPins.push_back(GenericPin(pin));
                         }
-                        node->inputPins.push_back(GenericPin(pin));
                     }
                 }
 
                 if (!data["OutputPins"].is_null()) {
                     for (auto& pin : data["OutputPins"]) {
-                        bool continueLoop = false; 
-                        for (auto& outputPin : node->outputPins) {
-                            if (outputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
-                                continueLoop = true;
+                        for (auto& nodePin : node->outputPins) {
+                            if (nodePin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
+                                nodePin = GenericPin(pin);
+                            }
+                        }
+                    }
+                    for (auto& pin : data["OutputPins"]) {
+                        bool hasCandidates = false;
+                        for (auto& nodePin : node->outputPins) {
+                            if (nodePin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) {
+                                hasCandidates = true;
                                 break;
                             }
                         }
-                        if (continueLoop) {
-                            int pinIndex = 0;
-                            for (auto& outputPin : node->outputPins) {
-                                if (outputPin.linkedAttribute == pin["LinkedAttribute"].get<std::string>()) break;
-                                pinIndex++;
-                            }
-                            node->outputPins.erase(node->outputPins.begin() + pinIndex);
+                        if (!hasCandidates) {
+                            node->outputPins.push_back(GenericPin(pin));
                         }
-                        node->outputPins.push_back(GenericPin(pin));
                     }
                 }
 

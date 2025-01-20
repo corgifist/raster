@@ -79,7 +79,6 @@ namespace Raster {
             node->executionsPerFrame.SetBackValue(0);
             if (IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) {
                 node->ClearAttributesCache();
-                if (!audioMixing) node->ClearImmediateFooters();
             }
         }
         if (audioMixing && !audioEnabled) return;
@@ -101,7 +100,7 @@ namespace Raster {
                 if (!anyPinConnected) {
                     if (onlyAudioNodes && !node->DoesAudioMixing()) continue;
                     if (!onlyAudioNodes && node->DoesAudioMixing()) continue;
-                    accumulator = node->Execute(accumulator, t_data);
+                    node->Execute(t_data);
                 }
             }
         }

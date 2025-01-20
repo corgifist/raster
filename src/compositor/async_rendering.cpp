@@ -1,5 +1,6 @@
 #include "compositor/async_rendering.h"
 #include "common/rendering.h"
+#include <chrono>
 #include <ratio>
 #include <thread>
 
@@ -32,6 +33,7 @@ namespace Raster {
                 if (!m_running) break;
                 Rendering::CancelRenderFrame();
                 Compositor::EnsureResolutionConstraints();
+                auto firstTimePoint = std::chrono::system_clock::now();
                 double firstTime = GPU::GetTime();
                 Compositor::s_bundles.Get().clear();
                 project.Traverse({
@@ -60,8 +62,9 @@ namespace Raster {
                 s_renderTime = timeDifference;
                 double idealTime = (1.0 / (double) project.framerate) * 1000;
                 if (idealTime > timeDifference) {
-                    double idealTimeDifference = idealTime - timeDifference;
+                    int idealTimeDifference = idealTime - timeDifference;
                     ExperimentalSleepFor(idealTimeDifference / 1000.0);
+                    // std::this_thread::sleep_for(std::chrono::milliseconds(idealTimeDifference));
                 }
                 double finalTime = GPU::GetTime();
             } else {

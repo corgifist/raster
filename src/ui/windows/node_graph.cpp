@@ -665,13 +665,6 @@ namespace Raster {
                                     auto footerCandidate = node->Footer();
                                     if (footerCandidate) {
                                         auto footer = *footerCandidate;
-                                        auto immediateFooters = node->GetImmediateFooters();
-                                        if (!immediateFooters.empty()) {
-                                            footer += "\n";
-                                        }
-                                        for (auto& immediateFooter : immediateFooters) {
-                                            footer += immediateFooter + "\n";
-                                        }
                                         ImGui::SetWindowFontScale(0.8f);
                                         ImVec2 footerSize = ImGui::CalcTextSize(footer.c_str());
                                         ImGui::SetWindowFontScale(1.0f);
@@ -790,13 +783,6 @@ namespace Raster {
                                     if (footer.has_value()) {
                                         ImGui::Spacing();
                                         auto& actualFooter = footer.value();
-                                        auto immediateFooters = node->GetImmediateFooters();
-                                        if (!immediateFooters.empty()) {
-                                            actualFooter += "\n";
-                                        }
-                                        for (auto& immediateFooter : immediateFooters) {
-                                            actualFooter += immediateFooter + "\n";
-                                        }
                                         ImGui::TextUnformatted(actualFooter.c_str());
                                     }
                                     ImGui::SetWindowFontScale(1.0f);
@@ -828,7 +814,7 @@ namespace Raster {
                                     if (pin.connectedPinID > 0) {
                                         std::any cachedValue = std::nullopt;
                                         {
-                                            RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+                                            // RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
                                             if (Workspace::s_pinCache.GetFrontValue().find(pin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
                                                 cachedValue = Workspace::s_pinCache.GetFrontValue()[pin.connectedPinID];
                                             }
@@ -1035,7 +1021,7 @@ namespace Raster {
                                         if (inputPin.linkedAttribute == attribute) {
                                             isAttributeExposed = true;
                                             {
-                                                RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
+                                                // RASTER_SYNCHRONIZED(Workspace::s_pinCacheMutex);
                                                 if (Workspace::s_pinCache.GetFrontValue().find(inputPin.connectedPinID) != Workspace::s_pinCache.GetFrontValue().end()) {
                                                     attributeValue = Workspace::s_pinCache.GetFrontValue()[inputPin.connectedPinID];
                                                 }

@@ -64,22 +64,20 @@ namespace Raster {
         this->executionsPerFrame.Set(0);
     }
 
-    AbstractPinMap NodeBase::Execute(AbstractPinMap& t_accumulator, ContextData& t_contextData) {
-        this->m_accumulator = t_accumulator;
+    AbstractPinMap NodeBase::Execute(ContextData& t_contextData) {
         if (!enabled) return {};
         if (bypassed) {
             auto outputPin = flowOutputPin.value();
             if (outputPin.connectedPinID > 0) {
                 auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
                 if (connectedNode.has_value()) {
-                    static AbstractPinMap s_placeholder = {};
-                    connectedNode.value()->Execute(s_placeholder, t_contextData);
+                    connectedNode.value()->Execute(t_contextData);
                     return {};
                 }
             }
             return {};
         }
-        if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(t_accumulator); 
+        // if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(t_accumulator); 
         if (RASTER_GET_CONTEXT_VALUE(t_contextData, "INCREMENT_EPF", bool)) executionsPerFrame.SetBackValue(executionsPerFrame.Get() + 1); 
         auto pinMap = AbstractExecute(t_contextData);
         if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(pinMap);
@@ -87,7 +85,7 @@ namespace Raster {
         if (outputPin.connectedPinID > 0) {
             auto connectedNode = Workspace::GetNodeByPinID(outputPin.connectedPinID);
             if (connectedNode.has_value() && connectedNode.value()->enabled) {
-                auto newPinMap = connectedNode.value()->Execute(pinMap, t_contextData);
+                auto newPinMap = connectedNode.value()->Execute(t_contextData);
                 if (!ExecutingInAudioContext(t_contextData)) Workspace::UpdatePinCache(newPinMap);
                 return newPinMap;
             }
@@ -397,7 +395,6 @@ namespace Raster {
 
     void NodeBase::ClearAttributesCache() {
         this->m_attributesCache.Get().clear();
-        this->m_accumulator.clear();
     }
 
     std::vector<std::string> NodeBase::GetAttributesList() {
@@ -443,33 +440,6 @@ namespace Raster {
         this->outputPins.push_back(GenericPin(t_attribute, PinType::Output));
     }
 
-    void NodeBase::MakePinPersistent(std::string t_pin) {
-        auto& persistentPins = Workspace::s_persistentPins;
-        auto pinCandidate = GetAttributePin(t_pin);
-        if (pinCandidate.has_value()) {
-            auto& pin = pinCandidate.value();
-            if (std::find(persistentPins.begin(), persistentPins.end(), pin.pinID) == persistentPins.end()) {
-                persistentPins.push_back(pin.pinID);
-            }
-        }
-    }
-
-    void NodeBase::DestroyPersistentPins() {
-        auto& persistentPins = Workspace::s_persistentPins;
-        for (auto& pin : inputPins) {
-            auto pinIterator = std::find(persistentPins.begin(), persistentPins.end(), pin.pinID);
-            if (pinIterator != persistentPins.end()) {
-                persistentPins.erase(pinIterator);
-            }
-        }
-        for (auto& pin : outputPins) {
-            auto pinIterator = std::find(persistentPins.begin(), persistentPins.end(), pin.pinID);
-            if (pinIterator != persistentPins.end()) {
-                persistentPins.erase(pinIterator);
-            }
-        }
-    }
-
     void NodeBase::SetAttributeAlias(std::string t_attributeName, std::string t_attributeAlias) {
         m_attributeAliases[t_attributeName] = t_attributeAlias;
     }
@@ -512,18 +482,6 @@ namespace Raster {
 
     bool NodeBase::ExecutingInAudioContext(ContextData& t_data) {
         return t_data.find("AUDIO_PASS") != t_data.end();
-    }
-
-    void NodeBase::PushImmediateFooter(std::string t_footer) {
-        m_immediateFooters.GetFrontValue().push_back(t_footer);
-    }
-
-    void NodeBase::ClearImmediateFooters() {
-        m_immediateFooters.Get().clear();
-    }
-
-    std::vector<std::string> NodeBase::GetImmediateFooters() {
-        return m_immediateFooters.GetFrontValue();
     }
 
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);

@@ -13,12 +13,10 @@ namespace Raster {
         SetupAttribute("Volume", 1.0f);
 
         AddOutputPin("Samples");
-
-        MakePinPersistent("Samples");
     }
 
     DecodeAudioAsset::~DecodeAudioAsset() {
-        DestroyPersistentPins();
+        // DestroyPersistentPins();
     }
 
     AbstractPinMap DecodeAudioAsset::AbstractExecute(ContextData& t_contextData) {
