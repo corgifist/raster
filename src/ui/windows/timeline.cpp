@@ -312,20 +312,20 @@ namespace Raster {
     }
 
     void TimelineUI::ProcessShortcuts() {
-        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_C) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+        if (!UIHelpers::AnyItemFocused() && s_timelineFocused  && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessCopyAction();
         }
-        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_V) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+        if (!UIHelpers::AnyItemFocused() && s_timelineFocused  && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_V)&& UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessPasteAction();
         }
-        if (ImGui::Shortcut(ImGuiKey_Delete) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+        if (!UIHelpers::AnyItemFocused() && s_timelineFocused && ImGui::IsKeyPressed(ImGuiKey_Delete) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessDeleteAction();
         }
-        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_D) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+        if (!UIHelpers::AnyItemFocused() && s_timelineFocused  && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessCopyAction();
             ProcessPasteAction();
         }
-        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_R) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+        if (!UIHelpers::AnyItemFocused() && s_timelineFocused  && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_R) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessResizeToMatchContentDurationAction();
         }
     }
@@ -345,9 +345,9 @@ namespace Raster {
         static bool showHorizontalScrollbar = false;
         static bool showVerticalScrollbar = false;
         ImGuiWindowFlags timelineFlags = 0;
-        if (showHorizontalScrollbar)
+        if (showHorizontalScrollbar && ImGui::IsWindowHovered())
             timelineFlags |= ImGuiWindowFlags_AlwaysHorizontalScrollbar;
-        if (showVerticalScrollbar)
+        if (showVerticalScrollbar && ImGui::IsWindowHovered())
             timelineFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
         ImVec4 editorBackgroundColor = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg) * 1.2f;
         editorBackgroundColor.w = 1.0f;

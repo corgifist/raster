@@ -291,15 +291,27 @@ namespace Raster {
 
     void UIHelpers::RenderDecibelScale(float t_linear) {
         ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-        float decibel = 60 - std::min(std::abs(LinearToDecibel(std::abs(t_linear))), 60.0f);
-        // DUMP_VAR(decibel);
-        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, IM_COL32(109, 130, 209, 255));
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-        ImGui::PushItemWidth(10);
-            ImGui::PlotHistogram("##decibelHistogram", &decibel, 1, 0, nullptr, 0.0f, 60, {0, 80});
-        ImGui::PopItemWidth();
-        ImGui::PopStyleVar();
-        ImGui::PopStyleColor();
+        float decibel = 80 - std::min(std::abs(LinearToDecibel(std::abs(t_linear))), 80.0f);
+        const ImVec2 scaleSize(10, 80);
+        
+        ImVec2 frameUL = cursorPos;
+        ImVec2 frameBR = cursorPos;
+        frameBR += scaleSize;
+        ImGui::RenderFrame(frameUL, frameBR, ImGui::GetColorU32(ImGuiCol_PopupBg));
+        ImGui::ItemSize(ImRect{frameUL, frameBR});
+        if (!ImGui::ItemAdd(ImRect{frameUL, frameBR}, ImGui::GetID(t_linear))) return;
+        ImGui::GetWindowDrawList()->AddRectFilledMultiColor(frameUL, frameBR, ImGui::GetColorU32(ImVec4(1, 0, 0, 0.5f)), 
+                                                                                            ImGui::GetColorU32(ImVec4(1, 0, 0, 0.5f)), 
+                                                                                            ImGui::GetColorU32(ImVec4(0, 1, 0, 0.5f)), 
+                                                                                            ImGui::GetColorU32(ImVec4(0, 1, 0, 0.5f)));
+
+        frameUL.y += (80 - decibel) / 80.0f * scaleSize.y;
+        glm::vec4 mixedColor = glm::mix(glm::vec4(0, 1, 0, 1), glm::vec4(1, 0, 0, 1), decibel / 60.0);
+        ImVec4 c4(mixedColor.r, mixedColor.g, mixedColor.b, mixedColor.a);
+        ImGui::GetWindowDrawList()->AddRectFilledMultiColor(frameUL, frameBR, ImGui::GetColorU32(c4), 
+                                                                                    ImGui::GetColorU32(c4), 
+                                                                                    ImGui::GetColorU32(ImVec4(0, 1, 0, 1)), 
+                                                                                    ImGui::GetColorU32(ImVec4(0, 1, 0, 1)));
     }
 
     void UIHelpers::RenderNothingToShowText() {

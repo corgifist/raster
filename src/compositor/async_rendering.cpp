@@ -27,7 +27,7 @@ namespace Raster {
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
                 while ((!project.playing && !Rendering::MustRenderFrame()) && m_running) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(3));
+                    std::this_thread::yield();
                     continue;
                 }
                 if (!m_running) break;
@@ -63,8 +63,7 @@ namespace Raster {
                 double idealTime = (1.0 / (double) project.framerate) * 1000;
                 if (idealTime > timeDifference) {
                     int idealTimeDifference = idealTime - timeDifference;
-                    ExperimentalSleepFor(idealTimeDifference / 1000.0);
-                    // std::this_thread::sleep_for(std::chrono::milliseconds(idealTimeDifference));
+                    ExperimentalSleepFor(idealTimeDifference / 1000.0); 
                 }
                 double finalTime = GPU::GetTime();
             } else {

@@ -221,12 +221,42 @@ namespace Raster {
 
     static void ExperimentalSleepFor(double dt)
     {
+#define RASTER_USE_SPIN_LOCK
 #ifdef RASTER_USE_SPIN_LOCK
         static constexpr duration<double> MinSleepDuration(0);
         clock::time_point start = clock::now();
         while (duration<double>(clock::now() - start).count() < dt) {
             std::this_thread::sleep_for(MinSleepDuration);
         }
+#elif defined(RASTER_USE_COMBINED_SLEEP)
+        using namespace std;
+        using namespace std::chrono;
+
+        auto seconds = dt;
+        static double estimate = 5e-3;
+        static double mean = 5e-3;
+        static double m2 = 0;
+        static int64_t count = 1;
+
+        while (seconds > estimate) {
+            auto start = high_resolution_clock::now();
+            this_thread::sleep_for(milliseconds(1));
+            auto end = high_resolution_clock::now();
+
+            double observed = (end - start).count() / 1e9;
+            seconds -= observed;
+
+            ++count;
+            double delta = observed - mean;
+            mean += delta / count;
+            m2   += delta * (observed - mean);
+            double stddev = sqrt(m2 / (count - 1));
+            estimate = mean + stddev;
+        }
+
+        // spin lock
+        auto start = high_resolution_clock::now();
+        while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
 #else
         std::this_thread::sleep_for(std::chrono::milliseconds((int) (dt * 1000)));
 #endif
