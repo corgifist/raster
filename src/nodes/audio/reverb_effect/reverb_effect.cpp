@@ -1,6 +1,7 @@
 #include "reverb_effect.h"
 #include "common/attribute_metadata.h"
 #include "common/generic_audio_decoder.h"
+#include "raster.h"
 
 #define REVERB_BLOCK_SIZE 16384
 
@@ -54,7 +55,7 @@ namespace Raster {
         auto wetOnlyCandidate = GetAttribute<bool>("WetOnly", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool)) {
             auto& reverbBuffer = *m_contexts.GetContext(project.GetTimeTravelOffset(), t_contextData);
             auto cacheCandidate = reverbBuffer.cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
@@ -62,7 +63,6 @@ namespace Raster {
             }
             return result;
         }
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (samplesCandidate.has_value() && samplesCandidate.value().samples && roomSizeCandidate.has_value() 
             && preDelayCandidate.has_value() && reverberanceCandidate.has_value() && hfDampingCandidate.has_value()

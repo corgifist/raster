@@ -126,6 +126,7 @@ build_modules = [
     ["audio/mix_audio_samples", node, [raster_common, raster_audio]],
     ["audio/merge_audio_samples", node, [raster_common, raster_audio]],
     ["audio/audio_waveform_sine", node, [raster_common, raster_audio]],
+    ["audio/audio_waveform_square", node, [raster_common, raster_audio]],
     ["audio/amplify_audio", node, [raster_common, raster_audio]],
     ["audio/pitch_shift_audio", node, [raster_common, raster_audio]],
 

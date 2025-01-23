@@ -1,4 +1,5 @@
-#include "audio_waveform_sine.h"
+#include "audio_waveform_square.h"
+#include "common/attribute_metadata.h"
 #include <cmath>
 
 #ifndef TAU_D
@@ -8,7 +9,7 @@
 
 namespace Raster {
 
-    AudioWaveformSine::AudioWaveformSine() {
+    AudioWaveformSquare::AudioWaveformSquare() {
         NodeBase::Initialize();
 
         SetupAttribute("Length", 1.0f);
@@ -19,7 +20,7 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    AbstractPinMap AudioWaveformSine::AbstractExecute(ContextData& t_contextData) {
+    AbstractPinMap AudioWaveformSquare::AbstractExecute(ContextData& t_contextData) {
         SharedLockGuard waveformGuard(m_mutex);
         AbstractPinMap result = {};
         
@@ -54,7 +55,7 @@ namespace Raster {
                 float s = (float)(sin(TAU_D * currentTime) * amplitude);
                 currentTime += (1.0f / (float) AudioInfo::s_sampleRate) * length + advance * AudioInfo::s_sampleRate;
                 for (int channel = 0; channel < AudioInfo::s_channels; channel++) {
-                    samplesPtr[i + channel] = s;
+                    samplesPtr[i + channel] = s > 0 ? amplitude : -amplitude;
                 }
             }
 
@@ -68,7 +69,7 @@ namespace Raster {
         return result;
     }
 
-    void AudioWaveformSine::AbstractRenderProperties() {
+    void AudioWaveformSquare::AbstractRenderProperties() {
         RenderAttributeProperty("Length", {
             SliderStepMetadata(0.0001f)
         });
@@ -84,40 +85,40 @@ namespace Raster {
         });
     }
 
-    void AudioWaveformSine::AbstractLoadSerialized(Json t_data) {
+    void AudioWaveformSquare::AbstractLoadSerialized(Json t_data) {
         DeserializeAllAttributes(t_data);   
     }
 
-    Json AudioWaveformSine::AbstractSerialize() {
+    Json AudioWaveformSquare::AbstractSerialize() {
         return SerializeAllAttributes();
     }
 
-    bool AudioWaveformSine::AbstractDetailsAvailable() {
+    bool AudioWaveformSquare::AbstractDetailsAvailable() {
         return false;
     }
 
-    std::string AudioWaveformSine::AbstractHeader() {
-        return "Audio Waveform Sine";
+    std::string AudioWaveformSquare::AbstractHeader() {
+        return "Audio Waveform Square";
     }
 
-    std::string AudioWaveformSine::Icon() {
+    std::string AudioWaveformSquare::Icon() {
         return ICON_FA_WAVE_SQUARE;
     }
 
-    std::optional<std::string> AudioWaveformSine::Footer() {
+    std::optional<std::string> AudioWaveformSquare::Footer() {
         return std::nullopt;
     }
 }
 
 extern "C" {
     RASTER_DL_EXPORT Raster::AbstractNode SpawnNode() {
-        return (Raster::AbstractNode) std::make_shared<Raster::AudioWaveformSine>();
+        return (Raster::AbstractNode) std::make_shared<Raster::AudioWaveformSquare>();
     }
 
     RASTER_DL_EXPORT Raster::NodeDescription GetDescription() {
         return Raster::NodeDescription{
-            .prettyName = "Audio Waveform Sine",
-            .packageName = RASTER_PACKAGED "audio_waveform_sine",
+            .prettyName = "Audio Waveform Square",
+            .packageName = RASTER_PACKAGED "audio_waveform_square",
             .category = Raster::DefaultNodeCategories::s_audio
         };
     }

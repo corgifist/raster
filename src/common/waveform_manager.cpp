@@ -115,7 +115,7 @@ namespace Raster {
                 project.SetFakeTime(currentFakeTime);
                 // DUMP_VAR(currentFakeTime);
                 ClearWaveformSamples();
-                RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                // RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
                 composition->Traverse({
                     {"AUDIO_PASS", true},
                     {"AUDIO_PASS_ID", waveformPassID++},
