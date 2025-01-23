@@ -55,7 +55,7 @@ namespace Raster {
 
         auto& project = Workspace::GetProject();
         if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
-            auto reverbBuffer = GetReverbContext();
+            auto& reverbBuffer = *m_contexts.GetContext(project.GetTimeTravelOffset(), t_contextData);
             auto cacheCandidate = reverbBuffer.cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
@@ -80,7 +80,7 @@ namespace Raster {
             auto& stereoWidth = stereoWidthCandidate.value();
             auto& wetOnly = wetOnlyCandidate.value();
 
-            auto& reverbBuffer = GetReverbContext();
+            auto& reverbBuffer = *m_contexts.GetContext(project.GetTimeTravelOffset(), t_contextData);
             if (reverbBuffer.m_reverbs.empty()) {
                 for (int i = 0; i < AudioInfo::s_channels; i++) {
                     reverbBuffer.m_reverbs.push_back(std::make_shared<ManagedReverbPrivate>());
@@ -167,32 +167,6 @@ namespace Raster {
         }
 
         return result;
-    }
-
-    ReverbContext& ReverbEffect::GetReverbContext() {
-        std::vector<float> deadReverbs;
-        for (auto& reverb : m_reverbContexts) {
-            reverb.second.health--;
-            if (reverb.second.health < 0) {
-                deadReverbs.push_back(reverb.first);
-            }
-        }
-
-        for (auto& deadReverb : deadReverbs) {
-            m_reverbContexts.erase(deadReverb);
-        }
-
-        auto& project = Workspace::GetProject();
-        float offset = project.GetTimeTravelOffset();
-        if (m_reverbContexts.find(offset) != m_reverbContexts.end()) {
-            auto& reverb = m_reverbContexts[offset];
-            reverb.health = MAX_BUFFER_LIFESPAN;
-            return reverb;
-        }
-
-        ReverbContext context;
-        m_reverbContexts[offset] = context;
-        return m_reverbContexts[offset];
     }
 
     void ReverbEffect::AbstractRenderProperties() {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/audio_context_storage.h"
 #include "raster.h"
 #include "common/common.h"
 
@@ -37,9 +38,8 @@ namespace Raster {
         std::optional<std::string> Footer();
 
     private:
-        EchoBuffer& GetEchoBuffer(float t_delay);
 
-        std::unordered_map<float, EchoBuffer> m_reverbBuffers;
+        AudioContextStorage<EchoBuffer> m_contexts;
 
         SharedMutex m_mutex;
     };

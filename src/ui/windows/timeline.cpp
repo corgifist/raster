@@ -408,6 +408,7 @@ namespace Raster {
         }
         
         ProcessShortcuts();
+        auto timelineMousePos = GetRelativeMousePos();
         ImGui::EndChild();
 
         if (ImGui::BeginDragDropTarget()) {
@@ -416,7 +417,7 @@ namespace Raster {
                 auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
                 if (assetCandidate) {
                     auto& asset = *assetCandidate;
-                    asset->OnTimelineDrop();
+                    asset->OnTimelineDrop((ImGui::GetScrollX() + timelineMousePos.x) / s_pixelsPerFrame);
                 }
             }
             ImGui::EndDragDropTarget();

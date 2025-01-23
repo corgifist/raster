@@ -72,7 +72,7 @@ namespace Raster {
         std::optional<uintmax_t> AbstractGetSize();
 
         void AbstractRenderPreviewOverlay(glm::vec2 t_regionSize);
-        void AbstractOnTimelineDrop();
+        void AbstractOnTimelineDrop(float t_frame);
 
         std::string m_relativePath;
         std::string m_originalPath;

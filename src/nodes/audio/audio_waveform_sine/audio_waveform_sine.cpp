@@ -1,4 +1,5 @@
 #include "audio_waveform_sine.h"
+#include <cmath>
 
 #ifndef TAU_D
     #define TAU_D   6.28318530717958647693
@@ -40,7 +41,7 @@ namespace Raster {
         if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (lengthCandidate.has_value() && amplitudeCandidate.has_value() && phaseCandidate.has_value() && advanceCandidate.has_value()) {
-            auto length = lengthCandidate.value() * 5000;
+            auto length = lengthCandidate.value() * 5000 * M_PI;
             auto& amplitude = amplitudeCandidate.value();
             auto& phase = phaseCandidate.value();
             auto& advance = advanceCandidate.value();

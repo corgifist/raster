@@ -257,7 +257,7 @@ namespace Raster {
         ImGui::GetWindowDrawList()->PopClipRect();
     }
 
-    void MediaAsset::AbstractOnTimelineDrop() {
+    void MediaAsset::AbstractOnTimelineDrop(float t_frame) {
         if (!Workspace::IsProjectLoaded()) return;
         auto& project = Workspace::GetProject();
         bool hasAudioStream = false;
@@ -282,8 +282,8 @@ namespace Raster {
 
         if (hasAttachedPic) {
             Composition attachedPicComposition = Composition();
-            attachedPicComposition.beginFrame = project.currentFrame;
-            attachedPicComposition.endFrame = project.currentFrame + m_cachedDuration.value_or(1) * project.framerate;
+            attachedPicComposition.beginFrame = t_frame;
+            attachedPicComposition.endFrame = t_frame + m_cachedDuration.value_or(1) * project.framerate;
             attachedPicComposition.name = name;
 
             auto assetTextureNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_asset_texture");
@@ -348,8 +348,8 @@ namespace Raster {
 
         if (hasVideoStream) {
             Composition attachedVideoComposition = Composition();
-            attachedVideoComposition.beginFrame = project.currentFrame;
-            attachedVideoComposition.endFrame = project.currentFrame + m_cachedDuration.value_or(1) * project.framerate;
+            attachedVideoComposition.beginFrame = t_frame;
+            attachedVideoComposition.endFrame = t_frame + m_cachedDuration.value_or(1) * project.framerate;
             attachedVideoComposition.name = name;
 
             auto readVideoNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "decode_video_asset");
@@ -414,8 +414,8 @@ namespace Raster {
 
         if (hasAudioStream) {
             Composition audioComposition = Composition();
-            audioComposition.beginFrame = project.currentFrame;
-            audioComposition.endFrame = project.currentFrame + m_cachedDuration.value_or(1) * project.framerate;
+            audioComposition.beginFrame = t_frame;
+            audioComposition.endFrame = t_frame + m_cachedDuration.value_or(1) * project.framerate;
             audioComposition.name = name;
             if (Workspace::s_colorMarks.find("Light Orange") != Workspace::s_colorMarks.end()) {
                 audioComposition.colorMark = Workspace::s_colorMarks["Light Orange"];

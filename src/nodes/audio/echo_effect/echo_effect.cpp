@@ -1,11 +1,15 @@
 #include "echo_effect.h"
+#include "common/audio_info.h"
+#include "common/audio_samples.h"
 #include "common/generic_audio_decoder.h"
+#include "raster.h"
+#include <memory>
 
 namespace Raster {
 
     EchoBuffer::EchoBuffer() {
-        this->samples = nullptr;
         this->health = MAX_BUFFER_LIFESPAN;
+        this->samples = nullptr;
         this->pos = 0;
         this->len = 0;
     }
@@ -30,22 +34,26 @@ namespace Raster {
         auto decayCandidate = GetAttribute<float>("Decay", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() && delayCandidate.has_value()) {
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool) && delayCandidate.has_value()) {
             auto delay = (1 + delayCandidate.value());
-            auto echoBuffer = GetEchoBuffer(delay);
+            auto& echoBuffer = *m_contexts.GetContext(delay, t_contextData);
             auto cacheCandidate = echoBuffer.cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
             }
             return result;
         }
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (samplesCandidate.has_value() && delayCandidate.has_value() && decayCandidate.has_value() && samplesCandidate.value().samples) {
             auto& samples = samplesCandidate.value();
             auto delay = (1 + delayCandidate.value());
             auto& decay = decayCandidate.value();
-            auto& reverbBuffer = GetEchoBuffer(delay);
+            auto& reverbBuffer = *m_contexts.GetContext(delay, t_contextData);
+            if (!reverbBuffer.samples) {
+                reverbBuffer.samples = std::make_shared<std::vector<float>>(AudioInfo::s_periodSize * AudioInfo::s_channels * delay);
+                reverbBuffer.len = AudioInfo::s_periodSize * AudioInfo::s_channels * delay;
+                reverbBuffer.pos = 0;
+            }
 
             auto inputBuffer = samples.samples->data();
             auto rawAudioSamples = AudioInfo::MakeRawAudioSamples();
@@ -53,7 +61,7 @@ namespace Raster {
             auto historyBuffer = reverbBuffer.samples->data();
             auto& pos = reverbBuffer.pos;
             for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++, pos++) {
-                if (pos == reverbBuffer.len) {
+                if (pos >= reverbBuffer.len) {
                     pos = 0;
                 }
                 historyBuffer[pos] = outputBuffer[i] = inputBuffer[i] + historyBuffer[pos] * decay;
@@ -81,34 +89,6 @@ namespace Raster {
             SliderStepMetadata(0.1),
             SliderRangeMetadata(0, 1)
         });
-    }
-
-    EchoBuffer& EchoEffect::GetEchoBuffer(float t_delay) {
-        std::vector<float> deadBuffers;
-        for (auto& buffer : m_reverbBuffers) {
-            buffer.second.health--;
-            if (buffer.second.health < 0) {
-                deadBuffers.push_back(buffer.first);
-            }
-        }
-
-        for (auto& deadBuffer : deadBuffers) {
-            m_reverbBuffers.erase(deadBuffer);
-        }
-
-        if (m_reverbBuffers.find(t_delay) != m_reverbBuffers.end()) {
-            auto& buffer = m_reverbBuffers[t_delay];
-            buffer.health = MAX_BUFFER_LIFESPAN;
-            return buffer;
-        }
-
-        EchoBuffer buffer;
-        buffer.samples = std::make_shared<std::vector<float>>(AudioInfo::s_sampleRate * AudioInfo::s_channels * t_delay);
-        buffer.pos = 0;
-        buffer.len = AudioInfo::s_sampleRate * AudioInfo::s_channels * t_delay;
-        buffer.health = MAX_BUFFER_LIFESPAN;
-        m_reverbBuffers[t_delay] = buffer;
-        return m_reverbBuffers[t_delay];
     }
 
     void EchoEffect::AbstractLoadSerialized(Json t_data) {

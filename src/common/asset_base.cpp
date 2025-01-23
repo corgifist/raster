@@ -60,8 +60,8 @@ namespace Raster {
         AbstractRenderPreviewOverlay(t_regionSize);
     }
 
-    void AssetBase::OnTimelineDrop() {
-        AbstractOnTimelineDrop();
+    void AssetBase::OnTimelineDrop(float t_frame) {
+        AbstractOnTimelineDrop(t_frame);
     }
 
     void AssetBase::Delete() {

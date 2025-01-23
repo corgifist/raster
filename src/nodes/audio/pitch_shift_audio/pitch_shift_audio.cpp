@@ -1,5 +1,6 @@
 #include "pitch_shift_audio.h"
 #include "audio/time_stretcher.h"
+#include "common/audio_context_storage.h"
 #include "common/audio_info.h"
 #include "common/audio_samples.h"
 #include <iomanip>
@@ -9,7 +10,7 @@ namespace Raster {
 
     PitchShiftContext::PitchShiftContext() {
         this->stretcher = std::make_shared<TimeStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels);
-        this->health = MAX_PITCH_SHIFT_CONTEXT_HEALTH;
+        this->health = MAX_CONTEXT_HEALTH;
         this->seeked = true;
         this->highQualityPitch = false;
     }
@@ -33,7 +34,7 @@ namespace Raster {
 
         auto& project = Workspace::GetProject();
         if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool)) {
-            auto pitchScaleContext = GetContext();
+            auto pitchScaleContext = m_contexts.GetContext(project.GetTimeTravelOffset(), t_contextData);
             auto cacheCandidate = pitchScaleContext->cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
@@ -46,7 +47,7 @@ namespace Raster {
             auto pitchScale = pitchScaleCandidate.value();
             pitchScale = glm::abs(pitchScale);
             auto& useHighQualityPitch = useHighQualityPitchCandidate.value();
-            auto context = GetContext();
+            auto context = m_contexts.GetContext(project.GetTimeTravelOffset(), t_contextData);
             context->stretcher->UseHighQualityEngine(useHighQualityPitch);
             context->stretcher->Validate();
             auto& stretcher = context->stretcher;
@@ -77,32 +78,6 @@ namespace Raster {
         return result;
     }
 
-    SharedPitchShiftContext PitchShiftAudio::GetContext() {
-        std::vector<float> deadReverbs;
-        for (auto& reverb : m_contexts) {
-            reverb.second->health--;
-            if (reverb.second->health < 0) {
-                deadReverbs.push_back(reverb.first);
-            }
-        }
-
-        for (auto& deadReverb : deadReverbs) {
-            m_contexts.erase(deadReverb);
-        }
-
-        auto& project = Workspace::GetProject();
-        float offset = project.GetTimeTravelOffset();
-        if (m_contexts.find(offset) != m_contexts.end()) {
-            auto& reverb = m_contexts[offset];
-            reverb->health = MAX_PITCH_SHIFT_CONTEXT_HEALTH;
-            return reverb;
-        }
-
-        SharedPitchShiftContext context = std::make_shared<PitchShiftContext>();
-        m_contexts[offset] = context;
-        return m_contexts[offset];
-    }
-
     void PitchShiftAudio::AbstractRenderProperties() {
         RenderAttributeProperty("Samples");
         RenderAttributeProperty("PitchScale", {
@@ -113,7 +88,7 @@ namespace Raster {
 
     void PitchShiftAudio::AbstractOnTimelineSeek() {
         SharedLockGuard guard(m_mutex);
-        for (auto& context : m_contexts) {
+        for (auto& context : m_contexts.storage) {
             context.second->seeked = true;
         }
     }

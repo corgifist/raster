@@ -6,10 +6,7 @@
 #include "common/audio_cache.h"
 #include "common/audio_info.h"
 #include "common/shared_mutex.h"
-
-
-
-#define MAX_PITCH_SHIFT_CONTEXT_HEALTH 20
+#include "common/audio_context_storage.h"
 
 namespace Raster {
 
@@ -23,7 +20,7 @@ namespace Raster {
         PitchShiftContext();
     };
 
-    using SharedPitchShiftContext = std::shared_ptr<PitchShiftContext>;
+    using SharedPitchShiftContext = PitchShiftContext;
 
     struct PitchShiftAudio : public NodeBase {
         PitchShiftAudio();
@@ -44,6 +41,6 @@ namespace Raster {
     private:
         SharedMutex m_mutex;
         SharedPitchShiftContext GetContext();
-        std::unordered_map<float, SharedPitchShiftContext> m_contexts;
+        AudioContextStorage<SharedPitchShiftContext> m_contexts;
     };
 };

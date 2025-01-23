@@ -1,4 +1,5 @@
 #pragma once
+#include "common/audio_context_storage.h"
 #include "raster.h"
 #include "common/common.h"
 #include "common/audio_samples.h"
@@ -59,8 +60,7 @@ namespace Raster {
         std::optional<std::string> Footer();
 
     private:
-        ReverbContext& GetReverbContext();
-        std::unordered_map<float, ReverbContext> m_reverbContexts;
+        AudioContextStorage<ReverbContext> m_contexts;
         SharedMutex m_mutex;
     };
 };
