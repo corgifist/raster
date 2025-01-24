@@ -312,5 +312,7 @@
     "LOCK_COMPOSITION": "Lock Composition",
     "NO_LOCK": "No Lock",
     "UNLOCK_COMPOSITION": "Unlock Composition",
-    "LOCK_COMPOSITION_TO_ANOTHER_FORMAT": "Lock %s to Another Composition"
+    "LOCK_COMPOSITION_TO_ANOTHER_FORMAT": "Lock %s to Another Composition",
+    "EXPOSE_HIDE": "Expose/Hide",
+    "CREATE_ATTRIBUTE_FORMAT": "Create '%s' Attribute"
 }

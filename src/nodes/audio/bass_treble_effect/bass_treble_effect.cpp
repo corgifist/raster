@@ -67,14 +67,13 @@ namespace Raster {
         auto gainCandidate = GetAttribute<float>("Gain", t_contextData);
 
         auto& project = Workspace::GetProject();
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
+        if (RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool)) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
             }
             return result;
         }
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
         if (samplesCandidate.has_value() && bassCandidate.has_value() && trebleCandidate.has_value() && gainCandidate.has_value()) {
             auto& samples = samplesCandidate.value();
             auto& bass = bassCandidate.value();

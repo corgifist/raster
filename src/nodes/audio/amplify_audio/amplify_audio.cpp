@@ -18,7 +18,7 @@ namespace Raster {
         auto& project = Workspace::GetProject();
         auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
         auto intensityCandidate = GetAttribute<float>("Intensity", t_contextData);
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
+        if (RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool)) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());

@@ -345,9 +345,9 @@ namespace Raster {
         static bool showHorizontalScrollbar = false;
         static bool showVerticalScrollbar = false;
         ImGuiWindowFlags timelineFlags = 0;
-        if (showHorizontalScrollbar && ImGui::IsWindowHovered())
+        if (showHorizontalScrollbar)
             timelineFlags |= ImGuiWindowFlags_AlwaysHorizontalScrollbar;
-        if (showVerticalScrollbar && ImGui::IsWindowHovered())
+        if (showVerticalScrollbar)
             timelineFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
         ImVec4 editorBackgroundColor = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg) * 1.2f;
         editorBackgroundColor.w = 1.0f;

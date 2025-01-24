@@ -31,14 +31,13 @@ namespace Raster {
         auto& project = Workspace::GetProject();
 
 
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end()) {
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool)) {
             auto cacheCandidate = m_cache.GetCachedSamples();
             if (cacheCandidate.has_value()) {
                 TryAppendAbstractPinMap(result, "Output", cacheCandidate.value());
             }
             return result;
         }
-        if (t_contextData.find("AUDIO_PASS") == t_contextData.end() || !project.playing) return {};
 
         if (lengthCandidate.has_value() && amplitudeCandidate.has_value() && phaseCandidate.has_value() && advanceCandidate.has_value()) {
             auto length = lengthCandidate.value() * 5000 * M_PI;

@@ -1,5 +1,7 @@
 #include "node_graph.h"
+#include "common/localization.h"
 #include "common/waveform_manager.h"
+#include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "common/ui_shared.h"
 #include "common/dispatchers.h"
@@ -333,6 +335,8 @@ namespace Raster {
             s_currentComposition->nodes[accumulatedNode.node->nodeID] = accumulatedNode.node;
             Nodes::BeginNode(accumulatedNode.node->nodeID);
                 Nodes::SetNodePosition(accumulatedNode.node->nodeID, s_mousePos + accumulatedNode.relativeNodeOffset);
+                auto calculatedPosition = s_mousePos + accumulatedNode.relativeNodeOffset;
+                accumulatedNode.node->nodePosition = glm::vec2(calculatedPosition.x, calculatedPosition.y);
             Nodes::EndNode();
         }
 
@@ -990,15 +994,6 @@ namespace Raster {
                             auto& node = nodeCandidate.value();
                             ImGui::SeparatorText(FormatString("%s %s", node->Icon().c_str(), node->Header().c_str()).c_str());
                             ImGui::Text("%s %s: %i", ICON_FA_GEARS, Localization::GetString("EXECUTIONS_PER_FRAME").c_str(), node->executionsPerFrame.GetFrontValue());
-                            if (ImGui::Button(FormatString("%s %s", node->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
-                                Rendering::ForceRenderFrame();
-                                node->enabled = !node->enabled;
-                            }
-                            ImGui::SameLine(0, 2);
-                            if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
-                                Rendering::ForceRenderFrame();
-                                node->bypassed = !node->bypassed;
-                            }
                             if (node->DoesAudioMixing()) {
                                 std::string audioMixingMessage = FormatString("%s %s", ICON_FA_VOLUME_HIGH, Localization::GetString("PERFORMS_AUDIO_MIXING").c_str());
                                 std::string audioMixingWarning = FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("AUDIO_MIXING_IS_DISABLED_IN_THIS_COMPOSITION").c_str());
@@ -1011,7 +1006,17 @@ namespace Raster {
                                     ImGui::Text("%s", audioMixingWarning.c_str());
                                 }
                             }
-                            if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("EXPOSE_HIDE_ATTRIBUTES").c_str()).c_str())) {
+                            if (ImGui::Button(FormatString("%s %s", node->enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
+                                Rendering::ForceRenderFrame();
+                                node->enabled = !node->enabled;
+                            }
+                            ImGui::SameLine(0, 2);
+                            if (ImGui::Button(FormatString("%s %s", node->bypassed ? ICON_FA_CHECK : ICON_FA_XMARK, Localization::GetString("BYPASSED").c_str()).c_str(), ImVec2(nodeContextMenuWidth.value_or(ImGui::GetWindowSize().x) / 2.0f, 0))) {
+                                Rendering::ForceRenderFrame();
+                                node->bypassed = !node->bypassed;
+                            }
+                            auto attributesList = node->GetAttributesList();
+/*                          if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("EXPOSE_HIDE_ATTRIBUTES").c_str()).c_str())) {
                                 int id = 0;
                                 for (auto& attribute : node->GetAttributesList()) {
                                     bool isAttributeExposed = false;
@@ -1139,6 +1144,123 @@ namespace Raster {
                                     ImGui::PopID();
                                 }
                                 ImGui::EndMenu();
+                            } */
+                            if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE_HIDE_ATTRIBUTES").c_str()).c_str())) {
+                                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("EXPOSE_HIDE_ATTRIBUTES").c_str()).c_str());
+                                for (auto& attribute : attributesList) {
+                                    bool exposedToTimeline = false;
+                                    auto compositionCandidate = Workspace::GetCompositionByNodeID(node->nodeID);
+                                    if (compositionCandidate.has_value()) {
+                                        auto& composition = compositionCandidate.value();
+                                        std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                        for (auto& attribute : composition->attributes) {
+                                            if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
+                                                exposedToTimeline = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    bool isAttributeExposed = false;
+                                    int attributeIndex = 0;
+                                    for (auto& inputPin : node->inputPins) {
+                                        if (inputPin.linkedAttribute == attribute) {
+                                            isAttributeExposed = true;
+                                            break;
+                                        }
+                                        attributeIndex++;
+                                    }
+                                    auto menuName = FormatString("%s%s %s", isAttributeExposed ? ICON_FA_LINK : ICON_FA_LINK_SLASH, exposedToTimeline ? " " ICON_FA_TIMELINE : "", attribute.c_str());
+                                    if (ImGui::BeginMenu(menuName.c_str())) {
+                                        ImGui::SeparatorText(FormatString("%s %s %s", ICON_FA_LINK, Localization::GetString("EXPOSE_HIDE").c_str(), menuName.c_str()).c_str ());
+                                        static std::string s_searchFilter = "";
+                                        if (ImGui::Button(isAttributeExposed ? ICON_FA_LINK : ICON_FA_LINK_SLASH)) {
+                                            if (!isAttributeExposed) {
+                                                Rendering::ForceRenderFrame();
+                                                node->AddInputPin(attribute);
+                                            } else {
+                                                Rendering::ForceRenderFrame();
+                                                node->inputPins.erase(node->inputPins.begin() + attributeIndex);
+                                            }
+                                        }
+                                        ImGui::SameLine();
+                                        ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ID").c_str()).c_str(), &s_searchFilter);
+                                        bool newAttributeOpenPopup = false;
+                                        if (ImGui::BeginChild("##timelineAttribute", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
+                                                if (compositionCandidate.has_value()) {
+                                                    auto& composition = compositionCandidate.value();
+                                                    std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                    int attributeIndex = 0;
+                                                    for (auto& attribute : composition->attributes) {
+                                                        if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
+                                                            Rendering::ForceRenderFrame();
+                                                            composition->attributes.erase(composition->attributes.begin() + attributeIndex);
+                                                            ImGui::CloseCurrentPopup();
+                                                            break;
+                                                        }
+                                                        attributeIndex++;
+                                                    }
+                                                }
+                                            }
+                                            auto createNewAttributeText = FormatString(Localization::GetString("CREATE_ATTRIBUTE_FORMAT").c_str(), attribute.c_str());
+                                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, createNewAttributeText.c_str()).c_str())) {
+                                                newAttributeOpenPopup = true;
+                                            }
+                                            auto parentComposition = Workspace::GetCompositionByNodeID(node->nodeID).value();
+                                            bool oneCandidateWasDisplayed = false;
+                                            bool mustShowByID = false;
+                                            for (auto& parentAttribute : parentComposition->attributes) {
+                                                if (std::to_string(parentAttribute->id) == ReplaceString(s_searchFilter, " ", "")) {
+                                                    mustShowByID = true;
+                                                    break;
+                                                }
+                                            }
+                                            for (auto& parentAttribute : parentComposition->attributes) {
+                                                if (!mustShowByID) {
+                                                    if (!s_searchFilter.empty() && LowerCase(ReplaceString(parentAttribute->name, " ", "")).find(LowerCase(ReplaceString(s_searchFilter, " ", ""))) == std::string::npos) continue;
+                                                } else {
+                                                    if (!s_searchFilter.empty() && std::to_string(parentAttribute->id) != ReplaceString(s_searchFilter, " ", "")) continue;
+                                                }
+                                                ImGui::PushID(parentAttribute->id);
+                                                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, parentAttribute->name.c_str()).c_str())) {
+                                                    for (auto& replaceAttribute : parentComposition->attributes) {
+                                                        replaceAttribute->internalAttributeName = ReplaceString(replaceAttribute->internalAttributeName, FormatString("<%i>.%s", node->nodeID, attribute.c_str()), "");
+                                                    }
+                                                    parentAttribute->internalAttributeName += (parentAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                    ImGui::CloseCurrentPopup();
+                                                }
+                                                oneCandidateWasDisplayed = true;
+                                                ImGui::PopID();
+                                            }
+                                            if (!oneCandidateWasDisplayed) {
+                                                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
+                                                ImGui::Text("%s", Localization::GetString("NOTHING_TO_SHOW").c_str());
+                                            }
+                                        }
+                                        ImGui::EndChild();
+                                        if (newAttributeOpenPopup) {
+                                            ImGui::OpenPopup("##newAttributePopup");
+                                        }
+                                        if (ImGui::BeginPopup("##newAttributePopup")) {
+                                            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_TIMELINE, Localization::GetString("EXPOSE_TO_TIMELINE").c_str(), attribute.c_str()).c_str());    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str());
+                                            for (auto& entry : Attributes::s_implementations) {
+                                                if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.description.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
+                                                    auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
+                                                    if (attributeCandidate.has_value()) {
+                                                        auto& exposedAttribute = attributeCandidate.value();
+                                                        exposedAttribute->internalAttributeName += (exposedAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                        exposedAttribute->name = attribute;
+                                                        s_currentComposition->attributes.push_back(exposedAttribute);
+                                                        Rendering::ForceRenderFrame();
+                                                    }
+                                                }
+                                            }
+                                            ImGui::EndPopup();
+                                        }
+                                        ImGui::EndMenu();
+                                    }
+                                }
+                                ImGui::EndMenu();
                             }
                             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NODE_DESCRIPTION").c_str()).c_str())) {
                                 ImGui::InputTextWithHint("##nodeDescription", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NODE_DESCRIPTION").c_str()).c_str(), &node->overridenHeader);
@@ -1198,6 +1320,8 @@ namespace Raster {
                                         auto attributeNode = Workspace::InstantiateNode(RASTER_PACKAGED "get_attribute_value").value();
                                         attributeNode->SetAttributeValue("AttributeID", s_currentComposition->attributes.back()->id);
                                         RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                                        auto mouseP = nodeSearchMousePos.value_or(s_mousePos);
+                                        attributeNode->nodePosition = glm::vec2(mouseP.x, mouseP.y);
                                         s_currentComposition->nodes[attributeNode->nodeID] = attributeNode;
                                         s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                             .nodeID = attributeNode->nodeID,
@@ -1345,6 +1469,7 @@ namespace Raster {
                                             auto node = targetNode.value();
                                             Nodes::BeginNode(node->nodeID);
                                                 Nodes::SetNodePosition(node->nodeID, nodeSearchMousePos.value());
+                                                node->nodePosition = glm::vec2(nodeSearchMousePos->x, nodeSearchMousePos->y);
                                             Nodes::EndNode();
                                             Nodes::SelectNode(node->nodeID, false);
                                             s_mustNavigateToSelection = true;
@@ -1530,6 +1655,8 @@ namespace Raster {
                             auto& attributeNode = attributeNodeCandidate.value();
                             attributeNode->SetAttributeValue("AttributeID", attributePayload.attributeID);
                             RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                            auto mouseP = nodeSearchMousePos.value_or(s_mousePos);
+                            attributeNode->nodePosition = glm::vec2(mouseP.x, mouseP.y);
                             s_currentComposition->nodes[attributeNode->nodeID] = attributeNode;
                             s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = attributeNode->nodeID,
@@ -1547,6 +1674,8 @@ namespace Raster {
                             auto& assetHandleNode = assetHandleNodeCandidate.value();
                             assetHandleNode->SetAttributeValue("AssetID", assetID);
                             RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
+                            auto mouseP = nodeSearchMousePos.value_or(s_mousePos);
+                            assetHandleNode->nodePosition = glm::vec2(mouseP.x, mouseP.y);
                             s_currentComposition->nodes[assetHandleNode->nodeID] = assetHandleNode;
                             s_deferredNodeCreations.push_back(DeferredNodeCreation{
                                 .nodeID = assetHandleNode->nodeID,
