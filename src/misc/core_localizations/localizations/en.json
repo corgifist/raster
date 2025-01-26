@@ -314,5 +314,10 @@
     "UNLOCK_COMPOSITION": "Unlock Composition",
     "LOCK_COMPOSITION_TO_ANOTHER_FORMAT": "Lock %s to Another Composition",
     "EXPOSE_HIDE": "Expose/Hide",
-    "CREATE_ATTRIBUTE_FORMAT": "Create '%s' Attribute"
+    "CREATE_ATTRIBUTE_FORMAT": "Create '%s' Attribute",
+    "INSERT_SELECTED_ASSET": "Insert Selected Asset(s)",
+    "INSERT_SELECTED_ASSET_FORMAT": "Insert '%s' Asset",
+    "INSERT_SELECTED_ASSETS_FORMAT": "Insert %i Assets",
+    "INSERT_ASSET": "Insert Asset",
+    "COLOR_MARK_FILTER": "Filter by Color Mark"
 }

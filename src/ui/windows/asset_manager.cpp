@@ -1,5 +1,8 @@
 #include "asset_manager.h"
+#include "common/localization.h"
 #include "common/ui_shared.h"
+#include "font/IconsFontAwesome5.h"
+#include "raster.h"
 
 #define ASSET_MANAGER_DRAG_DROP_PAYLOAD "ASSET_MANAGER_DRAG_DROP_PAYLOAD"
 
@@ -28,6 +31,27 @@ namespace Raster {
     static ImVec2 FitRectInRect(ImVec2 dst, ImVec2 src) {
         float scale = std::min(dst.x / src.x, dst.y / src.y);
         return ImVec2{src.x * scale, src.y * scale};
+    }
+
+    static bool TextColorButton(const char* id, ImVec4 color) {
+        if (ImGui::BeginChild(FormatString("##%scolorMark", id).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY)) {
+            ImGui::SetCursorPos({0, 0});
+            ImGui::PushStyleColor(ImGuiCol_Button, color);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color * 1.1f);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, color * 1.2f);
+            ImGui::ColorButton(FormatString("%s %s", ICON_FA_DROPLET, id).c_str(), color, ImGuiColorEditFlags_AlphaPreview);
+            ImGui::PopStyleColor(3);
+            ImGui::SameLine();
+            if (ImGui::IsWindowHovered()) ImGui::BeginDisabled();
+            std::string defaultColorMarkText = "";
+            if (Workspace::s_defaultColorMark == id) {
+                defaultColorMarkText = FormatString(" (%s)", Localization::GetString("DEFAULT").c_str());
+            }
+            ImGui::Text("%s %s%s", ICON_FA_DROPLET, id, defaultColorMarkText.c_str());
+            if (ImGui::IsWindowHovered()) ImGui::EndDisabled();
+        }
+        ImGui::EndChild();
+        return ImGui::IsItemClicked();
     }
 
     static std::vector<int> s_targetDeleteAssets;
@@ -248,6 +272,13 @@ namespace Raster {
                 s_previewType = (AssetPreviewType) project.customData["AssetPreviewType"].get<int>();
             }
 
+            static uint32_t s_colorMarkFilter = 0;
+            if (!project.customData.contains("AssetColorMarkFilter")) {
+                project.customData["AssetColorMarkFilter"] = s_colorMarkFilter;
+            } else {
+                s_colorMarkFilter = project.customData["AssetColorMarkFilter"];
+            }
+
             ImGui::SameLine(0, 3);
             if (ImGui::Button(s_assetPreviewIconMap[s_previewType])) {
                 ImGui::OpenPopup("##assetPreviewTypeChooser");
@@ -274,6 +305,33 @@ namespace Raster {
             project.customData["AssetPreviewType"] = (int) s_previewType;
 
             ImGui::SameLine(0, 3);
+
+            ImVec4 colorMark4 = ImGui::ColorConvertU32ToFloat4(s_colorMarkFilter);
+            if (ImGui::ColorButton("##assetColorMarkFilterPicker", colorMark4, ImGuiColorEditFlags_AlphaPreview)) {
+                ImGui::OpenPopup("##filterAssetsByColorMark");
+            }
+            if (ImGui::BeginPopup("##filterAssetsByColorMark")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FILTER, Localization::GetString("FILTER_BY_COLOR_MARK").c_str()).c_str());
+                static std::string s_colorMarkNameFilter = "";
+                ImGui::InputTextWithHint("##colorMarkNameFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_colorMarkNameFilter);
+                if (ImGui::BeginChild("##colorMarkCandidates", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                    if (TextColorButton(Localization::GetString("NONE").c_str(), ImVec4(0))) {
+                        s_colorMarkFilter = 0;
+                    }
+                    for (auto& colorMarkPair : Workspace::s_colorMarks) {
+                        if (!s_colorMarkNameFilter.empty() && LowerCase(colorMarkPair.first).find(LowerCase(s_colorMarkNameFilter)) == std::string::npos) continue;
+                        ImVec4 colorMarkPair4 = ImGui::ColorConvertU32ToFloat4(colorMarkPair.second);
+                        if (TextColorButton(colorMarkPair.first.c_str(), colorMarkPair4)) {
+                            s_colorMarkFilter = colorMarkPair.second;
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                }
+                ImGui::EndChild();
+                ImGui::EndPopup();
+            }
+
+            ImGui::SameLine(0, 3);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
                 ImGui::InputTextWithHint("##assetSearch", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &assetSearch);
             ImGui::PopItemWidth();
@@ -287,6 +345,7 @@ namespace Raster {
                     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_Button));
                     if (ImGui::BeginChild("##assetsList", ImGui::GetContentRegionAvail())) {
                         for (auto& asset : project.assets) {
+                            if (s_colorMarkFilter != 0 && asset->colorMark != s_colorMarkFilter) continue;
                             ImGui::PushID(asset->id);
                             bool isSelected = std::find(selectedAssets.begin(), selectedAssets.end(), asset->id) != selectedAssets.end();
                             static std::unordered_map<int, bool> s_hoveredMap;
@@ -342,7 +401,7 @@ namespace Raster {
                                 ImGui::EndGroup();
                             }
                             ImGui::EndChild();
-                            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                            if (ImGui::BeginDragDropSource()) {
                                 ImGui::SetDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD, &asset->id, sizeof(asset->id));
                                 asset->RenderDetails();
                                 ImGui::EndDragDropSource();
@@ -396,6 +455,7 @@ namespace Raster {
                 }
                 if (s_previewType == AssetPreviewType::Table) {
                     // asset table columns list
+                    // 0 - color mark
                     // 1 - name
                     // 2 - duration
                     // 3 - resolution
@@ -416,7 +476,8 @@ namespace Raster {
                     tableFlags |= ImGuiTableFlags_ScrollX;
                     tableFlags |= ImGuiTableFlags_ScrollY;
 
-                    if (ImGui::BeginTable("##assetsTable", 5, tableFlags)) {
+                    if (ImGui::BeginTable("##assetsTable", 6, tableFlags)) {
+                        ImGui::TableSetupColumn(ICON_FA_DROPLET);
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("NAME").c_str()).c_str());
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_STOPWATCH, Localization::GetString("DURATION").c_str()).c_str());
                         ImGui::TableSetupColumn(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("RESOLUTION").c_str()).c_str());
@@ -426,12 +487,38 @@ namespace Raster {
                         ImGui::TableHeadersRow();
 
                         for (auto& asset : project.assets) {
+                            if (s_colorMarkFilter != 0 && s_colorMarkFilter != asset->colorMark) continue;
+                            ImGui::PushID(asset->id);
                             ImGui::TableNextRow();
 
                             auto description = Assets::GetAssetImplementation(asset->packageName).value().description;
 
+                            ImGui::TableNextColumn();
+                            auto assetColorMark4 = ImGui::ColorConvertU32ToFloat4(asset->colorMark);
+                            if (ImGui::ColorButton(FormatString("%s %s", ICON_FA_DROPLET, Localization::GetString("COLOR_MARK").c_str()).c_str(), assetColorMark4, ImGuiColorEditFlags_AlphaPreview, ImVec2(16, 16))) {
+                                ImGui::OpenPopup("##assetColorMarkSelector");
+                            }
+
+                            if (ImGui::BeginPopup("##assetColorMarkSelector")) {
+                                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FILTER, Localization::GetString("FILTER_BY_COLOR_MARK").c_str()).c_str());
+                                static std::string s_colorMarkNameFilter = "";
+                                ImGui::InputTextWithHint("##colorMarkNameFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_colorMarkNameFilter);
+                                if (ImGui::BeginChild("##colorMarkCandidates", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                                    for (auto& colorMarkPair : Workspace::s_colorMarks) {
+                                        if (!s_colorMarkNameFilter.empty() && LowerCase(colorMarkPair.first).find(LowerCase(s_colorMarkNameFilter)) == std::string::npos) continue;
+                                        ImVec4 colorMarkPair4 = ImGui::ColorConvertU32ToFloat4(colorMarkPair.second);
+                                        if (TextColorButton(colorMarkPair.first.c_str(), colorMarkPair4)) {
+                                            asset->colorMark = colorMarkPair.second;
+                                            ImGui::CloseCurrentPopup();
+                                        }
+                                    }
+                                }
+                                ImGui::EndChild();
+                                ImGui::EndPopup();
+                            }
+
                             std::string assetIcon = asset->IsReady() ? description.icon : ICON_FA_SPINNER;
-                            ImGui::TableSetColumnIndex(0);
+                            ImGui::TableNextColumn();
                             if (ImGui::Selectable(FormatString("%s %s", assetIcon.c_str(), asset->name.c_str()).c_str(), std::find(selectedAssets.begin(), selectedAssets.end(), asset->id) != selectedAssets.end(), ImGuiSelectableFlags_SpanAllColumns)) {
                                 if (ImGui::GetIO().KeyCtrl) {
                                     auto idIterator = std::find(selectedAssets.begin(), selectedAssets.end(), asset->id);
@@ -493,39 +580,40 @@ namespace Raster {
                                 ImGui::EndDragDropTarget();
                             }
 
-                            ImGui::TableSetColumnIndex(1);
+                            ImGui::TableNextColumn();
                             auto durationCandidate = asset->GetDuration();
                             if (durationCandidate.has_value()) {
                                 auto& duration = durationCandidate.value();
                                 ImGui::Text("%s", duration.c_str());
                             }
 
-                            ImGui::TableSetColumnIndex(2);
+                            ImGui::TableNextColumn();
                             auto resolutionCandidate = asset->GetResolution();
                             if (resolutionCandidate.has_value()) {
                                 auto& resolution = resolutionCandidate.value();
                                 ImGui::Text("%s", resolution.c_str());
                             }
 
-                            ImGui::TableSetColumnIndex(3);
+                            ImGui::TableNextColumn();
                             auto sizeCandidate = asset->GetSize();
                             if (sizeCandidate.has_value()) {
                                 ImGui::Text("%s", ConvertToHRSize(sizeCandidate.value()).c_str());
                             }
 
-                            ImGui::TableSetColumnIndex(4);
+                            ImGui::TableNextColumn();
                             auto pathCandidate = asset->GetPath();
                             if (pathCandidate.has_value()) {
                                 ImGui::Text("%s", pathCandidate.value().c_str());
                             }
+
+                            ImGui::PopID();
                         }
                         ImGui::EndTable();
                     }
                 } else if (s_previewType == AssetPreviewType::Grid) {
 
-                } else if (s_previewType == AssetPreviewType::List) {
-                    
                 }
+                project.customData["AssetColorMarkFilter"] = s_colorMarkFilter;
             }
             ImGui::EndChild();
         }

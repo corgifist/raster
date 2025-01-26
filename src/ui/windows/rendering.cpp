@@ -124,25 +124,25 @@ namespace Raster {
                     else if (previewResolutionScale == 0.3f) previewResolutionName = Localization::GetString("THIRD");
                     else if (previewResolutionScale == 0.2f) previewResolutionName = Localization::GetString("QUARTER");
 
-                    if (ImGui::MenuItem(FormatString("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("PREVIEW_RESOLUTION").c_str(), previewResolutionName.c_str()).c_str())) {
+                    if (ImGui::MenuItem(FormatString("%s %ix%i", ICON_FA_EXPAND, (int) (project.preferredResolution.x * previewResolutionScale), (int) (project.preferredResolution.y * previewResolutionScale)).c_str())) {
                         ImGui::OpenPopup("##previewResolutionPresets");
                     }
 
                     if (ImGui::BeginPopup("##previewResolutionPresets")) {
                         ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("PREVIEW_RESOLUTION").c_str()).c_str());
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("FULL").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s (%ix%i)", ICON_FA_EXPAND, Localization::GetString("FULL").c_str(), (int) (project.preferredResolution.x), (int) (project.preferredResolution.y)).c_str())) {
                             previewResolutionScale = 1.0f;
                             Rendering::ForceRenderFrame();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("HALF").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s (%ix%i)", ICON_FA_EXPAND, Localization::GetString("HALF").c_str(), (int) (project.preferredResolution.x * 0.5f), (int) (project.preferredResolution.y * 0.5f)).c_str())) {
                             previewResolutionScale = 0.5f;
                             Rendering::ForceRenderFrame();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("THIRD").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s (%ix%i)", ICON_FA_EXPAND, Localization::GetString("THIRD").c_str(), (int) (project.preferredResolution.x * 0.3f), (int) (project.preferredResolution.y * 0.3f)).c_str())) {
                             previewResolutionScale = 0.3f;
                             Rendering::ForceRenderFrame();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("QUARTER").c_str()).c_str())) {
+                        if (ImGui::MenuItem(FormatString("%s %s (%ix%i)", ICON_FA_EXPAND, Localization::GetString("QUARTER").c_str(), (int) (project.preferredResolution.x * 0.2f), (int) (project.preferredResolution.y * 0.2f)).c_str())) {
                             previewResolutionScale = 0.2f;
                             Rendering::ForceRenderFrame();
                         }
@@ -188,12 +188,32 @@ namespace Raster {
                             for (auto& attribute : attributes) {
                                 transformedAttributes.push_back(attribute.c_str());
                             }
-                            ImGui::Text("%s", Localization::GetString("ATTRIBUTE").c_str());
                             try {
-                                if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size()) {
-                                    ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
+                                if (selectedAttributeIndex >= 0 && selectedAttributeIndex < transformedAttributes.size()) {
+/*                                     ImGui::PushItemWidth(ImGui::CalcTextSize(transformedAttributes[selectedAttributeIndex]).x + 50);
                                     ImGui::Combo("##attributesList", &selectedAttributeIndex, transformedAttributes.data(), transformedAttributes.size());
-                                    ImGui::PopItemWidth();
+                                    ImGui::PopItemWidth(); */
+                                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, node->GetAttributeName(transformedAttributes[selectedAttributeIndex]).c_str()).c_str())) {
+                                        ImGui::OpenPopup("##attributeSelectorPopup");
+                                    }
+                                    ImGui::Separator();
+                                    if (ImGui::BeginPopup("##attributeSelectorPopup")) {
+                                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_NODES, node->Header().c_str()).c_str());
+                                        static std::string s_attributeFilter = "";
+                                        int selectorAttributeIndex = 0;
+                                        for (auto& attribute : node->GetAttributesList()) {
+                                            if (!s_attributeFilter.empty() && LowerCase(node->GetAttributeName(attribute)).find(LowerCase(s_attributeFilter)) == std::string::npos) {
+                                                selectedAttributeIndex++;
+                                                continue;
+                                            }
+                                            if (ImGui::Selectable(FormatString("%s %s", ICON_FA_LINK, node->GetAttributeName(attribute).c_str()).c_str(), node->GetAttributeName(attribute) == node->GetAttributeName(transformedAttributes[selectedAttributeIndex]))) {
+                                                selectedAttributeIndex = selectorAttributeIndex;
+                                                ImGui::CloseCurrentPopup();
+                                            }
+                                            selectorAttributeIndex++;
+                                        }
+                                        ImGui::EndPopup();
+                                    }
                                 }
                                 if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size())
                                     selectedPin = transformedAttributes[selectedAttributeIndex];

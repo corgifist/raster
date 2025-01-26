@@ -12,6 +12,7 @@ namespace Raster {
         int id;
         std::string name;
         std::string packageName;
+        uint32_t colorMark;
 
         AssetBase();
         ~AssetBase();

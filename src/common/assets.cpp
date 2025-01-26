@@ -42,6 +42,9 @@ namespace Raster {
             auto& asset = assetCandidate.value();
             asset->name = t_data["Name"];
             asset->id = t_data["ID"];
+            if (t_data.contains("ColorMark")) {
+                asset->colorMark = t_data["ColorMark"];
+            }
             asset->Load(t_data["Data"]);
             return asset;
         }

@@ -62,7 +62,7 @@ namespace Raster {
 
     void VideoDecoder::SeekDecoder(float t_second) {
         if (!videoDecoderCtx.isOpened()) return;
-        auto project = Workspace::GetProject();
+        auto& project = Workspace::GetProject();
         float currentTime = t_second + timeOffset / project.framerate;
         auto rational = targetVideoStream.timeBase().getValue();
         std::string codecName = videoDecoderCtx.codec().longName();

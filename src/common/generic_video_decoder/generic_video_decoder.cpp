@@ -61,9 +61,27 @@ namespace Raster {
         } else {
             // deallocate the oldest cache entry
             if (!s_videoCacheEntries.empty()) {
-                auto& firstEntry = s_videoCacheEntries[0];
-                s_cacheAllocator.Free(firstEntry.data);
-                s_videoCacheEntries.erase(s_videoCacheEntries.begin());
+                int cacheEntryCandidateIndex = 0;
+                int i = 0; 
+                for (auto& entry : s_videoCacheEntries) {
+                    if (entry.assetPath != t_assetPath) {
+                        i++;
+                        continue;
+                    }
+                    auto& candidateEntry = s_videoCacheEntries[cacheEntryCandidateIndex];
+                    if (entry.frame < candidateEntry.frame) {
+                        cacheEntryCandidateIndex = i;
+                    }
+                    i++;
+                }
+                if (cacheEntryCandidateIndex > 0) {
+                    auto& cacheEntryTarget = s_videoCacheEntries[cacheEntryCandidateIndex];
+                    s_cacheAllocator.Free(cacheEntryTarget.data);
+                    s_videoCacheEntries.erase(s_videoCacheEntries.begin() + cacheEntryCandidateIndex);
+                } else {
+                    s_cacheAllocator.Free(s_videoCacheEntries[0].data);
+                    s_videoCacheEntries.erase(s_videoCacheEntries.begin());
+                }
                 return CacheVideoFrame(data, t_frame, t_assetPath, t_imageAllocation);
             } else {
                 RASTER_LOG("caching video frame failed despite having zero cache entries");
@@ -248,7 +266,6 @@ namespace Raster {
             for (auto& entry : s_videoCacheEntries) {
                 if (entry.frame == targetFrame && entry.assetPath == decoder->assetPath) {
                     t_imageAllocation.data = entry.data;
-                    decoder->lastLoadedFrame = entry.frame;
                     return true;
                 }    
             }

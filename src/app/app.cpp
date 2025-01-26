@@ -310,6 +310,9 @@ namespace Raster {
                     auto lockedCompositionCandidate = Workspace::GetCompositionByID(composition.lockedCompositionID);
                     if (!lockedCompositionCandidate) continue;
                     auto& lockedComposition = *lockedCompositionCandidate;
+                    if (composition.beginFrame != lockedComposition->beginFrame || composition.endFrame != lockedComposition->endFrame) {
+                        composition.OnTimelineSeek();
+                    }
                     composition.beginFrame = lockedComposition->beginFrame;
                     composition.endFrame = lockedComposition->endFrame;
                 }

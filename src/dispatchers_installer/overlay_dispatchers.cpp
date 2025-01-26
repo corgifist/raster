@@ -11,9 +11,11 @@
 
 #include "../attributes/transform2d_attribute/transform2d_attribute.h"
 
+#include "common/rendering.h"
+
 #define DRAG_CIRCLE_RADIUS 8
 #define ANCHOR_CIRCLE_RADIUS 6
-#define ANCHOR_LOGIC_RADIUS 32
+#define ANCHOR_LOGIC_RADIUS 16
 
 namespace Raster {
 
@@ -310,6 +312,9 @@ namespace Raster {
             }
         }
         t_attribute = transform;
+        if (transformChanged) {
+            Rendering::ForceRenderFrame();
+        }
         return !transformChanged; 
     }
 };

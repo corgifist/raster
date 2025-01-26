@@ -1,4 +1,5 @@
 #include "common/asset_base.h"
+#include "common/workspace.h"
 
 namespace Raster {
 
@@ -9,6 +10,7 @@ namespace Raster {
     void AssetBase::Initialize() {
         this->id = Randomizer::GetRandomInteger();
         this->name = "New Asset";
+        this->colorMark = Workspace::s_colorMarks[Workspace::s_defaultColorMark];
     }
 
     void AssetBase::RenderDetails() {
@@ -24,7 +26,8 @@ namespace Raster {
             {"ID", id},
             {"Name", name},
             {"Data", AbstractSerialize()},
-            {"PackageName", packageName}
+            {"PackageName", packageName},
+            {"ColorMark", colorMark}
         };
     }
 
