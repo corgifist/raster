@@ -43,14 +43,24 @@ namespace Raster {
         }
         std::string popupID = FormatString("##assetChooserPopup%i", id);
         bool openAssetPopup = false;
+        ImVec4 colorMarkNormal = assetCandidate ? ImGui::ColorConvertU32ToFloat4((*assetCandidate)->colorMark) : ImGui::GetStyleColorVec4(ImGuiCol_Button);
+        ImVec4 colorMarkHovered = assetCandidate ? ImGui::ColorConvertU32ToFloat4((*assetCandidate)->colorMark) * 1.1f : ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered);
+        ImVec4 colorMarkPressed = assetCandidate ? ImGui::ColorConvertU32ToFloat4((*assetCandidate)->colorMark) * 1.3f : ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
+        ImGui::PushStyleColor(ImGuiCol_Button, colorMarkNormal);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorMarkHovered);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorMarkPressed);
         if (ImGui::Button(FormatString("%s %s", 
                 assetDescriptionCandidate.has_value() ? assetDescriptionCandidate.value().description.icon.c_str() 
                 : ICON_FA_XMARK, assetChooserButtonText.c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
             openAssetPopup = true;
         }
+        ImGui::PopStyleColor(3);
 
         if (ImGui::BeginDragDropSource()) {
             ImGui::SetDragDropPayload(ASSET_ATTRIBUTE_DRAG_DROP_PAYLOAD, &id, sizeof(id));
+            if (assetCandidate) {
+                (*assetCandidate)->RenderDetails();
+            }
             ImGui::EndDragDropSource();
         }
         

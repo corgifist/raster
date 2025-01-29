@@ -1338,6 +1338,20 @@ namespace Raster {
                             ImGui::EndMenu();
                         }
                         ImGui::Separator();
+                        auto& project = Workspace::GetProject();
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_NODES").c_str()).c_str(), "Delete", false, project.selectedNodes.size() > 0)) {
+                            Rendering::ForceRenderFrame();
+                            for (auto& node : project.selectedNodes) {
+                                Nodes::DeleteNode(node);
+                            }
+                            project.selectedNodes = {};
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_NODES").c_str()).c_str(), "Ctrl+C", false, project.selectedNodes.size() > 0)) {
+                            ProcessCopyAction();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PASTE, Localization::GetString("PASTE_SELECTED_NODES").c_str()).c_str(), "Ctrl+V", false, s_copyAccumulator.size() > 0)) {
+                            ProcessPasteAction();
+                        }
                         if (Workspace::IsProjectLoaded()) {
                             auto& project = Workspace::GetProject();
                             if (!project.customData.contains("RenderingCompositionLock")) {

@@ -314,6 +314,7 @@ namespace Raster {
     }
 
     void TimelineUI::ProcessShortcuts() {
+        DUMP_VAR((int) UIShared::s_lastClickedObjectType);
         if (!UIHelpers::AnyItemFocused() && ImGui::IsWindowFocused() && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessCopyAction();
         }
@@ -503,6 +504,7 @@ namespace Raster {
 
             if (compositionPressed && !io.KeyCtrl && std::abs(io.MouseDelta.x) < 0.1f) {
                 project.selectedCompositions = {composition->id};
+                UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
                 if (!composition->attributes.empty()) {
                     for (auto& attribute : composition->attributes) {
                         if (attribute->Get(project.currentFrame - composition->beginFrame, composition).type() == typeid(Transform2D)) {
@@ -854,6 +856,7 @@ namespace Raster {
         if (std::find(selectedCompositions.begin(), selectedCompositions.end(), composition->id) == selectedCompositions.end()) {
             selectedCompositions.push_back(composition->id);
         }
+        UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
     }
 
     void TimelineUI::RenderCompositionPopup(Composition* t_composition, ImGuiID t_parentTreeID) {

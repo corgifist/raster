@@ -3,6 +3,8 @@
 #include "common/audio_context_storage.h"
 #include "common/audio_info.h"
 #include "common/audio_samples.h"
+#include "common/typedefs.h"
+#include "raster.h"
 #include <iomanip>
 #include <memory>
 
@@ -10,9 +12,14 @@ namespace Raster {
 
     PitchShiftContext::PitchShiftContext() {
         this->stretcher = std::make_shared<TimeStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels);
+        this->waveformStretcher = std::make_shared<TimeStretcher>(AudioInfo::s_sampleRate, AudioInfo::s_channels);
         this->health = MAX_CONTEXT_HEALTH;
         this->seeked = true;
         this->highQualityPitch = false;
+    }
+
+    std::shared_ptr<TimeStretcher> PitchShiftContext::GetStretcher(ContextData& t_contextData) {
+        return RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool) ? waveformStretcher : stretcher;
     }
 
     PitchShiftAudio::PitchShiftAudio() {
@@ -48,10 +55,10 @@ namespace Raster {
             pitchScale = glm::abs(pitchScale);
             auto& useHighQualityPitch = useHighQualityPitchCandidate.value();
             auto context = m_contexts.GetContext(project.GetTimeTravelOffset(), t_contextData);
-            context->stretcher->UseHighQualityEngine(useHighQualityPitch);
-            context->stretcher->Validate();
-            auto& stretcher = context->stretcher;
-            if (context->seeked) {
+            context->GetStretcher(t_contextData)->UseHighQualityEngine(useHighQualityPitch);
+            context->GetStretcher(t_contextData)->Validate();
+            auto stretcher = context->GetStretcher(t_contextData);
+            if (context->seeked || (RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_FIRST_PASS", bool))) {
                 stretcher->Reset();
                 context->seeked = false;
             }

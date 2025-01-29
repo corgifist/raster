@@ -1,5 +1,6 @@
 #pragma once
 #include "audio/time_stretcher.h"
+#include "common/typedefs.h"
 #include "raster.h"
 #include "common/common.h"
 #include "common/generic_audio_decoder.h"
@@ -12,12 +13,15 @@ namespace Raster {
 
     struct PitchShiftContext {
         std::shared_ptr<TimeStretcher> stretcher;
+        std::shared_ptr<TimeStretcher> waveformStretcher;
         AudioCache cache;
         bool seeked;
         int health;
         bool highQualityPitch;
 
         PitchShiftContext();
+
+        std::shared_ptr<TimeStretcher> GetStretcher(ContextData& t_contextData);
     };
 
     using SharedPitchShiftContext = PitchShiftContext;
