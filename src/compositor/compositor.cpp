@@ -7,7 +7,7 @@ namespace Raster {
     TexturePrecision Compositor::s_colorPrecision = TexturePrecision::Half;
 
     DoubleBufferedValue<std::unordered_map<int, RenderableBundle>> Compositor::s_bundles;
-    std::vector<CompositorTarget> Compositor::s_targets;
+    SynchronizedValue<std::vector<CompositorTarget>> Compositor::s_targets;
     Blending Compositor::s_blending;
     Pipeline Compositor::s_pipeline;
 
@@ -29,13 +29,13 @@ namespace Raster {
     void Compositor::PerformComposition(std::vector<int> t_allowedCompositions) {
         if (!primaryFramebuffer.has_value()) return;
         if (t_allowedCompositions.empty()) {
-            PerformManualComposition(s_targets, primaryFramebuffer.value().Get());
+            PerformManualComposition(s_targets.Get(), primaryFramebuffer.value().Get());
             primaryFramebuffer.value().SwapBuffers();
             return;
         }
 
         std::vector<CompositorTarget> filteredTargets;
-        for (auto& target : s_targets) {
+        for (auto& target : s_targets.Get()) {
             if (std::find(t_allowedCompositions.begin(), t_allowedCompositions.end(), target.compositionID) != t_allowedCompositions.end()) {
                 filteredTargets.push_back(target);
             }
@@ -45,29 +45,31 @@ namespace Raster {
         primaryFramebuffer.value().SwapBuffers();
     }
 
-    void Compositor::PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor) {
+    void Compositor::PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor, std::optional<Blending> t_blending, std::optional<Pipeline> t_pipeline) {
         auto& framebuffer = t_fbo;
+        auto pipeline = t_pipeline.value_or(s_pipeline);
         GPU::BindFramebuffer(framebuffer);
-        GPU::BindPipeline(s_pipeline);
+        GPU::BindPipeline(pipeline);
         auto& bg = t_backgroundColor.has_value() ? t_backgroundColor.value() : Workspace::s_project.value().backgroundColor;
         GPU::ClearFramebuffer(bg.r, bg.g, bg.b, bg.a);
+        auto blending = t_blending.value_or(s_blending);
         for (auto& target : t_targets) {
-            auto blendingModeCandidate = s_blending.GetModeByCodeName(target.blendMode);
+            auto blendingModeCandidate = blending.GetModeByCodeName(target.blendMode);
             if (blendingModeCandidate.has_value()) {
                 auto& blendingMode = blendingModeCandidate.value();
-                auto blendedResult = s_blending.PerformManualBlending(blendingMode, framebuffer.attachments[0], target.colorAttachment, target.opacity, bg);
+                auto blendedResult = blending.PerformManualBlending(blendingMode, framebuffer.attachments[0], target.colorAttachment, target.opacity, bg);
                 GPU::BindFramebuffer(framebuffer);
-                GPU::BindPipeline(s_pipeline);
-                GPU::BindTextureToShader(s_pipeline.fragment, "uColor", blendedResult.attachments[0], 0);
-                GPU::BindTextureToShader(s_pipeline.fragment, "uUV", target.uvAttachment, 1);
-                GPU::SetShaderUniform(s_pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
-                GPU::SetShaderUniform(s_pipeline.fragment, "uOpacity", 1.0f);
+                GPU::BindPipeline(pipeline);
+                GPU::BindTextureToShader(pipeline.fragment, "uColor", blendedResult.attachments[0], 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uUV", target.uvAttachment, 1);
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
+                GPU::SetShaderUniform(pipeline.fragment, "uOpacity", 1.0f);
                 GPU::DrawArrays(3);
             } else {
-                GPU::BindTextureToShader(s_pipeline.fragment, "uColor", target.colorAttachment, 0);
-                GPU::BindTextureToShader(s_pipeline.fragment, "uUV", target.uvAttachment, 1);
-                GPU::SetShaderUniform(s_pipeline.fragment, "uOpacity", target.opacity);
-                GPU::SetShaderUniform(s_pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
+                GPU::BindTextureToShader(pipeline.fragment, "uColor", target.colorAttachment, 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uUV", target.uvAttachment, 1);
+                GPU::SetShaderUniform(pipeline.fragment, "uOpacity", target.opacity);
+                GPU::SetShaderUniform(pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
                 GPU::DrawArrays(3);
             }
         }
@@ -92,7 +94,9 @@ namespace Raster {
             if (requiredResolution.x != framebuffer.Get().width || requiredResolution.y != framebuffer.Get().height || s_colorPrecision != framebuffer.Get().attachments[0].precision) {
                 ResizePrimaryFramebuffer(requiredResolution);
             }
-            s_targets.clear();
+            s_targets.Lock();
+            s_targets.GetReference().clear();
+            s_targets.Unlock();
         }        
     }
 

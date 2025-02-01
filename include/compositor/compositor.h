@@ -7,6 +7,7 @@
 #include "common/composition.h"
 #include "compositor/blending.h"
 #include "double_buffered_framebuffer.h"
+#include "common/synchronized_value.h"
 
 namespace Raster {
 
@@ -26,7 +27,7 @@ namespace Raster {
         static std::optional<DoubleBufferedFramebuffer> primaryFramebuffer;
         static float previewResolutionScale;
         static DoubleBufferedValue<std::unordered_map<int, RenderableBundle>> s_bundles;
-        static std::vector<CompositorTarget> s_targets;
+        static SynchronizedValue<std::vector<CompositorTarget>> s_targets;
         static Blending s_blending;
         static Pipeline s_pipeline;
         static TexturePrecision s_colorPrecision;
@@ -42,7 +43,7 @@ namespace Raster {
         static void EnsureResolutionConstraintsForFramebuffer(Framebuffer& t_fbo);
         static void EnsureResolutionConstraintsForFramebuffer(DoubleBufferedFramebuffer& t_fbo);
 
-        static void PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor = std::nullopt);
+        static void PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor = std::nullopt, std::optional<Blending> t_blending = std::nullopt, std::optional<Pipeline> s_pipeline = std::nullopt);
         static void PerformComposition(std::vector<int> t_allowedCompositions = {});
 
         static glm::vec2 GetRequiredResolution();

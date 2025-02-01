@@ -112,6 +112,7 @@ build_modules = [
     ["vec3_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec2_attribute", attribute, [raster_common, raster_ImGui]],
     ["gradient1d_attribute", attribute, [raster_common, raster_ImGui]],
+    ["line2d_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["preferences", plugin, [raster_common]],
     ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
@@ -160,6 +161,7 @@ build_modules = [
     ["rendering/tracking_motion_blur", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/merge", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui, raster_font]],
     ["rendering/decode_video_asset", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/line2d", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],

@@ -33,13 +33,15 @@ namespace Raster {
             bundle.primaryFramebuffer = renderable;
 
             auto& targets = Compositor::s_targets;
-            targets.push_back(CompositorTarget{
+            targets.Lock();
+            targets.GetReference().push_back(CompositorTarget{
                 .colorAttachment = renderable.attachments[0],
                 .uvAttachment = renderable.attachments[1],
                 .opacity = composition->GetOpacity(),
                 .blendMode = composition->blendMode,
                 .compositionID = composition->id
             });
+            targets.Unlock();
 
             this->lastExportedType = std::type_index(typeid(Framebuffer));
         } else {

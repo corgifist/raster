@@ -12,6 +12,7 @@
 #include "../attributes/transform2d_attribute/transform2d_attribute.h"
 
 #include "common/rendering.h"
+#include "common/line2d.h"
 
 #define DRAG_CIRCLE_RADIUS 8
 #define ANCHOR_CIRCLE_RADIUS 6
@@ -312,6 +313,156 @@ namespace Raster {
             }
         }
         t_attribute = transform;
+        if (transformChanged) {
+            Rendering::ForceRenderFrame();
+        }
+        return !transformChanged; 
+    }
+
+    struct Line2DOverlayState {
+        ObjectDrag beginDrag, endDrag;
+        ObjectDrag middleDrag;
+
+        bool AnyOtherDragActive(int t_excludeDrag = -1) {
+            if (beginDrag.id != t_excludeDrag && beginDrag.isActive) return true;
+            if (endDrag.id != t_excludeDrag && endDrag.isActive) return true;
+            if (middleDrag.id != t_excludeDrag && middleDrag.isActive) return true;
+            return false;
+        }
+    };
+
+    bool OverlayDispatchers::DispatchLine2DValue(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize) {
+        static Line2DOverlayState s_primaryState;
+        static std::unordered_map<std::string, Line2DOverlayState> s_attributeStates;
+
+        Line2D line = std::any_cast<Line2D>(t_attribute);
+        auto& project = Workspace::s_project.value();
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(t_attributeID);
+        ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+        ImVec2 cursor = ImGui::GetCursorPos();
+
+        bool transformChanged = false;
+        bool blockDragging = false;
+
+
+        std::vector<glm::vec2> originalPoints = {
+            line.begin, line.end
+        };
+        std::vector<glm::vec2> transformedPoints;
+        for (auto& point : originalPoints) {
+            glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * glm::vec4(point, 0, 1);
+            transformedPoints.push_back(
+                {transformedPoint.x, transformedPoint.y}
+            );
+        }
+
+        std::vector<glm::vec2> screenSpacePoints;
+        for (auto& point : transformedPoints) {
+            screenSpacePoints.push_back(NDCToScreen(point, t_regionSize));
+        }
+
+        ImVec4 outlineColor = ImVec4(1, 1, 1, 1);
+        outlineColor.w = 1.0f;
+        for (int i = 0; i < screenSpacePoints.size(); i++) {
+            auto& point = screenSpacePoints[i];
+            auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
+            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 2);
+        }
+
+        auto stringID = attributeCandidate.has_value() ? std::to_string(t_attributeID) : std::to_string(t_attributeID) + s_attributeName;
+        Line2DOverlayState* overlayState = nullptr;
+        if (attributeCandidate.has_value()) {
+            overlayState = &s_primaryState;
+        } else {
+            if (s_attributeStates.find(stringID) == s_attributeStates.end()) {
+                s_attributeStates[stringID] = Line2DOverlayState();
+            }
+            overlayState = &s_attributeStates[stringID];
+        }
+
+
+        if (!project.customData.contains("Line2DAttributeData")) {
+            project.customData["Line2DAttributeData"] = {};
+        }
+        auto& customData = project.customData["Line2DAttributeData"];
+        if (!customData.contains(stringID)) {
+            customData[stringID] = false;
+        }
+        bool linkedSize = customData[stringID];
+
+        std::vector<ObjectDrag*> lineDrags = {
+            &overlayState->beginDrag, &overlayState->endDrag
+        };
+
+        bool beginDrag = true;
+        for (auto& dragPtr : lineDrags) {
+            auto& drag = *dragPtr;
+            auto dragNDC4 = project.GetProjectionMatrix(true) * glm::vec4(beginDrag ? line.begin.x : line.end.x, beginDrag ? line.begin.y : line.end.y, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+        
+            // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
+
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                if (beginDrag) {
+                    line.begin.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    line.begin.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                } else {
+                    line.end.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    line.end.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                }
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+                transformChanged = true;
+                drag.isActive = true;
+            } else drag.isActive = false;
+            beginDrag = false;
+        }
+
+        {
+            auto& drag = overlayState->middleDrag;
+            auto middlePos = glm::mix(line.begin, line.end, 0.5f);
+            auto dragNDC4 = project.GetProjectionMatrix(true) * glm::vec4(middlePos, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+        
+            // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
+
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                line.begin.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                line.begin.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                line.end.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                line.end.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                transformChanged = true;
+                drag.isActive = true;
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+            } else drag.isActive = false;
+            beginDrag = false; 
+        }
+
+        if (transformChanged && attributeCandidate.has_value()) {
+            auto& attribute = attributeCandidate.value();
+            float compositionRelativeTime = std::floor(project.currentFrame - t_composition->beginFrame);
+            if (attribute->keyframes.size() == 1) {
+                attribute->keyframes[0].value = line;
+            } else if (attribute->KeyframeExists(compositionRelativeTime) && attribute->keyframes.size() > 1) {
+                auto keyframe = attribute->GetKeyframeByTimestamp(compositionRelativeTime).value();
+                keyframe->value = line;
+            } else {
+                attribute->keyframes.push_back(AttributeKeyframe(compositionRelativeTime, line));
+            }
+        }
+
+        t_attribute = line;
         if (transformChanged) {
             Rendering::ForceRenderFrame();
         }

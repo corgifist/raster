@@ -12,6 +12,8 @@
 #include "common/plugins.h"
 #include "common/waveform_manager.h"
 #include "common/rendering.h"
+#include "common/line2d.h"
+#include "raster.h"
 
 
 namespace Raster {
@@ -39,7 +41,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(int), RASTER_COLOR32(50, 168, 82, 255)},
         {ATTRIBUTE_TYPE(AudioSamples), RASTER_COLOR32(139, 95, 239, 255)},
         {ATTRIBUTE_TYPE(AssetID), RASTER_COLOR32(50, 168, 82, 255)},
-        {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 24, 115, 255)}
+        {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 24, 115, 255)},
+        {ATTRIBUTE_TYPE(Line2D), RASTER_COLOR32(56, 168, 82, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
@@ -60,7 +63,8 @@ namespace Raster {
         RASTER_TYPE_NAME(GenericResolution),
         RASTER_TYPE_NAME(Gradient1D),
         RASTER_TYPE_NAME(Choice),
-        RASTER_TYPE_NAME(std::nullopt)
+        RASTER_TYPE_NAME(std::nullopt),
+        RASTER_TYPE_NAME(Line2D)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {

@@ -11,7 +11,9 @@
 #include "common/dispatchers.h"
 #include "common/rendering.h"
 #include "common/waveform_manager.h"
+#include "gpu/gpu.h"
 #include "raster.h"
+#include "common/line2d.h"
 
 #define SPLITTER_RULLER_WIDTH 8
 #define TIMELINE_RULER_WIDTH 4
@@ -314,7 +316,7 @@ namespace Raster {
     }
 
     void TimelineUI::ProcessShortcuts() {
-        DUMP_VAR((int) UIShared::s_lastClickedObjectType);
+        // DUMP_VAR((int) UIShared::s_lastClickedObjectType);
         if (!UIHelpers::AnyItemFocused() && ImGui::IsWindowFocused() && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessCopyAction();
         }
@@ -505,12 +507,15 @@ namespace Raster {
             if (compositionPressed && !io.KeyCtrl && std::abs(io.MouseDelta.x) < 0.1f) {
                 project.selectedCompositions = {composition->id};
                 UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
+                std::vector<int> newSelectedAttributes = {};
                 if (!composition->attributes.empty()) {
                     for (auto& attribute : composition->attributes) {
-                        if (attribute->Get(project.currentFrame - composition->beginFrame, composition).type() == typeid(Transform2D)) {
-                            project.selectedAttributes = {attribute->id};
+                        auto& valueType = attribute->Get(project.currentFrame - composition->beginFrame, composition).type();
+                        if (valueType == typeid(Transform2D) || valueType == typeid(Line2D)) {
+                            newSelectedAttributes.push_back(attribute->id);
                         }
                     }
+                    project.selectedAttributes = newSelectedAttributes;
                 }
             }
 
@@ -945,17 +950,16 @@ namespace Raster {
                             ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
                         } else {
                             // FIXME: restore blending preview
-/*                             auto& bundle = bundles[t_composition->id];
-                            auto& primaryFramebuffer = Compositor::primaryFramebuffer.value();
+                            auto& bundle = bundles.GetFrontValue()[t_composition->id];
                             auto requiredResolution = Compositor::GetRequiredResolution();
-                            static Framebuffer previewFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
-                            if (previewFramebuffer.width != requiredResolution.x || previewFramebuffer.height != requiredResolution.y) {
-                                for (auto& attachment : previewFramebuffer.attachments) {
-                                    GPU::DestroyTexture(attachment);
-                                }
-                                GPU::DestroyFramebuffer(previewFramebuffer);
-                                previewFramebuffer = Compositor::GenerateCompatibleFramebuffer(requiredResolution);
-                            }
+                            static Framebuffer previewFramebuffer;
+                            static Pipeline s_compositorPipeline =
+                                GPU::GeneratePipeline(
+                                    GPU::GenerateShader(ShaderType::Vertex,
+                                                        "compositor/shader"),
+                                    GPU::GenerateShader(ShaderType::Fragment,
+                                                        "compositor/shader"));
+                            Compositor::EnsureResolutionConstraintsForFramebuffer(previewFramebuffer);
                             GPU::BindFramebuffer(previewFramebuffer);
                             GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
                             int compositionIndex = 0;
@@ -967,17 +971,39 @@ namespace Raster {
                             for (int i = 0; i < compositionIndex; i++) {
                                 allowedCompositions.push_back(project.compositions[i].id);
                             }
-                            GPU::BindFramebuffer(primaryFramebuffer);
+                            GPU::BindFramebuffer(previewFramebuffer);
                             GPU::ClearFramebuffer(project.backgroundColor.r, project.backgroundColor.g, project.backgroundColor.b, project.backgroundColor.a);
-                            if (!allowedCompositions.empty()) Compositor::PerformComposition(allowedCompositions);
-                            auto& blending = Compositor::s_blending;
-                            blending.PerformBlending(mode, primaryFramebuffer.attachments[0], bundle.primaryFramebuffer.attachments[0], t_composition->GetOpacity());
-                            GPU::BlitFramebuffer(previewFramebuffer, blending.framebufferCandidate.value().attachments[0]);
+                            static Blending s_previewBlending = Blending(Compositor::s_blending.Serialize());
+                            static bool s_blendingPipelineGenerated = false;
+                            if (!s_blendingPipelineGenerated) {
+                                s_previewBlending.GenerateBlendingPipeline();
+                                s_blendingPipelineGenerated = true;
+                            }
 
-                            ImGui::Text("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());
+                            auto targets = Compositor::s_targets.Get();
+                            std::vector<CompositorTarget> filteredTargets;
+                            for (auto& target : targets) {
+                                if (std::find(allowedCompositions.begin(), allowedCompositions.end(), target.compositionID) != allowedCompositions.end()) {
+                                    filteredTargets.push_back(target);
+                                }
+                            }
+
+                            for (auto& target : targets) {
+                                if (target.compositionID == t_composition->id) {
+                                    auto modifiedTarget = target;
+                                    modifiedTarget.blendMode = mode.codename;
+                                    filteredTargets.push_back(modifiedTarget);
+                                    break;
+                                }
+                            }
+
+                            Compositor::PerformManualComposition(filteredTargets, previewFramebuffer, project.backgroundColor, s_previewBlending, s_compositorPipeline);
+
                             auto previewSize = FitRectInRect({128, 128}, {previewFramebuffer.width, previewFramebuffer.height});
-                            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - previewSize.x / 2.0f);
-                            ImGui::Image(previewFramebuffer.attachments[0].handle, {previewSize.x, previewSize.y}); */
+                            auto blendingInfoString = FormatString("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());
+                            ImGui::Image((ImTextureID) previewFramebuffer.attachments[0].handle, {previewSize.x, previewSize.y}); 
+                            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(blendingInfoString.c_str()).x / 2.0f);
+                            ImGui::Text("%s", blendingInfoString.c_str());
                         }
                         ImGui::EndTooltip();
                     }

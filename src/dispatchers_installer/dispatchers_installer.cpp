@@ -12,6 +12,7 @@
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
 #include "common/choice.h"
+#include "common/line2d.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -32,7 +33,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(AudioSamples), AttributeDispatchers::DispatchAudioSamplesAttribute},
             {ATTRIBUTE_TYPE(GenericResolution), AttributeDispatchers::DispatchGenericResolutionAttribute},
             {ATTRIBUTE_TYPE(Gradient1D), AttributeDispatchers::DispatchGradient1DAttribute},
-            {ATTRIBUTE_TYPE(Choice), AttributeDispatchers::DispatchChoiceAttribute}
+            {ATTRIBUTE_TYPE(Choice), AttributeDispatchers::DispatchChoiceAttribute},
+            {ATTRIBUTE_TYPE(Line2D), AttributeDispatchers::DispatchLine2DAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -50,7 +52,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(AudioSamples), StringDispatchers::DispatchAudioSamplesValue},
             {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetIDValue},
             {ATTRIBUTE_TYPE(GenericResolution), StringDispatchers::DispatchGenericResolutionValue},
-            {ATTRIBUTE_TYPE(Gradient1D), StringDispatchers::DispatchGradient1DValue}
+            {ATTRIBUTE_TYPE(Gradient1D), StringDispatchers::DispatchGradient1DValue},
+            {ATTRIBUTE_TYPE(Line2D), StringDispatchers::DispatchLine2DValue}
         };
 
         Dispatchers::s_previewDispatchers = {
@@ -68,7 +71,8 @@ namespace Raster {
         };
 
         Dispatchers::s_overlayDispatchers = {
-            {ATTRIBUTE_TYPE(Transform2D), OverlayDispatchers::DispatchTransform2DValue}
+            {ATTRIBUTE_TYPE(Transform2D), OverlayDispatchers::DispatchTransform2DValue},
+            {ATTRIBUTE_TYPE(Line2D), OverlayDispatchers::DispatchLine2DValue}
         };
 
         Dispatchers::s_conversionDispatchers = {

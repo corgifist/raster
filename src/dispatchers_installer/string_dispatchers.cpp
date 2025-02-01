@@ -13,6 +13,7 @@
 #include "common/ui_helpers.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
+#include "common/line2d.h"
 
 namespace Raster {
 
@@ -232,6 +233,26 @@ namespace Raster {
     void StringDispatchers::DispatchGradient1DValue(std::any& t_attribute) {
         auto value = std::any_cast<Gradient1D>(t_attribute);
         UIHelpers::RenderGradient1D(value);
+    }
+
+    void StringDispatchers::DispatchLine2DValue(std::any &t_attribute) {
+        auto line = std::any_cast<Line2D>(t_attribute);
+        ImGui::BeginGroup();
+            ImGui::Text("%s P0: (%0.2f; %0.2f)", ICON_FA_LINES_LEANING, line.begin.x, line.begin.y);
+            ImGui::Text("%s P1: (%0.2f; %0.2f)", ICON_FA_LINES_LEANING, line.end.x, line.end.y);
+        ImGui::EndGroup();
+        std::any lineCopy = line;
+        auto preferredResolution = Workspace::GetProject().preferredResolution;
+        ImVec2 fitSize = FitRectInRect(ImVec2{128, ImGui::GetWindowSize().y}, ImVec2{preferredResolution.x, preferredResolution.y});
+        ImGui::SameLine();
+        ImGui::BeginChild("##transformPreviewContainer", fitSize);
+            RectBounds backgroundBounds(
+                ImVec2(0, 0), 
+                fitSize
+            );
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 20, 28, fitSize);
+            OverlayDispatchers::DispatchLine2DValue(lineCopy, nullptr, -1, 0.5f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
+        ImGui::EndChild();
     }
 
 };

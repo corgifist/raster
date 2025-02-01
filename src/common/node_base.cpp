@@ -15,6 +15,7 @@
 #include "raster.h"
 #include "common/choice.h"
 #include "common/rendering.h"
+#include "common/line2d.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 namespace Raster {
@@ -33,7 +34,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), AudioSamples()},
         {TYPE_NAME(ICON_FA_IMAGE " " ICON_FA_EXPAND, GenericResolution), GenericResolution()},
         {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), Gradient1D()},
-        {TYPE_NAME(ICON_FA_QUESTION, Choice), Choice()}
+        {TYPE_NAME(ICON_FA_QUESTION, Choice), Choice()},
+        {TYPE_NAME(ICON_FA_LINES_LEANING, Line2D), Line2D()}
     };
 
     NodeBase::~NodeBase() {
@@ -498,4 +500,6 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(bool);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(AudioSamples);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Gradient1D);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(Choice);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(Line2D);
 };

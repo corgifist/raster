@@ -90,7 +90,7 @@ namespace Raster {
 
         for (int i = 0; i < keyframesLength; i++) {
             float keyframeTimestamp = keyframes[i].timestamp;
-            if (renderViewTime <= keyframeTimestamp) {
+            if (renderViewTime <= keyframeTimestamp + 1) {
                 targetKeyframeIndex = i;
                 break;
             }

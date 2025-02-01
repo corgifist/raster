@@ -17,6 +17,7 @@
 
 #include "nfd/nfd_glfw3.h"
 #include "common/synchronized_value.h"
+#include "common/thread_unique_value.h"
 
 #define HANDLE_TO_GLUINT(x) ((uint32_t) (uint64_t) (x))
 #define GLUINT_TO_HANDLE(x) ((void*) (uint64_t) (x))
@@ -840,6 +841,57 @@ namespace Raster {
 
     void GPU::DrawArrays(int count) {
         glDrawArrays(GL_TRIANGLES, 0, count);
+    }
+
+    struct LinesContext {
+        ArrayBuffer pointsBuffer;
+        Pipeline pipeline;
+    };
+
+    struct LineVertex {
+        glm::vec3 point;
+        float width;
+        glm::vec4 color;
+
+        LineVertex() : point(glm::vec3(0)), width(1), color(glm::vec4(1)) {}
+    };
+
+    void GPU::DrawLines(std::vector<glm::vec2> points, std::vector<glm::vec4> colors, float width, glm::vec2 viewportSize, float antialiasing) {
+        static ThreadUniqueValue<LinesContext> s_lineContext;
+        auto& lineContext = s_lineContext.Get();
+        if (!lineContext.pointsBuffer.handle) {
+            lineContext.pointsBuffer = GPU::GenerateBuffer(sizeof(LineVertex) * points.size() * 2, ArrayBufferType::ShaderStorageBuffer, ArrayBufferUsage::Dynamic);
+        }
+        if (lineContext.pointsBuffer.handle && lineContext.pointsBuffer.size < sizeof(LineVertex) * points.size() * 2) {
+            GPU::DestroyBuffer(lineContext.pointsBuffer);
+            lineContext.pointsBuffer = GPU::GenerateBuffer(sizeof(LineVertex) * points.size() * 2, ArrayBufferType::ShaderStorageBuffer, ArrayBufferUsage::Dynamic);
+        }
+
+        std::vector<LineVertex> meshVertices;
+        for (int i = 0; i < points.size(); i++) {
+            auto& point = points[i];
+            auto& color = colors[i];
+
+            LineVertex meshVertex;
+            meshVertex.color = color;
+            meshVertex.point = glm::vec3(point.x, point.y, 0);
+            meshVertex.width = width;
+            meshVertices.push_back(meshVertex);
+        }
+
+        GPU::FillBuffer(lineContext.pointsBuffer, 0, sizeof(LineVertex) * meshVertices.size(), meshVertices.data());
+
+        if (!lineContext.pipeline.handle) {
+            lineContext.pipeline = GPU::GeneratePipeline(
+                GPU::GenerateShader(ShaderType::Vertex, "lines/shader"), 
+                GPU::GenerateShader(ShaderType::Fragment, "lines/shader"));
+        }
+
+        GPU::BindPipeline(lineContext.pipeline);
+        GPU::BindBufferBase(lineContext.pointsBuffer, 0);
+        GPU::SetShaderUniform(lineContext.pipeline.vertex, "u_viewport_size", viewportSize);
+        GPU::SetShaderUniform(lineContext.pipeline.vertex, "u_aa_radius", glm::vec2(antialiasing));
+        GPU::DrawArrays(3 * points.size());
     }
 
     void GPU::ReadPixels(int x, int y, int w, int h, int channels, TexturePrecision texturePrecision, void* data) {

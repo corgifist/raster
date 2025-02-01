@@ -16,6 +16,7 @@
 #include "common/item_aligner.h"
 #include "common/choice.h"
 #include "common/rendering.h"
+#include "common/line2d.h"
 
 namespace Raster {
 
@@ -680,6 +681,41 @@ namespace Raster {
             Rendering::ForceRenderFrame();
         }
         t_value = value;
+    }
+
+        void AttributeDispatchers::DispatchLine2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto fitSize = FitRectInRect({ImGui::GetWindowSize().x, 256}, Workspace::s_project.value().preferredResolution);
+        ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::BeginChild("##lineContainer", iFitSize, ImGuiChildFlags_Border);
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 20, iFitSize);
+            OverlayDispatchers::s_attributeName = t_attribute;
+            OverlayDispatchers::DispatchLine2DValue(t_value, Workspace::GetCompositionByNodeID(t_owner->nodeID).value(), t_owner->nodeID, 1.0f, fitSize);
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+
+        auto line = std::any_cast<Line2D>(t_value);
+        auto originalLine = line;
+        
+        ImGui::BeginChild("##lineDrags", ImVec2(ImGui::GetWindowSize().x, 0));
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s P0 ", ICON_FA_EXPAND);
+            ImGui::SameLine();
+            ImGui::DragFloat2("##p0Drag", glm::value_ptr(line.begin), 0.01f);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s P1 ", ICON_FA_EXPAND);
+            ImGui::SameLine();
+            ImGui::DragFloat2("##p1Drag", glm::value_ptr(line.end), 0.01f);
+            if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
+        ImGui::EndChild();
+
+        if (line.begin != originalLine.begin || line.end != originalLine.end) {
+            Rendering::ForceRenderFrame();
+        }
+        t_value = line;
     }
 
 };

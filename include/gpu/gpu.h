@@ -210,6 +210,8 @@ namespace Raster {
         static void SetSamplerTextureWrappingMode(Sampler& sampler, TextureWrappingAxis axis, TextureWrappingMode mode);
         static void DestroySampler(Sampler& sampler);
 
+        static void DrawLines(std::vector<glm::vec2> points, std::vector<glm::vec4> colors, float width, glm::vec2 viewportSize, float antialiasing);
+
         static std::string TextureFilteringOperationToString(TextureFilteringOperation operation) {
             switch (operation) {
                 case TextureFilteringOperation::Magnify: return "Magnify";
