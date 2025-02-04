@@ -56,5 +56,5 @@
         </property>
     </properties>
 
-    <icon icon="ICON_FA_LEFT_DROPLET" />
+    <icon icon="ICON_FA_DROPLET" />
 </effect>

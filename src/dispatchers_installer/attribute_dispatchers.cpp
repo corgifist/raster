@@ -4,6 +4,7 @@
 #include "../ImGui/imgui_drag.h"
 #include "attribute_dispatchers.h"
 #include "common/project.h"
+#include "font/IconsFontAwesome5.h"
 #include "overlay_dispatchers.h"
 #include "common/transform2d.h"
 #include "../ImGui/imgui_stripes.h"
@@ -700,13 +701,35 @@ namespace Raster {
         
         ImGui::BeginChild("##lineDrags", ImVec2(ImGui::GetWindowSize().x, 0));
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s P0 ", ICON_FA_EXPAND);
+            ImGui::Text("%s P0 ", ICON_FA_UP_DOWN_LEFT_RIGHT);
+            ImGui::SameLine();
+            if (ImGui::ColorButton("##p0ColorButton", ImVec4(line.beginColor.r, line.beginColor.g, line.beginColor.b, line.beginColor.a))) {
+                ImGui::OpenPopup("##recolorp0Line");
+            }
+            if (ImGui::BeginPopup("##recolorp0Line")) {
+                ImGui::ColorPicker4("##recolorp0Editor", glm::value_ptr(line.beginColor));
+                if (ImGui::IsItemEdited()) {
+                    Rendering::ForceRenderFrame();
+                }
+                ImGui::EndPopup();
+            }
             ImGui::SameLine();
             ImGui::DragFloat2("##p0Drag", glm::value_ptr(line.begin), 0.01f);
             if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
 
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s P1 ", ICON_FA_EXPAND);
+            ImGui::Text("%s P1 ", ICON_FA_UP_DOWN_LEFT_RIGHT);
+            ImGui::SameLine();
+            if (ImGui::ColorButton("##p1ColorButton", ImVec4(line.endColor.r, line.endColor.g, line.endColor.b, line.endColor.a))) {
+                ImGui::OpenPopup("##recolorp1Line");
+            }
+            if (ImGui::BeginPopup("##recolorp1Line")) {
+                ImGui::ColorPicker4("##recolorp1Editor", glm::value_ptr(line.endColor));
+                if (ImGui::IsItemEdited()) {
+                    Rendering::ForceRenderFrame();
+                }
+                ImGui::EndPopup();
+            }
             ImGui::SameLine();
             ImGui::DragFloat2("##p1Drag", glm::value_ptr(line.end), 0.01f);
             if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();

@@ -49,7 +49,7 @@ namespace Raster {
                 glm::vec2(transformedBegin.x, transformedBegin.y), glm::vec2(transformedEnd.x, transformedEnd.y)
             };
             std::vector<glm::vec4> colors = {
-                color, color
+                line.beginColor * color, line.endColor * color
             };
             GPU::DrawLines(points, colors, width, glm::vec2(framebuffer.width, framebuffer.height), antialiasing);
 

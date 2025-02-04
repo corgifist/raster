@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"
@@ -238,8 +239,14 @@ namespace Raster {
     void StringDispatchers::DispatchLine2DValue(std::any &t_attribute) {
         auto line = std::any_cast<Line2D>(t_attribute);
         ImGui::BeginGroup();
-            ImGui::Text("%s P0: (%0.2f; %0.2f)", ICON_FA_LINES_LEANING, line.begin.x, line.begin.y);
-            ImGui::Text("%s P1: (%0.2f; %0.2f)", ICON_FA_LINES_LEANING, line.end.x, line.end.y);
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s P0: (%0.2f; %0.2f)", ICON_FA_UP_DOWN_LEFT_RIGHT, line.begin.x, line.begin.y);
+            ImGui::SameLine();
+            ImGui::ColorButton("##p0ColorIndicator", ImVec4(line.beginColor.r, line.beginColor.g, line.beginColor.b, line.beginColor.a), ImGuiColorEditFlags_AlphaPreview, ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize()));
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s P1: (%0.2f; %0.2f)", ICON_FA_UP_DOWN_LEFT_RIGHT, line.end.x, line.end.y);
+            ImGui::SameLine();
+            ImGui::ColorButton("##p1ColorIndicator", ImVec4(line.endColor.r, line.endColor.g, line.endColor.b, line.endColor.a), ImGuiColorEditFlags_AlphaPreview, ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize()));
         ImGui::EndGroup();
         std::any lineCopy = line;
         auto preferredResolution = Workspace::GetProject().preferredResolution;

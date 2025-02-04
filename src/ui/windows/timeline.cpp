@@ -1685,7 +1685,7 @@ namespace Raster {
                 splitterDragging = true;   
             }
         }
-        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && s_timelineFocused && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
+        if (splitterDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopup) && s_timelineFocused && !s_anyLayerDragged && !s_timelineRulerDragged && !UIShared::s_timelineAnykeyframeDragged) {
             s_splitterState = GetRelativeMousePos().x / ImGui::GetWindowSize().x;
         } else splitterDragging = false;
 

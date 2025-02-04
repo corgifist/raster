@@ -50,6 +50,7 @@ void main() {
     vec4 texel = texture(uColorTexture, screenUV);
     float grayscale = (texel.r + texel.g + texel.b) / 3.0f;
     gColor = createGradient(uInvert ? 1.0 - grayscale : grayscale);
+    gColor.a = texel.a;
     gColor.a *= uOpacity;
     screenUV -= 0.5;
     screenUV.x *= uResolution.x / uResolution.y;

@@ -341,7 +341,7 @@ namespace Raster {
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
         ImVec2 cursor = ImGui::GetCursorPos();
 
-        bool transformChanged = false;
+        bool lineChanged = false;
         bool blockDragging = false;
 
 
@@ -380,16 +380,6 @@ namespace Raster {
             overlayState = &s_attributeStates[stringID];
         }
 
-
-        if (!project.customData.contains("Line2DAttributeData")) {
-            project.customData["Line2DAttributeData"] = {};
-        }
-        auto& customData = project.customData["Line2DAttributeData"];
-        if (!customData.contains(stringID)) {
-            customData[stringID] = false;
-        }
-        bool linkedSize = customData[stringID];
-
         std::vector<ObjectDrag*> lineDrags = {
             &overlayState->beginDrag, &overlayState->endDrag
         };
@@ -404,10 +394,22 @@ namespace Raster {
                 ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
                 ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
             );
-            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+            ImVec4 dragColor = beginDrag ? ImVec4{line.beginColor.r, line.beginColor.g, line.beginColor.b, line.beginColor.a} : ImVec4{line.endColor.r, line.endColor.g, line.endColor.b, line.endColor.a};
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? dragColor * 0.9f : dragColor));
         
             // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
-
+            ImGui::PushID(beginDrag);
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && MouseHoveringBounds(dragBounds)) {
+                ImGui::OpenPopup("##recolorDrag");
+            }
+            if (ImGui::BeginPopup("##recolorDrag")) {
+                ImGui::ColorEdit4("##recolorDragEditor", beginDrag ? glm::value_ptr(line.beginColor) : glm::value_ptr(line.endColor));
+                if (ImGui::IsItemEdited()) {
+                    lineChanged = true;
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
             if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
                 if (beginDrag) {
                     line.begin.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
@@ -417,7 +419,7 @@ namespace Raster {
                     line.end.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
                 }
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-                transformChanged = true;
+                lineChanged = true;
                 drag.isActive = true;
             } else drag.isActive = false;
             beginDrag = false;
@@ -442,14 +444,14 @@ namespace Raster {
                 line.begin.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
                 line.end.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
                 line.end.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
-                transformChanged = true;
+                lineChanged = true;
                 drag.isActive = true;
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
             } else drag.isActive = false;
             beginDrag = false; 
         }
 
-        if (transformChanged && attributeCandidate.has_value()) {
+        if (lineChanged && attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
             float compositionRelativeTime = std::floor(project.currentFrame - t_composition->beginFrame);
             if (attribute->keyframes.size() == 1) {
@@ -463,9 +465,9 @@ namespace Raster {
         }
 
         t_attribute = line;
-        if (transformChanged) {
+        if (lineChanged) {
             Rendering::ForceRenderFrame();
         }
-        return !transformChanged; 
+        return !lineChanged; 
     }
 };
