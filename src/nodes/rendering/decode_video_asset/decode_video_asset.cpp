@@ -33,7 +33,6 @@ namespace Raster {
 
         m_decoder.SetVideoAsset(assetIDCandidate.value_or(0));
 
-        *m_decoder.seekTarget = project.currentFrame / project.framerate;
         VideoFramePrecision targetPrecision = VideoFramePrecision::Usual;
         int elementSize = 1;
 
@@ -75,7 +74,7 @@ namespace Raster {
         auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
         if (!compositionCandidate) return;
         auto& composition = compositionCandidate.value();
-        m_decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
+        m_decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
     }
 
     std::optional<float> DecodeVideoAsset::AbstractGetContentDuration() {

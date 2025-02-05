@@ -9,7 +9,6 @@
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
 #include "common/node_category.h"
-#include "dispatchers_installer/dispatchers_installer.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_freetype.h"
 #include "../avcpp/av.h"
@@ -24,6 +23,7 @@
 #include "common/layouts.h"
 #include "common/rendering.h"
 #include "common/waveform_manager.h"
+#include "common/dispatchers.h"
 
 using namespace av;
 
@@ -70,7 +70,7 @@ namespace Raster {
         Plugins::EarlyInitialize();
 
         DefaultNodeCategories::Initialize();
-        DispatchersInstaller::Initialize();
+        Dispatchers::Initialize();
         Workspace::Initialize();
         Plugins::WorkspaceInitialize();
 

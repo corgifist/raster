@@ -38,7 +38,6 @@ namespace Raster {
             m_decoder.assetID = assetIDCandidate.value();
         }
 
-        *m_decoder.seekTarget = project.currentFrame / project.framerate;
         auto samplesCandidate = m_decoder.DecodeSamples(RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int), t_contextData);
         if (samplesCandidate.has_value()) {
             auto resampledSamples = samplesCandidate.value();
@@ -62,7 +61,7 @@ namespace Raster {
         auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
         if (!compositionCandidate) return;
         auto& composition = *compositionCandidate;
-        m_decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
+        m_decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
     }
 
     std::optional<float> DecodeAudioAsset::AbstractGetContentDuration() {

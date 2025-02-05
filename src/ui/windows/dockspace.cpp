@@ -155,9 +155,10 @@ namespace Raster {
 
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_ALIGN_CENTER, Localization::GetString("LAYOUTS").c_str()).c_str())) {
                 auto& preferences = Workspace::s_configuration.GetPluginData(RASTER_PACKAGED "preferences");
+                int selectedLayout = preferences["SelectedLayout"];
                 for (auto& layout : preferences["Layouts"]) {
                     int id = layout["ID"];
-                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ALIGN_CENTER, layout["Name"].get<std::string>().c_str()).c_str())) {
+                    if (ImGui::MenuItem(FormatString("%s%s %s", selectedLayout == id ? ICON_FA_CHECK " " : "", ICON_FA_ALIGN_CENTER, layout["Name"].get<std::string>().c_str()).c_str())) {
                         LoadLayout(id);
                     }
                 }

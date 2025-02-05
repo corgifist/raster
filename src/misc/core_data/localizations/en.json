@@ -287,7 +287,7 @@
     "MAX_TEXTURE_SIZE": "Max Supported Texture Size",
     "MAX_VIEWPORT_SIZE": "Max Supported Viewport Size",
     "LAYOUTS": "Layouts",
-    "EDIT_LAYOUTS": "Edit Layouts",
+    "EDIT_LAYOUTS": "Manage Layouts",
     "REMOVE_LAYOUT": "Remove Layout",
     "LAYOUT_NAME": "Layout Name",
     "ADD_NEW_LAYOUT": "Add New Layout",

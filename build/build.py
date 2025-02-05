@@ -60,7 +60,6 @@ raster_avcpp                  = "-lraster_avcpp"
 raster_font                   = "-lraster_font"
 raster_common                 = "-lraster_common"
 raster_audio                  = "-lraster_audio"
-raster_dispatchers_installer  = "-lraster_dispatchers_installer"
 raster_image                  = "-lraster_image"
 raster_gpu                    = "-lraster_gpu"
 raster_compositor             = "-lraster_compositor"
@@ -90,10 +89,9 @@ build_modules = [
     ["audio", shared, [raster_common, rubberband]],
     ["image", shared, [raster_common, OpenImageIO]],
     ["gpu", shared, [glfw3, raster_common, raster_ImGui, raster_image]],
-    ["dispatchers_installer", shared, [raster_common, raster_ImGui, raster_font, raster_audio, raster_gpu, raster_image]],
     ["compositor", shared, [raster_gpu, raster_common]],
     ["ui", shared, ui_deps],
-    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_compositor, raster_dispatchers_installer, nfd, raster_avcpp, ffmpeg, raster_audio]],
+    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio]],
     ["sampler_constants_base", shared, [raster_common]],
     ["core", binary, [raster_common, raster_app, "-lbfd", "-lunwind"]],
     
@@ -195,10 +193,7 @@ build_modules = [
 
 pak_targets = [
     ["core", build_environment, "dist/paks/"],
-    ["core_localization", "src/misc/core_localizations", "dist/paks/"],
-    ["core_xml_effects", "src/misc/core_xml_effects", "dist/paks/"],
-    ["core_matchbox_effects", "src/misc/core_matchbox_effects", "dist/paks/"],
-    ["core_blending", "src/misc/core_blending", "dist/paks/"]
+    ["core_data", "src/misc/core_data", "dist/paks/"],
 ]
 
 required_folders = [
@@ -231,7 +226,6 @@ def build():
         build_module(module)
 
     move_core_libraries()
-    copy_shaders_to_core_pack()
     if path_exists("src/misc/matchbox_shaders.pak"):
         info("moving matchbox_shaders.pak to dist/paks/")
         if path_exists("dist/paks/matchbox_shaders.pak"):
@@ -275,9 +269,6 @@ def move_core_libraries():
     core_files = glob_files(".", shared_library_extension, False)
     for file in core_files:
         mv(file, build_environment + os.path.basename(file))
-
-def copy_shaders_to_core_pack():
-    shutil.copytree("src/shaders", build_environment + "shaders/")
 
 def build_module(module):
     module_name = module[0]

@@ -4,12 +4,12 @@
 #include <cfloat>
 #include <cmath>
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "../ImGui/imgui.h"
-#include "../ImGui/imgui_drag.h"
+#include "../../ImGui/imgui.h"
+#include "../../ImGui/imgui_drag.h"
 #include "font/font.h"
 #include "common/workspace.h"
 
-#include "../attributes/transform2d_attribute/transform2d_attribute.h"
+#include "../../attributes/transform2d_attribute/transform2d_attribute.h"
 
 #include "common/rendering.h"
 #include "common/line2d.h"

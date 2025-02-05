@@ -6,8 +6,6 @@
 #include "cache_allocator.h"
 #include "cache_allocator.h"
 
-#define PREFERRED_VIDEO_CACHE_SIZE 1536 // 1024 MB
-
 namespace Raster {
     struct VideoCacheEntry {
         uint8_t* data;
@@ -69,7 +67,7 @@ namespace Raster {
                         continue;
                     }
                     auto& candidateEntry = s_videoCacheEntries[cacheEntryCandidateIndex];
-                    if (entry.frame < candidateEntry.frame) {
+                    if (entry.frame > candidateEntry.frame) {
                         cacheEntryCandidateIndex = i;
                     }
                     i++;

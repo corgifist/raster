@@ -471,7 +471,7 @@ namespace Raster {
                 }
             }
         m_attributes.Unlock();
-        return AbstractOnTimelineSeek();
+        AbstractOnTimelineSeek();
     }
 
     std::vector<int> NodeBase::GetUsedAudioBuses() {

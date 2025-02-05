@@ -36,5 +36,8 @@ namespace Raster {
 
         // Converts one std::any into another std::any (e.g float -> int; AttributeID -> int; AssetID -> int)
         static std::optional<std::any> DispatchConversion(std::any& t_value, std::type_index t_targetType);
+
+        // initialize all dispatchers
+        static void Initialize();
     };
 };
