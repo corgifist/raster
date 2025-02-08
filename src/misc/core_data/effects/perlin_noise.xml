@@ -1,0 +1,108 @@
+<effect>
+    <description name="Perlin Noise" packageName="perlin_noise" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Position" type="glm::vec2" value="0.0;0.0"/>
+        <attribute name="Scale" type="glm::vec2" value="1;1"/>
+        <attribute name="Frequency" type="int" value="1"/>
+        <attribute name="Octaves" type="int" value="6"/>
+        <attribute name="Persistence" type="float" value="0.5"/>
+        <attribute name="Lacunarity" type="float" value="2.0"/>
+        <attribute name="Seed" type="int" value="-1"/>
+        <attribute name="Opacity" type="float" value="1.0"/>
+        <attribute name="OnlyScreenSpaceRendering" type="bool" value="false"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="perlin_noise/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uPosition" stage="fragment">
+                <value attribute="Position" type="glm::vec2"/>
+            </uniform>
+            <uniform name="uScale" stage="fragment">
+                <value attribute="Scale" type="glm::vec2"/>
+            </uniform>
+            <uniform name="uFrequency" stage="fragment">
+                <value attribute="Frequency" type="int"/>
+            </uniform>
+            <uniform name="uOctaves" stage="fragment">
+                <value attribute="Octaves" type="int"/>
+            </uniform>
+            <uniform name="uPersistence" stage="fragment">
+                <value attribute="Octaves" type="float"/>
+            </uniform>
+            <uniform name="uLacunarity" stage="fragment">
+                <value attribute="Lacunarity" type="float"/>
+            </uniform>
+            <uniform name="uSeed" stage="fragment">
+                <value attribute="Seed" type="int"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColorTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uUVTexture" stage="fragment">
+                <attachment attribute="Base" index="1" unit="1"/>
+            </uniform>
+            <uniform name="uScreenSpaceRendering" stage="fragment">
+                <screenSpaceRendering attribute="Base" override="OnlyScreenSpaceRendering"/>
+            </uniform>
+            <uniform name="uOpacity" stage="fragment">
+                <value attribute="Opacity" type="float"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Position">
+            <icon icon="ICON_FA_UP_DOWN_LEFT_RIGHT"/>
+            <sliderStep step="0.01"/>
+        </property>
+        <property name="Scale">
+            <icon icon="ICON_FA_EXPAND"/>
+            <sliderStep step="0.01"/>
+        </property>
+        <property name="Frequency">
+            <icon icon="ICON_FA_WAVE_SQUARE"/>
+        </property>
+        <property name="Octaves">
+            <icon icon="ICON_FA_WAVE_SQUARE"/>
+        </property>
+        <property name="Persistence">
+            <icon icon="ICON_FA_DROPLET"/>
+            <sliderStep step="0.01"/>
+            <sliderRange min="0" max="1"/>
+        </property>
+        <property name="Lacunarity">
+            <icon icon="ICON_FA_DROPLET"/>
+            <sliderStep step="0.01"/>
+        </property>
+        <property name="Seed">
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+        <property name="Opacity">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="OnlyScreenSpaceRendering">
+            <icon icon="ICON_FA_IMAGE"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_SUN" />
+</effect>

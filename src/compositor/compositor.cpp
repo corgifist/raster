@@ -53,21 +53,23 @@ namespace Raster {
         auto& bg = t_backgroundColor.has_value() ? t_backgroundColor.value() : Workspace::s_project.value().backgroundColor;
         GPU::ClearFramebuffer(bg.r, bg.g, bg.b, bg.a);
         auto blending = t_blending.value_or(s_blending);
-        for (auto& target : t_targets) {
+        for (auto target : t_targets) {
             auto blendingModeCandidate = blending.GetModeByCodeName(target.blendMode);
+            auto colorAttachment = target.colorAttachment;
+            auto uvAttachment = target.uvAttachment;
             if (blendingModeCandidate.has_value()) {
                 auto& blendingMode = blendingModeCandidate.value();
-                auto blendedResult = blending.PerformManualBlending(blendingMode, framebuffer.attachments[0], target.colorAttachment, target.opacity, bg);
+                auto blendedResult = blending.PerformManualBlending(blendingMode, framebuffer.attachments[0], colorAttachment, target.opacity, bg);
                 GPU::BindFramebuffer(framebuffer);
                 GPU::BindPipeline(pipeline);
                 GPU::BindTextureToShader(pipeline.fragment, "uColor", blendedResult.attachments[0], 0);
-                GPU::BindTextureToShader(pipeline.fragment, "uUV", target.uvAttachment, 1);
+                GPU::BindTextureToShader(pipeline.fragment, "uUV", uvAttachment, 1);
                 GPU::SetShaderUniform(pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
                 GPU::SetShaderUniform(pipeline.fragment, "uOpacity", 1.0f);
                 GPU::DrawArrays(3);
             } else {
-                GPU::BindTextureToShader(pipeline.fragment, "uColor", target.colorAttachment, 0);
-                GPU::BindTextureToShader(pipeline.fragment, "uUV", target.uvAttachment, 1);
+                GPU::BindTextureToShader(pipeline.fragment, "uColor", colorAttachment, 0);
+                GPU::BindTextureToShader(pipeline.fragment, "uUV", uvAttachment, 1);
                 GPU::SetShaderUniform(pipeline.fragment, "uOpacity", target.opacity);
                 GPU::SetShaderUniform(pipeline.fragment, "uResolution", {framebuffer.width, framebuffer.height});
                 GPU::DrawArrays(3);

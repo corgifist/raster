@@ -41,7 +41,10 @@ void main()
 {
     vec2 screenUV = gl_FragCoord.xy / uResolution;
     if (uScreenSpaceRendering) {
-        gColor = generateNoise(screenUV);
+        vec2 correctedUV = screenUV;
+        correctedUV.x *= uResolution.x / uResolution.y;
+        gColor = generateNoise(correctedUV);
+        gColor.a *= uOpacity;
         screenUV -= 0.5;
         screenUV.x *= uResolution.x / uResolution.y;
         gUV = vec4(screenUV, uResolution.x / uResolution.y, 1.0);

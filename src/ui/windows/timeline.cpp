@@ -1712,7 +1712,11 @@ namespace Raster {
             }
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(LAYER_LOCK_DRAG_DROP)) {
                 int compositionID = *((int*) payload->Data);
-                t_composition->lockedCompositionID = compositionID;
+                auto compositionCandidate = Workspace::GetCompositionByID(compositionID);
+                if (compositionCandidate) {
+                    auto& composition = *compositionCandidate;
+                    composition->lockedCompositionID = t_composition->id;
+                }
             }
             ImGui::EndDragDropTarget();
         }

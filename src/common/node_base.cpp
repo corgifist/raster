@@ -100,11 +100,14 @@ namespace Raster {
         std::any& dynamicCandidate = placeholder;
         bool candidateWasFound = false;
         bool usingCachedAttribute = false;
-        if (m_attributesCache.GetFrontValue().find(t_attribute) != m_attributesCache.GetFrontValue().end()) {
-            dynamicCandidate = m_attributesCache.GetFrontValue()[t_attribute];
+        auto& frontAttributesCache = m_attributesCache.GetFrontValue();
+        frontAttributesCache.Lock();
+        if (frontAttributesCache.GetReference().find(t_attribute) != frontAttributesCache.GetReference().end()) {
+            dynamicCandidate = frontAttributesCache.GetReference()[t_attribute];
             candidateWasFound = true;
             usingCachedAttribute = true;
         }
+        frontAttributesCache.Unlock();
         m_attributes.Lock();
         auto& attributes = m_attributes.GetReference();
         if (attributes.find(t_attribute) != attributes.end() && !candidateWasFound) {
@@ -312,13 +315,16 @@ namespace Raster {
         auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
         std::string exposedPinAttributeName = FormatString("<%i>.%s", nodeID, t_attribute.c_str());
         auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
+        auto& backAttributesCache = m_attributesCache.Get();
+        backAttributesCache.Lock();
         if (compositionCandidate.has_value()) {
             auto& project = Workspace::GetProject();
             auto& composition = compositionCandidate.value();
             for (auto& attribute : composition->attributes) {
                 if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
                     auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
-                    m_attributesCache.Get()[t_attribute] = attributeValue;
+                    backAttributesCache.GetReference()[t_attribute] = attributeValue;
+                    backAttributesCache.Unlock();
                     return attributeValue;
                 }
             }
@@ -331,10 +337,12 @@ namespace Raster {
             auto dynamicAttribute = pinMap[attributePin.connectedPinID];
             if (RASTER_GET_CONTEXT_VALUE(t_contextData, "INCREMENT_EPF", bool)) targetNode.value()->executionsPerFrame.SetBackValue(targetNode.value()->executionsPerFrame.Get() + 1); 
             if (!ExecutingInAudioContext(t_contextData)) {
-                m_attributesCache.Get()[t_attribute] = dynamicAttribute;
+                backAttributesCache.GetReference()[t_attribute] = dynamicAttribute;
             }
+            backAttributesCache.Unlock();
             return dynamicAttribute;
         }
+        backAttributesCache.Unlock();
 
         if (m_attributes.Get().find(t_attribute) != m_attributes.Get().end()) {
             auto dynamicAttribute = m_attributes.Get()[t_attribute];
@@ -396,7 +404,10 @@ namespace Raster {
     }
 
     void NodeBase::ClearAttributesCache() {
-        this->m_attributesCache.Get().clear();
+        auto& backAttributesCache = m_attributesCache.Get();
+        backAttributesCache.Lock();
+        backAttributesCache.GetReference().clear();
+        backAttributesCache.Unlock();
     }
 
     std::vector<std::string> NodeBase::GetAttributesList() {

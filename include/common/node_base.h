@@ -131,7 +131,7 @@ namespace Raster {
         void SetAttributeAlias(std::string t_attributeName, std::string t_alias);
 
         private:
-        DoubleBufferedValue<std::unordered_map<std::string, std::any>> m_attributesCache;
+        DoubleBufferedValue<SynchronizedValue<std::unordered_map<std::string, std::any>>> m_attributesCache;
         std::unordered_map<std::string, std::string> m_attributeAliases;
         std::vector<std::string> m_attributesOrder;
 
