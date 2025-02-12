@@ -1,5 +1,7 @@
 #include "compositor/compositor.h"
+#include "common/composition_mask.h"
 #include "gpu/gpu.h"
+#include "raster.h"
 
 namespace Raster {
     std::optional<DoubleBufferedFramebuffer> Compositor::primaryFramebuffer;
@@ -53,10 +55,69 @@ namespace Raster {
         auto& bg = t_backgroundColor.has_value() ? t_backgroundColor.value() : Workspace::s_project.value().backgroundColor;
         GPU::ClearFramebuffer(bg.r, bg.g, bg.b, bg.a);
         auto blending = t_blending.value_or(s_blending);
-        for (auto target : t_targets) {
+        std::vector<int> skipCompositions;
+        for (auto& target : t_targets) {
             auto blendingModeCandidate = blending.GetModeByCodeName(target.blendMode);
             auto colorAttachment = target.colorAttachment;
             auto uvAttachment = target.uvAttachment;
+            if (std::find(skipCompositions.begin(), skipCompositions.end(), target.compositionID) != skipCompositions.end()) continue;
+            if (!target.masks.empty()) {
+                static Framebuffer s_maskAccumulatorFramebuffer;
+                static Framebuffer s_combinedMaskFramebuffer;
+                static Pipeline s_maskCombinerPipeline;
+                static Pipeline s_maskApplierPipeline;
+                EnsureResolutionConstraintsForFramebuffer(s_maskAccumulatorFramebuffer);
+                EnsureResolutionConstraintsForFramebuffer(s_combinedMaskFramebuffer);
+                GPU::BindFramebuffer(s_maskAccumulatorFramebuffer);
+                GPU::ClearFramebuffer(0, 0, 0, 0);
+                GPU::BindFramebuffer(s_combinedMaskFramebuffer);
+                GPU::ClearFramebuffer(0, 0, 0, 0);
+                if (!s_maskCombinerPipeline.handle) {
+                    s_maskCombinerPipeline = GPU::GeneratePipeline(
+                        GPU::s_basicShader, GPU::GenerateShader(ShaderType::Fragment, "mask_combiner/shader"));
+                }
+                if (!s_maskApplierPipeline.handle) {
+                    s_maskApplierPipeline = GPU::GeneratePipeline(
+                        GPU::s_basicShader, GPU::GenerateShader(ShaderType::Fragment, "mask_applier/shader"));
+                }
+                bool maskWasApplied = false;
+                for (auto& mask : target.masks) {
+                    std::optional<CompositorTarget> maskSource = std::nullopt;
+                    for (auto& sourceTarget : t_targets) {
+                        if (mask.compositionID == sourceTarget.compositionID) {
+                            maskSource = sourceTarget;
+                            break;
+                        }
+                    }
+                    if (!maskSource) continue;
+                    if (!maskSource->colorAttachment.handle) continue;
+                    skipCompositions.push_back(maskSource->compositionID);
+                    maskWasApplied = true;
+                    GPU::BindPipeline(s_maskCombinerPipeline);
+                    GPU::BindFramebuffer(s_maskAccumulatorFramebuffer);
+                    if (mask.op != MaskOperation::Normal) {
+                        GPU::ClearFramebuffer(0, 0, 0, 0);
+                    }
+                    GPU::SetShaderUniform(s_maskCombinerPipeline.fragment, "uResolution", glm::vec2(s_maskAccumulatorFramebuffer.width, s_maskAccumulatorFramebuffer.height));
+                    GPU::SetShaderUniform(s_maskCombinerPipeline.fragment, "uOp", static_cast<int>(mask.op));
+                    GPU::BindTextureToShader(s_maskCombinerPipeline.fragment, "uColor", maskSource->colorAttachment, 0);
+                    GPU::BindTextureToShader(s_maskCombinerPipeline.fragment, "uBase", s_combinedMaskFramebuffer.attachments[0], 1);
+                    GPU::DrawArrays(3);
+                    GPU::BlitTexture(s_combinedMaskFramebuffer.attachments[0], s_maskAccumulatorFramebuffer.attachments[0]);
+                }
+                if (maskWasApplied) {
+                    GPU::BindPipeline(s_maskApplierPipeline);
+                    GPU::BindFramebuffer(s_maskAccumulatorFramebuffer);
+                    GPU::ClearFramebuffer(0, 0, 0, 0);
+                    GPU::SetShaderUniform(s_maskApplierPipeline.fragment, "uResolution", glm::vec2(s_maskAccumulatorFramebuffer.width, s_maskAccumulatorFramebuffer.height));
+                    GPU::BindTextureToShader(s_maskApplierPipeline.fragment, "uBase", colorAttachment, 0);
+                    GPU::BindTextureToShader(s_maskApplierPipeline.fragment, "uMask", s_combinedMaskFramebuffer.attachments[0], 1);
+                    GPU::DrawArrays(3);
+                    colorAttachment = s_maskAccumulatorFramebuffer.attachments[0];
+                }
+                GPU::BindFramebuffer(framebuffer);
+                GPU::BindPipeline(pipeline);
+            }
             if (blendingModeCandidate.has_value()) {
                 auto& blendingMode = blendingModeCandidate.value();
                 auto blendedResult = blending.PerformManualBlending(blendingMode, framebuffer.attachments[0], colorAttachment, target.opacity, bg);

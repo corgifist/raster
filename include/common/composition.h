@@ -4,6 +4,7 @@
 #include "typedefs.h"
 #include "node_base.h"
 #include "attributes.h"
+#include "composition_mask.h"
 
 namespace Raster {
     struct Composition {
@@ -23,6 +24,8 @@ namespace Raster {
         // will automatically set beginFrame and endFrame to the beginFrame and endFrame
         // of composition with ID that's equals to lockedCompositionID
         int lockedCompositionID; 
+
+        std::vector<CompositionMask> masks;
 
         Composition();
         Composition(Json data);

@@ -8,6 +8,7 @@
 #include "compositor/blending.h"
 #include "double_buffered_framebuffer.h"
 #include "common/synchronized_value.h"
+#include "common/composition_mask.h"
 
 namespace Raster {
 
@@ -21,6 +22,7 @@ namespace Raster {
         float opacity;
         std::string blendMode;
         int compositionID;
+        std::vector<CompositionMask> masks;
     };
 
     struct Compositor {

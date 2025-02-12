@@ -9,7 +9,6 @@ layout(location = 1) out vec4 gUV;
 
 uniform vec2 uResolution;
 
-uniform float uGamma;
 uniform sampler2D uColor;
 uniform sampler2D uMaskColor;
 uniform sampler2D uUV;

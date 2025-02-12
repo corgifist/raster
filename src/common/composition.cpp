@@ -1,4 +1,5 @@
 #include "common/composition.h"
+#include "common/composition_mask.h"
 #include "raster.h"
 #include "common/common.h"
 
@@ -17,6 +18,7 @@ namespace Raster {
         this->colorMark = Workspace::s_colorMarks[Workspace::s_defaultColorMark];
         this->audioEnabled = true;
         this->lockedCompositionID = -1;
+        this->masks = {};
     }
 
     Composition::Composition(Json data) {
@@ -43,6 +45,11 @@ namespace Raster {
             auto attributeCandidate = Attributes::InstantiateSerializedAttribute(composition);
             if (attributeCandidate.has_value()) {
                 attributes.push_back(attributeCandidate.value());
+            }
+        }
+        if (data.contains("Masks")) {
+            for (auto& mask : data["Masks"]) {
+                masks.push_back(CompositionMask(mask));
             }
         }
     }
@@ -154,6 +161,10 @@ namespace Raster {
         data["Attributes"] = {};
         for (auto& attribute : attributes) {
             data["Attributes"].push_back(attribute->Serialize());
+        }
+        data["Masks"] = {};
+        for (auto& mask : masks) {
+            data["Masks"].push_back(mask.Serialize());
         }
         return data;
     }

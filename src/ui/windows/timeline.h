@@ -28,6 +28,7 @@ namespace Raster {
         static void RenderCompositionPopup(Composition* composition, ImGuiID t_parentTreeID = 0);
         static void RenderNewAttributePopup(Composition* t_composition, ImGuiID t_parentTreeID = 0);
         static void RenderLockCompositionPopup(Composition* t_composition);
+        static void RenderMaskCompositionPopup(Composition* t_composition);
 
         static void LockCompositionDragSource(Composition* t_composition);
         static void LockCompositionDragTarget(Composition* t_composition);

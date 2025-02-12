@@ -39,7 +39,8 @@ namespace Raster {
                 .uvAttachment = renderable.attachments[1],
                 .opacity = composition->GetOpacity(),
                 .blendMode = composition->blendMode,
-                .compositionID = composition->id
+                .compositionID = composition->id,
+                .masks = composition->masks
             });
             targets.Unlock();
 

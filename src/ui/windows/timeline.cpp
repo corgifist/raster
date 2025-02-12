@@ -1,4 +1,5 @@
 #include "timeline.h"
+#include "common/composition_mask.h"
 #include "common/localization.h"
 #include "common/ui_helpers.h"
 #include "font/IconsFontAwesome5.h"
@@ -880,8 +881,8 @@ namespace Raster {
         if (ImGui::BeginMenu(FormatString("%s %s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str(), blendingPreviewText.c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str()).c_str());
             static std::string blendFilter = "";
-            bool attributeOpacityUsed;
-            bool correctOpacityTypeUsed;
+            bool attributeOpacityUsed = false;
+            bool correctOpacityTypeUsed = false;
             float opacity = t_composition->GetOpacity(&attributeOpacityUsed, &correctOpacityTypeUsed);
             std::string attributeSelectorText = ICON_FA_LINK;
             if (attributeOpacityUsed) {
@@ -931,7 +932,7 @@ namespace Raster {
             ImGui::SameLine(0, 0);
             searchBarWidth = ImGui::GetCursorPosX();
             ImGui::NewLine();
-            ImGui::BeginChild("##blendCandidates", ImVec2(0, 0), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY);
+            ImGui::BeginChild("##blendCandidates", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT));
                 auto& blending = Compositor::s_blending;
                 if (ImGui::MenuItem(FormatString("%s %s Normal", t_composition->blendMode.empty() ? ICON_FA_CHECK : "", ICON_FA_DROPLET).c_str())) {
                     t_composition->blendMode = "";
@@ -1010,6 +1011,10 @@ namespace Raster {
                 }
                 fullWindowSize = ImGui::GetWindowSize();
             ImGui::EndChild();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str()).c_str())) {
+            RenderMaskCompositionPopup(t_composition);
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
@@ -1240,6 +1245,181 @@ namespace Raster {
                 }
             }
         }
+    }
+
+    void TimelineUI::RenderMaskCompositionPopup(Composition *t_composition) {
+        auto& project = Workspace::GetProject();
+        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str()).c_str());
+        static std::string s_searchFilter = "";
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_searchFilter);
+        ImGui::PopItemWidth();
+        if (ImGui::BeginChild("##maskCandidates", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+            bool hasCandidates = false;
+            int targetRemoveMask = -1;
+            int maskIndex = 0;
+            for (auto& mask : t_composition->masks) {
+                maskIndex++;
+                if (mask.compositionID == t_composition->id) continue;
+                auto compositionCandidate = Workspace::GetCompositionByID(mask.compositionID);
+                if (!compositionCandidate) continue;
+                auto& composition = *compositionCandidate;
+                if (!s_searchFilter.empty() && LowerCase(composition->name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
+                ImGui::PushID(mask.compositionID);
+                if (ImGui::SmallButton(ICON_FA_TRASH_CAN)) {
+                    targetRemoveMask = maskIndex - 1;
+                }
+                ImGui::SameLine();
+                static const char* s_maskSigns[] = {
+                    ICON_FA_DROPLET, ICON_FA_PLUS, ICON_FA_MINUS, ICON_FA_XMARK, ICON_FA_DIVIDE
+                };
+                static std::string s_maskStrings[] = {
+                    Localization::GetString("NORMAL"),
+                    Localization::GetString("ADD"), Localization::GetString("SUBTRACT"),
+                    Localization::GetString("MULTIPLY"), Localization::GetString("DIVIDE")
+                };
+                if (ImGui::SmallButton(s_maskSigns[static_cast<int>(mask.op)])) {
+                    ImGui::OpenPopup("##maskOperationChooser");
+                }
+                if (ImGui::BeginPopup("##maskOperationChooser")) {
+                    ImGui::SeparatorText(FormatString("%s %s", s_maskSigns[static_cast<int>(mask.op)], Localization::GetString("MASK_OPERATION").c_str()).c_str());
+                    if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Normal ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("NORMAL").c_str()).c_str())) {
+                        mask.op = MaskOperation::Normal;
+                        Rendering::ForceRenderFrame();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Add ? ICON_FA_CHECK " " : "", ICON_FA_PLUS, Localization::GetString("ADD").c_str()).c_str())) {
+                        mask.op = MaskOperation::Add;
+                        Rendering::ForceRenderFrame();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Subtract ? ICON_FA_CHECK " " : "", ICON_FA_MINUS, Localization::GetString("SUBTRACT").c_str()).c_str())) {
+                        mask.op = MaskOperation::Subtract;
+                        Rendering::ForceRenderFrame();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Multiply ? ICON_FA_CHECK " " : "", ICON_FA_XMARK, Localization::GetString("MULTIPLY").c_str()).c_str())) {
+                        mask.op = MaskOperation::Multiply;
+                        Rendering::ForceRenderFrame();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Divide ? ICON_FA_CHECK " " : "", ICON_FA_DIVIDE, Localization::GetString("DIVIDE").c_str()).c_str())) {
+                        mask.op = MaskOperation::Divide;
+                        Rendering::ForceRenderFrame();
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::SameLine();
+                if (ImGui::Selectable(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str())) {
+                    ImGui::OpenPopup("##maskProperties");
+                }
+#define COMPOSITION_MASK_DRAG_DROP "COMPOSITION_MASK_DRAG_DROP"
+                if (ImGui::BeginDragDropSource()) {
+                    ImGui::SetDragDropPayload(COMPOSITION_MASK_DRAG_DROP, &mask, sizeof(&mask));
+                    ImGui::EndDragDropSource();
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(COMPOSITION_MASK_DRAG_DROP)) {
+                        CompositionMask* anotherMask = *((CompositionMask**) payload->Data);
+                        std::swap(*anotherMask, mask);
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                if (ImGui::BeginPopup("##maskProperties")) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, composition->name.c_str()).c_str());
+                    if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("MASK_SOURCE").c_str()).c_str())) {
+                        ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("MASK_SOURCE").c_str()).c_str());
+                        static std::string s_compositionFilter = "";
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                        ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_compositionFilter);
+                        ImGui::PopItemWidth();
+                        if (ImGui::BeginChild("##changeMasksCandidates", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                            bool hasCompositionCandidates = false;
+                            for (auto& newComposition : project.compositions) {
+                                if (!s_compositionFilter.empty() && LowerCase(newComposition.name).find(LowerCase(s_compositionFilter)) == std::string::npos) continue;
+                                if (newComposition.id == mask.compositionID) continue;
+                                if (newComposition.id == t_composition->id) continue;
+                                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, newComposition.name.c_str()).c_str())) {
+                                    mask.compositionID = newComposition.id;
+                                    Rendering::ForceRenderFrame();
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                hasCompositionCandidates = true;
+                            }
+                            if (!hasCompositionCandidates) UIHelpers::RenderNothingToShowText();
+                        }
+                        ImGui::EndChild();
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu(FormatString("%s %s: %s", s_maskSigns[static_cast<int>(mask.op)], Localization::GetString("MASK_OPERATION").c_str(), s_maskStrings[static_cast<int>(mask.op)].c_str()).c_str())) {
+                        ImGui::SeparatorText(FormatString("%s %s", s_maskSigns[static_cast<int>(mask.op)], Localization::GetString("MASK_OPERATION").c_str()).c_str());
+                        if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Normal ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("NORMAL").c_str()).c_str())) {
+                            mask.op = MaskOperation::Normal;
+                            Rendering::ForceRenderFrame();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Add ? ICON_FA_CHECK " " : "", ICON_FA_PLUS, Localization::GetString("ADD").c_str()).c_str())) {
+                            mask.op = MaskOperation::Add;
+                            Rendering::ForceRenderFrame();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Subtract ? ICON_FA_CHECK " " : "", ICON_FA_MINUS, Localization::GetString("SUBTRACT").c_str()).c_str())) {
+                            mask.op = MaskOperation::Subtract;
+                            Rendering::ForceRenderFrame();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Multiply ? ICON_FA_CHECK " " : "", ICON_FA_XMARK, Localization::GetString("MULTIPLY").c_str()).c_str())) {
+                            mask.op = MaskOperation::Multiply;
+                            Rendering::ForceRenderFrame();
+                        }
+                        if (ImGui::MenuItem(FormatString("%s%s %s", mask.op == MaskOperation::Divide ? ICON_FA_CHECK " " : "", ICON_FA_DIVIDE, Localization::GetString("DIVIDE").c_str()).c_str())) {
+                            mask.op = MaskOperation::Divide;
+                            Rendering::ForceRenderFrame();
+                        }
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_MASK").c_str()).c_str())) {
+                        targetRemoveMask = maskIndex - 1;
+                    }
+                    ImGui::EndPopup();
+                }
+                hasCandidates = true;
+                ImGui::PopID();
+            }
+            if (targetRemoveMask >= 0) {
+                t_composition->masks.erase(t_composition->masks.begin() + targetRemoveMask);
+                Rendering::ForceRenderFrame();
+            }
+            if (!hasCandidates) UIHelpers::RenderNothingToShowText();
+            ImGui::Separator();
+            if (UIHelpers::CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_MASK").c_str()).c_str())) {
+                ImGui::OpenPopup("##newMask");
+            }
+            if (ImGui::BeginPopup("##newMask")) {
+                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("ADD_MASK").c_str()).c_str());
+                static std::string s_compositionFilter = "";
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_compositionFilter);
+                ImGui::PopItemWidth();
+                if (ImGui::BeginChild("##changeMasksCandidates", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                    bool hasCompositionCandidates = false;
+                    for (auto& newComposition : project.compositions) {
+                        if (!s_compositionFilter.empty() && LowerCase(newComposition.name).find(LowerCase(s_compositionFilter)) == std::string::npos) continue;
+                        if (newComposition.id == t_composition->id) continue;
+                        bool skip = false;
+                        for (auto& currentMask : t_composition->masks) {
+                            if (currentMask.compositionID == newComposition.id) {
+                                skip = true;
+                                break;
+                            }
+                        }
+                        if (skip) continue;
+                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LAYER_GROUP, newComposition.name.c_str()).c_str())) {
+                            t_composition->masks.push_back(CompositionMask(newComposition.id, MaskOperation::Add));
+                            ImGui::CloseCurrentPopup();
+                        }
+                        hasCompositionCandidates = true;
+                    }
+                    if (!hasCompositionCandidates) UIHelpers::RenderNothingToShowText();
+                }
+                ImGui::EndChild();
+                ImGui::EndPopup();
+            }
+        }
+        ImGui::EndChild();
     }
 
     void TimelineUI::RenderLockCompositionPopup(Composition *t_composition) {
@@ -1544,6 +1724,31 @@ namespace Raster {
                 ImGui::SetItemTooltip("%s %s", composition.lockedCompositionID > 0 ? ICON_FA_LOCK : ICON_FA_LOCK_OPEN, Localization::GetString("LOCK_COMPOSITION_TO_ANOTHER_COMPOSITION").c_str());
                 if (ImGui::BeginPopup("##lockCompositionMenu")) {
                     RenderLockCompositionPopup(&composition);
+                    ImGui::EndPopup();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_FA_IMAGE)) {
+                    ImGui::OpenPopup("##maskCompositionPopup");
+                }
+#define TIMELINE_MASK_DRAG_DROP "TIMELINE_MASK_DRAG_DROP"
+                if (ImGui::BeginDragDropSource()) {
+                    ImGui::SetDragDropPayload(TIMELINE_MASK_DRAG_DROP, &i, sizeof(i));
+                    ImGui::Text("%s %s", ICON_FA_IMAGE, Localization::GetString("ADD_COMPOSITION_AS_MASK_FOR_ANOTHER_COMPOSITION").c_str());
+                    ImGui::EndDragDropSource();
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(TIMELINE_MASK_DRAG_DROP)) {
+                        Composition* fromComposition = &(project.compositions[*((int*) payload->Data)]);
+                        CompositionMask newMask;
+                        newMask.compositionID = fromComposition->id;
+                        composition.masks.push_back(newMask);
+                        Rendering::ForceRenderFrame(); 
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ImGui::SetItemTooltip("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str());
+                if (ImGui::BeginPopup("##maskCompositionPopup")) {
+                    RenderMaskCompositionPopup(&composition);
                     ImGui::EndPopup();
                 }
                 ImGui::SameLine();

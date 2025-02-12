@@ -319,5 +319,16 @@
     "INSERT_SELECTED_ASSET_FORMAT": "Insert '%s' Asset",
     "INSERT_SELECTED_ASSETS_FORMAT": "Insert %i Assets",
     "INSERT_ASSET": "Insert Asset",
-    "COLOR_MARK_FILTER": "Filter by Color Mark"
+    "COLOR_MARK_FILTER": "Filter by Color Mark",
+    "MASK_COMPOSITION": "Mask Composition",
+    "OP": "Op",
+    "ADD": "Add",
+    "SUBTRACT": "Subtract",
+    "MULTIPLY": "Multiply",
+    "DIVIDE": "Divide",
+    "ADD_MASK": "Add Mask",
+    "MASK_SOURCE": "Mask Source",
+    "MASK_OPERATION": "Mask Operation",
+    "DELETE_MASK": "Delete Mask",
+    "ADD_COMPOSITION_AS_MASK_FOR_ANOTHER_COMPOSITION": "Add Composition as Mask for Another Composition"
 }
