@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "common/composition_mask.h"
 #include "font/font.h"
 #include "raster.h"
 

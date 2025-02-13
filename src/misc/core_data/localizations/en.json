@@ -330,5 +330,7 @@
     "MASK_SOURCE": "Mask Source",
     "MASK_OPERATION": "Mask Operation",
     "DELETE_MASK": "Delete Mask",
-    "ADD_COMPOSITION_AS_MASK_FOR_ANOTHER_COMPOSITION": "Add Composition as Mask for Another Composition"
+    "ADD_COMPOSITION_AS_MASK_FOR_ANOTHER_COMPOSITION": "Add Composition as Mask for Another Composition",
+    "ENABLE_DISABLE_MASK_PRECOMPOSITION": "Enable/Disable Mask Precomposition",
+    "MASK_PRECOMPOSITION": "Mask Precomposition"
 }

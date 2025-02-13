@@ -93,6 +93,17 @@ namespace Raster {
                     if (!maskSource->colorAttachment.handle) continue;
                     skipCompositions.push_back(maskSource->compositionID);
                     maskWasApplied = true;
+                    if (mask.precompose) {
+                        GPU::BindFramebuffer(s_maskAccumulatorFramebuffer);
+                        GPU::BindPipeline(s_maskApplierPipeline);
+                        GPU::ClearFramebuffer(0, 0, 0, 0);
+                        GPU::SetShaderUniform(s_maskApplierPipeline.fragment, "uResolution", glm::vec2(s_maskAccumulatorFramebuffer.width, s_maskAccumulatorFramebuffer.height));
+                        GPU::BindTextureToShader(s_maskApplierPipeline.fragment, "uBase", s_combinedMaskFramebuffer.attachments[0], 0);
+                        GPU::BindTextureToShader(s_maskApplierPipeline.fragment, "uMask", maskSource->colorAttachment, 1);
+                        GPU::DrawArrays(3);
+                        GPU::BlitTexture(s_combinedMaskFramebuffer.attachments[0], s_maskAccumulatorFramebuffer.attachments[0]);
+                        continue;
+                    }
                     GPU::BindPipeline(s_maskCombinerPipeline);
                     GPU::BindFramebuffer(s_maskAccumulatorFramebuffer);
                     if (mask.op != MaskOperation::Normal) {

@@ -1269,6 +1269,13 @@ namespace Raster {
                 if (ImGui::SmallButton(ICON_FA_TRASH_CAN)) {
                     targetRemoveMask = maskIndex - 1;
                 }
+                ImGui::SetItemTooltip("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_MASK").c_str());
+                ImGui::SameLine();
+                if (ImGui::SmallButton(mask.precompose ? ICON_FA_IMAGE " " ICON_FA_TOGGLE_ON : ICON_FA_IMAGE " " ICON_FA_TOGGLE_OFF)) {
+                    mask.precompose = !mask.precompose;
+                    Rendering::ForceRenderFrame();
+                }
+                ImGui::SetItemTooltip("%s %s", mask.precompose ? ICON_FA_IMAGE " " ICON_FA_TOGGLE_ON : ICON_FA_IMAGE " " ICON_FA_TOGGLE_OFF, Localization::GetString("MASK_PRECOMPOSITION").c_str());
                 ImGui::SameLine();
                 static const char* s_maskSigns[] = {
                     ICON_FA_DROPLET, ICON_FA_PLUS, ICON_FA_MINUS, ICON_FA_XMARK, ICON_FA_DIVIDE
@@ -1370,6 +1377,10 @@ namespace Raster {
                             Rendering::ForceRenderFrame();
                         }
                         ImGui::EndMenu();
+                    }
+                    if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_IMAGE, mask.precompose ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLE_DISABLE_MASK_PRECOMPOSITION").c_str()).c_str())) {
+                        mask.precompose = !mask.precompose;
+                        Rendering::ForceRenderFrame();
                     }
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_MASK").c_str()).c_str())) {
                         targetRemoveMask = maskIndex - 1;
@@ -1699,10 +1710,12 @@ namespace Raster {
             ImGui::SetCursorPos({0, backgroundBounds.size.y});
 
             float layerAccumulator = 0;
+            bool hasCompositionCandidates = false;
             for (int i = project.compositions.size(); i --> 0;) {
                 auto& composition = project.compositions[i];
                 if (!s_compositionFilter.empty() && LowerCase(composition.name).find(LowerCase(s_compositionFilter)) == std::string::npos) continue;
                 if (s_colorMarkFilter != IM_COL32(0, 0, 0, 0) && composition.colorMark != s_colorMarkFilter) continue;
+                hasCompositionCandidates = true;
                 std::string compositionName = FormatString("%s %s", ICON_FA_LAYER_GROUP, composition.name.c_str());
                 ImVec2 compositionNameSize = ImGui::CalcTextSize(compositionName.c_str());
                 ImVec2 baseCursor = ImVec2{
@@ -1854,6 +1867,10 @@ namespace Raster {
                 PushStyleVars();
 
                 layerAccumulator += LAYER_HEIGHT + s_legendOffsets[composition.id];
+            }
+
+            if (!hasCompositionCandidates) {
+                UIHelpers::RenderNothingToShowText();
             }
 
             if (s_legendTargetOpenTree) {
