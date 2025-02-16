@@ -1,6 +1,8 @@
 #include "transform2d_attribute.h"
+#include "common/asset_base.h"
 #include "common/workspace.h"
 #include "common/asset_id.h"
+#include "common/ui_helpers.h"
 
 namespace Raster {
     Transform2DAttribute::Transform2DAttribute() {
@@ -332,15 +334,31 @@ namespace Raster {
             static std::string assetFilter = "";
             ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &assetFilter);
             auto& project = Workspace::GetProject();
-            for (auto& asset : project.assets) {
-                if (!assetFilter.empty() && LowerCase(ReplaceString(asset->name, " ", "")).find(LowerCase(ReplaceString(assetFilter, " ", ""))) == std::string::npos) continue;
-                auto implementation = Assets::GetAssetImplementation(asset->packageName).value();
-                ImGui::PushID(asset->id);
-                    if (ImGui::MenuItem(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
-                        m_parentAssetID = asset->id;
-                    }
-                ImGui::PopID();
-            }
+            std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
+                bool hasCandidates = false;
+                for (auto& asset : t_assets) {
+                    if (!assetFilter.empty() && LowerCase(ReplaceString(asset->name, " ", "")).find(LowerCase(ReplaceString(assetFilter, " ", ""))) == std::string::npos) continue;
+                    hasCandidates = true;
+                    auto implementation = Assets::GetAssetImplementation(asset->packageName).value();
+                    auto childAssetsCandidate = asset->GetChildAssets();
+                    ImGui::PushID(asset->id);
+                        if (!childAssetsCandidate) {
+                            if (ImGui::MenuItem(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                                m_parentAssetID = asset->id;
+                            }
+                        } else {
+                            if (ImGui::TreeNode(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                                renderAssets(**childAssetsCandidate);
+                                ImGui::TreePop();
+                            }
+                        }
+                    ImGui::PopID();
+                }
+                if (!hasCandidates) {
+                    UIHelpers::RenderNothingToShowText();
+                }
+            };
+            renderAssets(project.assets);
             ImGui::EndMenu();
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("REMOVE_PARENT_ATTRIBUTE").c_str()).c_str())) {

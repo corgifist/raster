@@ -3,7 +3,7 @@
     
     <attributes>
         <attribute name="Base" type="Framebuffer"/>
-        <attribute name="Center" type="glm::vec2" value="0.5;0.5"/>
+        <attribute name="Center" type="glm::vec2" value="0.0;0.0"/>
         <attribute name="Strength" type="float" value="0.0"/>
         <attribute name="Range" type="float" value="1.0"/>
         <attribute name="Opacity" type="float" value="1.0"/>
@@ -11,6 +11,7 @@
     </attributes>
 
     <pins>
+        <input name="Base"/>
         <output name="Output"/>
     </pins>
 

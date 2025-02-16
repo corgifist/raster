@@ -48,6 +48,7 @@ namespace Raster {
             project.TimeTravel(-steps * frameStep);
 
             auto& pipeline = s_echoPipeline.value();
+            int timeOffsetsCount = 1;
 
             for (int i = 0; i < steps + 1; i++) {
                 auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
@@ -69,10 +70,13 @@ namespace Raster {
                     }
 
                     project.TimeTravel(frameStep);
+                    timeOffsetsCount++;
                 }
             }
             TryAppendAbstractPinMap(result, "Framebuffer", framebuffer);
-            project.ResetTimeTravel();
+            for (int i = 0; i < timeOffsetsCount; i++) {
+                project.ResetTimeTravel();
+            }
         }
 
 

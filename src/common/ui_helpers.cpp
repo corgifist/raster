@@ -176,22 +176,31 @@ namespace Raster {
                     if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
                         t_assetID = -1;
                     }
-                    bool hasCandidates = false;
-                    for (auto& asset : project.assets) {
-                        auto description = Assets::GetAssetImplementation(asset->packageName).value();
-                        if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
-                        if (!allowedAssetType.empty() && allowedAssetType != asset->packageName) continue;
-                        hasCandidates = true;
-                        if (ImGui::MenuItem(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
-                            t_assetID = asset->id;
-                            ImGui::CloseCurrentPopup();
+                    std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
+                        bool hasCandidates = false;
+                        for (auto& asset : t_assets) {
+                            auto description = Assets::GetAssetImplementation(asset->packageName).value();
+                            if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
+                            if (!allowedAssetType.empty() && allowedAssetType != asset->packageName) continue;
+                            auto childAssetsCandidate = asset->GetChildAssets();
+                            hasCandidates = true;
+                            if (!childAssetsCandidate) {
+                                if (ImGui::MenuItem(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                                    t_assetID = asset->id;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            } else {
+                                if (ImGui::TreeNode(FormatString("%s %s", description.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                                    renderAssets(**childAssetsCandidate);
+                                    ImGui::TreePop();
+                                }
+                            }
                         }
-                    }
-                    if (!hasCandidates) {
-                        std::string nothingToShowText = Localization::GetString("NOTHING_TO_SHOW");
-                        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2 - ImGui::CalcTextSize(nothingToShowText.c_str()).x);
-                        ImGui::Text("%s", nothingToShowText.c_str());
-                    }
+                        if (!hasCandidates) {
+                            UIHelpers::RenderNothingToShowText();
+                        }
+                    };
+                    renderAssets(project.assets);
                 }
                 ImGui::EndChild();
                 ImGui::SameLine();

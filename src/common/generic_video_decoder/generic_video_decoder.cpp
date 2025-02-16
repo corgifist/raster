@@ -11,6 +11,7 @@ namespace Raster {
         uint8_t* data;
         std::string assetPath;
         size_t frame;
+        size_t usageCount;
     };
 
     FreeListAllocator s_cacheAllocator;
@@ -55,6 +56,7 @@ namespace Raster {
             newEntry.assetPath = t_assetPath;
             newEntry.frame = t_frame;
             s_videoCacheEntries.push_back(newEntry);
+            // DUMP_VAR(newEntry.frame);
             return newEntry.data;
         } else {
             // deallocate the oldest cache entry
@@ -67,7 +69,7 @@ namespace Raster {
                         continue;
                     }
                     auto& candidateEntry = s_videoCacheEntries[cacheEntryCandidateIndex];
-                    if (entry.frame > candidateEntry.frame) {
+                    if (candidateEntry.usageCount < entry.usageCount) {
                         cacheEntryCandidateIndex = i;
                     }
                     i++;
@@ -75,8 +77,10 @@ namespace Raster {
                 if (cacheEntryCandidateIndex > 0) {
                     auto& cacheEntryTarget = s_videoCacheEntries[cacheEntryCandidateIndex];
                     s_cacheAllocator.Free(cacheEntryTarget.data);
+                    // DUMP_VAR(cacheEntryTarget.frame);
                     s_videoCacheEntries.erase(s_videoCacheEntries.begin() + cacheEntryCandidateIndex);
                 } else {
+                    // DUMP_VAR(s_videoCacheEntries[0].frame);
                     s_cacheAllocator.Free(s_videoCacheEntries[0].data);
                     s_videoCacheEntries.erase(s_videoCacheEntries.begin());
                 }
@@ -264,6 +268,11 @@ namespace Raster {
             for (auto& entry : s_videoCacheEntries) {
                 if (entry.frame == targetFrame && entry.assetPath == decoder->assetPath) {
                     t_imageAllocation.data = entry.data;
+                    for (auto& otherEntry : s_videoCacheEntries) {
+                        if (otherEntry.frame == targetFrame && otherEntry.assetPath == decoder->assetPath) continue;
+                        otherEntry.usageCount++;
+                    }
+                    entry.usageCount = 0;
                     return true;
                 }    
             }
@@ -306,6 +315,7 @@ namespace Raster {
                 if (!videoFrame) return false;
 
                 t_imageAllocation.data = CacheVideoFrame(videoFrame.data(), targetFrame, decoder->assetPath, t_imageAllocation);
+                videoFrame = av::VideoFrame();
                 return true;
             }
         }

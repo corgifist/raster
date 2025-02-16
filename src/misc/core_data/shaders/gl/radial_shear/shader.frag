@@ -32,7 +32,7 @@ vec2 radial_shear(vec2 uv, vec2 center, float range, vec2 strength)
 
 void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
-    gColor = texture(uTexture, radial_shear(uv, uCenter, uRange, uStrength));
+    gColor = texture(uTexture, radial_shear(uv, (uCenter * vec2(1., -1.) + vec2(0.5)) * vec2(1./(uResolution.x/uResolution.y), uRange, uStrength));
     gColor = mix(texture(uTexture, uv), gColor, uOpacity);
     uv -= 0.5;
     uv.x *= uResolution.x / uResolution.y;

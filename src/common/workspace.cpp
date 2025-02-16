@@ -574,24 +574,69 @@ namespace Raster {
         if (Workspace::IsProjectLoaded()) {
             auto& project = Workspace::GetProject();
             // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
-            for (auto& asset : project.assets) {
-                if (asset->id == t_assetID) return asset;
-            }
+            std::function<std::optional<AbstractAsset>(std::vector<AbstractAsset>&)> findAsset = [&](std::vector<AbstractAsset>& t_assets) -> std::optional<AbstractAsset> {
+                for (auto& asset : t_assets) {
+                    auto childAssetsCandidate = asset->GetChildAssets();
+                    if (childAssetsCandidate) {
+                        auto& childAssets = *childAssetsCandidate;
+                        auto recursiveFindResult = findAsset(*childAssets);
+                        if (recursiveFindResult) return recursiveFindResult;
+                    }
+                    if (asset->id == t_assetID) return asset;
+                }
+                return std::nullopt;
+            };
+            return findAsset(project.assets);
         }
         return std::nullopt;
     }
 
-    std::optional<int> Workspace::GetAssetIndexByAssetID(int t_assetID) {
-        int index = 0;
-        if (Workspace::IsProjectLoaded()) {
-            // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
-            auto& project = Workspace::GetProject();
-            for (auto& asset : project.assets) {
-                if (asset->id == t_assetID) return index;
-                index++;
+    void Workspace::DeleteAssetByAssetID(int t_assetID) {
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+        std::function<void(std::vector<AbstractAsset>&)> deleteAsset = [&](std::vector<AbstractAsset>& t_assets) {
+            int assetIndex = 0;
+            int assetRemoveTarget = -1;
+            for (auto& asset : t_assets) {
+                assetIndex++;
+                if (asset->id == t_assetID) {
+                    // asset->Delete();
+                    assetRemoveTarget = assetIndex - 1;
+                    continue;
+                }
+                auto childAssetsCandidate = asset->GetChildAssets();
+                if (childAssetsCandidate) {
+                    auto& childAssets = *childAssetsCandidate;
+                    deleteAsset(*childAssets);
+                }
             }
-        }
-        return std::nullopt;
+            if (assetRemoveTarget > 0) {
+                t_assets.erase(t_assets.begin() + assetRemoveTarget);
+            }
+        };
+        deleteAsset(project.assets);
+    }
+
+    std::optional<std::vector<AbstractAsset>*> Workspace::GetAssetScopeByAssetID(int t_assetID) {
+        if (!Workspace::IsProjectLoaded()) return std::nullopt;;
+        auto& project = Workspace::GetProject();
+        std::function<std::vector<AbstractAsset>*(std::vector<AbstractAsset>&)> findScope = [&](std::vector<AbstractAsset>& t_assets) -> std::vector<AbstractAsset>* {
+            for (auto& asset : t_assets) {
+                if (asset->id == t_assetID) {
+                    return &t_assets;
+                }
+                auto childAssetsCandidate = asset->GetChildAssets();
+                if (childAssetsCandidate) {
+                    auto& childAssets = *childAssetsCandidate;
+                    auto candidate = findScope(*childAssets);
+                    if (candidate) return candidate;
+                }
+            }
+            return nullptr;
+        };
+        auto result = findScope(project.assets);
+        if (!result) return std::nullopt;
+        return result;
     }
 
     std::string Workspace::GetTypeName(std::any& t_value) {

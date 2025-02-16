@@ -1517,18 +1517,29 @@ namespace Raster {
                 static std::string s_searchFilter = "";
                 ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_searchFilter);
                 if (ImGui::BeginChild("##assets", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT))) {
-                    for (auto& asset : project.assets) {
-                        if (!s_searchFilter.empty() && LowerCase(asset->name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
-                        auto implementationCandidate = Assets::GetAssetImplementation(asset->packageName);
-                        if (!implementationCandidate) continue;
-                        auto& implementation = *implementationCandidate;
-                        ImGui::PushID(asset->id);
-                        if (ImGui::MenuItem(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
-                            asset->OnTimelineDrop((ImGui::GetScrollX() + s_timelineMousePos.x) / s_pixelsPerFrame);
-                            ImGui::CloseCurrentPopup();
+                    std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
+                        for (auto& asset : t_assets) {
+                            if (!s_searchFilter.empty() && LowerCase(asset->name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
+                            auto implementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                            if (!implementationCandidate) continue;
+                            auto& implementation = *implementationCandidate;
+                            auto childAssetsCandidate = asset->GetChildAssets();
+                            ImGui::PushID(asset->id);
+                            if (!childAssetsCandidate) {
+                                if (ImGui::MenuItem(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                                    asset->OnTimelineDrop((ImGui::GetScrollX() + s_timelineMousePos.x) / s_pixelsPerFrame);
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            } else {
+                                if (ImGui::TreeNode(FormatString("%s %s", implementation.description.icon.c_str(), asset->name.c_str()).c_str())) {
+                                    renderAssets(**childAssetsCandidate);
+                                    ImGui::TreePop();
+                                }
+                            }
+                            ImGui::PopID();
                         }
-                        ImGui::PopID();
-                    }
+                    };
+                    renderAssets(project.assets);
                 }
                 ImGui::EndChild();
                 ImGui::EndMenu();

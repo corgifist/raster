@@ -7,6 +7,7 @@
 #include "gpu/gpu.h"
 
 namespace Raster {
+
     struct AssetBase {
     public:
         int id;
@@ -32,6 +33,9 @@ namespace Raster {
         void RenderPreviewOverlay(glm::vec2 t_regionSize);
         void OnTimelineDrop(float t_frame);
 
+
+        std::optional<std::vector<std::shared_ptr<AssetBase>>*> GetChildAssets();
+
         bool IsReady();
 
         void Delete();
@@ -39,6 +43,8 @@ namespace Raster {
         Json Serialize();
         void Load(Json t_data);
     private:
+
+        virtual std::optional<std::vector<std::shared_ptr<AssetBase>>*> AbstractGetChildAssets() { return std::nullopt; }
 
         virtual bool AbstractIsReady() { return true; }
 

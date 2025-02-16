@@ -101,6 +101,7 @@ build_modules = [
     ["image_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_image]],
     ["placeholder_asset", asset, [raster_common, raster_gpu, raster_ImGui]],
     ["media_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_avcpp, ffmpeg]],
+    ["folder_asset", asset, [raster_common, raster_ImGui]],
 
     ["float_attribute", attribute, [raster_common, raster_ImGui]],
     ["vec4_attribute", attribute, [raster_common, raster_ImGui]],

@@ -62,8 +62,12 @@ namespace Raster {
         static std::optional<AbstractAttribute> GetAttributeByName(Composition* t_composition, std::string t_name);
         static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
 
+        static std::optional<std::vector<AbstractAsset>*> GetAssetScopeByAssetID(int t_assetID);
         static std::optional<AbstractAsset> GetAssetByAssetID(int t_assetID);
-        static std::optional<int> GetAssetIndexByAssetID(int t_assetID);
+
+        // you should call asset->Delete() before calling asset by using this function
+        // (you actually can just not call asset->Delete() if )
+        static void DeleteAssetByAssetID(int t_assetID);
 
         static std::optional<AudioBus*> GetAudioBusByID(int t_busID);
 

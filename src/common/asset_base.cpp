@@ -31,6 +31,11 @@ namespace Raster {
         };
     }
 
+
+    std::optional<std::vector<std::shared_ptr<AssetBase>>*> AssetBase::GetChildAssets() {
+        return AbstractGetChildAssets();
+    }
+
     bool AssetBase::IsReady() {
         return AbstractIsReady();
     }
