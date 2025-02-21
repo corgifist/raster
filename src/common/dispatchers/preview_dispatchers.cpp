@@ -154,26 +154,43 @@ namespace Raster {
             ImGui::Image((ImTextureID) texture.handle, fitTextureSize * zoom, ImVec2(0, 0), ImVec2(1, 1), ImVec4((int) maskR, (int) maskG, (int) maskB, (int) maskA));
 
             auto& project = Workspace::GetProject();
-            if (!project.selectedAttributes.empty() && Dispatchers::s_enableOverlays) {
-                for (auto& attributeID : project.selectedAttributes) {
-                    auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
-                    auto compositionCandidate = Workspace::GetCompositionByAttributeID(attributeID);
-                    if (attributeCandidate.has_value() && compositionCandidate.has_value()) {
-                        auto& attribute = attributeCandidate.value();
-                        auto& composition = compositionCandidate.value();
-                        auto& project = Workspace::s_project.value();
-                        auto value = attribute->Get(project.currentFrame - composition->beginFrame, composition);
-                        ImVec2 zoomedSize = fitTextureSize * zoom;
-                        ImGui::SetCursorPos(ImVec2{
-                            ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
-                            ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
-                        } + imageOffset);
-                        if (!Dispatchers::DispatchOverlay(value, composition, attribute->id, zoom, {zoomedSize.x, zoomedSize.y})) {
-                            imageDragAllowed = false;
+            bool blockPopups = false;
+            if (!project.selectedAttributes.empty() && Dispatchers::s_enableOverlays || Dispatchers::s_editingROI) {
+                if (Dispatchers::s_editingROI) {
+                    auto& project = Workspace::s_project.value();
+                    std::any value = project.roi;
+                    ImVec2 zoomedSize = fitTextureSize * zoom;
+                    ImGui::SetCursorPos(ImVec2{
+                        ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                        ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                    } + imageOffset);
+                    if (!Dispatchers::DispatchOverlay(value, nullptr, 0, zoom, {zoomedSize.x, zoomedSize.y})) {
+                        imageDragAllowed = false;
+                    }
+                    project.roi = std::any_cast<ROI>(value);
+                } else {
+                    for (auto& attributeID : project.selectedAttributes) {
+                        auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
+                        auto compositionCandidate = Workspace::GetCompositionByAttributeID(attributeID);
+                        if (attributeCandidate.has_value() && compositionCandidate.has_value()) {
+                            auto& attribute = attributeCandidate.value();
+                            auto& composition = compositionCandidate.value();
+                            auto& project = Workspace::s_project.value();
+                            auto value = attribute->Get(project.currentFrame - composition->beginFrame, composition);
+                            ImVec2 zoomedSize = fitTextureSize * zoom;
+                            ImGui::SetCursorPos(ImVec2{
+                                ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                                ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                            } + imageOffset);
+                            if (!Dispatchers::DispatchOverlay(value, composition, attribute->id, zoom, {zoomedSize.x, zoomedSize.y})) {
+                                imageDragAllowed = false;
+                            }
                         }
                     }
                 }
+                blockPopups = Dispatchers::s_blockPopups;
             }
+            Dispatchers::s_blockPopups = false;
 
             auto footerText = FormatString("%ix%i; %s (%s); %s %0.3f", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str(), ICON_FA_IMAGE, (float) texture.width / (float) texture.height);
             ImVec2 footerSize = ImGui::CalcTextSize(footerText.c_str());
@@ -242,10 +259,10 @@ namespace Raster {
             bool mustOpenErrorPopup = false;
             static std::optional<std::string> s_imageWriterError;
 
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && !blockPopups) {
                 ImGui::OpenPopup("##texturePopup");
             }
-            if (ImGui::BeginPopup("##texturePopup")) {
+            if (ImGui::BeginPopup("##texturePopup") && !blockPopups) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("ATTRIBUTE").c_str()).c_str());
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("REVERT_VIEW").c_str()).c_str())) {
                     /* zoom = 1.0f;

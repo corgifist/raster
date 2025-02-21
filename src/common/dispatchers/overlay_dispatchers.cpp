@@ -1,6 +1,8 @@
 #include "overlay_dispatchers.h"
+#include "common/localization.h"
 #include "common/randomizer.h"
 #include "common/transform2d.h"
+#include "font/IconsFontAwesome5.h"
 #include <cfloat>
 #include <cmath>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -13,6 +15,8 @@
 
 #include "common/rendering.h"
 #include "common/line2d.h"
+
+#include "common/dispatchers.h"
 
 #define DRAG_CIRCLE_RADIUS 8
 #define ANCHOR_CIRCLE_RADIUS 6
@@ -469,5 +473,186 @@ namespace Raster {
             Rendering::ForceRenderFrame();
         }
         return !lineChanged; 
+    }
+
+    struct ROIOverlayState {
+        ObjectDrag beginDrag, endDrag;
+        ObjectDrag middleDrag;
+        ObjectDrag positionDrag;
+
+        bool AnyOtherDragActive(int t_excludeDrag = -1) {
+            if (positionDrag.id != t_excludeDrag && positionDrag.isActive) return true;
+            if (beginDrag.id != t_excludeDrag && beginDrag.isActive) return true;
+            if (endDrag.id != t_excludeDrag && endDrag.isActive) return true;
+            if (middleDrag.id != t_excludeDrag && middleDrag.isActive) return true;
+            return false;
+        }
+    };
+
+    bool OverlayDispatchers::DispatchROIValue(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize) {
+        static ROIOverlayState s_primaryState;
+        static std::unordered_map<std::string, ROIOverlayState> s_attributeStates;
+
+        ROI roi = std::any_cast<ROI>(t_attribute);
+        roi.upperLeft.y *= -1;
+        roi.bottomRight.y *= -1;
+        auto& project = Workspace::s_project.value();
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(t_attributeID);
+        ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+        ImVec2 cursor = ImGui::GetCursorPos();
+
+        bool roiChanged = false;
+        bool blockDragging = false;
+
+        std::vector<glm::vec2> originalPoints = {
+            roi.upperLeft, glm::vec2(roi.bottomRight.x, roi.upperLeft.y),
+            roi.bottomRight, glm::vec2(roi.upperLeft.x, roi.bottomRight.y),
+
+        };
+        std::vector<glm::vec2> transformedPoints;
+        for (auto& point : originalPoints) {
+            glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * glm::vec4(point, 0, 1);
+            transformedPoints.push_back(
+                {transformedPoint.x, transformedPoint.y}
+            );
+        }
+
+        std::vector<glm::vec2> screenSpacePoints;
+        for (auto& point : transformedPoints) {
+            screenSpacePoints.push_back(NDCToScreen(point, t_regionSize));
+        }
+
+        ImVec4 outlineColor = ImVec4(1, 1, 1, 1);
+        outlineColor.w = 1.0f;
+        for (int i = 0; i < screenSpacePoints.size(); i++) {
+            auto& point = screenSpacePoints[i];
+            auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
+            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 2);
+        }
+
+        auto stringID = attributeCandidate.has_value() ? std::to_string(t_attributeID) : std::to_string(t_attributeID) + s_attributeName;
+        ROIOverlayState* overlayState = nullptr;
+        if (attributeCandidate.has_value()) {
+            overlayState = &s_primaryState;
+        } else {
+            if (s_attributeStates.find(stringID) == s_attributeStates.end()) {
+                s_attributeStates[stringID] = ROIOverlayState();
+            }
+            overlayState = &s_attributeStates[stringID];
+        }
+
+        std::vector<ObjectDrag*> lineDrags = {
+            &overlayState->beginDrag, &overlayState->endDrag
+        };
+
+        bool beginDrag = true;
+        for (auto& dragPtr : lineDrags) {
+            auto& drag = *dragPtr;
+            auto dragNDC4 = project.GetProjectionMatrix(true) * glm::vec4(beginDrag ? roi.upperLeft.x : roi.bottomRight.x, beginDrag ? roi.upperLeft.y : roi.bottomRight.y, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImVec4 dragColor = ImVec4(1.0f);
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? dragColor * 0.9f : dragColor));
+        
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                if (beginDrag) {
+                    roi.upperLeft.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    roi.upperLeft.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                } else {
+                    roi.bottomRight.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    roi.bottomRight.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                }
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+                roiChanged = true;
+                drag.isActive = true;
+            } else drag.isActive = false;
+            beginDrag = false;
+        }
+
+        {
+            auto& drag = overlayState->middleDrag;
+            auto middlePos = glm::mix(roi.upperLeft, roi.bottomRight, 0.5f);
+            auto dragNDC4 = project.GetProjectionMatrix(true) * glm::vec4(middlePos, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+        
+            // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
+
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                roi.upperLeft.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                roi.upperLeft.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                roi.bottomRight.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                roi.bottomRight.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                roiChanged = true;
+                drag.isActive = true;
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+            } else drag.isActive = false;
+            beginDrag = false; 
+        }
+
+        {
+
+            auto aspectRatio = t_regionSize.x / t_regionSize.y;
+            glm::vec4 centerPointNDC4(glm::mix(roi.upperLeft, roi.bottomRight, 0.5f), 0, 1);
+            centerPointNDC4 = project.GetProjectionMatrix(true) * centerPointNDC4;
+            glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
+            centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
+            glm::vec2 transformScreenSize((roi.bottomRight - roi.upperLeft).x / aspectRatio * t_regionSize.x, (roi.bottomRight - roi.upperLeft).y * t_regionSize.y);
+
+            RectBounds positionDragBounds(
+                {centerPointScreen.x - transformScreenSize.x / 2.0f, centerPointScreen.y - transformScreenSize.y / 2.0f},
+                {transformScreenSize.x, transformScreenSize.y}
+            );
+            // DrawRect(positionDragBounds, ImVec4(1, 0, 0, 1));
+
+            if ((MouseHoveringBounds(positionDragBounds) || overlayState->positionDrag.isActive) && !overlayState->AnyOtherDragActive(overlayState->positionDrag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+                roi.upperLeft.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                roi.upperLeft.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                roi.bottomRight.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                roi.bottomRight.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                roiChanged = true;
+                overlayState->positionDrag.isActive = true;
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+            } else overlayState->positionDrag.isActive = false;
+            if (MouseHoveringBounds(positionDragBounds) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                Dispatchers::s_blockPopups = true;
+                ImGui::OpenPopup(FormatString("##roiPopup%s", stringID.c_str()).c_str());
+            }
+        }
+
+        if (ImGui::BeginPopup(FormatString("##roiPopup%s", stringID.c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("REGION_OF_INTEREST").c_str()).c_str());
+            Dispatchers::s_blockPopups = true;
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("RESIZE_TO_MATCH_PROJECT_RESOLUTION").c_str()).c_str())) {
+                auto aspectRatio = t_regionSize.x / t_regionSize.y;
+                roi.upperLeft = glm::vec2(-aspectRatio, -1);
+                roi.bottomRight = glm::vec2(aspectRatio, 1);
+                roiChanged = true;
+                blockDragging = true;
+            }
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("RESET_TO_DEFAULT").c_str()).c_str())) {
+                roi = ROI();
+                roiChanged = true;
+                blockDragging = true;
+            }
+            ImGui::EndPopup();
+        }
+
+        roi.upperLeft.y *= -1;
+        roi.bottomRight.y *= -1;
+        t_attribute = roi;
+        if (roiChanged) {
+            Rendering::ForceRenderFrame();
+        }
+        return !roiChanged; 
     }
 };

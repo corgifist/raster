@@ -8,6 +8,7 @@
 #include "audio_discretization_options.h"
 #include "asset_base.h"
 #include "project_color_precision.h"
+#include "roi.h"
 
 namespace Raster {
     struct Project {
@@ -19,6 +20,7 @@ namespace Raster {
         bool playing, looping;
         AudioDiscretizationOptions audioOptions;
         ProjectColorPrecision colorPrecision;
+        ROI roi;
 
         glm::vec2 preferredResolution;
         glm::vec4 backgroundColor;

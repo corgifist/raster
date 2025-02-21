@@ -21,6 +21,7 @@
 #include <codecvt>
 #include <locale>
 #include <variant>
+#include <cstdarg>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -116,14 +117,25 @@ namespace Raster {
     using Json = nlohmann::json;
     using namespace ankerl;
     
-    template<typename ... Args>
-    static std::string FormatString( const std::string& format, Args ... args ) {
-        int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
-        if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
-        auto size = static_cast<size_t>( size_s );
-        std::unique_ptr<char[]> buf( new char[ size ] );
-        std::snprintf( buf.get(), size, format.c_str(), args ... );
-        return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+    static const std::string FormatString(std::string zcFormat, ...) {
+        // initialize use of the variable argument array
+        va_list vaArgs;
+        va_start(vaArgs, zcFormat);
+
+        // reliably acquire the size
+        // from a copy of the variable argument array
+        // and a functionally reliable call to mock the formatting
+        va_list vaArgsCopy;
+        va_copy(vaArgsCopy, vaArgs);
+        const int iLen = std::vsnprintf(NULL, 0, zcFormat.c_str(), vaArgsCopy);
+        va_end(vaArgsCopy);
+
+        // return a formatted string without risking memory mismanagement
+        // and without assuming any compiler or platform specific behavior
+        std::vector<char> zc(iLen + 1);
+        std::vsnprintf(zc.data(), zc.size(), zcFormat.c_str(), vaArgs);
+        va_end(vaArgs);
+        return std::string(zc.data(), iLen); 
     }
 
     static Json ReadJson(std::string path) {

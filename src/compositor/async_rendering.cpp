@@ -33,6 +33,8 @@ namespace Raster {
                 if (!m_running) break;
                 Rendering::CancelRenderFrame();
                 Compositor::EnsureResolutionConstraints();
+                GPU::EnableClipping();
+                GPU::SetClipRect(project.roi.upperLeft, project.roi.bottomRight);
                 auto firstTimePoint = std::chrono::system_clock::now();
                 double firstTime = GPU::GetTime();
                 Compositor::s_bundles.Get().clear();
@@ -54,6 +56,7 @@ namespace Raster {
                 });
                 s_renderingPassID++;
                 Compositor::PerformComposition();
+                GPU::DisableClipping();
                 DoubleBufferingIndex::s_index.Set((DoubleBufferingIndex::s_index.Get() + 1) % 2);
                 GPU::Flush();
 

@@ -36,6 +36,9 @@ namespace Raster {
         this->selectedKeyframes = data["SelectedKeyframes"].get<std::vector<int>>();
         this->selectedAssets = data["SelectedAssets"].get<std::vector<int>>();
         this->customData = data["CustomData"];
+        if (data.contains("ROI")) {
+            this->roi = ROI(data["ROI"]);
+        }
         for (auto& composition : data["Compositions"]) {
             compositions.push_back(Composition(composition));
         }

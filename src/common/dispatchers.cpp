@@ -29,6 +29,8 @@ namespace Raster {
     ConversionDispatchersCollection Dispatchers::s_conversionDispatchers;
 
     bool Dispatchers::s_enableOverlays = true;
+    bool Dispatchers::s_editingROI = false;
+    bool Dispatchers::s_blockPopups = false;
 
     void Dispatchers::Initialize() {
         Dispatchers::s_propertyDispatchers = {
@@ -85,7 +87,8 @@ namespace Raster {
 
         Dispatchers::s_overlayDispatchers = {
             {ATTRIBUTE_TYPE(Transform2D), OverlayDispatchers::DispatchTransform2DValue},
-            {ATTRIBUTE_TYPE(Line2D), OverlayDispatchers::DispatchLine2DValue}
+            {ATTRIBUTE_TYPE(Line2D), OverlayDispatchers::DispatchLine2DValue},
+            {ATTRIBUTE_TYPE(ROI), OverlayDispatchers::DispatchROIValue}
         };
 
         Dispatchers::s_conversionDispatchers = {

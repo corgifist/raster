@@ -81,6 +81,10 @@ namespace Raster {
                         }
                     }
                 
+                    if (Dispatchers::s_editingROI) {
+                        mustDispatchOverlay = true;
+                    }
+
                     auto& selectedCompositions = project.selectedCompositions;
                     if (!selectedNodes.empty() && !compositionLock) {
                         auto nodeCandidate = Workspace::GetNodeByNodeID(selectedNodes[0]);
@@ -306,16 +310,29 @@ namespace Raster {
                         ImGui::GetWindowSize().x - settingsChildSize.x,
                         0
                     });
+                    static bool s_previousOverlayEnabled = false;
                     if (ImGui::BeginChild("##settingsChild", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
                         if (!Dispatchers::s_enableOverlays) {
-                            buttonColor = buttonColor * 0.8f;
+                            buttonColor = buttonColor * 0.6f;
                         }
+                        if (ImGui::Button(ICON_FA_EXPAND)) {
+                            Dispatchers::s_editingROI = !Dispatchers::s_editingROI;
+                            if (Dispatchers::s_editingROI) {
+                                s_previousOverlayEnabled = Dispatchers::s_enableOverlays;
+                                Dispatchers::s_enableOverlays = true;
+                            } else {
+                                Dispatchers::s_enableOverlays = s_previousOverlayEnabled;
+                            }
+                        }
+                        ImGui::SameLine();
+                        if (Dispatchers::s_editingROI) ImGui::BeginDisabled();
                         ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
                         if (ImGui::Button(FormatString("%s %s", Dispatchers::s_enableOverlays ? ICON_FA_CHECK : ICON_FA_XMARK, ICON_FA_UP_DOWN_LEFT_RIGHT).c_str())) {
                             Dispatchers::s_enableOverlays = !Dispatchers::s_enableOverlays;
                         }
                         ImGui::SetItemTooltip("%s %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("ENABLE_PREVIEW_OVERLAYS").c_str());
                         ImGui::PopStyleColor();
+                        if (Dispatchers::s_editingROI) ImGui::EndDisabled();
                         settingsChildSize = ImGui::GetWindowSize();
                     }
                     ImGui::EndChild();
@@ -326,13 +343,9 @@ namespace Raster {
                     static bool usingDragTimeline = false;
                     float firstTimelineCursorY = ImGui::GetCursorPosY();
                     std::string firstTimestampText = project.FormatFrameToTime(project.currentFrame);
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
                     if (ImGui::Button(firstTimestampText.c_str())) {
                         usingDragTimeline = !usingDragTimeline;
                     }
-                    ImGui::PopStyleColor(3);
                     ImGui::SameLine();
                     if (ImGui::Button(ICON_FA_BACKWARD)) {
                         project.currentFrame -= 1;
@@ -371,14 +384,10 @@ namespace Raster {
                     ImGui::SetItemTooltip("%s %s", ICON_FA_CIRCLE_NOTCH, Localization::GetString("LOOP_PLAYBACK").c_str());
                     ImGui::SameLine();
                     firstTimestampText = project.FormatFrameToTime(project.GetProjectLength() - project.currentFrame);
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
                     if (ImGui::Button(firstTimestampText.c_str())) {
                         usingDragTimeline = !usingDragTimeline;
                     }
                     miniTimelineSize = ImGui::GetCursorPosY() - firstTimelineCursorY;
-                    ImGui::PopStyleColor(3);
                     ImGui::SameLine();
                     forwardSeekSize = ImGui::GetCursorPosX() - firstForwardSeekCursor;
                     ImGui::NewLine();

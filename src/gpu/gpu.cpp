@@ -210,6 +210,7 @@ namespace Raster {
     static std::mutex s_resizeMutex;
 
     static SynchronizedValue<std::vector<std::string>> s_dragDropPaths;
+    static ThreadUniqueValue<std::optional<glm::vec4>> s_clipRect;
 
     void GPU::Initialize() {
         s_mainThreadID = std::this_thread::get_id();
@@ -310,6 +311,19 @@ namespace Raster {
 
     void GPU::SetRenderingFunction(std::function<void()> t_function) {
         s_renderingFunction = t_function;
+    }
+
+    void GPU::EnableClipping() {
+        glEnable(GL_SCISSOR_TEST);
+    }
+
+    void GPU::DisableClipping() {
+        glDisable(GL_SCISSOR_TEST);
+    }
+
+    void GPU::SetClipRect(glm::vec2 upperLeft, glm::vec2 bottomRight) {
+        auto& clipRect = s_clipRect.Get();
+        clipRect = glm::vec4(upperLeft, bottomRight);
     }
 
     void GPU::StartRenderingThread() {
@@ -541,12 +555,28 @@ namespace Raster {
     }
 
     void GPU::BindFramebuffer(std::optional<Framebuffer> fbo) {
+        auto& clipRectCandidate = s_clipRect.Get();
         if (fbo.has_value()) {
             glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) (uint64_t) fbo.value().handle);
             glViewport(0, 0, fbo.value().width, fbo.value().height);
         } else {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, s_width, s_height);
+        }
+        if (clipRectCandidate) {
+            auto clipRect = *clipRectCandidate;
+            auto targetResolution = fbo.has_value() ? glm::vec2(fbo->width, fbo->height) : glm::vec2(s_width, s_height);
+            auto processedClipRect = clipRect;
+            auto aspectRatio = targetResolution.x / targetResolution.y;
+            processedClipRect.x /= aspectRatio;
+            processedClipRect.z /= aspectRatio;
+            auto upperLeft = glm::vec2(processedClipRect[0], processedClipRect[1]);
+            auto bottomRight = glm::vec2(processedClipRect[2], processedClipRect[3]);
+            upperLeft = NDCToScreen(upperLeft, targetResolution);
+            bottomRight = NDCToScreen(bottomRight, targetResolution);
+            auto size = glm::abs(bottomRight - upperLeft);
+            glScissor(upperLeft.x, targetResolution.y - upperLeft.y - size.y, size.x, size.y);
+            // print(upperLeft.x << " " << upperLeft.y << " " << glm::abs(bottomRight - upperLeft).x << " " << glm::abs(bottomRight - upperLeft).y);
         }
     }
 

@@ -163,6 +163,10 @@ namespace Raster {
 
         static std::vector<std::string> GetDragDropPaths();
 
+        static void EnableClipping();
+        static void DisableClipping();
+        static void SetClipRect(glm::vec2 upperLeft, glm::vec2 bottomRight);
+
         static Texture ImportTexture(const char* path);
         static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual, bool mipmapped = false);
         static void GenerateMipmaps(Texture texture);

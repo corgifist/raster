@@ -1,5 +1,3 @@
-#pragma once
-
 #include "raster.h"
 #include "common/line2d.h"
 

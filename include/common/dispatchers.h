@@ -17,6 +17,8 @@ namespace Raster {
         static ConversionDispatchersCollection s_conversionDispatchers;
 
         static bool s_enableOverlays;
+        static bool s_editingROI;
+        static bool s_blockPopups;
 
         // Used in `Node Properties` window to generate a UI to change some attribute's value
         // Pass metadata objects to modify the behaviour of sliders & drags
