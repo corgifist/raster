@@ -353,6 +353,7 @@ namespace Raster {
                         std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
                             for (auto& asset : t_assets) {
                                 if (s_colorMarkFilter != 0 && asset->colorMark != s_colorMarkFilter) continue;
+                                if (!assetSearch.empty() && LowerCase(asset->name).find(LowerCase(assetSearch)) == std::string::npos) continue;
                                 ImGui::PushID(asset->id);
                                 auto childAssetsCandidate = asset->GetChildAssets();
                                 bool isSelected = std::find(selectedAssets.begin(), selectedAssets.end(), asset->id) != selectedAssets.end();
@@ -598,6 +599,7 @@ namespace Raster {
                             std::function<void(std::vector<AbstractAsset>& t_assets)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
                                 for (auto& asset : t_assets) {
                                     if (s_colorMarkFilter != 0 && s_colorMarkFilter != asset->colorMark) continue;
+                                    if (!assetSearch.empty() && LowerCase(asset->name).find(LowerCase(assetSearch)) == std::string::npos) continue;
                                     ImGui::PushID(asset->id);
                                     ImGui::TableNextRow();
 

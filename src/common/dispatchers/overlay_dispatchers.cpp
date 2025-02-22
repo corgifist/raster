@@ -3,6 +3,7 @@
 #include "common/randomizer.h"
 #include "common/transform2d.h"
 #include "font/IconsFontAwesome5.h"
+#include "raster.h"
 #include <cfloat>
 #include <cmath>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -494,8 +495,6 @@ namespace Raster {
         static std::unordered_map<std::string, ROIOverlayState> s_attributeStates;
 
         ROI roi = std::any_cast<ROI>(t_attribute);
-        roi.upperLeft.y *= -1;
-        roi.bottomRight.y *= -1;
         auto& project = Workspace::s_project.value();
         auto attributeCandidate = Workspace::GetAttributeByAttributeID(t_attributeID);
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
@@ -600,19 +599,25 @@ namespace Raster {
         }
 
         {
-
             auto aspectRatio = t_regionSize.x / t_regionSize.y;
             glm::vec4 centerPointNDC4(glm::mix(roi.upperLeft, roi.bottomRight, 0.5f), 0, 1);
             centerPointNDC4 = project.GetProjectionMatrix(true) * centerPointNDC4;
-            glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y);
+            glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y); 
             centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
-            glm::vec2 transformScreenSize((roi.bottomRight - roi.upperLeft).x / aspectRatio * t_regionSize.x, (roi.bottomRight - roi.upperLeft).y * t_regionSize.y);
+            auto ndcUpperLeft = NDCToScreen(roi.upperLeft, glm::vec2(1));
+            auto ndcBottomRight = NDCToScreen(roi.bottomRight, glm::vec2(1));
+            glm::vec2 transformScreenSize(glm::abs(ndcBottomRight.x - ndcUpperLeft.x) * t_regionSize.x, glm::abs(ndcBottomRight.y - ndcUpperLeft.y) * t_regionSize.y);
+            // DUMP_VAR(transformScreenSize.x);
 
             RectBounds positionDragBounds(
                 {centerPointScreen.x - transformScreenSize.x / 2.0f, centerPointScreen.y - transformScreenSize.y / 2.0f},
                 {transformScreenSize.x, transformScreenSize.y}
             );
             // DrawRect(positionDragBounds, ImVec4(1, 0, 0, 1));
+            if (MouseHoveringBounds(positionDragBounds) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                Dispatchers::s_blockPopups = true;
+                ImGui::OpenPopup(FormatString("##roiPopup%s", stringID.c_str()).c_str());
+            }
 
             if ((MouseHoveringBounds(positionDragBounds) || overlayState->positionDrag.isActive) && !overlayState->AnyOtherDragActive(overlayState->positionDrag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 roi.upperLeft.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
@@ -623,10 +628,6 @@ namespace Raster {
                 overlayState->positionDrag.isActive = true;
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
             } else overlayState->positionDrag.isActive = false;
-            if (MouseHoveringBounds(positionDragBounds) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                Dispatchers::s_blockPopups = true;
-                ImGui::OpenPopup(FormatString("##roiPopup%s", stringID.c_str()).c_str());
-            }
         }
 
         if (ImGui::BeginPopup(FormatString("##roiPopup%s", stringID.c_str()).c_str())) {
@@ -647,8 +648,6 @@ namespace Raster {
             ImGui::EndPopup();
         }
 
-        roi.upperLeft.y *= -1;
-        roi.bottomRight.y *= -1;
         t_attribute = roi;
         if (roiChanged) {
             Rendering::ForceRenderFrame();

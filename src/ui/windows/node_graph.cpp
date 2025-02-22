@@ -495,6 +495,9 @@ namespace Raster {
                             
                             if (ImGui::BeginTabItem(FormatString("%s %s###%i", ICON_FA_LAYER_GROUP, composition->name.c_str(), composition->id).c_str(), &open, focusNeeded == compositionID ? ImGuiTabItemFlags_SetSelected : 0)) {
                                 overrideCurrentComposition = composition->id;
+                                if (!s_currentComposition) {
+                                    s_currentComposition = composition;
+                                }
                                 ImGui::EndTabItem();
                             }
                             ImGui::PopStyleColor(3);
@@ -1267,10 +1270,6 @@ namespace Raster {
                                 ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("DESCRIPTION").c_str());
                                 ImGui::EndMenu();
                             }
-                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_NODES").c_str()).c_str(), "Delete")) {
-                                Rendering::ForceRenderFrame();
-                                Nodes::DeleteNode(node->nodeID);
-                            }
                             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_NODES").c_str()).c_str(), "Ctrl+C")) {
                                 ProcessCopyAction();
                             }
@@ -1280,6 +1279,10 @@ namespace Raster {
                             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_SELECTED_NODES").c_str()).c_str(), "Ctrl+D")) {
                                 ProcessCopyAction();
                                 ProcessPasteAction();
+                            }
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_NODES").c_str()).c_str(), "Delete")) {
+                                Rendering::ForceRenderFrame();
+                                Nodes::DeleteNode(node->nodeID);
                             }
                             ImGui::SameLine();
                             if (!nodeContextMenuWidth.has_value()) nodeContextMenuWidth = ImGui::GetCursorPosX();
@@ -1333,11 +1336,6 @@ namespace Raster {
                             }
                             ImGui::EndMenu();
                         }
-                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("COMPOSITION_PROPERTIES").c_str()).c_str())) {
-                            TimelineUI::RenderCompositionPopup(s_currentComposition);
-                            ImGui::EndMenu();
-                        }
-                        ImGui::Separator();
                         auto& project = Workspace::GetProject();
                         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_NODES").c_str()).c_str(), "Delete", false, project.selectedNodes.size() > 0)) {
                             Rendering::ForceRenderFrame();
@@ -1366,14 +1364,22 @@ namespace Raster {
 
                             project.customData["RenderingCompositionLock"] = compositionLock;
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO_NODE").c_str()).c_str(), "`")) {
-                            openNavigateToNodePopup = true;
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO").c_str()).c_str())) {
+                            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_ROUTE, Localization::GetString("NAVIGATE_TO").c_str()).c_str());
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CIRCLE_NODES, Localization::GetString("NODE").c_str()).c_str(), "`")) {
+                                openNavigateToNodePopup = true;
+                            }
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("SELECTED_NODE").c_str()).c_str())) {
+                                Nodes::NavigateToSelection();
+                            }
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("CONTENT").c_str()).c_str())) {
+                                Nodes::NavigateToContent();
+                            }
+                            ImGui::EndMenu();
                         }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_ARROW_POINTER, Localization::GetString("NAVIGATE_TO_SELECTED").c_str()).c_str())) {
-                            Nodes::NavigateToSelection();
-                        }
-                        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_EXPAND, Localization::GetString("NAVIGATE_TO_FIT").c_str()).c_str())) {
-                            Nodes::NavigateToContent();
+                        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LAYER_GROUP, Localization::GetString("COMPOSITION_PROPERTIES").c_str()).c_str())) {
+                            TimelineUI::RenderCompositionPopup(s_currentComposition);
+                            ImGui::EndMenu();
                         }
                         ImGui::PopFont();
                         ImGui::EndPopup();
@@ -1624,11 +1630,32 @@ namespace Raster {
                 }
                 if (s_currentComposition) {
                     ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
+                    bool mustOpenRenamePopup = false;
+                    bool mustOpenPropertiesPopup = false;
                     ImGui::PushFont(Font::s_denseFont);
                         ImGui::SetWindowFontScale(1.7f);
-                            ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str());
+                            static bool s_compositionNameHovered = false;
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_Text) * (s_compositionNameHovered ? 0.9f : 1.0f));
+                                ImGui::Text("%s %s", ICON_FA_LAYER_GROUP, s_currentComposition->name.c_str());
+                            ImGui::PopStyleColor();
+                            if (s_compositionNameHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) mustOpenRenamePopup = true;
+                            if (s_compositionNameHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) mustOpenPropertiesPopup = true;
+                            s_compositionNameHovered = ImGui::IsItemHovered();
                         ImGui::SetWindowFontScale(1.0f);
                     ImGui::PopFont();
+                    if (mustOpenRenamePopup) ImGui::OpenPopup("##compactRenameComposition");
+                    static bool s_renameFieldFocused = false;
+                    if (ImGui::BeginPopup("##compactRenameComposition")) {
+                        if (!s_renameFieldFocused) ImGui::SetKeyboardFocusHere(0);
+                        s_renameFieldFocused = true;
+                        ImGui::InputTextWithHint("##renameField", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME").c_str()).c_str(), &s_currentComposition->name);
+                        ImGui::EndPopup();
+                    } else s_renameFieldFocused = false;
+                    if (mustOpenPropertiesPopup) ImGui::OpenPopup("##compactPropertiesPopup");
+                    if (ImGui::BeginPopup("##compactPropertiesPopup")) {
+                        TimelineUI::RenderCompositionPopup(s_currentComposition);
+                        ImGui::EndPopup();
+                    }
                     static bool isDescriptionHovered = false;
                     static bool isEditingDescription = false;
                     ImGui::PushFont(Font::s_normalFont);

@@ -1,6 +1,7 @@
 #include "gpu/gpu.h"
 #include "raster.h"
 #include <filesystem>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <mutex>
 
 #define GLAD_GLES2_IMPLEMENTATION
@@ -565,9 +566,10 @@ namespace Raster {
         }
         if (clipRectCandidate) {
             auto clipRect = *clipRectCandidate;
+            // print(clipRect.x << ' ' << clipRect.y << ' ' << clipRect.z << ' ' << clipRect.w);
             auto targetResolution = fbo.has_value() ? glm::vec2(fbo->width, fbo->height) : glm::vec2(s_width, s_height);
-            auto processedClipRect = clipRect;
             auto aspectRatio = targetResolution.x / targetResolution.y;
+            auto processedClipRect = clipRect;
             processedClipRect.x /= aspectRatio;
             processedClipRect.z /= aspectRatio;
             auto upperLeft = glm::vec2(processedClipRect[0], processedClipRect[1]);
@@ -575,7 +577,7 @@ namespace Raster {
             upperLeft = NDCToScreen(upperLeft, targetResolution);
             bottomRight = NDCToScreen(bottomRight, targetResolution);
             auto size = glm::abs(bottomRight - upperLeft);
-            glScissor(upperLeft.x, targetResolution.y - upperLeft.y - size.y, size.x, size.y);
+            glScissor(upperLeft.x - size.x, upperLeft.y - size.y, size.x, size.y);
             // print(upperLeft.x << " " << upperLeft.y << " " << glm::abs(bottomRight - upperLeft).x << " " << glm::abs(bottomRight - upperLeft).y);
         }
     }
