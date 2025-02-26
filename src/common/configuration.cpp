@@ -7,10 +7,17 @@ namespace Raster {
                 {"empty_plugin", nullptr}
             }}
         };
+        this->selectedLayout = -1;
     }
 
     Configuration::Configuration(Json data) {
-        this->m_pluginData = data;
+        this->m_pluginData = data["PluginData"];
+        if (data.contains("SelectedLayout")) this->selectedLayout = data["SelectedLayout"];
+        if (data.contains("Layouts")) {
+            for (auto& layout : data["Layouts"]) {
+                layouts.push_back(Layout(layout));
+            }
+        }
     }
 
     Json& Configuration::GetPluginData(std::string t_packageName) {
@@ -26,6 +33,13 @@ namespace Raster {
     }
 
     Json Configuration::Serialize() {
-        return m_pluginData;
+        Json result = Json::object();
+        result["PluginData"] = m_pluginData;
+        result["SelectedLayout"] = selectedLayout;
+        result["Layouts"] = Json::array();
+        for (auto& layout : layouts) {
+            result["Layouts"].push_back(layout.Serialize());
+        }
+        return result;
     }
 };

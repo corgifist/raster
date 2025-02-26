@@ -398,8 +398,9 @@ namespace Raster {
     }
 
     void GPU::BeginFrame() {
-
         GPU::BindFramebuffer(std::nullopt);
+        auto bgColor = ImGui::GetStyleColorVec4(ImGuiCol_DockingEmptyBg);
+        glClearColor(bgColor.x, bgColor.y, bgColor.z, bgColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();

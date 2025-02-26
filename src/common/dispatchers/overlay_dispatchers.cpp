@@ -604,7 +604,7 @@ namespace Raster {
             centerPointNDC4 = project.GetProjectionMatrix(true) * centerPointNDC4;
             glm::vec2 centerPointScreen(centerPointNDC4.x, centerPointNDC4.y); 
             centerPointScreen = NDCToScreen(centerPointScreen, t_regionSize);
-            auto ndcUpperLeft = NDCToScreen(roi.upperLeft, glm::vec2(1));
+            auto ndcUpperLeft = NDCToScreen(roi.upperLeft, glm::vec2(1)); 
             auto ndcBottomRight = NDCToScreen(roi.bottomRight, glm::vec2(1));
             glm::vec2 transformScreenSize(glm::abs(ndcBottomRight.x - ndcUpperLeft.x) * t_regionSize.x, glm::abs(ndcBottomRight.y - ndcUpperLeft.y) * t_regionSize.y);
             // DUMP_VAR(transformScreenSize.x);
@@ -635,8 +635,8 @@ namespace Raster {
             Dispatchers::s_blockPopups = true;
             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("RESIZE_TO_MATCH_PROJECT_RESOLUTION").c_str()).c_str())) {
                 auto aspectRatio = t_regionSize.x / t_regionSize.y;
-                roi.upperLeft = glm::vec2(-aspectRatio, -1);
-                roi.bottomRight = glm::vec2(aspectRatio, 1);
+                roi.upperLeft = glm::vec2(aspectRatio, -1);
+                roi.bottomRight = glm::vec2(-aspectRatio, 1);
                 roiChanged = true;
                 blockDragging = true;
             }

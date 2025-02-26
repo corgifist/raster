@@ -8,15 +8,10 @@
 #include "raster.h"
 #include <filesystem>
 #include "common/ui_helpers.h"
+#include "common/layouts.h"
 
 namespace Raster {
 
-    static Json CreateLayout(std::string t_name) {
-        return {
-            {"ID", Randomizer::GetRandomInteger()},
-            {"Name", t_name}
-        };
-    }
 
     std::string PreferencesPlugin::AbstractName() {
         return "Preferences";
@@ -66,11 +61,6 @@ namespace Raster {
         if (pluginData.empty()) {
             pluginData = GetDefaultConfiguration();
         }
-        if (pluginData["Layouts"].empty()) {
-            pluginData["Layouts"] = Json::array();
-            pluginData["Layouts"].push_back(CreateLayout("Main Layout"));
-            pluginData["SelectedLayout"] = pluginData["Layouts"][0]["ID"];
-        }
         std::string localizationCode = pluginData["LocalizationCode"];
         try {
             DUMP_VAR(localizationCode);
@@ -78,6 +68,33 @@ namespace Raster {
         } catch (...) {
             RASTER_LOG("failed to load localization '" << localizationCode << "'");
         }
+
+        if (Workspace::s_configuration.layouts.empty()) {
+            Json defaultLayout = ReadJson("default_layout.json");
+            Workspace::s_configuration.layouts = {Layout(defaultLayout)};
+            Workspace::s_configuration.selectedLayout = Workspace::s_configuration.layouts[0].id;
+
+            if (!std::filesystem::exists(internalRasterFolder + "layouts/" + std::to_string(defaultLayout["ID"].get<int>()) + "/")) {
+                std::filesystem::create_directory(internalRasterFolder + "layouts/" + std::to_string(defaultLayout["ID"].get<int>()) + "/");
+            }
+            WriteFile(internalRasterFolder + "/layouts/" + std::to_string(defaultLayout["ID"].get<int>()) + "/layout.ini", ReadFile("default_layout.ini"));
+        }
+        bool layoutExists = false;
+        for (auto& layout : Workspace::s_configuration.layouts) {
+            if (layout.id == Workspace::s_configuration.selectedLayout) {
+                layoutExists = true;
+                break;
+            }
+        }
+
+        if (!layoutExists) {
+            Workspace::s_configuration.selectedLayout = Workspace::s_configuration.layouts[0].id;
+        }
+
+        Layouts::LoadLayout(Workspace::s_configuration.selectedLayout);
+    }
+
+    void PreferencesPlugin::AbstractOnLateInitialization() {
     }
 
     void PreferencesPlugin::AbstractWriteConfigs() {
@@ -98,9 +115,7 @@ namespace Raster {
     Json PreferencesPlugin::GetDefaultConfiguration() {
         return {
             {"LocalizationCode", "en"},
-            {"LocalizationSearchPaths", {"."}},
-            {"Layouts", Json::array()},
-            {"SelectedLayout", -1}
+            {"LocalizationSearchPaths", {"."}}
         };
     }
 };

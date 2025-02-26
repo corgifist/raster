@@ -63,7 +63,6 @@ raster_audio                  = "-lraster_audio"
 raster_image                  = "-lraster_image"
 raster_gpu                    = "-lraster_gpu"
 raster_compositor             = "-lraster_compositor"
-raster_ui                     = "-lraster_ui"
 raster_app                    = "-lraster_app"
 raster_sampler_constants_base = "-lraster_sampler_constants_base" # TODO: get rid of this module
 
@@ -90,8 +89,7 @@ build_modules = [
     ["image", shared, [raster_common, OpenImageIO]],
     ["gpu", shared, [glfw3, raster_common, raster_ImGui, raster_image]],
     ["compositor", shared, [raster_gpu, raster_common]],
-    ["ui", shared, ui_deps],
-    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_ui, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio]],
+    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio]],
     ["sampler_constants_base", shared, [raster_common]],
     ["core", binary, [raster_common, raster_app, "-lbfd", "-lunwind"]],
     
@@ -117,6 +115,7 @@ build_modules = [
     ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
     ["matchbox_effects", plugin, [raster_common, raster_gpu, raster_compositor, raster_image, raster_ImGui]],
     ["rendering", plugin, [raster_common, raster_gpu, raster_ImGui, raster_font]],
+    ["ui", plugin, ui_deps],
 
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
     ["audio/export_to_audio_bus", node, [raster_common, raster_audio]],

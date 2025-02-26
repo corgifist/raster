@@ -10,6 +10,8 @@ namespace Raster {
         static void Initialize();
         static void EarlyInitialize();
         static void WorkspaceInitialize();
+        static void LateInitialize();
+        static void SetupUI();
         static void WriteConfigs();
 
         static std::optional<AbstractPlugin> GetPluginByPackageName(std::string t_packageName);

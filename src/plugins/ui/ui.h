@@ -4,21 +4,16 @@
 #include "common/plugin_base.h"
 
 namespace Raster {
-    struct PreferencesPlugin : public PluginBase {
-        PreferencesPlugin() : PluginBase() {}
+    struct UIPlugin : public PluginBase {
+        UIPlugin() : PluginBase() {}
 
         std::string AbstractName();
         std::string AbstractDescription();
         std::string AbstractIcon();
         std::string AbstractPackageName();
 
-        void AbstractOnEarlyInitialization();
-        void AbstractOnLateInitialization();
-
+        void AbstractSetupUI();
+        
         void AbstractRenderProperties();
-
-        void AbstractWriteConfigs();
-
-        static Json GetDefaultConfiguration();
     };
 };

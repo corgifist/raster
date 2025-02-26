@@ -180,9 +180,9 @@ namespace Raster {
                 s_audioActive = true;
             }
         }
-        RASTER_LOG(FormatString("creating audio instance with options: %i|%i|%i", s_currentOptions.desiredSampleRate, 
+/*      RASTER_LOG(FormatString("creating audio instance with options: %i|%i|%i", s_currentOptions.desiredSampleRate, 
                                                                                 s_currentOptions.desiredChannelsCount,
-                                                                                static_cast<int>(s_currentOptions.performanceProfile)));
+                                                                                static_cast<int>(s_currentOptions.performanceProfile))); */
         s_internalAudioOptions = Audio::s_currentOptions;
     }
 

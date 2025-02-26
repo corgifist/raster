@@ -1,6 +1,7 @@
 #include "common/plugin_base.h"
 #include "common/configuration.h"
 #include "common/workspace.h"
+#include "raster.h"
 
 namespace Raster {
     PluginBase::PluginBase() {}
@@ -29,6 +30,15 @@ namespace Raster {
     void PluginBase::OnEarlyInitialization() {
         RASTER_LOG("early initialization of plugin '" << PackageName() << "'");
         AbstractOnEarlyInitialization();
+    }
+
+    void PluginBase::OnLateInitialization() {
+        RASTER_LOG("late initialization of plugin '" << PackageName() << "'");
+        AbstractOnLateInitialization();
+    }
+
+    void PluginBase::SetupUI() {
+        AbstractSetupUI();
     }
 
     Json& PluginBase::GetPluginData() {

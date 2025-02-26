@@ -339,5 +339,9 @@
     "NAVIGATE_TO": "Navigate to",
     "NODE": "Node",
     "SELECTED_NODE": "Selected Node",
-    "CONTENT": "Content"
+    "CONTENT": "Content",
+    "WELCOME_TO_RASTER": "Welcome to Raster!",
+    "GET_STARTED_TEXT": "Get Started by Opening Windows",
+    "NEW_LAYOUT": "New Layout",
+    "WINDOW": "Window"
 }

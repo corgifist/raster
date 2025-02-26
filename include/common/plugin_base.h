@@ -24,6 +24,13 @@ namespace Raster {
         // you're supposed to use this to add your own node implementations
         void OnWorkspaceInitialization();
 
+        // this method is called when all systems were initialized
+        void OnLateInitialization();
+
+        // this method is called before initialization of all systems
+        // use this for adding your own user interface implementations
+        void SetupUI();
+
         Json& GetPluginData();
 
         // should render ui in `Preferences` window
@@ -41,6 +48,8 @@ namespace Raster {
         virtual void AbstractRenderProperties() {};
         virtual void AbstractOnEarlyInitialization() {};
         virtual void AbstractOnWorkspaceInitialization() {};
+        virtual void AbstractOnLateInitialization() {};
+        virtual void AbstractSetupUI() {};
         virtual void AbstractWriteConfigs() {};
     };
 

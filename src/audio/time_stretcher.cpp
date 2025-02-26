@@ -20,7 +20,7 @@ namespace Raster {
     }
 
     TimeStretcher::TimeStretcher(int t_sampleRate, int t_channels, bool t_highQuality) {
-        RASTER_LOG(FormatString("INSTANTIATING WITH %i %i %i", t_sampleRate, t_channels, (int) t_highQuality));
+        // RASTER_LOG(FormatString("INSTANTIATING WITH %i %i %i", t_sampleRate, t_channels, (int) t_highQuality));
         this->m_handle = Stretchers::CreateStretcher(t_sampleRate, t_channels, t_highQuality);
         this->m_channels = t_channels;
         this->m_sampleRate = t_sampleRate;

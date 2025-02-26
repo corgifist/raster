@@ -47,6 +47,28 @@ namespace Raster {
         }
     }
 
+    void Plugins::LateInitialize() {
+        auto preferencesPluginCandidate = GetPluginByPackageName(RASTER_PACKAGED "preferences");
+        if (preferencesPluginCandidate) {
+            (*preferencesPluginCandidate)->OnLateInitialization();
+        }
+        for (auto& plugin : s_plugins) {
+            if (plugin->PackageName() == RASTER_PACKAGED "preferences") continue;
+            plugin->OnLateInitialization();
+        }
+    }
+
+    void Plugins::SetupUI() {
+        auto preferencesPluginCandidate = GetPluginByPackageName(RASTER_PACKAGED "preferences");
+        if (preferencesPluginCandidate) {
+            (*preferencesPluginCandidate)->SetupUI();
+        }
+        for (auto& plugin : s_plugins) {
+            if (plugin->PackageName() == RASTER_PACKAGED "preferences") continue;
+            plugin->SetupUI();
+        }
+    }
+
     std::optional<AbstractPlugin> Plugins::GetPluginByPackageName(std::string t_packageName) {
         for (auto& plugin : s_plugins) {
             if (plugin->PackageName() == t_packageName) {

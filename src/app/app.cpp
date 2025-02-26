@@ -1,6 +1,8 @@
 #include "app/app.h"
 #include "common/configuration.h"
 #include "common/project_color_precision.h"
+#include "common/user_interface.h"
+#include "dockspace.h"
 #include "gpu/gpu.h"
 #include "gpu/async_upload.h"
 #include "font/font.h"
@@ -28,9 +30,6 @@
 using namespace av;
 
 namespace Raster {
-
-    std::vector<AbstractUI> App::s_windows{};
-
     static std::thread s_writerThread;
     static bool s_writerThreadRunning = true;
 
@@ -67,6 +66,7 @@ namespace Raster {
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
 
         Plugins::Initialize();
+        Plugins::SetupUI();
         Plugins::EarlyInitialize();
 
         DefaultNodeCategories::Initialize();
@@ -82,12 +82,8 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-        auto& preferencesData = Workspace::s_configuration.GetPluginData(RASTER_PACKAGED "preferences");
-        if (!preferencesData.contains("SelectedLayout")) {
-            preferencesData["SelectedLayout"] = -1;
-        }
-
-        int currentLayoutID = preferencesData["SelectedLayout"];
+        auto& configuration = Workspace::s_configuration;
+        int currentLayoutID = configuration.selectedLayout;
         if (currentLayoutID > 0) {
             static std::string targetLayoutPath = GetHomePath() + "/.raster/layouts/" + std::to_string(currentLayoutID) + "/layout.ini";
             if (std::filesystem::exists(targetLayoutPath)) {
@@ -98,6 +94,8 @@ namespace Raster {
         } else {
             RASTER_LOG("no layout was applied");
         }
+
+        Plugins::LateInitialize();
 
         ImFontConfig fontCfg = {};
 
@@ -226,15 +224,6 @@ namespace Raster {
         colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.55f, 0.55f, 0.55f, 0.50f);
 
         ImGui::GetIO().ConfigDebugHighlightIdConflicts = false;
-
-        s_windows.push_back(UIFactory::SpawnDockspaceUI());
-        s_windows.push_back(UIFactory::SpawnNodeGraphUI());
-        s_windows.push_back(UIFactory::SpawnNodePropertiesUI());
-        s_windows.push_back(UIFactory::SpawnRenderingUI());
-        s_windows.push_back(UIFactory::SpawnTimelineUI());
-        s_windows.push_back(UIFactory::SpawnAssetManagerUI());
-        s_windows.push_back(UIFactory::SpawnEasingEditor());
-        s_windows.push_back(UIFactory::SpawnAudioBusesUI());
     }
 
     void App::RenderLoop() {
@@ -324,9 +313,19 @@ namespace Raster {
                 project.currentFrame = std::min(project.currentFrame, project.GetProjectLength());
             }
 
-            for (const auto& window : s_windows) {
-                window->Render();
+            static AbstractUserInterface s_dockspaceUI = RASTER_SPAWN_ABSTRACT(AbstractUserInterface, DockspaceUI);
+            s_dockspaceUI->Render();
+            for (auto& layout : Workspace::s_configuration.layouts) {
+                if (layout.id == Workspace::s_configuration.selectedLayout) {
+                    for (auto& window : layout.windows) {
+                        // DUMP_VAR(window->packageName);
+                        window->Render();
+                    }
+                    break;
+                }
             }
+
+            Layouts::Update();
 
             ImGui::ShowDemoWindow();
             GPU::BindFramebuffer(std::nullopt);

@@ -1,0 +1,41 @@
+{
+    "ID": 2129601682,
+    "Name": "Default Layout",
+    "UserInterfaces": [
+        {
+            "Data": null,
+            "ID": 1779256000,
+            "PackageName": "packaged.raster.node_graph"
+        },
+        {
+            "Data": null,
+            "ID": 1946802558,
+            "PackageName": "packaged.raster.rendering"
+        },
+        {
+            "Data": null,
+            "ID": 2122854043,
+            "PackageName": "packaged.raster.node_properties"
+        },
+        {
+            "Data": null,
+            "ID": 304533126,
+            "PackageName": "packaged.raster.audio_buses"
+        },
+        {
+            "Data": null,
+            "ID": 1181515496,
+            "PackageName": "packaged.raster.timeline"
+        },
+        {
+            "Data": null,
+            "ID": 1626746099,
+            "PackageName": "packaged.raster.Asset Manager"
+        },
+        {
+            "Data": null,
+            "ID": 1095959802,
+            "PackageName": "packaged.raster.easing_editor"
+        }
+    ]
+}

@@ -17,5 +17,4 @@ misc/projects/*
 raster_core
 compile_commands.json
 .cache
-plugins
 dist/
