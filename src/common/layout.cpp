@@ -20,10 +20,10 @@ namespace Raster {
         this->id = t_data["ID"];
         this->name = t_data["Name"];
         for (auto& interface : t_data["UserInterfaces"]) {
-            DUMP_VAR(interface.dump());
+            // DUMP_VAR(interface.dump());
             auto userInterfaceCandidate = UserInterfaces::InstantiateSerializedUserInterface(interface);
             if (userInterfaceCandidate) {
-                RASTER_LOG("pushing interface");
+                // RASTER_LOG("pushing interface");
                 windows.push_back(*userInterfaceCandidate);
             }
         }

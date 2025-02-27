@@ -2,6 +2,7 @@
 #include "build_number.h"
 #include "common/localization.h"
 #include "common/plugins.h"
+#include "common/randomizer.h"
 #include "common/user_interface.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
@@ -327,7 +328,20 @@ namespace Raster {
                 ImGui::InputTextWithHint("##newLayoutName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("LAYOUT_NAME").c_str()).c_str(), &s_newLayoutName);
                 ImGui::SameLine();
                 if (ImGui::Button(Localization::GetString("OK").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-                    configuration.layouts.push_back(Layout(s_newLayoutName));
+                    for (auto& selectedLayout : configuration.layouts) {
+                        if (selectedLayout.id == configuration.selectedLayout) {
+                            auto copiedLayout = Layout(selectedLayout.Serialize());
+                            copiedLayout.id = Randomizer::GetRandomInteger();
+                            copiedLayout.name = s_newLayoutName;
+                            auto internalRasterFolder = GetHomePath() + "/.raster/";
+                            if (!std::filesystem::exists(internalRasterFolder + "layouts/" + std::to_string(copiedLayout.id) + "/")) {
+                                std::filesystem::create_directory(internalRasterFolder + "layouts/" + std::to_string(copiedLayout.id) + "/");
+                            }
+                            WriteFile(internalRasterFolder + "layouts/" + std::to_string(copiedLayout.id) + "/layout.ini", ReadFile(internalRasterFolder + "layouts/" + std::to_string(configuration.selectedLayout) + "/layout.ini"));
+                            configuration.layouts.push_back(copiedLayout);
+                            break;
+                        }
+                    }
 
                     ImGui::CloseCurrentPopup();
                 }
