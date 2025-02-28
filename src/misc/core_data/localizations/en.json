@@ -236,7 +236,7 @@
     "GRAPHICS_API": "Graphics API",
     "ABOUT": "About",
     "BUILD_NUMBER": "Build Number",
-    "SET_AS_MAIN_AUDIO_BUS": "Set as Main Audio Bus",
+    "SET_AS_MAIN_AUDIO_BUS": "Set as Primary Audio Bus",
     "RENAME_AUDIO_BUS": "Rename Audio Bus",
     "MORE_AUDIO_BUS_PROPERTIES": "More Audio Bus Properties",
     "TOTAL_AUDIO_BUSES_COUNT": "Total Audio Buses Count",
@@ -343,5 +343,10 @@
     "WELCOME_TO_RASTER": "Welcome to Raster!",
     "GET_STARTED_TEXT": "Get Started by Opening Windows",
     "NEW_LAYOUT": "New Layout",
-    "WINDOW": "Window"
+    "WINDOW": "Window",
+    "PROJECT_PATH": "Project Path",
+    "SAVE_PROJECT_AS": "Save Project as",
+    "OPEN_RECENT_PROJECT": "Open Last Project",
+    "RECENT_PROJECTS": "Recent Projects",
+    "SAVE_PROJECT_AS_FORMAT": "Save '%s' as"
 }

@@ -4,6 +4,7 @@
 #include "common/ui_shared.h"
 #include "font/IconsFontAwesome5.h"
 #include "raster.h"
+#include "common/ui_helpers.h"
 
 #define ASSET_MANAGER_DRAG_DROP_PAYLOAD "ASSET_MANAGER_DRAG_DROP_PAYLOAD"
 
@@ -364,9 +365,11 @@ namespace Raster {
                 if (s_previewType == AssetPreviewType::List) {
                     if (ImGui::BeginChild("##assetsList", ImGui::GetContentRegionAvail())) {
                         std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
+                            bool hasCandidates = false;
                             for (auto& asset : t_assets) {
                                 if (s_colorMarkFilter != 0 && asset->colorMark != s_colorMarkFilter) continue;
                                 if (!assetSearch.empty() && LowerCase(asset->name).find(LowerCase(assetSearch)) == std::string::npos) continue;
+                                hasCandidates = true;
                                 ImGui::PushID(asset->id);
                                 auto childAssetsCandidate = asset->GetChildAssets();
                                 bool isSelected = std::find(selectedAssets.begin(), selectedAssets.end(), asset->id) != selectedAssets.end();
@@ -557,6 +560,9 @@ namespace Raster {
                                     ImGui::TreePop();
                                 }
                                 ImGui::PopID();
+                            }
+                            if (!hasCandidates) {
+                                UIHelpers::RenderNothingToShowText();
                             }
                         };
                         renderAssets(project.assets);

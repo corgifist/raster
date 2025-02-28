@@ -74,6 +74,8 @@ namespace Raster {
         static std::string GetTypeName(std::any& t_value);
 
         static void OpenProject(std::string t_path);
+        static void CreateEmptyProject(Project& t_project, std::string t_projectPath);
+        static void SaveProject();
         static std::optional<AbstractAsset> ImportAsset(std::string t_assetPath);
         static void DeleteComposition(int t_id);
         static Project& GetProject();

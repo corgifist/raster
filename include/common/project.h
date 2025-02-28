@@ -38,6 +38,7 @@ namespace Raster {
         std::shared_ptr<std::mutex> audioBusesMutex;
 
         Json customData;
+        std::string packedProjectPath;
 
         Project();
         Project(Json data);

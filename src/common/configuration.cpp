@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include <filesystem>
 
 namespace Raster {
     Configuration::Configuration() {
@@ -8,6 +9,8 @@ namespace Raster {
             }}
         };
         this->selectedLayout = -1;
+        this->lastProjectName = "";
+        this->lastProjectPath = "";
     }
 
     Configuration::Configuration(Json data) {
@@ -17,6 +20,22 @@ namespace Raster {
             for (auto& layout : data["Layouts"]) {
                 layouts.push_back(Layout(layout));
             }
+        }
+        if (data.contains("LastProjectPath") && std::filesystem::exists(data["LastProjectPath"])) {
+            this->lastProjectPath = data["LastProjectPath"];
+        }
+        if (data.contains("LastProjectName") && std::filesystem::exists(data["LastProjectPath"])) {
+            this->lastProjectName = data["LastProjectName"];
+        }
+        if (data.contains("RecentProjects")) {
+            this->recentProjects = data["RecentProjects"];
+            std::vector<std::vector<std::string>> filteredRecentProjects;
+            for (auto& projectData : recentProjects) {
+                if (std::filesystem::exists(projectData[1])) {
+                    filteredRecentProjects.push_back(projectData);
+                }
+            }
+            this->recentProjects = filteredRecentProjects;
         }
     }
 
@@ -36,6 +55,9 @@ namespace Raster {
         Json result = Json::object();
         result["PluginData"] = m_pluginData;
         result["SelectedLayout"] = selectedLayout;
+        result["LastProjectName"] = lastProjectName;
+        result["LastProjectPath"] = lastProjectPath;
+        result["RecentProjects"] = recentProjects;
         result["Layouts"] = Json::array();
         for (auto& layout : layouts) {
             result["Layouts"].push_back(layout.Serialize());

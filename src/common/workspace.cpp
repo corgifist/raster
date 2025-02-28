@@ -14,6 +14,8 @@
 #include "common/rendering.h"
 #include "common/line2d.h"
 #include "raster.h"
+#include <filesystem>
+#include "common/zip.h"
 
 
 namespace Raster {
@@ -691,11 +693,21 @@ namespace Raster {
 
     void Workspace::OpenProject(std::string t_path) {
         try {
-            if (std::filesystem::exists(t_path + "/project.json")) {
-                Workspace::s_project = Project(ReadJson(t_path + "/project.json"));
-                Workspace::s_project.value().path = t_path + "/";
+            ZIP::Extract(t_path, ".");
+            if (std::filesystem::exists("project/project.json")) {
+                Workspace::s_project = Project(ReadJson("project/project.json"));
+                Workspace::s_project.value().path = "project/";
+                Workspace::s_project.value().packedProjectPath = t_path;
 
                 auto& project = Workspace::GetProject();
+                s_configuration.lastProjectName = project.name;
+                s_configuration.lastProjectPath = project.packedProjectPath;
+                s_configuration.recentProjects.push_back({project.name, project.packedProjectPath});
+                if (s_configuration.recentProjects.size() >= 10) {
+                    while (s_configuration.recentProjects.size() != 9) {
+                        s_configuration.recentProjects.erase(s_configuration.recentProjects.begin());
+                    }
+                }
                 for (auto& composition : project.compositions) {
                     WaveformManager::RequestWaveformRefresh(composition.id);
                 }
@@ -704,6 +716,24 @@ namespace Raster {
             RASTER_LOG("failed to open project: " << t_path);
         }
         Rendering::ForceRenderFrame();
+    }
+
+    void Workspace::SaveProject() {
+        if (Workspace::IsProjectLoaded()) {
+            auto& project = Workspace::GetProject();
+            WriteFile("project/project.json", project.Serialize().dump());
+            ZIP::Pack(project.packedProjectPath, "project");
+        }
+    }
+
+    void Workspace::CreateEmptyProject(Project &t_project, std::string t_projectPath) {
+        auto serializedProject = t_project.Serialize();
+        if (!std::filesystem::exists("project/")) {
+            std::filesystem::create_directory("project/");
+        }
+        WriteFile("project/project.json", serializedProject.dump());
+        ZIP::Pack(t_projectPath, "project");
+        std::filesystem::remove_all("project/");
     }
 
     void Workspace::DeleteComposition(int t_id) {

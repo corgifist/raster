@@ -79,6 +79,9 @@ namespace Raster {
         audioBuses.push_back(mainBus);
 
         this->audioBusesMutex = std::make_shared<std::mutex>();
+
+        this->compositions.push_back(Composition());
+        this->selectedCompositions = {compositions[0].id};
     }
 
     float Project::GetProjectLength() {

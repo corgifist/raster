@@ -62,6 +62,14 @@
     #define RASTER_DL_EXPORT __declspec(dllexport)
 #endif
 
+#if defined(UNIX) || defined(__linux__)
+#include <dirent.h>
+#elif defined(_WIN32)
+#include "win_dirent.h"
+#endif
+
+#include <sys/stat.h>
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     #define SystemOpenURL(url) system(FormatString("%s %s", "start", (url).c_str()).c_str())
 #elif __APPLE__
@@ -325,5 +333,10 @@ namespace Raster {
 #endif
 
 
+    inline bool StringEndsWith(std::string const & value, std::string const & ending)
+    {
+        if (ending.size() > value.size()) return false;
+        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    }
 
 }

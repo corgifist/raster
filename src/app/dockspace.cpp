@@ -4,10 +4,13 @@
 #include "common/plugins.h"
 #include "common/randomizer.h"
 #include "common/user_interface.h"
+#include "common/workspace.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "gpu/gpu.h"
 #include "common/ui_helpers.h"
+#include "nfd/nfd.h"
+#include "nfd/nfd.hpp"
 #include "raster.h"
 #include <filesystem>
 #include "../ImGui/imgui_stdlib.h"
@@ -44,7 +47,7 @@ namespace Raster {
     }
 
     static Project s_project;
-    static std::string s_projectPath;
+    static std::string s_projectPath = "";
     static bool s_preferencesPopupOpened = true;
     static bool s_layoutsPopupOpened = true;
 
@@ -119,34 +122,72 @@ namespace Raster {
         bool openProjectInfoEditor = false;
         bool openPreferencesModal = false;
         bool openLayoutEditorModal = false;
-
+        auto& configuration = Workspace::s_configuration;
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER, Localization::GetString("PROJECT").c_str()).c_str())) {
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_PROJECT").c_str()).c_str(), "Ctrl+N")) {
-                    NFD::UniquePath path;
-                    nfdwindowhandle_t window;
-                    GPU::GetNFDWindowHandle(&window);
-                    nfdresult_t result = NFD::PickFolder(path, nullptr, window);
-                    if (result == NFD_OKAY) {
-                        s_projectPath = path.get();
-                        openProjectInfoEditor = true;
-                    }
+                    s_projectPath = FormatString("%s/%s%i.raster", GetHomePath().c_str(), Localization::GetString("NEW_PROJECT").c_str(), Randomizer::GetRandomInteger());
+                    openProjectInfoEditor = true;
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("OPEN_PROJECT").c_str()).c_str(), "Ctrl+O")) {
                     NFD::UniquePath path;
                     nfdwindowhandle_t window;
                     GPU::GetNFDWindowHandle(&window);
-                    nfdresult_t result = NFD::PickFolder(path, nullptr, window);
+                    static nfdfilteritem_t s_filters[] = {
+                        {"Raster Project", "raster"}
+                    };
+                    nfdresult_t result = NFD::OpenDialog(path, s_filters, 1, GetHomePath().c_str(), window);
                     if (result == NFD_OKAY) {
                         Workspace::OpenProject(path.get());
                     }
+                }
+                auto openRecentProjectText = configuration.lastProjectPath.empty() ?
+                                            FormatString("%s %s", ICON_FA_FOLDER_CLOSED, Localization::GetString("OPEN_RECENT_PROJECT").c_str()) :
+                                            FormatString("%s %s: '%s'", ICON_FA_FOLDER_OPEN, Localization::GetString("OPEN_RECENT_PROJECT").c_str(), configuration.lastProjectName.c_str());
+
+                if (ImGui::MenuItem(FormatString("%s", openRecentProjectText.c_str()).c_str(), "Ctrl+Shift+O", false, !configuration.lastProjectPath.empty())) {
+                    Workspace::OpenProject(configuration.lastProjectPath);
+                }
+                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("RECENT_PROJECTS").c_str()).c_str())) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("RECENT_PROJECTS").c_str()).c_str());
+                    for (int i = configuration.recentProjects.size(); i --> 0;) {
+                        if (ImGui::MenuItem(FormatString("%s %s (%s)", ICON_FA_FOLDER_OPEN, configuration.recentProjects[i][0].c_str(), configuration.recentProjects[i][1].c_str()).c_str())) {
+                            Workspace::OpenProject(configuration.recentProjects[i][1]);
+                        }
+                    }
+                    if (configuration.recentProjects.empty()) {
+                        UIHelpers::RenderNothingToShowText();
+                    }
+                    ImGui::EndMenu();
                 }
                 std::string saveProject = Workspace::IsProjectLoaded() ? 
                         FormatString("%s %s '%s'", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE").c_str(), Workspace::GetProject().name.c_str()) :
                         FormatString("%s %s", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE_PROJECT").c_str());
                 if (ImGui::MenuItem(saveProject.c_str(), "Ctrl+S", nullptr, Workspace::IsProjectLoaded())) {
+                    Workspace::SaveProject();
+                }
+                auto saveProjectAsText = Workspace::IsProjectLoaded() ? 
+                                            FormatString(Localization::GetString("SAVE_PROJECT_AS_FORMAT").c_str(), Workspace::GetProject().name.c_str()) :
+                                            Localization::GetString("SAVE_PROJECT_AS");
+
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FLOPPY_DISK, saveProjectAsText.c_str()).c_str(), "Ctrl+Shift+S", false, Workspace::IsProjectLoaded())) {
                     auto& project = Workspace::GetProject();
-                    WriteFile(project.path + "/project.json", project.Serialize().dump());
+                    auto reservedPackPath = project.packedProjectPath;
+                    NFD::UniquePath path;
+                    nfdwindowhandle_t window;
+                    GPU::GetNFDWindowHandle(&window);
+                    static nfdfilteritem_t s_projectFilters[] = {
+                        {"Raster Project", "raster"}
+                    };
+                    nfdresult_t result = NFD::SaveDialog(path, s_projectFilters, 1, GetHomePath().c_str());
+                    if (result == NFD_OKAY) {
+                        project.packedProjectPath = path.get();
+                        if (!StringEndsWith(project.packedProjectPath, ".raster")) {
+                            project.packedProjectPath += ".raster";
+                        }
+                        Workspace::SaveProject();
+                        project.packedProjectPath = reservedPackPath;
+                    }
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str())) {
                     openPreferencesModal = true;
@@ -361,11 +402,33 @@ namespace Raster {
         if (ImGui::BeginPopupModal("##projectInfoEditor", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
             if (ImGui::BeginChild("##projectSettingsContainer", ImVec2(RASTER_PREFERRED_POPUP_WIDTH * 2.5f, 0), ImGuiChildFlags_AutoResizeY)) {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("PROJECT_INFO").c_str()).c_str());
-                UIHelpers::RenderProjectEditor(s_project);
-                if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-                    s_project.path = s_projectPath;
-                    Workspace::s_project = s_project;
+                if (ImGui::Button(ICON_FA_FOLDER_OPEN)) {
+                    NFD::UniquePath path;
+                    nfdwindowhandle_t window;
+                    GPU::GetNFDWindowHandle(&window);
+                    static nfdfilteritem_t s_projectFilters[] = {
+                        {"Raster Project", "raster"}
+                    };
+                    nfdresult_t result = NFD::SaveDialog(path, s_projectFilters, 1, GetHomePath().c_str());
+                    if (result == NFD_OKAY) {
+                        s_projectPath = path.get();
+                        if (!StringEndsWith(s_projectPath, ".raster")) {
+                            s_projectPath += ".raster";
+                        }
+                    }
                 }
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().FramePadding.x);
+                ImGui::InputTextWithHint("##projectPath", FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("PROJECT_PATH").c_str()).c_str(), &s_projectPath);
+                ImGui::PopItemWidth();
+                UIHelpers::RenderProjectEditor(s_project);
+                if (s_projectPath.empty()) ImGui::BeginDisabled();
+                if (ImGui::Button(FormatString("%s %s", ICON_FA_CHECK, Localization::GetString("OK").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                    Workspace::CreateEmptyProject(s_project, s_projectPath);
+                    Workspace::OpenProject(s_projectPath);
+                    ImGui::CloseCurrentPopup();
+                }
+                if (s_projectPath.empty()) ImGui::EndDisabled();
                 if (ImGui::Button(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("CANCEL").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
                     ImGui::CloseCurrentPopup();
                 }
