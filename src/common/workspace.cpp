@@ -648,6 +648,82 @@ namespace Raster {
         return t_value.type().name();
     }
 
+    static void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements) {
+        int originalID = pin.pinID;
+        pin.pinID = Randomizer::GetRandomInteger();
+        pin.linkID = Randomizer::GetRandomInteger();
+        idReplacements[originalID] = pin.pinID;
+    }
+
+    static void ReplaceCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements) {
+        if (idReplacements.find(pin.connectedPinID) != idReplacements.end()) {
+            pin.connectedPinID = idReplacements[pin.connectedPinID];
+        }
+    }
+
+    std::optional<Composition> Workspace::CopyComposition(int t_compositionID) {
+        auto compositionCandidate = Workspace::GetCompositionByID(t_compositionID);
+        if (compositionCandidate.has_value()) {
+            auto& composition = compositionCandidate.value();
+            Composition copiedComposition = Composition(composition->Serialize());
+            copiedComposition.name += " (" + Localization::GetString("COPY") + ")";
+            copiedComposition.id = Randomizer::GetRandomInteger();
+            for (auto& attribute : copiedComposition.attributes) {
+                attribute = Attributes::CopyAttribute(attribute).value();
+            }
+            std::unordered_map<int, int> idReplacements;
+            for (auto& pair : copiedComposition.nodes) {
+                auto& node = pair.second;
+                int originalID = node->nodeID;
+                node->nodeID = Randomizer::GetRandomInteger();
+                idReplacements[originalID] = node->nodeID;
+
+                if (node->flowInputPin.has_value()) {
+                    UpdateCopyPin(node->flowInputPin.value(), idReplacements);
+                }
+                if (node->flowOutputPin.has_value()) {
+                    UpdateCopyPin(node->flowOutputPin.value(), idReplacements);
+                }
+                for (auto& inputPin : node->inputPins) {
+                    UpdateCopyPin(inputPin, idReplacements);
+                }
+                for (auto& outputPin : node->outputPins) {
+                    UpdateCopyPin(outputPin, idReplacements);
+                }
+            }
+            
+            std::unordered_map<int, AbstractNode> newNodes;
+            for (auto& pair : copiedComposition.nodes) {
+                newNodes[pair.second->nodeID] = pair.second;
+            }
+
+            copiedComposition.nodes = newNodes;
+
+            for (auto& pair : copiedComposition.nodes) {
+                auto& node = pair.second;
+                if (node->flowInputPin.has_value()) {
+                    ReplaceCopyPin(node->flowInputPin.value(), idReplacements);
+                }
+                if (node->flowOutputPin.has_value()) {
+                    ReplaceCopyPin(node->flowOutputPin.value(), idReplacements);
+                }
+                for (auto& inputPin : node->inputPins) {
+                    ReplaceCopyPin(inputPin, idReplacements);
+                }
+                for (auto& outputPin : node->outputPins) {
+                    ReplaceCopyPin(outputPin, idReplacements);
+                }
+            }
+            for (auto& attribute : copiedComposition.attributes) {
+                for (auto& replaceTarget : idReplacements) {
+                    attribute->internalAttributeName = ReplaceString(attribute->internalAttributeName, std::to_string(replaceTarget.first), std::to_string(replaceTarget.second));
+                }
+            }
+            return copiedComposition;
+        }
+        return std::nullopt;
+    }
+
     std::optional<AudioBus*> Workspace::GetAudioBusByID(int t_busID) {
         if (Workspace::IsProjectLoaded()) {
             auto& project = Workspace::GetProject();

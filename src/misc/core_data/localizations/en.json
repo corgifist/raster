@@ -351,5 +351,6 @@
     "SAVE_PROJECT_AS_FORMAT": "Save '%s' as",
     "NEW": "New",
     "NEW_AUDIO_MONITOR_FORMAT": "New Audio Monitor for '%s'",
-    "AUDIO_MONITOR": "Audio Monitor"
+    "AUDIO_MONITOR": "Audio Monitor",
+    "CUT_COMPOSITIONS": "Cut Compositions"
 }

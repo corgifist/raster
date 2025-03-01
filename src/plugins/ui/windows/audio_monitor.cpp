@@ -62,7 +62,7 @@ namespace Raster {
             project.audioBusesMutex->unlock();
         }
         ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin(FormatString("%s %s###%i", busID > 0 ? ICON_FA_VOLUME_HIGH : ICON_FA_STAR, targetAudioBus ? targetAudioBus->name.c_str() : Localization::GetString("AUDIO_MONITOR").c_str(), id).c_str(), &open)) {
+        if (ImGui::Begin(FormatString("%s %s###%i", busID > 0 ? ICON_FA_VOLUME_HIGH : ICON_FA_STAR, targetAudioBus ? targetAudioBus->name.c_str() : Localization::GetString("AUDIO_MONITOR").c_str(), id).c_str(), &open, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
             if (!Workspace::IsProjectLoaded() || !targetAudioBus || (targetAudioBus && targetAudioBus->samples.size() < AudioInfo::s_channels)) {
                 ImGui::PushFont(Font::s_denseFont);
                 ImGui::SetWindowFontScale(2.0f);

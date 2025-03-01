@@ -73,6 +73,8 @@ namespace Raster {
 
         static std::string GetTypeName(std::any& t_value);
 
+        static std::optional<Composition> CopyComposition(int t_compositionID);
+
         static void OpenProject(std::string t_path);
         static void CreateEmptyProject(Project& t_project, std::string t_projectPath);
         static void SaveProject();

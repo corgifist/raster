@@ -27,6 +27,9 @@ namespace Raster {
 
         std::vector<CompositionMask> masks;
 
+        // changes when cutting compositions
+        float cutTimeOffset;
+
         Composition();
         Composition(Json data);
 

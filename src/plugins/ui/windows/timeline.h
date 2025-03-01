@@ -58,6 +58,8 @@ namespace Raster {
         static void ProcessAudioMixingAction();
         static void ProcessRecomputeAudioWaveformAction();
 
+        static void ProcessCutAction();
+
         static void ProcessShortcuts();
 
         static void UpdateCopyPin(GenericPin& pin, std::unordered_map<int, int>& idReplacements);

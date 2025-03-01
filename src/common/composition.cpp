@@ -19,6 +19,7 @@ namespace Raster {
         this->audioEnabled = true;
         this->lockedCompositionID = -1;
         this->masks = {};
+        this->cutTimeOffset = 0;
     }
 
     Composition::Composition(Json data) {
@@ -34,6 +35,7 @@ namespace Raster {
         this->colorMark = data["ColorMark"];
         this->audioEnabled = data.contains("AudioEnabled") ? data["AudioEnabled"].get<bool>() : true;
         this->lockedCompositionID = data.contains("LockedCompositionID") ? data["LockedCompositionID"].get<int>() : -1;
+        this->cutTimeOffset = data.contains("CutTimeOffset") ? data["CutTimeOffset"].get<float>() : 0.0f;
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -92,6 +94,7 @@ namespace Raster {
         if (!IsInBounds(project.GetCorrectCurrentTime(), beginFrame - 1, endFrame + 1)) return;
         if (!enabled) return;
         AbstractPinMap accumulator;
+        project.TimeTravel(cutTimeOffset);
         for (auto& pair : nodes) {
             auto& node = pair.second;
             if (node->flowInputPin.has_value()) {
@@ -111,6 +114,7 @@ namespace Raster {
                 }
             }
         }
+        project.ResetTimeTravel();
     }
 
     bool Composition::DoesAudioMixing() {
@@ -154,6 +158,7 @@ namespace Raster {
         data["ColorMark"] = colorMark;
         data["AudioEnabled"] = audioEnabled;
         data["LockedCompositionID"] = lockedCompositionID;
+        data["CutTimeOffset"] = cutTimeOffset;
         data["Nodes"] = {};
         for (auto& pair : nodes) {
             data["Nodes"].push_back(pair.second->Serialize());

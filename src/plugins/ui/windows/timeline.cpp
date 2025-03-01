@@ -347,6 +347,9 @@ namespace Raster {
         if (!UIHelpers::AnyItemFocused() && ImGui::IsWindowFocused() && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_R) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
             ProcessResizeToMatchContentDurationAction();
         }
+        if (!UIHelpers::AnyItemFocused() && ImGui::IsWindowFocused() && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_X) && UIShared::s_lastClickedObjectType == LastClickedObjectType::Composition) {
+            ProcessCutAction();
+        }
     }
 
     void TimelineUI::RenderCompositionsEditor() {
@@ -1069,6 +1072,9 @@ namespace Raster {
             ProcessCopyAction();
             ProcessPasteAction();
         }
+        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_SCISSORS, Localization::GetString("CUT_COMPOSITIONS").c_str()).c_str())) {
+            ProcessCutAction();
+        }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Delete")) {
             ProcessDeleteAction();
         }
@@ -1088,67 +1094,44 @@ namespace Raster {
         std::vector<Composition> copiedCompositions;
         auto& project = Workspace::GetProject();
         for (auto& selectedComposition : project.selectedCompositions) {
-            auto compositionCandidate = Workspace::GetCompositionByID(selectedComposition);
+            auto compositionCandidate = Workspace::CopyComposition(selectedComposition);
             if (compositionCandidate.has_value()) {
-                auto& composition = compositionCandidate.value();
-                Composition copiedComposition = Composition(composition->Serialize());
-                copiedComposition.name += " (" + Localization::GetString("COPY") + ")";
-                copiedComposition.id = Randomizer::GetRandomInteger();
-                for (auto& attribute : copiedComposition.attributes) {
-                    attribute = Attributes::CopyAttribute(attribute).value();
-                }
-                std::unordered_map<int, int> idReplacements;
-                for (auto& pair : copiedComposition.nodes) {
-                    auto& node = pair.second;
-                    int originalID = node->nodeID;
-                    node->nodeID = Randomizer::GetRandomInteger();
-                    idReplacements[originalID] = node->nodeID;
-
-                    if (node->flowInputPin.has_value()) {
-                        UpdateCopyPin(node->flowInputPin.value(), idReplacements);
-                    }
-                    if (node->flowOutputPin.has_value()) {
-                        UpdateCopyPin(node->flowOutputPin.value(), idReplacements);
-                    }
-                    for (auto& inputPin : node->inputPins) {
-                        UpdateCopyPin(inputPin, idReplacements);
-                    }
-                    for (auto& outputPin : node->outputPins) {
-                        UpdateCopyPin(outputPin, idReplacements);
-                    }
-                }
-                
-                std::unordered_map<int, AbstractNode> newNodes;
-                for (auto& pair : copiedComposition.nodes) {
-                    newNodes[pair.second->nodeID] = pair.second;
-                }
-
-                copiedComposition.nodes = newNodes;
-
-                for (auto& pair : copiedComposition.nodes) {
-                    auto& node = pair.second;
-                    if (node->flowInputPin.has_value()) {
-                        ReplaceCopyPin(node->flowInputPin.value(), idReplacements);
-                    }
-                    if (node->flowOutputPin.has_value()) {
-                        ReplaceCopyPin(node->flowOutputPin.value(), idReplacements);
-                    }
-                    for (auto& inputPin : node->inputPins) {
-                        ReplaceCopyPin(inputPin, idReplacements);
-                    }
-                    for (auto& outputPin : node->outputPins) {
-                        ReplaceCopyPin(outputPin, idReplacements);
-                    }
-                }
-                for (auto& attribute : copiedComposition.attributes) {
-                    for (auto& replaceTarget : idReplacements) {
-                        attribute->internalAttributeName = ReplaceString(attribute->internalAttributeName, std::to_string(replaceTarget.first), std::to_string(replaceTarget.second));
-                    }
-                }
-                copiedCompositions.push_back(copiedComposition);
+                copiedCompositions.push_back(*compositionCandidate);
             }
         }
         s_copyCompositions = copiedCompositions;
+    }
+
+    void TimelineUI::ProcessCutAction() {
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+        for (auto& compositionID : project.selectedCompositions) {
+            auto baseCompositionCandidate = Workspace::GetCompositionByID(compositionID);
+            if (!baseCompositionCandidate) continue;
+            auto& baseComposition = *baseCompositionCandidate;
+            if (!IsInBounds(project.currentFrame, baseComposition->beginFrame - 1, baseComposition->endFrame + 1)) continue;
+            auto copiedCompositionCandidate = Workspace::CopyComposition(compositionID);
+            if (!copiedCompositionCandidate) continue;
+            auto& copiedComposition = *copiedCompositionCandidate;
+            baseComposition->lockedCompositionID = 0;
+            baseComposition->endFrame = project.currentFrame;
+            copiedComposition.beginFrame = project.currentFrame;
+            copiedComposition.cutTimeOffset += baseComposition->endFrame - baseComposition->beginFrame;
+            copiedComposition.lockedCompositionID = 0;
+            int baseCompositionIndex = 0;
+            bool compositionIndexFound = false;
+            for (auto& composition : project.compositions) {
+                if (composition.id == baseComposition->id) {
+                    compositionIndexFound = true;
+                    break;
+                }
+                baseCompositionIndex++;
+            }
+            if (compositionIndexFound) {
+                project.compositions.insert(project.compositions.begin() + baseCompositionIndex + 1, copiedComposition);
+                WaveformManager::RequestWaveformRefresh(copiedComposition.id);
+            }
+        }
     }
 
     void TimelineUI::ProcessPasteAction() {
