@@ -202,7 +202,7 @@ namespace Raster {
 
             if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_WINDOW_RESTORE, Localization::GetString("WINDOW").c_str()).c_str())) {
                 for (auto& implementation : UserInterfaces::s_implementations) {
-                    if (ImGui::MenuItem(FormatString("%s %s", implementation.description.icon.c_str(), implementation.description.prettyName.c_str()).c_str())) {
+                    if (ImGui::MenuItem(FormatString(ICON_FA_PLUS " %s %s %s", implementation.description.icon.c_str(), Localization::GetString("NEW").c_str(), implementation.description.prettyName.c_str()).c_str())) {
                         for (auto& layout : Workspace::s_configuration.layouts) {
                             if (layout.id == Workspace::s_configuration.selectedLayout) {
                                 auto userInterfaceCandidate = UserInterfaces::InstantiateUserInterface(implementation.description.packageName);
@@ -214,6 +214,7 @@ namespace Raster {
                         }
                     }
                 }
+                Plugins::RenderWindowPopup();
                 ImGui::EndMenu();
             }
 

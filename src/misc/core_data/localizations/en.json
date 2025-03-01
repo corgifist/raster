@@ -348,5 +348,8 @@
     "SAVE_PROJECT_AS": "Save Project as",
     "OPEN_RECENT_PROJECT": "Open Last Project",
     "RECENT_PROJECTS": "Recent Projects",
-    "SAVE_PROJECT_AS_FORMAT": "Save '%s' as"
+    "SAVE_PROJECT_AS_FORMAT": "Save '%s' as",
+    "NEW": "New",
+    "NEW_AUDIO_MONITOR_FORMAT": "New Audio Monitor for '%s'",
+    "AUDIO_MONITOR": "Audio Monitor"
 }

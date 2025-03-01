@@ -74,7 +74,7 @@ namespace Raster {
 
         AudioBus mainBus;
         mainBus.main = true;
-        mainBus.name = "Main Audio Bus";
+        mainBus.name = "Primary Audio Bus";
 
         audioBuses.push_back(mainBus);
 

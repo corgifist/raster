@@ -5,6 +5,7 @@
 #include "common/localization.h"
 #include "common/plugin_base.h"
 #include "common/user_interface.h"
+#include "common/workspace.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "raster.h"
@@ -18,6 +19,8 @@
 #include "windows/asset_manager.h"
 #include "windows/easing_editor.h"
 #include "windows/audio_buses.h"
+#include "windows/audio_monitor.h"
+#include <memory>
 
 namespace Raster {
     std::string UIPlugin::AbstractName() {
@@ -135,10 +138,43 @@ namespace Raster {
             }
         );
 
+        UserInterfaces::s_implementations.push_back(
+            UserInterfaceImplementation{
+                .libraryName = RASTER_PACKAGED "audio_monitor",
+                .description = UserInterfaceDescription{
+                    .prettyName = "Audio Monitor",
+                    .packageName = RASTER_PACKAGED "audio_monitor",
+                    .icon = ICON_FA_VOLUME_HIGH
+                },
+                .spawn = []() -> AbstractUserInterface {
+                    return RASTER_SPAWN_ABSTRACT(Raster::AbstractUserInterface, Raster::AudioMonitorUI);
+                }
+            }
+        );
+
     }
 
     void UIPlugin::AbstractRenderProperties() {
         UIHelpers::RenderNothingToShowText();
+    }
+
+    void UIPlugin::AbstractRenderWindowPopup() {
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+        auto& configuration = Workspace::s_configuration;
+        project.audioBusesMutex->lock();
+        for (auto& bus : project.audioBuses) {
+            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS " " ICON_FA_VOLUME_HIGH, FormatString(Localization::GetString("NEW_AUDIO_MONITOR_FORMAT"), bus.name.c_str()).c_str()).c_str())) {
+                for (auto& layout : configuration.layouts) {
+                    if (layout.id == configuration.selectedLayout) {
+                        auto audioMonitor = std::make_shared<AudioMonitorUI>(bus.id);
+                        layout.windows.push_back((AbstractUserInterface) audioMonitor);
+                        break;
+                    }
+                }
+            }
+        }
+        project.audioBusesMutex->unlock();
     }
 };
 

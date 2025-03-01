@@ -40,6 +40,9 @@ namespace Raster {
         // should be used for saving some information to ~/.raster
         void WriteConfigs();
 
+        // should render ui in `Window` popup in dockspace
+        void RenderWindowPopup();
+
     private:    
         virtual std::string AbstractName() { return "Empty Plugin"; };
         virtual std::string AbstractDescription() { return "Description of Empty Plugin"; };
@@ -50,6 +53,7 @@ namespace Raster {
         virtual void AbstractOnWorkspaceInitialization() {};
         virtual void AbstractOnLateInitialization() {};
         virtual void AbstractSetupUI() {};
+        virtual void AbstractRenderWindowPopup() {};
         virtual void AbstractWriteConfigs() {};
     };
 

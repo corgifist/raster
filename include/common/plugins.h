@@ -13,6 +13,7 @@ namespace Raster {
         static void LateInitialize();
         static void SetupUI();
         static void WriteConfigs();
+        static void RenderWindowPopup();
 
         static std::optional<AbstractPlugin> GetPluginByPackageName(std::string t_packageName);
         static std::optional<int> GetPluginIndexByPackageName(std::string t_packageName);

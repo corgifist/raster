@@ -52,4 +52,8 @@ namespace Raster {
     void PluginBase::WriteConfigs() {
         AbstractWriteConfigs();
     }
+
+    void PluginBase::RenderWindowPopup() {
+        AbstractRenderWindowPopup();
+    }
 }

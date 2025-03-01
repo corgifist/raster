@@ -69,6 +69,17 @@ namespace Raster {
         }
     }
 
+    void Plugins::RenderWindowPopup() {
+        auto preferencesPluginCandidate = GetPluginByPackageName(RASTER_PACKAGED "preferences");
+        if (preferencesPluginCandidate) {
+            (*preferencesPluginCandidate)->RenderWindowPopup();
+        }
+        for (auto& plugin : s_plugins) {
+            if (plugin->PackageName() == RASTER_PACKAGED "preferences") continue;
+            plugin->RenderWindowPopup();
+        }
+    }
+
     std::optional<AbstractPlugin> Plugins::GetPluginByPackageName(std::string t_packageName) {
         for (auto& plugin : s_plugins) {
             if (plugin->PackageName() == t_packageName) {

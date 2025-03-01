@@ -13,6 +13,7 @@ namespace Raster {
         std::string AbstractPackageName();
 
         void AbstractSetupUI();
+        void AbstractRenderWindowPopup();
         
         void AbstractRenderProperties();
     };

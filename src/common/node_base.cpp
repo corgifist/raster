@@ -67,7 +67,7 @@ namespace Raster {
     }
 
     AbstractPinMap NodeBase::Execute(ContextData& t_contextData) {
-        if (!enabled) return {};
+        if (!enabled || !Workspace::IsProjectLoaded()) return {};
         if (bypassed) {
             auto outputPin = flowOutputPin.value();
             if (outputPin.connectedPinID > 0) {
@@ -310,7 +310,7 @@ namespace Raster {
     }
 
     std::optional<std::any> NodeBase::GetDynamicAttribute(std::string t_attribute, ContextData& t_contextData) {
-        if (!enabled || bypassed) return std::nullopt;
+        if (!enabled || bypassed || !Workspace::IsProjectLoaded()) return std::nullopt;
         auto attributePinCandidate = GetAttributePin(t_attribute);
         auto attributePin = attributePinCandidate.has_value() ? attributePinCandidate.value() : GenericPin();
         std::string exposedPinAttributeName = FormatString("<%i>.%s", nodeID, t_attribute.c_str());

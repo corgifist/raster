@@ -42,7 +42,7 @@ namespace Raster {
             s_nullShapePipeline = GeneratePipelineFromShape(SDFShape()).pipeline;
         }
 
-        auto& project = Workspace::s_project.value();
+        auto& project = Workspace::GetProject();
 
         auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base", t_contextData));
         auto transformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
