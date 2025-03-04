@@ -125,6 +125,14 @@ namespace Raster {
         return false;
     }
 
+    bool Composition::DoesRendering() {
+        for (auto& node : nodes) {
+            if (!node.second->enabled || node.second->bypassed) continue;
+            if (node.second->DoesRendering()) return true;
+        }
+        return false;
+    }
+
     std::vector<int> Composition::GetUsedAudioBuses() {
         std::vector<int> result;
         for (auto& node : nodes) {

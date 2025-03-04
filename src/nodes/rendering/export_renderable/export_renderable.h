@@ -14,6 +14,7 @@ namespace Raster {
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
         bool AbstractDetailsAvailable();
+        bool AbstractDoesRendering();
 
         std::string AbstractHeader();
         std::string Icon();

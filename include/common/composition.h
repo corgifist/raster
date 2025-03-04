@@ -40,6 +40,7 @@ namespace Raster {
 
         std::vector<int> GetUsedAudioBuses();
         bool DoesAudioMixing();
+        bool DoesRendering();
 
         Json Serialize();
     };

@@ -56,6 +56,10 @@ namespace Raster {
     void ExportRenderable::AbstractRenderProperties() {
     }
 
+    bool ExportRenderable::AbstractDoesRendering() {
+        return true;
+    }
+
     bool ExportRenderable::AbstractDetailsAvailable() {
         return false;
     }

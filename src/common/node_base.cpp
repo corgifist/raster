@@ -468,6 +468,10 @@ namespace Raster {
         return AbstractDoesAudioMixing();
     }
 
+    bool NodeBase::DoesRendering() {
+        return AbstractDoesRendering();
+    }
+
     void NodeBase::OnTimelineSeek() {
         m_attributes.Lock();
             for (auto& attribute : m_attributes.GetReference()) {

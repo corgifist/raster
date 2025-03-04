@@ -12,6 +12,7 @@
     </attributes>
 
     <pins>
+        <input name="Base"/>
         <output name="Output"/>
     </pins>
 

@@ -481,9 +481,11 @@ namespace Raster {
             bool compositionHovered;
             std::string compositionIcons = "";
             if (composition->lockedCompositionID > 0) compositionIcons += ICON_FA_LOCK " ";
-            if (composition->audioEnabled) compositionIcons += ICON_FA_VOLUME_HIGH;
-            else compositionIcons += ICON_FA_VOLUME_OFF;
-            compositionIcons += " ";
+            if (composition->DoesAudioMixing()) {
+                if (composition->audioEnabled) compositionIcons += ICON_FA_VOLUME_HIGH;
+                else compositionIcons += ICON_FA_VOLUME_OFF;
+                compositionIcons += " ";
+            }
             compositionIcons += ICON_FA_LAYER_GROUP;
             std::string compositionLabel = FormatString("%s %s", compositionIcons.c_str(), composition->name.c_str());
             bool compositionPressed = ClampedButton(compositionLabel.c_str(), buttonSize, 0, compositionHovered, composition);
@@ -894,7 +896,7 @@ namespace Raster {
         if (modeCandidate.has_value()) {
             blendingPreviewText = "(" + modeCandidate.value().name + ")";
         }
-        if (ImGui::BeginMenu(FormatString("%s %s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str(), blendingPreviewText.c_str()).c_str())) {
+        if (t_composition->DoesRendering() && ImGui::BeginMenu(FormatString("%s %s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str(), blendingPreviewText.c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_SLIDERS, Localization::GetString("BLENDING").c_str()).c_str());
             static std::string blendFilter = "";
             bool attributeOpacityUsed = false;
@@ -1029,7 +1031,7 @@ namespace Raster {
             ImGui::EndChild();
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str()).c_str())) {
+        if (t_composition->DoesRendering() && ImGui::BeginMenu(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str()).c_str())) {
             RenderMaskCompositionPopup(t_composition);
             ImGui::EndMenu();
         }
@@ -1059,7 +1061,7 @@ namespace Raster {
                 }
             }
         }
-        if (ImGui::MenuItem(FormatString("%s %s", t_composition->audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITIONS_AUDIO_MIXING").c_str()).c_str(), "Ctrl+A")) {
+        if (t_composition->DoesAudioMixing() && ImGui::MenuItem(FormatString("%s %s", t_composition->audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITIONS_AUDIO_MIXING").c_str()).c_str(), "Ctrl+A")) {
             ProcessAudioMixingAction();
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_COPY, Localization::GetString("COPY_SELECTED_COMPOSITIONS").c_str()).c_str(), "Ctrl+C")) {
@@ -1078,14 +1080,13 @@ namespace Raster {
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_TRASH_CAN, Localization::GetString("DELETE_SELECTED_COMPOSITIONS").c_str()).c_str(), "Delete")) {
             ProcessDeleteAction();
         }
-        ImGui::Separator();   
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LOCK_OPEN, Localization::GetString("UNLOCK_COMPOSITION").c_str()).c_str(), nullptr, false, t_composition->lockedCompositionID > 0)) {
+        if (t_composition->lockedCompositionID > 0 && ImGui::MenuItem(FormatString("%s %s", ICON_FA_LOCK_OPEN, Localization::GetString("UNLOCK_COMPOSITION").c_str()).c_str(), nullptr, false, t_composition->lockedCompositionID > 0)) {
             t_composition->lockedCompositionID = -1;
         }     
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
+        if ((t_composition->DoesAudioMixing() || t_composition->DoesRendering()) && ImGui::MenuItem(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("RESIZE_TO_MATCH_CONTENT_DURATION").c_str()).c_str(), "Ctrl+R")) {
             ProcessResizeToMatchContentDurationAction();
         }
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("RECOMPUTE_AUDIO_WAVEFORM").c_str()).c_str())) {
+        if (t_composition->DoesAudioMixing() && ImGui::MenuItem(FormatString("%s %s", ICON_FA_WAVE_SQUARE, Localization::GetString("RECOMPUTE_AUDIO_WAVEFORM").c_str()).c_str())) {
             ProcessRecomputeAudioWaveformAction();
         }
     }
@@ -1747,42 +1748,46 @@ namespace Raster {
                     ImGui::EndPopup();
                 }
                 ImGui::SameLine();
-                if (ImGui::Button(ICON_FA_IMAGE)) {
-                    ImGui::OpenPopup("##maskCompositionPopup");
-                }
-#define TIMELINE_MASK_DRAG_DROP "TIMELINE_MASK_DRAG_DROP"
-                if (ImGui::BeginDragDropSource()) {
-                    ImGui::SetDragDropPayload(TIMELINE_MASK_DRAG_DROP, &i, sizeof(i));
-                    ImGui::Text("%s %s", ICON_FA_IMAGE, Localization::GetString("ADD_COMPOSITION_AS_MASK_FOR_ANOTHER_COMPOSITION").c_str());
-                    ImGui::EndDragDropSource();
-                }
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(TIMELINE_MASK_DRAG_DROP)) {
-                        Composition* fromComposition = &(project.compositions[*((int*) payload->Data)]);
-                        CompositionMask newMask;
-                        newMask.compositionID = fromComposition->id;
-                        composition.masks.push_back(newMask);
-                        Rendering::ForceRenderFrame(); 
+                if (composition.DoesRendering()) {
+                    if (ImGui::Button(ICON_FA_IMAGE)) {
+                        ImGui::OpenPopup("##maskCompositionPopup");
                     }
-                    ImGui::EndDragDropTarget();
+#define TIMELINE_MASK_DRAG_DROP "TIMELINE_MASK_DRAG_DROP"
+                    if (ImGui::BeginDragDropSource()) {
+                        ImGui::SetDragDropPayload(TIMELINE_MASK_DRAG_DROP, &i, sizeof(i));
+                        ImGui::Text("%s %s", ICON_FA_IMAGE, Localization::GetString("ADD_COMPOSITION_AS_MASK_FOR_ANOTHER_COMPOSITION").c_str());
+                        ImGui::EndDragDropSource();
+                    }
+                    if (ImGui::BeginDragDropTarget()) {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(TIMELINE_MASK_DRAG_DROP)) {
+                            Composition* fromComposition = &(project.compositions[*((int*) payload->Data)]);
+                            CompositionMask newMask;
+                            newMask.compositionID = fromComposition->id;
+                            composition.masks.push_back(newMask);
+                            Rendering::ForceRenderFrame(); 
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    ImGui::SetItemTooltip("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str());
+                    if (ImGui::BeginPopup("##maskCompositionPopup")) {
+                        RenderMaskCompositionPopup(&composition);
+                        ImGui::EndPopup();
+                    }
+                    ImGui::SameLine();
                 }
-                ImGui::SetItemTooltip("%s %s", ICON_FA_IMAGE, Localization::GetString("MASK_COMPOSITION").c_str());
-                if (ImGui::BeginPopup("##maskCompositionPopup")) {
-                    RenderMaskCompositionPopup(&composition);
-                    ImGui::EndPopup();
+                if (composition.DoesAudioMixing()) {
+                    if (ImGui::Button(composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF)) {
+                        composition.audioEnabled = !composition.audioEnabled;
+                        WaveformManager::RequestWaveformRefresh(composition.id);
+                    }
+                    ImGui::SetItemTooltip("%s %s", composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_AUDIO_MIXING").c_str());
+                    ImGui::SameLine();
                 }
-                ImGui::SameLine();
                 if (ImGui::Button(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF)) {
                     composition.enabled = !composition.enabled;
                     WaveformManager::RequestWaveformRefresh(composition.id);
                 }
                 ImGui::SetItemTooltip(composition.enabled ? ICON_FA_TOGGLE_ON : ICON_FA_TOGGLE_OFF, Localization::GetString("ENABLE_DISABLE_COMPOSITION").c_str());
-                ImGui::SameLine();
-                if (ImGui::Button(composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF)) {
-                    composition.audioEnabled = !composition.audioEnabled;
-                    WaveformManager::RequestWaveformRefresh(composition.id);
-                }
-                ImGui::SetItemTooltip("%s %s", composition.audioEnabled ? ICON_FA_VOLUME_HIGH : ICON_FA_VOLUME_OFF, Localization::GetString("ENABLE_DISABLE_AUDIO_MIXING").c_str());
                 ImGui::SameLine();
                 if (ImGui::Button(ICON_FA_PLUS)) {
                     ImGui::OpenPopup(FormatString("##createAttribute%i", composition.id).c_str());

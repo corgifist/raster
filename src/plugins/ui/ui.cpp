@@ -144,7 +144,7 @@ namespace Raster {
                 .description = UserInterfaceDescription{
                     .prettyName = "Audio Monitor",
                     .packageName = RASTER_PACKAGED "audio_monitor",
-                    .icon = ICON_FA_VOLUME_HIGH
+                    .icon = ICON_FA_DISPLAY
                 },
                 .spawn = []() -> AbstractUserInterface {
                     return RASTER_SPAWN_ABSTRACT(Raster::AbstractUserInterface, Raster::AudioMonitorUI);

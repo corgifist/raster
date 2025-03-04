@@ -85,6 +85,7 @@ namespace Raster {
         std::optional<T> GetAttribute(std::string t_attribute, ContextData& t_contextData);
 
         bool DoesAudioMixing();
+        bool DoesRendering();
 
         std::vector<int> GetUsedAudioBuses();
 
@@ -96,7 +97,8 @@ namespace Raster {
         protected:
         SynchronizedValue<std::unordered_map<std::string, std::any>> m_attributes;
 
-        virtual bool AbstractDoesAudioMixing() { return false; };
+        virtual bool AbstractDoesAudioMixing() { return false; }
+        virtual bool AbstractDoesRendering() { return false; }
 
         virtual void AbstractOnTimelineSeek() { };
 
