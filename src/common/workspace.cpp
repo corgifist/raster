@@ -161,11 +161,23 @@ namespace Raster {
     }
 
     std::optional<Composition*> Workspace::GetCompositionByAttributeID(int t_attributeID) {
-        if (!s_project.has_value()) return std::nullopt;
-        auto& project = s_project.value();
-        for (auto& composition : project.compositions) {
-            for (auto& attribute : composition.attributes) {
-                if (attribute->id == t_attributeID) return &composition;
+        if (s_project.has_value()) {
+            auto& project = s_project.value();
+            // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+            for (auto& composition : project.compositions) {
+                std::function<std::optional<Composition*>(std::vector<AbstractAttribute>*)> searchComposition = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<Composition*> {
+                    for (auto& attribute : *t_attributes) {
+                        auto childAttributesCandidate = attribute->GetChildAttributes();
+                        if (childAttributesCandidate) {
+                            auto resultCandidate = searchComposition(*childAttributesCandidate);
+                            if (resultCandidate) return *resultCandidate;
+                        }
+                        if (attribute->id == t_attributeID) return &composition;
+                    }
+                    return std::nullopt;
+                };
+                auto resultCandidate = searchComposition(&composition.attributes);
+                if (resultCandidate) return *resultCandidate;
             }
         }
         return std::nullopt;
@@ -522,13 +534,23 @@ namespace Raster {
             auto& project = s_project.value();
             // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& composition : project.compositions) {
-                for (auto& attribute : composition.attributes) {
-                    for (auto& keyframe : attribute->keyframes) {
-                        if (keyframe.id == t_keyframeID) {
-                            return attribute;
+                std::function<std::optional<AbstractAttribute>(std::vector<AbstractAttribute>*)> searchAttribute = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<AbstractAttribute> {
+                    for (auto& attribute : *t_attributes) {
+                        auto childAttributesCandidate = attribute->GetChildAttributes();
+                        if (childAttributesCandidate) {
+                            auto resultCandidate = searchAttribute(*childAttributesCandidate);
+                            if (resultCandidate) return *resultCandidate;
+                        }
+                        for (auto& keyframe : attribute->keyframes) {
+                            if (keyframe.id == t_keyframeID) {
+                                return attribute;
+                            }
                         }
                     }
-                }
+                    return std::nullopt;
+                };
+                auto resultCandidate = searchAttribute(&composition.attributes);
+                if (resultCandidate) return *resultCandidate;
             }
         }
         return std::nullopt;
@@ -539,9 +561,42 @@ namespace Raster {
             auto& project = s_project.value();
             // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& composition : project.compositions) {
-                for (auto& attribute : composition.attributes) {
-                    if (attribute->id == t_attributeID) return attribute;
-                }
+                std::function<std::optional<AbstractAttribute>(std::vector<AbstractAttribute>*)> searchAttribute = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<AbstractAttribute> {
+                    for (auto& attribute : *t_attributes) {
+                        auto childAttributesCandidate = attribute->GetChildAttributes();
+                        if (childAttributesCandidate) {
+                            auto resultCandidate = searchAttribute(*childAttributesCandidate);
+                            if (resultCandidate) return *resultCandidate;
+                        }
+                        if (attribute->id == t_attributeID) return attribute;
+                    }
+                    return std::nullopt;
+                };
+                auto resultCandidate = searchAttribute(&composition.attributes);
+                if (resultCandidate) return *resultCandidate;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::vector<AbstractAttribute>*> Workspace::GetAttributeScopeByAttributeID(int t_attributeID) {
+        if (s_project.has_value()) {
+            auto& project = s_project.value();
+            // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+            for (auto& composition : project.compositions) {
+                std::function<std::optional<std::vector<AbstractAttribute>*>(std::vector<AbstractAttribute>*)> searchScope = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<std::vector<AbstractAttribute>*> {
+                    for (auto& attribute : *t_attributes) {
+                        auto childAttributesCandidate = attribute->GetChildAttributes();
+                        if (childAttributesCandidate) {
+                            auto resultCandidate = searchScope(*childAttributesCandidate);
+                            if (resultCandidate) return *resultCandidate;
+                        }
+                        if (attribute->id == t_attributeID) return t_attributes;
+                    }
+                    return std::nullopt;
+                };
+                auto resultCandidate = searchScope(&composition.attributes);
+                if (resultCandidate) return *resultCandidate;
             }
         }
         return std::nullopt;
@@ -549,8 +604,22 @@ namespace Raster {
 
     std::optional<AbstractAttribute> Workspace::GetAttributeByName(Composition* t_composition, std::string t_name) {
         // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
-        for (auto& attribute : t_composition->attributes) {
-            if (attribute->name == t_name) return attribute;
+        if (s_project.has_value()) {
+            auto& project = s_project.value();
+            // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+            std::function<std::optional<AbstractAttribute>(std::vector<AbstractAttribute>*)> searchAttribute = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<AbstractAttribute> {
+                for (auto& attribute : *t_attributes) {
+                    auto childAttributesCandidate = attribute->GetChildAttributes();
+                    if (childAttributesCandidate) {
+                        auto resultCandidate = searchAttribute(*childAttributesCandidate);
+                        if (resultCandidate) return *resultCandidate;
+                    }
+                    if (attribute->name == t_name) return attribute;
+                }
+                return std::nullopt;
+            };
+            auto resultCandidate = searchAttribute(&t_composition->attributes);
+            if (resultCandidate) return *resultCandidate;
         }
         return std::nullopt;
     }
@@ -560,13 +629,28 @@ namespace Raster {
             auto& project = s_project.value();
             // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
             for (auto& composition : project.compositions) {
-                for (auto& attribute : composition.attributes) {
-                    for (auto& keyframe : attribute->keyframes) {
-                        if (keyframe.id == t_keyframeID) {
-                            return &keyframe;
-                        }
+                if (s_project.has_value()) {
+                    auto& project = s_project.value();
+                    // RASTER_SYNCHRONIZED(Workspace::s_projectMutex);
+                    for (auto& composition : project.compositions) {
+                        std::function<std::optional<AttributeKeyframe*>(std::vector<AbstractAttribute>*)> searchKeyframe = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<AttributeKeyframe*> {
+                            for (auto& attribute : *t_attributes) {
+                                auto childAttributesCandidate = attribute->GetChildAttributes();
+                                if (childAttributesCandidate) {
+                                    auto resultCandidate = searchKeyframe(*childAttributesCandidate);
+                                    if (resultCandidate) return *resultCandidate;
+                                }
+                                for (auto& keyframe : attribute->keyframes) {
+                                    if (keyframe.id == t_keyframeID) return &keyframe;
+                                }
+                            }
+                            return std::nullopt;
+                        };
+                        auto resultCandidate = searchKeyframe(&composition.attributes);
+                        if (resultCandidate) return *resultCandidate;
                     }
                 }
+                return std::nullopt;
             }
         }
         return std::nullopt;

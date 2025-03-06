@@ -61,6 +61,7 @@ namespace Raster {
         static std::optional<AbstractAttribute> GetAttributeByAttributeID(int t_attributeID);
         static std::optional<AbstractAttribute> GetAttributeByName(Composition* t_composition, std::string t_name);
         static std::optional<AttributeKeyframe*> GetKeyframeByKeyframeID(int t_keyframeID);
+        static std::optional<std::vector<AbstractAttribute>*> GetAttributeScopeByAttributeID(int t_attributeID);
 
         static std::optional<std::vector<AbstractAsset>*> GetAssetScopeByAssetID(int t_assetID);
         static std::optional<AbstractAsset> GetAssetByAssetID(int t_assetID);

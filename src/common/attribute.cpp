@@ -130,10 +130,12 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         float currentFrame = project.currentFrame - t_composition->beginFrame;
         auto currentValue = Get(currentFrame, t_composition);
+        auto childAttributesCandidate = GetChildAttributes();
         bool openRenamePopup = false;
         ImGui::PushID(id);
             bool graphButtonEnabled = true;
             if (keyframes.size() <= 1) graphButtonEnabled = false;
+            if (childAttributesCandidate.has_value()) graphButtonEnabled = false;
             if (!graphButtonEnabled) ImGui::BeginDisabled();
             std::string easingPopupID = FormatString("##easingPopupLegendID", id);
             if (ImGui::Button(ICON_FA_BEZIER_CURVE)) {
@@ -187,9 +189,18 @@ namespace Raster {
             ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
             if (attributeTextHovered) textColor = textColor * 0.9f;
             if (attributeTextClicked) textColor = textColor * 0.9f;
-            ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-                ImGui::Text("%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
-            ImGui::PopStyleColor();
+            if (!childAttributesCandidate) {
+                ImGui::PushStyleColor(ImGuiCol_Text, textColor);
+                    ImGui::Text("%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
+                ImGui::PopStyleColor();
+            } else {
+                if (ImGui::TreeNodeEx(FormatString("%s%s%s %s###%i", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str(), id).c_str())) {
+                    for (auto& attribute : **childAttributesCandidate) {
+                        attribute->RenderLegend(t_composition);
+                    }
+                    ImGui::TreePop();
+                }
+            }
             if (!internalAttributeName.empty()) {
                 ImGui::SetItemTooltip("%s %s: %s", ICON_FA_CIRCLE_INFO, Localization::GetString("INTERNAL_NAME").c_str(), internalAttributeName.c_str());
             }
@@ -237,18 +248,39 @@ namespace Raster {
 
                     if (Workspace::s_project.has_value()) {
                         auto& project = Workspace::s_project.value();
-                        for (auto& composition : project.compositions) {
-                            for (auto& attribute : composition.attributes) {
-                                if (attribute->id == fromAttributeID) {
-                                    AbstractAttribute& fromAttribute = attribute;
-                                    for (auto& anotherAttribute : composition.attributes) {
-                                        if (anotherAttribute->id == toAttributeID) {
-                                            AbstractAttribute& toAttribute = anotherAttribute;
-                                            std::swap(fromAttribute, anotherAttribute);
-                                            break;
+                        if (!childAttributesCandidate) {
+                            for (auto& composition : project.compositions) {
+                                for (auto& attribute : composition.attributes) {
+                                    if (attribute->id == fromAttributeID) {
+                                        AbstractAttribute& fromAttribute = attribute;
+                                        for (auto& anotherAttribute : composition.attributes) {
+                                            if (anotherAttribute->id == toAttributeID) {
+                                                AbstractAttribute& toAttribute = anotherAttribute;
+                                                std::swap(fromAttribute, anotherAttribute);
+                                                break;
+                                            }
                                         }
+                                        break;
                                     }
-                                    break;
+                                }
+                            }
+                        } else {
+                            auto& childAttributes = **childAttributesCandidate;
+                            auto fromAttributeCandidate = Workspace::GetAttributeByAttributeID(fromAttributeID);
+                            auto fromAttributeScopeCandidate = Workspace::GetAttributeScopeByAttributeID(fromAttributeID);
+                            if (fromAttributeScopeCandidate && fromAttributeCandidate) {
+                                int fromAttributeRemoveIndex = 0;
+                                bool fromAttributeFound = false;
+                                for (auto& attribute : **fromAttributeScopeCandidate) {
+                                    if (attribute->id == fromAttributeID) {
+                                        fromAttributeFound = true;
+                                        break;
+                                    }
+                                    fromAttributeRemoveIndex++;
+                                }
+                                if (fromAttributeFound) {
+                                    (**fromAttributeScopeCandidate).erase((**fromAttributeScopeCandidate).begin() + fromAttributeRemoveIndex);
+                                    (**childAttributesCandidate).push_back(*fromAttributeCandidate);
                                 }
                             }
                         }
@@ -265,16 +297,18 @@ namespace Raster {
                 RenderAttributePopup(t_composition);
                 ImGui::EndPopup();
             }
-            ImGui::SameLine();
-            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
-                bool isItemEdited = false;
-                currentValue = AbstractRenderLegend(t_composition, currentValue, isItemEdited);
-                shouldAddKeyframe = shouldAddKeyframe || isItemEdited;
-                if (shouldAddKeyframe) {
-                    Rendering::ForceRenderFrame();
-                    WaveformManager::RequestWaveformRefresh(t_composition->id);
-                }
-            ImGui::PopItemWidth();
+            if (!childAttributesCandidate) {
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x);
+                    bool isItemEdited = false;
+                    currentValue = AbstractRenderLegend(t_composition, currentValue, isItemEdited);
+                    shouldAddKeyframe = shouldAddKeyframe || isItemEdited;
+                    if (shouldAddKeyframe) {
+                        Rendering::ForceRenderFrame();
+                        WaveformManager::RequestWaveformRefresh(t_composition->id);
+                    }
+                ImGui::PopItemWidth();
+            }
         ImGui::PopID();
 
         if (openRenamePopup) ImGui::OpenPopup(renamePopupID.c_str());
@@ -399,6 +433,10 @@ namespace Raster {
             index++;
         }
         return std::nullopt;
+    }
+
+    std::optional<std::vector<AbstractAttribute>*> AttributeBase::GetChildAttributes() {
+        return AbstractGetChildAttributes();
     }
 
 

@@ -1952,6 +1952,27 @@ namespace Raster {
                     composition->lockedCompositionID = t_composition->id;
                 }
             }
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ATTRIBUTE_TIMELINE_PAYLOAD)) {
+                AttributeDragDropPayload attributePayload = *(AttributeDragDropPayload*) payload->Data;
+                int fromAttributeID = attributePayload.attributeID;
+                auto fromAttributeCandidate = Workspace::GetAttributeByAttributeID(fromAttributeID);
+                auto fromAttributeScopeCandidate = Workspace::GetAttributeScopeByAttributeID(fromAttributeID);
+                if (fromAttributeScopeCandidate && fromAttributeCandidate) {
+                    int fromAttributeRemoveIndex = 0;
+                    bool fromAttributeFound = false;
+                    for (auto& attribute : **fromAttributeScopeCandidate) {
+                        if (attribute->id == fromAttributeID) {
+                            fromAttributeFound = true;
+                            break;
+                        }
+                        fromAttributeRemoveIndex++;
+                    }
+                    if (fromAttributeFound) {
+                        (**fromAttributeScopeCandidate).erase((**fromAttributeScopeCandidate).begin() + fromAttributeRemoveIndex);
+                        t_composition->attributes.push_back(*fromAttributeCandidate);
+                    }
+                }
+            }
             ImGui::EndDragDropTarget();
         }
     }

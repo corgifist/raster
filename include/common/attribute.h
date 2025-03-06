@@ -29,6 +29,10 @@ namespace Raster {
         std::string prettyName;
     };
 
+    struct AttributeBase;
+
+    using AbstractAttribute = std::shared_ptr<AttributeBase>;
+
     struct AttributeBase {
         int id;
         std::string name, packageName;
@@ -41,6 +45,7 @@ namespace Raster {
         virtual void RenderKeyframes() {};
         void RenderLegend(Composition* t_composition);
         void RenderAttributePopup(Composition* t_composition);
+        std::optional<std::vector<AbstractAttribute>*> GetChildAttributes();
         virtual void Load(Json t_data) {};
         
         virtual Json SerializeKeyframeValue(std::any t_value) { return {}; };
@@ -67,6 +72,7 @@ namespace Raster {
 
         virtual std::any AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) { return std::nullopt; };
         virtual std::any AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) { return std::nullopt; };
+        virtual std::optional<std::vector<AbstractAttribute>*> AbstractGetChildAttributes() { return std::nullopt; }
 
         void RenderKeyframe(AttributeKeyframe& t_keyframe);
 
@@ -83,6 +89,5 @@ namespace Raster {
         static std::vector<int> m_deletedKeyframes;
     };
 
-    using AbstractAttribute = std::shared_ptr<AttributeBase>;
     using AttributeSpawnProcedure = std::function<AbstractAttribute()>;
 };

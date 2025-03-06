@@ -88,7 +88,8 @@ namespace Raster {
     }
 
     void AssetAttribute::AbstractRenderDetails() {
-        auto& project = Workspace::s_project.value();
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
         auto assetID = std::any_cast<AssetID>(Get(project.currentFrame - parentComposition->beginFrame, parentComposition));
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID.id);
