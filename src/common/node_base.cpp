@@ -320,14 +320,24 @@ namespace Raster {
         if (compositionCandidate.has_value()) {
             auto& project = Workspace::GetProject();
             auto& composition = compositionCandidate.value();
-            for (auto& attribute : composition->attributes) {
-                if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
-                    auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
-                    backAttributesCache.GetReference()[t_attribute] = attributeValue;
-                    backAttributesCache.Unlock();
-                    return attributeValue;
+            std::function<std::optional<std::any>(std::vector<AbstractAttribute>*)> evalAttribute = [&](std::vector<AbstractAttribute>* t_attributes) -> std::optional<std::any> {
+                for (auto& attribute : *t_attributes) {
+                    auto childAttributesCandidate = attribute->GetChildAttributes();
+                    if (childAttributesCandidate) {
+                        auto resultCandidate = evalAttribute(*childAttributesCandidate);
+                        if (resultCandidate) return *resultCandidate;
+                    }
+                    if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
+                        auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
+                        backAttributesCache.GetReference()[t_attribute] = attributeValue;
+                        backAttributesCache.Unlock();
+                        return attributeValue;
+                    }
                 }
-            }
+                return std::nullopt;
+            };
+            auto evalCandidate = evalAttribute(&composition->attributes);
+            if (evalCandidate) return *evalCandidate;
         }
 
         auto targetNode = Workspace::GetNodeByPinID(attributePin.connectedPinID);

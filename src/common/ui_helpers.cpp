@@ -40,6 +40,9 @@ namespace Raster {
                         break;
                     }
                 }
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
+                    t_attributeID = -1;
+                }
                 for (auto& attribute : parentComposition->attributes) {
                     if (!mustShowByID) {
                         if (!attributeFilter.empty() && LowerCase(ReplaceString(attribute->name, " ", "")).find(LowerCase(ReplaceString(attributeFilter, " ", ""))) == std::string::npos) continue;

@@ -528,12 +528,18 @@ namespace Raster {
                 UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
                 std::vector<int> newSelectedAttributes = {};
                 if (!composition->attributes.empty()) {
-                    for (auto& attribute : composition->attributes) {
-                        auto& valueType = attribute->Get(project.currentFrame - composition->beginFrame, composition).type();
-                        if (valueType == typeid(Transform2D) || valueType == typeid(Line2D)) {
-                            newSelectedAttributes.push_back(attribute->id);
+                    std::function<void(std::vector<AbstractAttribute>*)> scanAttributes = [&](std::vector<AbstractAttribute>* t_attributes) {
+                        for (auto& attribute : *t_attributes) {
+                            auto childAttributesCandidate = attribute->GetChildAttributes();
+                            if (childAttributesCandidate) {
+                                scanAttributes(*childAttributesCandidate);
+                            }
+                            auto& valueType = attribute->Get(project.currentFrame - composition->beginFrame, composition).type();
+                            if (valueType == typeid(Transform2D) || valueType == typeid(Line2D)) {
+                                newSelectedAttributes.push_back(attribute->id);
+                            }
                         }
-                    }
+                    };
                     project.selectedAttributes = newSelectedAttributes;
                 }
             }
@@ -911,7 +917,7 @@ namespace Raster {
             static ImVec2 fullWindowSize = ImGui::GetWindowSize();
             ImGui::BeginChild("##opacityContainer", ImVec2(fullWindowSize.x, 0), ImGuiChildFlags_AutoResizeY);
             if (ImGui::Button(attributeSelectorText.c_str())) {
-                ImGui::OpenPopup("##opacityAttributeChooser");
+                UIHelpers::OpenSelectAttributePopup();
             } 
             ImGui::SetItemTooltip("%s %s", ICON_FA_DROPLET, Localization::GetString("OPACITY_ATTRIBUTE").c_str());
             if (attributeOpacityUsed && !correctOpacityTypeUsed) {
@@ -919,25 +925,8 @@ namespace Raster {
             } else {
                 ImGui::SetItemTooltip("%s %s", ICON_FA_LINK, Localization::GetString("OPACITY_ATTRIBUTE").c_str());
             }
-            if (ImGui::BeginPopup("##opacityAttributeChooser")) {
-                ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINK, Localization::GetString("OPACITY_ATTRIBUTE").c_str()).c_str());
-                static std::string attributeFilter = "";
-                ImGui::InputTextWithHint("##attributeSearchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &attributeFilter);
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
-                    t_composition->opacityAttributeID = -1;
-                    Rendering::ForceRenderFrame();
-                }
-                for (auto& attribute : t_composition->attributes) {
-                    if (!attributeFilter.empty() && attribute->name.find(attributeFilter) == std::string::npos) continue;
-                    ImGui::PushID(attribute->id);
-                        if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == attribute->id ? ICON_FA_CHECK " " : "", ICON_FA_LINK, attribute->name.c_str()).c_str())) {
-                            t_composition->opacityAttributeID = attribute->id;
-                            Rendering::ForceRenderFrame();
-                        } 
-                    ImGui::PopID();
-                }
-                ImGui::EndPopup();
-            }
+            static std::string s_opacityFilter = "";
+            UIHelpers::SelectAttribute(t_composition, t_composition->opacityAttributeID, FormatString("%s %s", ICON_FA_DROPLET, Localization::GetString("OPACITY_ATTRIBUTE").c_str()).c_str(), &s_opacityFilter);
             ImGui::SameLine(0, 2.0f);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SliderFloat("##compositionOpacity", &opacity, 0, 1);

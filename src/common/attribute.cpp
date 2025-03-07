@@ -16,6 +16,7 @@ namespace Raster {
 
     struct AttributeDuplicateBundle {
         Composition* targetComposition;
+        std::vector<AbstractAttribute>* attributeScope;
         AbstractAttribute attribute;
     };
 
@@ -375,6 +376,7 @@ namespace Raster {
             auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
             s_duplicatedAttributes.push_back(AttributeDuplicateBundle{
                 .targetComposition = parentComposition,
+                .attributeScope = Workspace::GetAttributeScopeByAttributeID(id).value(),
                 .attribute = Attributes::CopyAttribute(Attributes::InstantiateSerializedAttribute(Serialize()).value()).value()
             });
         }
@@ -761,13 +763,19 @@ namespace Raster {
             for (auto& id : deletedAttributes) {
                 auto compositionCandidate = Workspace::GetCompositionByAttributeID(id);
                 if (compositionCandidate.has_value()) {
-                    auto& composition = compositionCandidate.value();
-                    int attributeIndex = 0;
-                    for (auto& attribute : composition->attributes) {
-                        if (attribute->id == id) break;
-                        attributeIndex++;
-                    }
-                    composition->attributes.erase(composition->attributes.begin() + attributeIndex);
+                    std::function<void(std::vector<AbstractAttribute>*)> deleteAttribute = [&](std::vector<AbstractAttribute>* t_attributes) {
+                        auto& composition = compositionCandidate.value();
+                        int attributeIndex = 0;
+                        for (auto& attribute : composition->attributes) {
+                            auto childAttributesCandidate = attribute->GetChildAttributes();
+                            if (childAttributesCandidate) {
+                                deleteAttribute(*childAttributesCandidate);
+                            }
+                            if (attribute->id == id) break;
+                            attributeIndex++;
+                        }
+                        composition->attributes.erase(composition->attributes.begin() + attributeIndex);
+                    };
                 }
             }
         }
@@ -775,7 +783,7 @@ namespace Raster {
         auto duplicatedAttributes = s_duplicatedAttributes;
         s_duplicatedAttributes.clear();
         for (auto& bundle : duplicatedAttributes) {
-            bundle.targetComposition->attributes.push_back(bundle.attribute);
+            bundle.attributeScope->push_back(bundle.attribute);
         }
     }
 };
