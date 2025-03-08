@@ -1,4 +1,4 @@
-#include "bounce_easing.h"
+#include "linear_easing.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "../../ImGui/imgui.h"
@@ -6,36 +6,35 @@
 #include "common/localization.h"
 #include "../../ImGui/imgui_stripes.h"
 #include <cmath>
-#include <glm/common.hpp>
 
 namespace Raster {
-    BounceEasing::BounceEasing() {
+    LinearEasing::LinearEasing() {
         EasingBase::Initialize();
 
-        this->m_amplitude = 1.0f;
-        this->m_speed = 1.0f;
+        this->m_slope = 1.0f;
+        this->m_flip = 0.0f;
+        this->m_shift = 0.0f;
     }
 
-    float BounceEasing::Get(float x) {
-        float result = std::clamp(1 - std::abs((float) (pow(M_E, -x/m_amplitude) * cos(x * m_speed))), 0.0f, 1.0f);
-#define E0 0.01f
-        float fadePercentage = (1.0f / E0) * std::max(glm::smoothstep(0.0f, 1.0f, x) - 1.0f + E0, 0.0f);
-        return glm::mix(result, 1.0f, fadePercentage);
+    float LinearEasing::Get(float x) {
+        return std::clamp((float) std::abs(m_shift - ((x - m_flip) / m_slope)), 0.0f, 1.0f);
     }
 
-    void BounceEasing::AbstractLoad(Json t_data) {
-        this->m_amplitude = t_data["Amplitude"];
-        this->m_speed = t_data["Speed"];
+    void LinearEasing::AbstractLoad(Json t_data) {
+        this->m_slope = t_data["Slope"];
+        this->m_flip = t_data["Flip"];
+        this->m_shift = t_data["Shift"];
     }
 
-    Json BounceEasing::AbstractSerialize() {
+    Json LinearEasing::AbstractSerialize() {
         return {
-            {"Amplitude", m_amplitude},
-            {"Speed", m_speed}
+            {"Slope", m_slope},
+            {"Flip", m_flip},
+            {"Shift", m_shift}
         };
     }
 
-    void BounceEasing::AbstractRenderDetails() {
+    void LinearEasing::AbstractRenderDetails() {
         ImVec2 bezierEditorSize(230, 230);
 
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - bezierEditorSize.x / 2.0f);
@@ -47,25 +46,33 @@ namespace Raster {
             for (int i = 0; i < 256; i++) {
                 ease.push_back(Get((float) i / 256.0f));
             }
-            ImGui::Bezier("Bounce Curve", placeholder, bezierEditorSize.x, false, ease, false);
+            ImGui::Bezier("Linear Curve", placeholder, bezierEditorSize.x, false, ease, false);
         ImGui::EndChild();    
 
         static float pointsChildWidth = 150;
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - pointsChildWidth / 2.0f);
         ImGui::BeginChild("##dragsChild", ImVec2(bezierEditorSize.x, 0), ImGuiChildFlags_AutoResizeY);
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s Amplitude", ICON_FA_BEZIER_CURVE);
+            ImGui::Text("%s Slope", ICON_FA_BEZIER_CURVE);
             ImGui::SameLine();
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-            ImGui::SliderFloat("##amplitudeSlider", &m_amplitude, 0.01, 2);
+            ImGui::SliderFloat("##slopeSlider", &m_slope, 0.0, 5);
             ImGui::PopItemWidth();
 
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s Speed", ICON_FA_BEZIER_CURVE);
+            ImGui::Text("%s Flip", ICON_FA_BEZIER_CURVE);
             ImGui::SameLine();
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-            ImGui::SliderFloat("##speedSlider", &m_speed, 0.01f, 50.0f);
+            ImGui::SliderFloat("##flipSlider", &m_flip, 0.0f, 1.0f);
             ImGui::PopItemWidth();
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%s Shift", ICON_FA_BEZIER_CURVE);
+            ImGui::SameLine();
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+            ImGui::DragFloat("##shiftSlider", &m_shift, 0.01f);
+            ImGui::PopItemWidth();
+
             pointsChildWidth = ImGui::GetWindowSize().x;
         ImGui::EndChild();
 
@@ -74,13 +81,13 @@ namespace Raster {
 
 extern "C" {
     Raster::AbstractEasing SpawnEasing() {
-        return (Raster::AbstractEasing) std::make_shared<Raster::BounceEasing>();
+        return (Raster::AbstractEasing) std::make_shared<Raster::LinearEasing>();
     }
 
     Raster::EasingDescription GetDescription() {
         return Raster::EasingDescription{
-            .prettyName = "Bounce Easing",
-            .packageName = RASTER_PACKAGED "bounce_easing"
+            .prettyName = "Linear Easing",
+            .packageName = RASTER_PACKAGED "linear_easing"
         };
     }
 }

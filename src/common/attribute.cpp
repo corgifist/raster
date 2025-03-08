@@ -701,9 +701,6 @@ namespace Raster {
             if (t_keyframe.easing.has_value()) {
                 t_keyframe.easing.value()->RenderDetails();
             }
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_EASING").c_str()).c_str())) {
                 t_keyframe.easing = std::nullopt;
             }
@@ -766,7 +763,7 @@ namespace Raster {
                     std::function<void(std::vector<AbstractAttribute>*)> deleteAttribute = [&](std::vector<AbstractAttribute>* t_attributes) {
                         auto& composition = compositionCandidate.value();
                         int attributeIndex = 0;
-                        for (auto& attribute : composition->attributes) {
+                        for (auto& attribute : *t_attributes) {
                             auto childAttributesCandidate = attribute->GetChildAttributes();
                             if (childAttributesCandidate) {
                                 deleteAttribute(*childAttributesCandidate);
@@ -774,8 +771,9 @@ namespace Raster {
                             if (attribute->id == id) break;
                             attributeIndex++;
                         }
-                        composition->attributes.erase(composition->attributes.begin() + attributeIndex);
+                        t_attributes->erase(t_attributes->begin() + attributeIndex);
                     };
+                    deleteAttribute(&(*compositionCandidate)->attributes);
                 }
             }
         }

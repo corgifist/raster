@@ -96,6 +96,9 @@ build_modules = [
     ["bezier_easing", easing, [raster_common, raster_ImGui]],
     ["constant_easing", easing, [raster_common, raster_ImGui]],
     ["bounce_easing", easing, [raster_common, raster_ImGui]],
+    ["linear_easing", easing, [raster_common, raster_ImGui]],
+    ["elastic_easing", easing, [raster_common, raster_ImGui]],
+    ["random_easing", easing, [raster_common, raster_ImGui]],
 
     ["image_asset", asset, [raster_common, raster_gpu, raster_ImGui, raster_image]],
     ["placeholder_asset", asset, [raster_common, raster_gpu, raster_ImGui]],

@@ -1,4 +1,4 @@
-#include "bounce_easing.h"
+#include "elastic_easing.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "../../ImGui/imgui.h"
@@ -6,36 +6,36 @@
 #include "common/localization.h"
 #include "../../ImGui/imgui_stripes.h"
 #include <cmath>
-#include <glm/common.hpp>
 
 namespace Raster {
-    BounceEasing::BounceEasing() {
+    ElasticEasing::ElasticEasing() {
         EasingBase::Initialize();
 
         this->m_amplitude = 1.0f;
-        this->m_speed = 1.0f;
+        this->m_speed = 5.0f;
     }
 
-    float BounceEasing::Get(float x) {
-        float result = std::clamp(1 - std::abs((float) (pow(M_E, -x/m_amplitude) * cos(x * m_speed))), 0.0f, 1.0f);
-#define E0 0.01f
-        float fadePercentage = (1.0f / E0) * std::max(glm::smoothstep(0.0f, 1.0f, x) - 1.0f + E0, 0.0f);
-        return glm::mix(result, 1.0f, fadePercentage);
+    float ElasticEasing::BaseGet(float x) {
+        return std::sin(x * m_speed * M_PI) * 0.5 * m_amplitude * (1 - x);
     }
 
-    void BounceEasing::AbstractLoad(Json t_data) {
+    float ElasticEasing::Get(float x) {
+        return (float) BaseGet(x) + x;
+    }
+
+    void ElasticEasing::AbstractLoad(Json t_data) {
         this->m_amplitude = t_data["Amplitude"];
         this->m_speed = t_data["Speed"];
     }
 
-    Json BounceEasing::AbstractSerialize() {
+    Json ElasticEasing::AbstractSerialize() {
         return {
             {"Amplitude", m_amplitude},
             {"Speed", m_speed}
         };
     }
 
-    void BounceEasing::AbstractRenderDetails() {
+    void ElasticEasing::AbstractRenderDetails() {
         ImVec2 bezierEditorSize(230, 230);
 
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - bezierEditorSize.x / 2.0f);
@@ -45,9 +45,9 @@ namespace Raster {
             static float placeholder[] = {0, 0, 1, 1};
             std::vector<float> ease;
             for (int i = 0; i < 256; i++) {
-                ease.push_back(Get((float) i / 256.0f));
+                ease.push_back(glm::clamp(BaseGet((float) i / 256.0f) + 0.5f, 0.0f, 1.0f));
             }
-            ImGui::Bezier("Bounce Curve", placeholder, bezierEditorSize.x, false, ease, false);
+            ImGui::Bezier("Elastic Curve", placeholder, bezierEditorSize.x, false, ease, false);
         ImGui::EndChild();    
 
         static float pointsChildWidth = 150;
@@ -74,13 +74,13 @@ namespace Raster {
 
 extern "C" {
     Raster::AbstractEasing SpawnEasing() {
-        return (Raster::AbstractEasing) std::make_shared<Raster::BounceEasing>();
+        return (Raster::AbstractEasing) std::make_shared<Raster::ElasticEasing>();
     }
 
     Raster::EasingDescription GetDescription() {
         return Raster::EasingDescription{
-            .prettyName = "Bounce Easing",
-            .packageName = RASTER_PACKAGED "bounce_easing"
+            .prettyName = "Elastic Easing",
+            .packageName = RASTER_PACKAGED "elastic_easing"
         };
     }
 }

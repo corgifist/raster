@@ -84,6 +84,9 @@ namespace Raster {
                         std::vector<float> constructedWaveform(100);
                         int waveformIndex = 0;
                         for (int i = AudioInfo::s_globalAudioOffset + AudioInfo::s_channels - 1; i < AudioInfo::s_globalAudioOffset + 100 * AudioInfo::s_channels; i += AudioInfo::s_channels) {
+                            if (waveformIndex >= constructedWaveform.size() 
+                                    || i % AudioInfo::s_periodSize >= targetAudioBus->samples.size() 
+                                    || i % AudioInfo::s_periodSize < 0) break;
                             constructedWaveform[waveformIndex++] = targetAudioBus->samples[i % AudioInfo::s_periodSize];
                         }
                         RenderCustomDecibelScale(constructedWaveform[0], 30, parentWindowSize.y - ImGui::GetStyle().WindowPadding.y);
