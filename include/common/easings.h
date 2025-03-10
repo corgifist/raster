@@ -21,6 +21,6 @@ namespace Raster {
         static std::optional<AbstractEasing> InstantiateEasing(std::string t_packageName);
         static std::optional<AbstractEasing> InstantiateSerializedEasing(Json t_data);
 
-        static std::optional<EasingImplementation> GetEasingImplementation(std::string t_packageName);
+        static std::optional<EasingImplementation> GetEasingImplementationByPackageName(std::string t_packageName);
     };
 }

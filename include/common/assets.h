@@ -25,6 +25,6 @@ namespace Raster {
 
         static std::optional<AbstractAsset> CopyAsset(AbstractAsset t_asset);
 
-        static std::optional<AssetImplementation> GetAssetImplementation(std::string t_packageName);
+        static std::optional<AssetImplementation> GetAssetImplementationByPackageName(std::string t_packageName);
     };
 }

@@ -26,7 +26,7 @@ namespace Raster {
     }
 
     std::optional<AbstractEasing> Easings::InstantiateEasing(std::string t_packageName) {
-        auto implementationCandidate = GetEasingImplementation(t_packageName);
+        auto implementationCandidate = GetEasingImplementationByPackageName(t_packageName);
         if (implementationCandidate.has_value()) {
             auto& implementation = implementationCandidate.value();
             auto result = implementation.spawn();
@@ -48,7 +48,7 @@ namespace Raster {
         return std::nullopt;
     }
 
-    std::optional<EasingImplementation> Easings::GetEasingImplementation(std::string t_packageName) {
+    std::optional<EasingImplementation> Easings::GetEasingImplementationByPackageName(std::string t_packageName) {
         for (auto& impl : s_implementations) {
             if (impl.description.packageName == t_packageName) return impl;
         }

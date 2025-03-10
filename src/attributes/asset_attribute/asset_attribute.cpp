@@ -36,7 +36,7 @@ namespace Raster {
         int assetID = std::any_cast<AssetID>(t_originalValue).id;
         auto& project = Workspace::GetProject();
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID);
-        auto assetDescriptionCandidate = Assets::GetAssetImplementation(assetCandidate.has_value() ? assetCandidate.value()->packageName : "");
+        auto assetDescriptionCandidate = Assets::GetAssetImplementationByPackageName(assetCandidate.has_value() ? assetCandidate.value()->packageName : "");
         std::string assetChooserButtonText = Localization::GetString("NO_ASSET");
         if (assetCandidate.has_value()) {
             assetChooserButtonText = assetCandidate.value()->name;

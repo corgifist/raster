@@ -1,5 +1,8 @@
 #include "common/workspace.h"
+#include "common/assets.h"
+#include "common/attributes.h"
 #include "common/common.h"
+#include "common/easings.h"
 #include "gpu/gpu.h"
 #include "common/transform2d.h"
 #include "common/audio_samples.h"
@@ -29,6 +32,35 @@ namespace Raster {
     DoubleBufferedValue<unordered_dense::map<int, std::any>> Workspace::s_pinCache;
 
     std::vector<int> Workspace::s_targetSelectNodes;
+
+    std::vector<std::string> Workspace::s_pinnedAttributeTypes = {
+        RASTER_PACKAGED "float_attribute",
+        RASTER_PACKAGED "vec2_attribute",
+        RASTER_PACKAGED "vec3_attribute",
+        RASTER_PACKAGED "vec4_attribute",
+        RASTER_PACKAGED "color4_attribute",
+        RASTER_PACKAGED "transform2d_attribute",
+        RASTER_PACKAGED "asset_attribute",
+        RASTER_PACKAGED "gradient1d_attribute",
+        RASTER_PACKAGED "line2d_attribute",
+        RASTER_PACKAGED "folder_attribute"  
+    };
+
+    std::vector<std::string> Workspace::s_pinnedAssetTypes = {
+        RASTER_PACKAGED "image_asset",
+        RASTER_PACKAGED "media_asset",
+        RASTER_PACKAGED "folder_asset",
+        RASTER_PACKAGED "placeholder_asset"
+    };
+
+    std::vector<std::string> Workspace::s_pinnedEasingTypes = {
+        RASTER_PACKAGED "bezier_easing",
+        RASTER_PACKAGED "bounce_easing",
+        RASTER_PACKAGED "linear_easing",
+        RASTER_PACKAGED "elastic_easing",
+        RASTER_PACKAGED "random_easing",
+        RASTER_PACKAGED "constant_easing"
+    };
 
     std::unordered_map<std::type_index, uint32_t> Workspace::s_typeColors = {
         {ATTRIBUTE_TYPE(std::string), RASTER_COLOR32(204, 0, 103, 255)},
@@ -116,6 +148,51 @@ namespace Raster {
         Easings::Initialize();
         Assets::Initialize();
         Attributes::Initialize();
+
+        // reordering attribute implementations
+        std::vector<AttributeImplementation> newAttributeImplementations;
+        for (auto& pinnedAttributeImplementation : s_pinnedAttributeTypes) {
+            auto implementationCandidate = Attributes::GetAttributeImplementationByPackageName(pinnedAttributeImplementation);
+            if (implementationCandidate) {
+                newAttributeImplementations.push_back(*implementationCandidate);
+            }
+        }
+        for (auto& implementation : Attributes::s_implementations) {
+            if (std::find(s_pinnedAttributeTypes.begin(), s_pinnedAttributeTypes.end(), implementation.description.packageName) != s_pinnedAttributeTypes.end()) continue;
+            newAttributeImplementations.push_back(implementation);
+        }
+
+        Attributes::s_implementations = newAttributeImplementations;
+
+        // reordering asset implementations
+        std::vector<AssetImplementation> newAssetImplementations;
+        for (auto& pinnedAssetImplementation : s_pinnedAssetTypes) {
+            auto implementationCandidate = Assets::GetAssetImplementationByPackageName(pinnedAssetImplementation);
+            if (implementationCandidate) {
+                newAssetImplementations.push_back(*implementationCandidate);
+            }
+        }
+        for (auto& implementation : Assets::s_implementations) {
+            if (std::find(s_pinnedAssetTypes.begin(), s_pinnedAssetTypes.end(), implementation.description.packageName) != s_pinnedAssetTypes.end()) continue;
+            newAssetImplementations.push_back(implementation);
+        }
+
+        Assets::s_implementations = newAssetImplementations;
+
+        // reordering asset implementations
+        std::vector<EasingImplementation> newEasingImplementations;
+        for (auto& pinnedEasingImplementation : s_pinnedEasingTypes) {
+            auto implementationCandidate = Easings::GetEasingImplementationByPackageName(pinnedEasingImplementation);
+            if (implementationCandidate) {
+                newEasingImplementations.push_back(*implementationCandidate);
+            }
+        }
+        for (auto& implementation : Easings::s_implementations) {
+            if (std::find(s_pinnedEasingTypes.begin(), s_pinnedEasingTypes.end(), implementation.description.packageName) != s_pinnedEasingTypes.end()) continue;
+            newEasingImplementations.push_back(implementation);
+        }
+
+        Easings::s_implementations = newEasingImplementations;
     }
 
     std::optional<AbstractNode> Workspace::CopyAbstractNode(AbstractNode node) {

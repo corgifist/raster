@@ -53,7 +53,7 @@ namespace Raster {
     void FolderAsset::AbstractRenderDetails() {
         if (!assets.empty()) {
             for (auto& asset : assets) {
-                auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                auto assetImplementationCandidate = Assets::GetAssetImplementationByPackageName(asset->packageName);
                 if (!assetImplementationCandidate) continue;
                 auto& assetImplementation = *assetImplementationCandidate;
                 ImGui::BulletText("%s %s", assetImplementation.description.icon.c_str(), asset->name.c_str());

@@ -30,6 +30,10 @@ namespace Raster {
         static std::unordered_map<std::type_index, std::string> s_typeNames;
         static std::unordered_map<std::type_index, uint32_t> s_typeColors;
 
+        static std::vector<std::string> s_pinnedAttributeTypes;
+        static std::vector<std::string> s_pinnedAssetTypes;
+        static std::vector<std::string> s_pinnedEasingTypes;
+
         static void Initialize();
 
         static void UpdatePinCache(AbstractPinMap& t_pinMap);

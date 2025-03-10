@@ -182,7 +182,7 @@ namespace Raster {
                     std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
                         bool hasCandidates = false;
                         for (auto& asset : t_assets) {
-                            auto description = Assets::GetAssetImplementation(asset->packageName).value();
+                            auto description = Assets::GetAssetImplementationByPackageName(asset->packageName).value();
                             if (!s_assetFilter.empty() && LowerCase(asset->name).find(LowerCase(s_assetFilter)) == std::string::npos) continue;
                             if (!allowedAssetType.empty() && allowedAssetType != asset->packageName) continue;
                             auto childAssetsCandidate = asset->GetChildAssets();

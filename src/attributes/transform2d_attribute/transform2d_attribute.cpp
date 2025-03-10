@@ -339,7 +339,7 @@ namespace Raster {
                 for (auto& asset : t_assets) {
                     if (!assetFilter.empty() && LowerCase(ReplaceString(asset->name, " ", "")).find(LowerCase(ReplaceString(assetFilter, " ", ""))) == std::string::npos) continue;
                     hasCandidates = true;
-                    auto implementation = Assets::GetAssetImplementation(asset->packageName).value();
+                    auto implementation = Assets::GetAssetImplementationByPackageName(asset->packageName).value();
                     auto childAssetsCandidate = asset->GetChildAssets();
                     ImGui::PushID(asset->id);
                         if (!childAssetsCandidate) {

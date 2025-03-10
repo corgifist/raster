@@ -26,7 +26,7 @@ namespace Raster {
     }
 
     std::optional<AbstractAsset> Assets::InstantiateAsset(std::string t_packageName) {
-        auto implementationCandidate = GetAssetImplementation(t_packageName);
+        auto implementationCandidate = GetAssetImplementationByPackageName(t_packageName);
         if (implementationCandidate.has_value()) {
             auto& implementation = implementationCandidate.value();
             auto result = implementation.spawn();
@@ -62,7 +62,7 @@ namespace Raster {
         return std::nullopt;
     }
 
-    std::optional<AssetImplementation> Assets::GetAssetImplementation(std::string t_packageName) {
+    std::optional<AssetImplementation> Assets::GetAssetImplementationByPackageName(std::string t_packageName) {
         for (auto& impl : s_implementations) {
             if (impl.description.packageName == t_packageName) return impl;
         }

@@ -237,7 +237,7 @@ namespace Raster {
                     auto assetCandidate = Workspace::GetAssetByAssetID(selectedAssets[0]);
                     if (assetCandidate.has_value()) {
                         auto& asset = assetCandidate.value();
-                        auto assetDescription = Assets::GetAssetImplementation(asset->packageName).value().description;
+                        auto assetDescription = Assets::GetAssetImplementationByPackageName(asset->packageName).value().description;
                         if (ImGui::Button(ICON_FA_COPY)) {
                             ImGui::SetClipboardText(std::to_string(asset->id).c_str());
                         }
@@ -406,7 +406,7 @@ namespace Raster {
                                     ImGui::PopClipRect();
                                     ImGui::SetCursorPos(afterImageCursor);
                                 } else {
-                                    auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                                    auto assetImplementationCandidate = Assets::GetAssetImplementationByPackageName(asset->packageName);
                                     if (assetImplementationCandidate.has_value()) {
                                         auto& assetImplementation = assetImplementationCandidate.value();
                                         ImGui::PushFont(Font::s_denseFont);
@@ -427,7 +427,7 @@ namespace Raster {
                                 ImGui::SameLine(0, 12);
 
                                 ImGui::BeginGroup();
-                                auto assetImplementationCandidate = Assets::GetAssetImplementation(asset->packageName);
+                                auto assetImplementationCandidate = Assets::GetAssetImplementationByPackageName(asset->packageName);
                                 bool assetsTreeOpen = false;
                                 ImGuiID treeNodeID;
                                 std::string treeNodeIDString;
@@ -549,7 +549,7 @@ namespace Raster {
                                 }
 
                                 if (ImGui::BeginPopup(popupID.c_str())) {
-                                    ImGui::SeparatorText(FormatString("%s %s", Assets::GetAssetImplementation(asset->packageName).value().description.icon.c_str(), asset->name.c_str()).c_str());
+                                    ImGui::SeparatorText(FormatString("%s %s", Assets::GetAssetImplementationByPackageName(asset->packageName).value().description.icon.c_str(), asset->name.c_str()).c_str());
                                     RenderAssetPopup(asset);
                                     ImGui::EndPopup();
                                 }
@@ -622,7 +622,7 @@ namespace Raster {
                                     ImGui::PushID(asset->id);
                                     ImGui::TableNextRow();
 
-                                    auto description = Assets::GetAssetImplementation(asset->packageName).value().description;
+                                    auto description = Assets::GetAssetImplementationByPackageName(asset->packageName).value().description;
                                     auto childAssetsCandidate = asset->GetChildAssets();
                                     ImGui::TableNextColumn();
                                     auto assetColorMark4 = ImGui::ColorConvertU32ToFloat4(asset->colorMark);
@@ -724,7 +724,7 @@ namespace Raster {
                                     }
 
                                     if (ImGui::BeginPopup(popupID.c_str())) {
-                                        ImGui::SeparatorText(FormatString("%s %s", Assets::GetAssetImplementation(asset->packageName).value().description.icon.c_str(), asset->name.c_str()).c_str());
+                                        ImGui::SeparatorText(FormatString("%s %s", Assets::GetAssetImplementationByPackageName(asset->packageName).value().description.icon.c_str(), asset->name.c_str()).c_str());
                                         RenderAssetPopup(asset);
                                         ImGui::EndPopup();
                                     }
