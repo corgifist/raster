@@ -352,7 +352,7 @@ namespace Raster {
 
     void AttributeBase::RenderAttributePopup(Composition* t_composition) {
         RenderPopup();
-        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_ATTRIBUTE_METADATA").c_str()).c_str())) {
             ImGui::InputText("##attributeName", &name);
             ImGui::SetItemTooltip("%s %s", ICON_FA_PENCIL, Localization::GetString("ATTRIBUTE_NAME").c_str());
             ImGui::EndMenu();
@@ -367,11 +367,9 @@ namespace Raster {
             }
             ImGui::EndMenu();
         }
-        ImGui::Separator();
         if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
             t_composition->opacityAttributeID = id;
         }
-        ImGui::Separator();
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_ATTRIBUTE").c_str()).c_str(), "Ctrl+D")) {
             auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
             s_duplicatedAttributes.push_back(AttributeDuplicateBundle{

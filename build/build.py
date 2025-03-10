@@ -156,6 +156,7 @@ build_modules = [
     ["utilities/hue_to_rgb", node, [raster_common]],
     ["utilities/swizzle_vector", node, [raster_common]],
     ["utilities/sleep_for_milliseconds", node, [raster_common]],
+    ["utilities/dummy", node, [raster_common]],
 
     ["rendering/export_renderable", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/layer2d", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui]],

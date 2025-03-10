@@ -709,7 +709,7 @@ namespace Raster {
                                     if (labelClicked) textAlpha *= 0.9f;
 
                                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, textAlpha));
-                                        ImGui::Text("%s", header.c_str());
+                                        if (!header.empty()) ImGui::Text("%s", header.c_str());
                                     ImGui::PopStyleColor();
 
                                     if (labelHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {

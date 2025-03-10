@@ -112,6 +112,8 @@ namespace Raster {
         TryDeleteExtension(result, "mj2");
         TryDeleteExtension(result, "m4v");
         TryDeleteExtension(result, "mpg");
+        TryDeleteExtension(result, "null");
+        TryDeleteExtension(result, "nul");
         return result;
     }
 

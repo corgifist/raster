@@ -1,5 +1,6 @@
 #include "merge.h"
 #include "common/dispatchers.h"
+#include "common/rendering.h"
 
 namespace Raster {
 
@@ -103,6 +104,7 @@ namespace Raster {
                     if (!s_searchFilter.empty() && LowerCase(mode.name).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
                     if (ImGui::MenuItem(FormatString("%s %s", Font::GetIcon(mode.icon).c_str(), mode.name.c_str()).c_str())) {
                         blendMode = mode.codename;
+                        Rendering::ForceRenderFrame();
                         ImGui::CloseCurrentPopup();
                     }
                 }
