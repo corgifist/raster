@@ -497,6 +497,7 @@ namespace Raster {
 
     // TODO: return std::optional<Framebuffer> instead of Framebuffer
     Framebuffer GPU::GenerateFramebuffer(uint32_t width, uint32_t height, std::vector<Texture> attachments) {
+        // RASTER_LOG("generating framebuffer with " << width << "x" << height << " with " << attachments.size() << " attachments");
         width = std::max(1, (int) width);
         height = std::max(1, (int) height);
         Framebuffer fbo;

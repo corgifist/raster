@@ -17,12 +17,6 @@ namespace Raster {
         AddOutputPin("Output");
     }
 
-    Merge::~Merge() {
-        if (m_framebuffer.Get().handle) {
-            m_framebuffer.Destroy();
-        }
-    }
-
     AbstractPinMap Merge::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
         auto aCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("A", t_contextData));
@@ -31,7 +25,7 @@ namespace Raster {
         auto blendingModeCandidate = GetAttribute<std::string>("BlendingMode", t_contextData);
 
         if (aCandidate.has_value() && bCandidate.has_value() && opacityCandidate.has_value() && blendingModeCandidate.has_value() && aCandidate.value().attachments.size() > 1 && bCandidate.value().attachments.size() > 1) {
-            Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
+            auto& framebuffer = m_framebuffer.Get(std::nullopt);
             auto& a = aCandidate.value();
             auto& b = bCandidate.value();
             auto& opacity = opacityCandidate.value();
@@ -53,9 +47,9 @@ namespace Raster {
                 .blendMode = blendingMode,
                 .compositionID = -1
             });
-            Compositor::PerformManualComposition(targets, m_framebuffer.Get(), glm::vec4(0));
+            Compositor::PerformManualComposition(targets, framebuffer, glm::vec4(0));
 
-            TryAppendAbstractPinMap(result, "Output", m_framebuffer.GetFrontFramebuffer());
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
 
         return result;

@@ -1,5 +1,6 @@
 #include "compositor/compositor.h"
 #include "common/composition_mask.h"
+#include "common/thread_unique_value.h"
 #include "gpu/gpu.h"
 #include "raster.h"
 
@@ -47,25 +48,34 @@ namespace Raster {
         primaryFramebuffer.value().SwapBuffers();
     }
 
-    void Compositor::PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor, std::optional<Blending> t_blending, std::optional<Pipeline> t_pipeline) {
+    struct MaskPipelineStructure {
+        Framebuffer maskAccumulatorFramebuffer;
+        Framebuffer combinedMaskFramebuffer;
+        Pipeline maskCombinerPipeline;
+        Pipeline maskApplierPipeline;
+    };
+
+    void Compositor::PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor, std::optional<Blending*> t_blending, std::optional<Pipeline> t_pipeline) {
         auto& framebuffer = t_fbo;
         auto pipeline = t_pipeline.value_or(s_pipeline);
         GPU::BindFramebuffer(framebuffer);
         GPU::BindPipeline(pipeline);
         auto& bg = t_backgroundColor.has_value() ? t_backgroundColor.value() : Workspace::s_project.value().backgroundColor;
         GPU::ClearFramebuffer(bg.r, bg.g, bg.b, bg.a);
-        auto blending = t_blending.value_or(s_blending);
+        auto blending = t_blending.value_or(&s_blending);
         std::vector<int> skipCompositions;
         for (auto& target : t_targets) {
-            auto blendingModeCandidate = blending.GetModeByCodeName(target.blendMode);
+            auto blendingModeCandidate = blending->GetModeByCodeName(target.blendMode);
             auto colorAttachment = target.colorAttachment;
             auto uvAttachment = target.uvAttachment;
             if (std::find(skipCompositions.begin(), skipCompositions.end(), target.compositionID) != skipCompositions.end()) continue;
             if (!target.masks.empty()) {
-                static Framebuffer s_maskAccumulatorFramebuffer;
-                static Framebuffer s_combinedMaskFramebuffer;
-                static Pipeline s_maskCombinerPipeline;
-                static Pipeline s_maskApplierPipeline;
+                static ThreadUniqueValue<MaskPipelineStructure> s_maskPipelineStructure;
+                auto& maskPipelineStructure = s_maskPipelineStructure.Get();
+                auto& s_maskAccumulatorFramebuffer = maskPipelineStructure.maskAccumulatorFramebuffer;
+                auto& s_combinedMaskFramebuffer = maskPipelineStructure.combinedMaskFramebuffer;
+                auto& s_maskCombinerPipeline = maskPipelineStructure.maskCombinerPipeline;
+                auto& s_maskApplierPipeline = maskPipelineStructure.maskApplierPipeline;
                 EnsureResolutionConstraintsForFramebuffer(s_maskAccumulatorFramebuffer);
                 EnsureResolutionConstraintsForFramebuffer(s_combinedMaskFramebuffer);
                 GPU::BindFramebuffer(s_maskAccumulatorFramebuffer);
@@ -131,7 +141,7 @@ namespace Raster {
             }
             if (blendingModeCandidate.has_value()) {
                 auto& blendingMode = blendingModeCandidate.value();
-                auto blendedResult = blending.PerformManualBlending(blendingMode, framebuffer.attachments[0], colorAttachment, target.opacity, bg);
+                auto blendedResult = blending->PerformManualBlending(blendingMode, framebuffer.attachments[0], colorAttachment, target.opacity, bg);
                 GPU::BindFramebuffer(framebuffer);
                 GPU::BindPipeline(pipeline);
                 GPU::BindTextureToShader(pipeline.fragment, "uColor", blendedResult.attachments[0], 0);

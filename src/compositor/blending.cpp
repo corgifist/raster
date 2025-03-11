@@ -81,7 +81,7 @@ namespace Raster {
 
     void Blending::EnsureResolutionConstraints(Texture& texture) {
         bool mustReinitialize = !framebufferCandidate.has_value();
-        if (!mustReinitialize && framebufferCandidate.has_value()) {
+        if (framebufferCandidate.has_value()) {
             auto& framebuffer = framebufferCandidate.value();
             if (framebuffer.width != texture.width || framebuffer.height != texture.height) {
                 mustReinitialize = true;
@@ -91,8 +91,7 @@ namespace Raster {
         if (mustReinitialize) {
             if (framebufferCandidate.has_value()) {
                 auto& framebuffer = framebufferCandidate.value();
-                GPU::DestroyTexture(framebuffer.attachments[0]);
-                GPU::DestroyFramebuffer(framebuffer);
+                GPU::DestroyFramebufferWithAttachments(framebuffer);
             }
 
             framebufferCandidate = GPU::GenerateFramebuffer(texture.width, texture.height, {

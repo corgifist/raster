@@ -1005,7 +1005,7 @@ namespace Raster {
                                 }
                             }
 
-                            Compositor::PerformManualComposition(filteredTargets, previewFramebuffer, project.backgroundColor, s_previewBlending, s_compositorPipeline);
+                            Compositor::PerformManualComposition(filteredTargets, previewFramebuffer, project.backgroundColor, &s_previewBlending, s_compositorPipeline);
 
                             auto previewSize = FitRectInRect({128, 128}, {previewFramebuffer.width, previewFramebuffer.height});
                             auto blendingInfoString = FormatString("%s %s (%s)", Font::GetIcon(mode.icon).c_str(), mode.name.c_str(), mode.codename.c_str());

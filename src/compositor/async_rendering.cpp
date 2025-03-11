@@ -54,6 +54,7 @@ namespace Raster {
                     {"ONLY_AUDIO_NODES", true},
                     {"RENDERING_PASS_ID", s_renderingPassID}
                 });
+                // DUMP_VAR(Workspace::s_pinCache.GetFrontValue().size());
                 s_renderingPassID++;
                 Compositor::PerformComposition();
                 GPU::DisableClipping();

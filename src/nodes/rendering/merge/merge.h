@@ -1,4 +1,5 @@
 #pragma once
+#include "compositor/managed_framebuffer.h"
 #include "raster.h"
 #include "common/common.h"
 #include "compositor/compositor.h"
@@ -12,7 +13,6 @@ namespace Raster {
     struct Merge : public NodeBase {
     public:
         Merge();
-        ~Merge();
         
         AbstractPinMap AbstractExecute(ContextData& t_contextData);
         void AbstractRenderProperties();
@@ -28,7 +28,7 @@ namespace Raster {
         std::optional<std::string> Footer();
     
     private:
-        DoubleBufferedFramebuffer m_framebuffer;
+        ManagedFramebuffer m_framebuffer;
         std::optional<std::string> m_lastBlendMode;
     };
 };
