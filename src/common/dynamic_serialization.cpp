@@ -4,6 +4,7 @@
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
 #include "common/line2d.h"
+#include "common/bezier_curve.h"
 
 #define TYPE_CONTAINER(type) std::type_index(typeid(type))
 #define TYPE_NAME(type) #type
@@ -25,167 +26,178 @@ namespace Raster {
         RASTER_TYPE_NAME(GenericResolution),
         RASTER_TYPE_NAME(Gradient1D),
         RASTER_TYPE_NAME(Choice),
-        RASTER_TYPE_NAME(Line2D)
+        RASTER_TYPE_NAME(Line2D),
+        RASTER_TYPE_NAME(BezierCurve)
     };
 
-    std::unordered_map<std::type_index, SerializationFunction> DynamicSerialization::s_serializers = {
-        {TYPE_CONTAINER(int), DynamicSerialization::SerializeInt},
-        {TYPE_CONTAINER(float), DynamicSerialization::SerializeFloat},
-        {TYPE_CONTAINER(std::string), DynamicSerialization::SerializeString},
-        {TYPE_CONTAINER(glm::vec2), DynamicSerialization::SerializeVec2},
-        {TYPE_CONTAINER(glm::vec3), DynamicSerialization::SerializeVec3},
-        {TYPE_CONTAINER(glm::vec4), DynamicSerialization::SerializeVec4},
-        {TYPE_CONTAINER(Transform2D), DynamicSerialization::SerializeTransform2D},
-        {TYPE_CONTAINER(SamplerSettings), DynamicSerialization::SerializeSamplerSettings},
-        {TYPE_CONTAINER(GenericAudioDecoder), DynamicSerialization::SerializeGenericAudioDecoder},
-        {TYPE_CONTAINER(bool), DynamicSerialization::SerializeBool},
-        {TYPE_CONTAINER(GenericResolution), DynamicSerialization::SerializeGenericResolution},
-        {TYPE_CONTAINER(Gradient1D), DynamicSerialization::SerializeGradient1D},
-        {TYPE_CONTAINER(Choice), DynamicSerialization::SerializeChoice},
-        {TYPE_CONTAINER(Line2D), DynamicSerialization::SerializeLine2D}
-    };
-
-    std::unordered_map<std::string, DeserializationFunction> DynamicSerialization::s_deserializers = {
-        {TYPE_NAME(int), DynamicSerialization::DeserializeInt},
-        {TYPE_NAME(float), DynamicSerialization::DeserializeFloat},
-        {TYPE_NAME(std::string), DynamicSerialization::DeserializeString},
-        {TYPE_NAME(glm::vec2), DynamicSerialization::DeserializeVec2},
-        {TYPE_NAME(glm::vec3), DynamicSerialization::DeserializeVec3},
-        {TYPE_NAME(glm::vec4), DynamicSerialization::DeserializeVec4},
-        {TYPE_NAME(Transform2D), DynamicSerialization::DeserializeTransform2D},
-        {TYPE_NAME(SamplerSettings), DynamicSerialization::DeserializeSamplerSettings},
-        {TYPE_NAME(GenericAudioDecoder), DynamicSerialization::DeserializeGenericAudioDecoder},
-        {TYPE_NAME(bool), DynamicSerialization::DeserializeBool},
-        {TYPE_NAME(GenericResolution), DynamicSerialization::DeserializeGenericResolution},
-        {TYPE_NAME(Gradient1D), DynamicSerialization::DeserializeGradient1D},
-        {TYPE_NAME(Choice), DynamicSerialization::DeserializeChoice},
-        {TYPE_NAME(Line2D), DynamicSerialization::DeserializeLine2D}
-    };
-
-    Json DynamicSerialization::SerializeInt(std::any& t_value) {
+    static Json SerializeInt(std::any& t_value) {
         return std::any_cast<int>(t_value);
     }
 
-    Json DynamicSerialization::SerializeFloat(std::any& t_value) {
+    static Json SerializeFloat(std::any& t_value) {
         return std::any_cast<float>(t_value);
     }
 
-    Json DynamicSerialization::SerializeString(std::any& t_value) {
+    static Json SerializeString(std::any& t_value) {
         return std::any_cast<std::string>(t_value);
     }
 
-    Json DynamicSerialization::SerializeVec2(std::any& t_value) {
+    static Json SerializeVec2(std::any& t_value) {
         auto vector = std::any_cast<glm::vec2>(t_value);
         return {
             vector.x, vector.y
         };
     }
 
-    Json DynamicSerialization::SerializeVec3(std::any& t_value) {
+    static Json SerializeVec3(std::any& t_value) {
         auto vector = std::any_cast<glm::vec3>(t_value);
         return {
             vector.x, vector.y, vector.z
         };
     }
 
-    Json DynamicSerialization::SerializeVec4(std::any& t_value) {
+    static Json SerializeVec4(std::any& t_value) {
         auto vector = std::any_cast<glm::vec4>(t_value);
         return {
             vector.x, vector.y, vector.z, vector.w
         };
     }
 
-    Json DynamicSerialization::SerializeTransform2D(std::any& t_value) {
+    static Json SerializeTransform2D(std::any& t_value) {
         auto transform = std::any_cast<Transform2D>(t_value);
         return transform.Serialize();
     }
 
-    Json DynamicSerialization::SerializeSamplerSettings(std::any& t_value) {
+    static Json SerializeSamplerSettings(std::any& t_value) {
         auto samplerSettings = std::any_cast<SamplerSettings>(t_value);
         return samplerSettings.Serialize();
     }
 
-    Json DynamicSerialization::SerializeGenericAudioDecoder(std::any& t_value) {
+    static Json SerializeGenericAudioDecoder(std::any& t_value) {
         return std::any_cast<GenericAudioDecoder>(t_value).assetID;
     }
 
-    Json DynamicSerialization::SerializeBool(std::any& t_value) {
+    static Json SerializeBool(std::any& t_value) {
         return std::any_cast<bool>(t_value);
     }
 
-    Json DynamicSerialization::SerializeGenericResolution(std::any& t_value) {
+    static Json SerializeGenericResolution(std::any& t_value) {
         return std::any_cast<GenericResolution>(t_value).Serialize();
     }
 
-    Json DynamicSerialization::SerializeGradient1D(std::any& t_value) {
+    static Json SerializeGradient1D(std::any& t_value) {
         return std::any_cast<Gradient1D>(t_value).Serialize();
     }
 
-    Json DynamicSerialization::SerializeChoice(std::any &t_value) {
+    static Json SerializeChoice(std::any &t_value) {
         return std::any_cast<Choice>(t_value).Serialize();
     }
 
-    Json DynamicSerialization::SerializeLine2D(std::any& t_value) {
+    static Json SerializeLine2D(std::any& t_value) {
         return std::any_cast<Line2D>(t_value).Serialize();
     }
 
-    std::any DynamicSerialization::DeserializeInt(Json t_data) {
+    static Json SerializeBezierCurve(std::any& t_value) {
+        return std::any_cast<BezierCurve>(t_value).Serialize();
+    }
+
+    static std::any DeserializeInt(Json t_data) {
         return t_data.get<int>();
     }
 
-    std::any DynamicSerialization::DeserializeFloat(Json t_data) {
+    static std::any DeserializeFloat(Json t_data) {
         return t_data.get<float>();
     }
 
-    std::any DynamicSerialization::DeserializeString(Json t_data) {
+    static std::any DeserializeString(Json t_data) {
         return t_data.get<std::string>();
     }
 
-    std::any DynamicSerialization::DeserializeVec2(Json t_data) {
+    static std::any DeserializeVec2(Json t_data) {
         return glm::vec2(t_data[0].get<float>(), t_data[1].get<float>());
     }
 
-    std::any DynamicSerialization::DeserializeVec3(Json t_data) {
+    static std::any DeserializeVec3(Json t_data) {
         return glm::vec3(t_data[0].get<float>(), t_data[1].get<float>(), t_data[2].get<float>());
     }
 
-    std::any DynamicSerialization::DeserializeVec4(Json t_data) {
+    static std::any DeserializeVec4(Json t_data) {
         return glm::vec4(t_data[0].get<float>(), t_data[1].get<float>(), t_data[2].get<float>(), t_data[3].get<float>());
     }
 
-    std::any DynamicSerialization::DeserializeTransform2D(Json t_data) {
+    static std::any DeserializeTransform2D(Json t_data) {
         return Transform2D(t_data);
     }
 
-    std::any DynamicSerialization::DeserializeSamplerSettings(Json t_data) {
+    static std::any DeserializeSamplerSettings(Json t_data) {
         return SamplerSettings(t_data);
     }
 
-    std::any DynamicSerialization::DeserializeGenericAudioDecoder(Json t_data) {
+    static std::any DeserializeGenericAudioDecoder(Json t_data) {
         GenericAudioDecoder decoder;
         decoder.assetID = t_data;
         return decoder;
     }
 
-    std::any DynamicSerialization::DeserializeBool(Json t_data) {
+    static std::any DeserializeBool(Json t_data) {
         return t_data.get<bool>();
     }
 
-    std::any DynamicSerialization::DeserializeGenericResolution(Json t_data) {
+    static std::any DeserializeGenericResolution(Json t_data) {
         return GenericResolution(t_data);
     }
 
-    std::any DynamicSerialization::DeserializeGradient1D(Json t_data) {
+    static std::any DeserializeGradient1D(Json t_data) {
         return Gradient1D(t_data);
     }
 
-    std::any DynamicSerialization::DeserializeChoice(Json t_data) {
+    static std::any DeserializeChoice(Json t_data) {
         return Choice(t_data);
     }
 
-    std::any DynamicSerialization::DeserializeLine2D(Json t_data) {
+    static std::any DeserializeLine2D(Json t_data) {
         return Line2D(t_data);
     }
+
+    static std::any DeserializeBezierCurve(Json t_data) {
+        return BezierCurve(t_data);
+    }
+
+    std::unordered_map<std::type_index, SerializationFunction> DynamicSerialization::s_serializers = {
+        {TYPE_CONTAINER(int), SerializeInt},
+        {TYPE_CONTAINER(float), SerializeFloat},
+        {TYPE_CONTAINER(std::string), SerializeString},
+        {TYPE_CONTAINER(glm::vec2), SerializeVec2},
+        {TYPE_CONTAINER(glm::vec3), SerializeVec3},
+        {TYPE_CONTAINER(glm::vec4), SerializeVec4},
+        {TYPE_CONTAINER(Transform2D), SerializeTransform2D},
+        {TYPE_CONTAINER(SamplerSettings), SerializeSamplerSettings},
+        {TYPE_CONTAINER(GenericAudioDecoder), SerializeGenericAudioDecoder},
+        {TYPE_CONTAINER(bool), SerializeBool},
+        {TYPE_CONTAINER(GenericResolution), SerializeGenericResolution},
+        {TYPE_CONTAINER(Gradient1D), SerializeGradient1D},
+        {TYPE_CONTAINER(Choice), SerializeChoice},
+        {TYPE_CONTAINER(Line2D), SerializeLine2D},
+        {TYPE_CONTAINER(BezierCurve), SerializeBezierCurve}
+    };
+
+    std::unordered_map<std::string, DeserializationFunction> DynamicSerialization::s_deserializers = {
+        {TYPE_NAME(int), DeserializeInt},
+        {TYPE_NAME(float), DeserializeFloat},
+        {TYPE_NAME(std::string), DeserializeString},
+        {TYPE_NAME(glm::vec2), DeserializeVec2},
+        {TYPE_NAME(glm::vec3), DeserializeVec3},
+        {TYPE_NAME(glm::vec4), DeserializeVec4},
+        {TYPE_NAME(Transform2D), DeserializeTransform2D},
+        {TYPE_NAME(SamplerSettings), DeserializeSamplerSettings},
+        {TYPE_NAME(GenericAudioDecoder), DeserializeGenericAudioDecoder},
+        {TYPE_NAME(bool), DeserializeBool},
+        {TYPE_NAME(GenericResolution), DeserializeGenericResolution},
+        {TYPE_NAME(Gradient1D), DeserializeGradient1D},
+        {TYPE_NAME(Choice), DeserializeChoice},
+        {TYPE_NAME(Line2D), DeserializeLine2D},
+        {TYPE_NAME(BezierCurve), DeserializeBezierCurve}
+    };
 
     std::optional<Json> DynamicSerialization::Serialize(std::any& t_value) {
         for (auto& serializer : s_serializers) {

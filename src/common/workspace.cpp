@@ -43,7 +43,8 @@ namespace Raster {
         RASTER_PACKAGED "asset_attribute",
         RASTER_PACKAGED "gradient1d_attribute",
         RASTER_PACKAGED "line2d_attribute",
-        RASTER_PACKAGED "folder_attribute"  
+        RASTER_PACKAGED "folder_attribute",
+        RASTER_PACKAGED "bezier_attribute"
     };
 
     std::vector<std::string> Workspace::s_pinnedAssetTypes = {

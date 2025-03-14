@@ -16,26 +16,29 @@
 #include "common/choice.h"
 #include "common/rendering.h"
 #include "common/line2d.h"
+#include "common/bezier_curve.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
+#define MAKE(x) []() {return x;}
 namespace Raster {
 
-    static std::vector<std::pair<std::string, std::any>> s_defaultValues = {
-        {TYPE_NAME(ICON_FA_DIVIDE, int), 0},
-        {TYPE_NAME(ICON_FA_DIVIDE, float), 0.0f},
-        {TYPE_NAME(ICON_FA_QUOTE_LEFT, std::string), std::string("")},
-        {TYPE_NAME(ICON_FA_LEFT_RIGHT, glm::vec2), glm::vec2()},
-        {TYPE_NAME(ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER, glm::vec3), glm::vec3()},
-        {TYPE_NAME(ICON_FA_EXPAND, glm::vec4), glm::vec4()},
-        {TYPE_NAME(ICON_FA_UP_DOWN_LEFT_RIGHT, Transform2D), Transform2D()},
-        {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), SamplerSettings()},
-        {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), AssetID()},
-        {TYPE_NAME(ICON_FA_VOLUME_HIGH " " ICON_FA_GEARS, GenericAudioDecoder), GenericAudioDecoder()},
-        {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), AudioSamples()},
-        {TYPE_NAME(ICON_FA_IMAGE " " ICON_FA_EXPAND, GenericResolution), GenericResolution()},
-        {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), Gradient1D()},
-        {TYPE_NAME(ICON_FA_QUESTION, Choice), Choice()},
-        {TYPE_NAME(ICON_FA_LINES_LEANING, Line2D), Line2D()}
+    static std::vector<std::pair<std::string, std::function<std::any()>>> s_defaultValues = {
+        {TYPE_NAME(ICON_FA_DIVIDE, int), MAKE(0)},
+        {TYPE_NAME(ICON_FA_DIVIDE, float), MAKE(0.0f)},
+        {TYPE_NAME(ICON_FA_QUOTE_LEFT, std::string), MAKE(std::string(""))},
+        {TYPE_NAME(ICON_FA_LEFT_RIGHT, glm::vec2), MAKE(glm::vec2())},
+        {TYPE_NAME(ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER, glm::vec3), MAKE(glm::vec3())},
+        {TYPE_NAME(ICON_FA_EXPAND, glm::vec4), MAKE(glm::vec4())},
+        {TYPE_NAME(ICON_FA_UP_DOWN_LEFT_RIGHT, Transform2D), MAKE(Transform2D())},
+        {TYPE_NAME(ICON_FA_IMAGE, SamplerSettings), MAKE(SamplerSettings())},
+        {TYPE_NAME(ICON_FA_FOLDER_OPEN, AssetID), MAKE(AssetID())},
+        {TYPE_NAME(ICON_FA_VOLUME_HIGH, GenericAudioDecoder), MAKE(GenericAudioDecoder())},
+        {TYPE_NAME(ICON_FA_WAVE_SQUARE, AudioSamples), MAKE(AudioSamples())},
+        {TYPE_NAME(ICON_FA_EXPAND, GenericResolution), MAKE(GenericResolution())},
+        {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), MAKE(Gradient1D())},
+        {TYPE_NAME(ICON_FA_QUESTION, Choice), MAKE(Choice())},
+        {TYPE_NAME(ICON_FA_LINES_LEANING, Line2D), MAKE(Line2D())},
+        {TYPE_NAME(ICON_FA_BEZIER_CURVE, BezierCurve), MAKE(BezierCurve())}
     };
 
     NodeBase::~NodeBase() {
@@ -182,11 +185,12 @@ namespace Raster {
                 ImGui::SeparatorText(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VALUE_TYPE").c_str()).c_str());
                 for (auto& defaultValue : s_defaultValues) {
                     if (ImGui::MenuItem(FormatString("%s", defaultValue.first.c_str()).c_str())) {
-                        attributes[t_attribute] = defaultValue.second;
-                        dynamicCandidate = defaultValue.second;
+                        attributes[t_attribute] = defaultValue.second();
+                        dynamicCandidate = defaultValue.second();
                     }
                     if (ImGui::BeginItemTooltip()) {
-                        Dispatchers::DispatchString(defaultValue.second);
+                        auto value = defaultValue.second();
+                        Dispatchers::DispatchString(value);
                         ImGui::EndTooltip();
                     }
                 }

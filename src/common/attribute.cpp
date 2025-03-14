@@ -759,19 +759,24 @@ namespace Raster {
                 auto compositionCandidate = Workspace::GetCompositionByAttributeID(id);
                 if (compositionCandidate.has_value()) {
                     std::function<void(std::vector<AbstractAttribute>*)> deleteAttribute = [&](std::vector<AbstractAttribute>* t_attributes) {
+                        if (t_attributes->empty()) return;
                         auto& composition = compositionCandidate.value();
                         int attributeIndex = 0;
+                        bool found = false;
                         for (auto& attribute : *t_attributes) {
                             auto childAttributesCandidate = attribute->GetChildAttributes();
                             if (childAttributesCandidate) {
                                 deleteAttribute(*childAttributesCandidate);
                             }
-                            if (attribute->id == id) break;
+                            if (attribute->id == id) {
+                                found = true;
+                                break;
+                            }
                             attributeIndex++;
                         }
-                        t_attributes->erase(t_attributes->begin() + attributeIndex);
+                        if (found) t_attributes->erase(t_attributes->begin() + attributeIndex);
                     };
-                    deleteAttribute(&(*compositionCandidate)->attributes);
+                    deleteAttribute(&((*compositionCandidate)->attributes));
                 }
             }
         }

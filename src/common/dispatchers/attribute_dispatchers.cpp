@@ -18,6 +18,7 @@
 #include "common/choice.h"
 #include "common/rendering.h"
 #include "common/line2d.h"
+#include "common/bezier_curve.h"
 
 namespace Raster {
 

@@ -115,6 +115,7 @@ build_modules = [
     ["gradient1d_attribute", attribute, [raster_common, raster_ImGui]],
     ["line2d_attribute", attribute, [raster_common, raster_ImGui]],
     ["folder_attribute", attribute, [raster_common, raster_ImGui]],
+    ["bezier_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["preferences", plugin, [raster_common]],
     ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],

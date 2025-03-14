@@ -1,4 +1,5 @@
 #include "overlay_dispatchers.h"
+#include "common/bezier_curve.h"
 #include "common/localization.h"
 #include "common/randomizer.h"
 #include "common/transform2d.h"
@@ -653,5 +654,210 @@ namespace Raster {
             Rendering::ForceRenderFrame();
         }
         return !roiChanged; 
+    }
+
+    struct BezierCurveOverlayState {
+        std::vector<ObjectDrag> drags;
+        ObjectDrag middleDrag;
+
+        bool AnyOtherDragActive(int t_excludeDrag = -1) {
+            if (middleDrag.id != t_excludeDrag && middleDrag.isActive) return true;
+            for (auto& drag : drags) {
+                if (drag.id != t_excludeDrag && drag.isActive) return true;
+            }
+            return false;
+        }
+    };
+
+    static void AddLineDashed(const ImVec2& a, const ImVec2& b, ImU32 col, float thickness, unsigned int num_segments, unsigned int on_segments, unsigned int off_segments)
+    {
+        if ((col >> 24) == 0)
+            return;
+        int on = 0, off = 0;
+        ImVec2 dir = (b - a) / num_segments;
+        for (int i = 0; i <= num_segments; i++)
+        {
+            ImVec2 point(a + dir * i);
+            if(on < on_segments) {
+                ImGui::GetWindowDrawList()->PathLineTo(point);
+                on++;
+            } else if(on == on_segments && off == 0) {
+                ImGui::GetWindowDrawList()->PathLineTo(point);
+                ImGui::GetWindowDrawList()->PathStroke(col, false, thickness);
+                off++;
+            } else if(on == on_segments && off < off_segments) {
+                off++;
+            } else {
+                ImGui::GetWindowDrawList()->PathClear();
+                ImGui::GetWindowDrawList()->PathLineTo(point);
+                on=1;
+                off=0;
+            }
+        }
+        ImGui::GetWindowDrawList()->PathStroke(col, false, thickness);
+    }
+
+    bool OverlayDispatchers::DispatchBezierCurve(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize) {
+        static BezierCurveOverlayState s_primaryState;
+        static std::unordered_map<std::string, BezierCurveOverlayState> s_attributeStates;
+
+        BezierCurve bezier = std::any_cast<BezierCurve>(t_attribute);
+        auto& project = Workspace::s_project.value();
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(t_attributeID);
+        ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+        ImVec2 cursor = ImGui::GetCursorPos();
+
+        bool bezierChanged = false;
+        bool blockDragging = false;
+
+        std::vector<glm::vec2> originalPoints = {};
+#define BEZIER_PRECISION 64
+        for (int i = 0; i < BEZIER_PRECISION + 1; i++) {
+            originalPoints.push_back(bezier.Get((float) i / (float) BEZIER_PRECISION));
+        }
+        std::vector<glm::vec2> transformedPoints;
+        for (auto& point : originalPoints) {
+            glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * glm::vec4(point, 0, 1);
+            transformedPoints.push_back(
+                {transformedPoint.x, transformedPoint.y}
+            );
+        }
+
+        std::vector<glm::vec2> screenSpacePoints;
+        for (auto& point : transformedPoints) {
+            screenSpacePoints.push_back(NDCToScreen(point, t_regionSize));
+        }
+
+        ImVec4 outlineColor = ImVec4(1, 1, 1, 1);
+        outlineColor.w = 1.0f;
+        for (int i = 0; i < screenSpacePoints.size(); i++) {
+            auto& point = screenSpacePoints[i];
+            auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
+            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 3);
+            ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(point.x, point.y), DRAG_CIRCLE_RADIUS, 0xFF);
+        }
+
+        originalPoints = bezier.points;
+        transformedPoints = {};
+        for (auto& point : originalPoints) {
+            glm::vec4 transformedPoint = project.GetProjectionMatrix(true) * glm::vec4(point, 0, 1);
+            transformedPoints.push_back(
+                {transformedPoint.x, transformedPoint.y}
+            );
+        }
+
+        screenSpacePoints = {};
+        for (auto& point : transformedPoints) {
+            screenSpacePoints.push_back(NDCToScreen(point, t_regionSize));
+        }
+
+        for (int i = 0; i < screenSpacePoints.size(); i++) {
+            auto& point = screenSpacePoints[i];
+            auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
+            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 1.0f);
+        }
+
+        auto stringID = attributeCandidate.has_value() ? std::to_string(t_attributeID) : std::to_string(t_attributeID) + s_attributeName;
+        BezierCurveOverlayState* overlayState = nullptr;
+        if (attributeCandidate.has_value()) {
+            overlayState = &s_primaryState;
+        } else {
+            if (s_attributeStates.find(stringID) == s_attributeStates.end()) {
+                s_attributeStates[stringID] = BezierCurveOverlayState();
+            }
+            overlayState = &s_attributeStates[stringID];
+        }
+
+        if (overlayState->drags.size() != bezier.points.size()) {
+            overlayState->drags = std::vector<ObjectDrag>(bezier.points.size());
+        }
+
+        std::vector<ObjectDrag*> lineDrags = {};
+        for (auto& drag : overlayState->drags) {
+            lineDrags.push_back(&drag);
+        }
+
+        bool beginDrag = true;
+        int dragIndex = 0;
+        for (auto& dragPtr : lineDrags) {
+            auto& drag = *dragPtr;
+            auto dragNDC4 = project.GetProjectionMatrix(true) * glm::vec4(bezier.points[dragIndex].x, bezier.points[dragIndex].y, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImVec4 dragColor = ImVec4(1);
+            ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? dragColor * 0.9f : dragColor));
+        
+            // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
+            ImGui::PushID(beginDrag);
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && MouseHoveringBounds(dragBounds)) {
+                ImGui::OpenPopup("##recolorDrag");
+            }
+
+            ImGui::PopID();
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                bezier.points[dragIndex].x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                bezier.points[dragIndex].y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+                bezierChanged = true;
+                drag.isActive = true;
+            } else drag.isActive = false;
+            beginDrag = false;
+            dragIndex++;
+        }
+
+        {
+            auto& drag = overlayState->middleDrag;
+            auto middlePos = bezier.Get(0.5);
+            auto dragNDC4 = project.GetProjectionMatrix(true) * glm::vec4(middlePos, 0, 1);
+            auto dragNDC = glm::vec2(dragNDC4.x, dragNDC4.y);
+            auto screenDrag = NDCToScreen(dragNDC, t_regionSize);
+            RectBounds dragBounds(
+                ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
+                ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
+            );
+            ImGui::GetWindowDrawList()->AddCircle(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+            ImGui::GetWindowDrawList()->AddCircle(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom * 0.5f, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? outlineColor * 0.9f : outlineColor));
+            // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));
+
+            if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
+                for (auto& point : bezier.points) {
+                    point.x += ImGui::GetIO().MouseDelta.x / t_regionSize.x * 2 * (project.preferredResolution.x / project.preferredResolution.y);
+                    point.y -= ImGui::GetIO().MouseDelta.y / t_regionSize.y * 2;
+                }
+                bezierChanged = true;
+                drag.isActive = true;
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+            } else drag.isActive = false;
+            beginDrag = false; 
+        }
+
+        ImGui::SetCursorPos(ImVec2(0, 20));
+        if (ImGui::Button(ICON_FA_PLUS)) {
+            bezier.points.push_back(bezier.Get(0.5f));
+            bezierChanged = true;
+        }
+
+        if (bezierChanged && attributeCandidate.has_value()) {
+            auto& attribute = attributeCandidate.value();
+            float compositionRelativeTime = std::floor(project.currentFrame - t_composition->beginFrame);
+            if (attribute->keyframes.size() == 1) {
+                attribute->keyframes[0].value = bezier;
+            } else if (attribute->KeyframeExists(compositionRelativeTime) && attribute->keyframes.size() > 1) {
+                auto keyframe = attribute->GetKeyframeByTimestamp(compositionRelativeTime).value();
+                keyframe->value = bezier;
+            } else {
+                attribute->keyframes.push_back(AttributeKeyframe(compositionRelativeTime, bezier));
+            }
+        }
+
+        t_attribute = bezier;
+        if (bezierChanged) {
+            Rendering::ForceRenderFrame();
+        }
+        return !bezierChanged; 
     }
 };
