@@ -53,7 +53,7 @@ namespace Raster {
             ImGui::OpenPopup("##editBezier");
         }
         if (ImGui::BeginPopup("##editBezier")) {
-            ImGui::SeparatorText(buttonText.c_str());
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, name.c_str()).c_str());
             int targetDeletePoint = -1;
             for (int i = 0; i < bezier.points.size(); i++) {
                 ImGui::PushID(i);

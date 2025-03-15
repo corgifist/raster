@@ -37,6 +37,7 @@ namespace Raster {
         print(RASTER_COMPILER_VERSION_STRING);
         RASTER_LOG("available RAM in bytes: " << GetRamAmount());
         RASTER_LOG("available RAM in megabytes: " << GetRamAmount() / 1024 / 1024);
+        RASTER_LOG("available RAM in megabytes: " << GetRamAmount() / 1024 / 1024 / 1024);
         static NFD::Guard s_guard;
         av::init();
         av::set_logging_level(AV_LOG_ERROR);
@@ -47,8 +48,16 @@ namespace Raster {
         DUMP_VAR(Audio::s_backendInfo.name);
         DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
+        ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
+        ImGuiIO& io = ImGui::GetIO();
+
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+        GPU::InitializeImGui();
         GPU::SetRenderingFunction(App::RenderLoop);
-        
         GPU::StartRenderingThread();
         Terminate();
     }
@@ -63,7 +72,6 @@ namespace Raster {
     void App::InitializeInternals() {
         AsyncUpload::Initialize();
         AsyncRendering::Initialize();
-        ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
 
         Plugins::Initialize();
         Plugins::SetupUI();
@@ -76,12 +84,7 @@ namespace Raster {
 
         WaveformManager::Initialize();
 
-        ImGuiIO& io = ImGui::GetIO();
-
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
+        auto& io = ImGui::GetIO();
         auto& configuration = Workspace::s_configuration;
         int currentLayoutID = configuration.selectedLayout;
         if (currentLayoutID > 0) {

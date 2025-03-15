@@ -22,5 +22,6 @@ namespace Raster {
         static void DispatchGenericResolutionValue(std::any& t_attribute);
         static void DispatchGradient1DValue(std::any& t_attribute);
         static void DispatchLine2DValue(std::any& t_attribute);
+        static void DispatchBezierCurveValue(std::any& t_attribute);
     };
 };

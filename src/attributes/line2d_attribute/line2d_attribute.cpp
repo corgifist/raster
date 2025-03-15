@@ -48,7 +48,7 @@ namespace Raster {
             ImGui::OpenPopup("##editLine");
         }
         if (ImGui::BeginPopup("##editLine")) {
-            ImGui::SeparatorText(buttonText.c_str());
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LINES_LEANING, name.c_str()).c_str());
             ImGui::AlignTextToFramePadding();
             ImGui::Text(ICON_FA_UP_DOWN_LEFT_RIGHT " P0 ");
             ImGui::SameLine();

@@ -1,3 +1,4 @@
+#include "common/bezier_curve.h"
 #include "common/common.h"
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
@@ -259,6 +260,27 @@ namespace Raster {
             );
             ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 20, 28, fitSize);
             OverlayDispatchers::DispatchLine2DValue(lineCopy, nullptr, -1, 0.5f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
+        ImGui::EndChild();
+    }
+
+    void StringDispatchers::DispatchBezierCurveValue(std::any &t_attribute) {
+        auto bezier = std::any_cast<BezierCurve>(t_attribute);
+        ImGui::BeginGroup();
+            for (int i = 0; i < bezier.points.size(); i++) {
+                ImGui::Text("%s P%i: (%0.2f; %0.2f)", ICON_FA_BEZIER_CURVE, i, bezier.points[i].x, bezier.points[i].y);
+            }
+        ImGui::EndGroup();
+        std::any lineCopy = bezier;
+        auto preferredResolution = Workspace::GetProject().preferredResolution;
+        ImVec2 fitSize = FitRectInRect(ImVec2{128, ImGui::GetWindowSize().y}, ImVec2{preferredResolution.x, preferredResolution.y});
+        ImGui::SameLine();
+        ImGui::BeginChild("##transformPreviewContainer", fitSize);
+            RectBounds backgroundBounds(
+                ImVec2(0, 0), 
+                fitSize
+            );
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 20, 28, fitSize);
+            OverlayDispatchers::DispatchBezierCurve(lineCopy, nullptr, -1, 0.5f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
         ImGui::EndChild();
     }
 

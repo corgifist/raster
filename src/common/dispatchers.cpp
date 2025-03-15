@@ -69,7 +69,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(AssetID), StringDispatchers::DispatchAssetIDValue},
             {ATTRIBUTE_TYPE(GenericResolution), StringDispatchers::DispatchGenericResolutionValue},
             {ATTRIBUTE_TYPE(Gradient1D), StringDispatchers::DispatchGradient1DValue},
-            {ATTRIBUTE_TYPE(Line2D), StringDispatchers::DispatchLine2DValue}
+            {ATTRIBUTE_TYPE(Line2D), StringDispatchers::DispatchLine2DValue},
+            {ATTRIBUTE_TYPE(BezierCurve), StringDispatchers::DispatchBezierCurveValue}
         };
 
         Dispatchers::s_previewDispatchers = {

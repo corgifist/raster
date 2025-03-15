@@ -731,10 +731,11 @@ namespace Raster {
         ImVec4 outlineColor = ImVec4(1, 1, 1, 1);
         outlineColor.w = 1.0f;
         for (int i = 0; i < screenSpacePoints.size(); i++) {
+            if (i == screenSpacePoints.size() - 1) break;
             auto& point = screenSpacePoints[i];
             auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
             ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 3);
-            ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(point.x, point.y), DRAG_CIRCLE_RADIUS, 0xFF);
+            // ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(point.x, point.y), DRAG_CIRCLE_RADIUS, 0xFF);
         }
 
         originalPoints = bezier.points;
@@ -752,11 +753,11 @@ namespace Raster {
         }
 
         for (int i = 0; i < screenSpacePoints.size(); i++) {
+            if (i == screenSpacePoints.size() - 1) break;
             auto& point = screenSpacePoints[i];
             auto& nextPoint = i == screenSpacePoints.size() - 1 ? screenSpacePoints[0] : screenSpacePoints[i + 1];
-            ImGui::GetWindowDrawList()->AddLine(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 1.0f);
+            AddLineDashed(canvasPos + ImVec2{point.x, point.y}, canvasPos + ImVec2{nextPoint.x, nextPoint.y}, ImGui::GetColorU32(outlineColor), 1.0f, 30, 1, 1);
         }
-
         auto stringID = attributeCandidate.has_value() ? std::to_string(t_attributeID) : std::to_string(t_attributeID) + s_attributeName;
         BezierCurveOverlayState* overlayState = nullptr;
         if (attributeCandidate.has_value()) {

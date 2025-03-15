@@ -231,6 +231,9 @@ namespace Raster {
         if (!info.display) {
             throw std::runtime_error("cannot create raster window!");
         }
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
     }
 
     void GPU::InitializeImGui() {
@@ -241,9 +244,6 @@ namespace Raster {
         if (!gladLoadGLES2((GLADloadfunc) glfwGetProcAddress)) {
             throw std::runtime_error("cannot initialize opengl es pointers!");
         }
-
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
 
         ImGuiIO& io = ImGui::GetIO();
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -329,7 +329,6 @@ namespace Raster {
 
     void GPU::StartRenderingThread() {
         s_running = true;
-        InitializeImGui();
         glfwMakeContextCurrent((GLFWwindow*) info.display);
         static int s_viewportWidth = 0, s_viewportHeight = 0;
         s_running = true;
