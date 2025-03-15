@@ -1,0 +1,39 @@
+<ShaderNodePreset SupportsAdaptiveDegradation="0" Description="
+This Matchbox shader simulates Stars.
+
+Setup:
+
+- Density : density of the stars
+- Seed: seed value for stars pattern
+- Speed: flickering speed
+- Brightness : brightness of the stars
+
+
+Demo clip: http://vimeo.com/82460176
+
+Shader developer: Kali
+Based on https://www.shadertoy.com/view/MssGzM
+This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+
+Matchbox version by ivar@inferno-op.com
+(Originally known as crok stars)
+" Name="Stars">
+   <Shader OutputBitDepth="Output" Index="1">
+      <Uniform ResDependent="None" Max="100.0" Min="0.0" Default="10.0" Inc="0.01" Tooltip="" Row="0" Col="0" Page="0" DisplayName="Density" Type="float" Name="Density">
+      </Uniform>
+      <Uniform ResDependent="None" Max="100." Min="3." Default="5.71" Inc="0.001" Tooltip="" Row="1" Col="0" Page="0" DisplayName="Seed" Type="float" Name="Seed">
+      </Uniform>	  
+      <Uniform ResDependent="None" Max="1000000.0" Min="-1000000.0" Default="1.0" Inc="0.01" Tooltip="" Row="0" Col="1" Page="0" DisplayName="Speed" Type="float" Name="Speed">
+      </Uniform>
+     <Uniform ResDependent="None" Max="10.0" Min="0.0" Default="1.0" Inc="0.01" Tooltip="" Row="0" Col="2" Page="0" DisplayName="Brightness" Type="float" Name="Brightness">
+      </Uniform>
+   </Shader>
+   <Page Name="" Page="0">
+      <Col Name="Style" Col="0" Page="0">
+      </Col>
+      <Col Name="Timing" Col="1" Page="0">
+      </Col>
+      <Col Name="Colour" Col="2" Page="0">
+      </Col>
+   </Page>
+</ShaderNodePreset>
