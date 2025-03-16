@@ -62,8 +62,8 @@ void main() {
                 gColor = mix(uFirstColor, uSecondColor, mask);
                 gColor = mix(texture(uColorTexture, screenUV), gColor, uOpacity);
                 gUV = uvPixel;
-            } else discard;
-        } else discard;
+            } 
+        } 
     }
 
     gColor.a *= uOpacity;

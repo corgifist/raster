@@ -4,6 +4,7 @@
     <attributes>
         <attribute name="Base" type="Framebuffer"/>
         <attribute name="Intensity" type="float" value="0.0"/>
+        <attribute name="SamplerSettings" type="SamplerSettings"/>
     </attributes>
 
     <pins>
@@ -12,6 +13,7 @@
     </pins>
 
     <framebuffers count="1" />
+    <samplers count="1"/>
     <shaders>
         <shader vertex="basic" fragment="pixelate/shader"/>
     </shaders>
@@ -27,6 +29,7 @@
             <uniform name="uColor" stage="fragment">
                 <attachment attribute="Base" index="0" unit="0"/>
             </uniform>
+            <sampler attribute="SamplerSettings" slot="0" unit="0"/>
             <draw count="3"/>
         </pass>
     </rendering>
@@ -34,6 +37,9 @@
     <properties>
         <property name="Intensity">
             <sliderStep step="0.05"/>
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+        <property name="SamplerSettings">
             <icon icon="ICON_FA_GEARS"/>
         </property>
     </properties>

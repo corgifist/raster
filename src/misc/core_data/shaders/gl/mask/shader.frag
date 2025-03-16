@@ -24,9 +24,9 @@ void main() {
         mask = vec4(1.);
     }
     if (uInvert) {
-        mask = 1. - mask;
+        mask = 1.0 - mask;
     }
     gColor = texture(uColor, screenUV) * mix(vec4(1.), mask, uOpacity);
-    if (gColor.a == 0.0) discard;
+    // gColor = vec4(mask);
     gUV = texture(uUV, screenUV) * mix(vec4(1.), mask, uOpacity);
 }

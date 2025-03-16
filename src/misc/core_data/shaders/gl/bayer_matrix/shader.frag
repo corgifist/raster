@@ -50,7 +50,7 @@ void main() {
                 uv += 0.5;
                 gColor = mix(colorPixel, generateBayerMatrix(uv), uOpacity);
                 gUV = uvPixel;
-            } else discard;
-        } else discard;
+            } 
+        } 
     }
 }

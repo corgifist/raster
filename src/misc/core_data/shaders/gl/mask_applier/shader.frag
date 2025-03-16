@@ -17,5 +17,4 @@ uniform sampler2D uUV;
 void main() {
     vec2 screenUV = gl_FragCoord.xy / uResolution;
     gColor = texture(uBase, screenUV) * texture(uMask, screenUV);
-    if (gColor.a == 0.0) discard;
 }

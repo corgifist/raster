@@ -167,6 +167,8 @@ build_modules = [
     ["rendering/merge", node, [raster_common, raster_gpu, raster_compositor, raster_ImGui, raster_font]],
     ["rendering/decode_video_asset", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/line2d", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/split_channels", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/combine_channels", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],

@@ -64,7 +64,7 @@ void main() {
                 gColor = vec4( colorPixel.rgb, 1.0 ) * uColor;
                 gColor.a *= uOpacity;
                 gUV = uvPixel;
-            } else discard;
-        } else discard;
+            } 
+        } 
     }
 }

@@ -37,5 +37,4 @@ void main() {
     }
 
     gColor = color;
-    if (gColor.a == 0.0) discard;
 }

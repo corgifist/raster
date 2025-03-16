@@ -233,7 +233,7 @@ namespace Raster {
                                         ImGui::EndPopup();
                                     }
                                 }
-                                if (selectedAttributeIndex > 0 && selectedAttributeIndex < transformedAttributes.size())
+                                if (selectedAttributeIndex >= 0 && selectedAttributeIndex < transformedAttributes.size())
                                     selectedPin = transformedAttributes[selectedAttributeIndex];
                             } catch (...) {
                                 // TODO: investigate this further

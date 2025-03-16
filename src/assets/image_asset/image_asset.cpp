@@ -52,10 +52,10 @@ namespace Raster {
             auto info = AsyncUpload::GetUpload(m_uploadID);
             m_texture = info.texture;
 
-            DUMP_VAR(GetExtension(m_relativePath));
-            RASTER_LOG("UPLOAD IS READY");
+            // DUMP_VAR(GetExtension(m_relativePath));
+            // RASTER_LOG("UPLOAD IS READY");
             if (s_gammaPipeline.has_value() && GetExtension(m_relativePath) == ".exr") {
-                RASTER_LOG("EXR GAMMA CORRECTION");
+                // RASTER_LOG("EXR GAMMA CORRECTION");
                 auto& pipeline = s_gammaPipeline.value();
                 Texture gammaTexture = GPU::GenerateTexture(info.texture.width, info.texture.height, info.texture.channels, info.texture.precision);
                 Framebuffer gammaFbo = GPU::GenerateFramebuffer(info.texture.width, info.texture.height, {gammaTexture});

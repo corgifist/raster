@@ -16,7 +16,6 @@ uniform sampler2D uUVTexture;
 void main() {
     gColor = texture(uColorTexture, gl_FragCoord.xy / uResolution);
     gColor.a *= uOpacity;
-    if (gColor.a == 0.0) discard;
 
     gUV = texture(uUVTexture, gl_FragCoord.xy / uResolution);
     gUV.a *= uOpacity;

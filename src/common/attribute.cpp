@@ -342,11 +342,9 @@ namespace Raster {
                 auto* keyframe = keyframeCandidate.value();
                 keyframe->value = currentValue;
             }
-        } else if (shouldAddKeyframe && buttonPressed && keyframes.size() != 1) {
-            auto indexCandidate = GetKeyframeIndexByTimestamp(currentFrame);
-            if (indexCandidate.has_value()) {
-                keyframes.erase(keyframes.begin() + indexCandidate.value());
-            }
+        } else if (shouldAddKeyframe && KeyframeExists(currentFrame) && buttonPressed && keyframes.size() != 1) {
+            auto indexCandidate = GetKeyframeByTimestamp(currentFrame);
+            if (indexCandidate) m_deletedKeyframes.push_back(indexCandidate.value()->id);
         }
     }
 

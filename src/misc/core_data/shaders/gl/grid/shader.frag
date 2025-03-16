@@ -61,7 +61,7 @@ void main() {
                 uv += uOffset;
                 gColor = mix(colorPixel, calculateGrid(uv), uOpacity);
                 gUV = uvPixel;
-            } else discard;
-        } else discard;
+            }
+        } 
     }
 }
