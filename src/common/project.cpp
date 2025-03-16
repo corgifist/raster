@@ -181,6 +181,7 @@ namespace Raster {
         data["CustomData"] = customData;
         data["AudioDiscretizationOptions"] = audioOptions.Serialize();
         data["ColorPrecision"] = static_cast<int>(colorPrecision);
+        data["ROI"] = roi.Serialize();
 
         data["Compositions"] = {};
         for (auto& composition : compositions) {

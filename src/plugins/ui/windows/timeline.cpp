@@ -86,7 +86,7 @@ namespace Raster {
     static std::unordered_map<int, float> s_legendOffsets;
     static ImGuiID s_legendTargetOpenTree = 0;
 
-    static ImVec2 s_rootWindowSize;
+    static ImVec2 s_rootWindowSize, s_rootWindowPos;
 
     static std::vector<Composition> s_copyCompositions;
 
@@ -223,6 +223,7 @@ namespace Raster {
                 s_splitterState = project.customData["TimelineSplitterState"];
             }
             s_rootWindowSize = ImGui::GetWindowSize();
+            s_rootWindowPos = ImGui::GetWindowPos();
             s_timelineFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
             if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  && ImGui::GetIO().KeyCtrl) {
                 s_pixelsPerFrame += 1;
@@ -599,19 +600,19 @@ namespace Raster {
                 ImGui::SetCursorPos(buttonCursor);
                 auto& waveformRecord = waveformRecords[t_id];
                 ImVec2 originalCursor = ImGui::GetCursorScreenPos();
-                ImVec2 layerEndCursor = {originalCursor.x + composition->endFrame * s_pixelsPerFrame, originalCursor.y};
+                ImVec2 layerEndCursor = {originalCursor.x + s_rootWindowPos.x + composition->endFrame * s_pixelsPerFrame, originalCursor.y};
                 float pixelAdvance = (float) waveformRecord.precision / (float) AudioInfo::s_sampleRate * project.framerate * s_pixelsPerFrame;
                 float advanceAccumulator = 0;
                 ImVec4 waveformColor = buttonColor * 0.7f;
                 waveformColor.w = 1.0f;
                 for (size_t i = 0; i < waveformRecord.data.size(); i++) {
-                    if (advanceAccumulator > (composition->endFrame - composition->beginFrame) * s_pixelsPerFrame) break;
-                    if (originalCursor.x < s_splitterState * s_rootWindowSize.x) {
+                    if (advanceAccumulator > (composition->endFrame - composition->beginFrame) * s_pixelsPerFrame + s_rootWindowPos.x) break;
+                    if (originalCursor.x < s_splitterState * s_rootWindowSize.x + s_rootWindowPos.x) {
                         originalCursor.x += pixelAdvance;
                         advanceAccumulator += pixelAdvance;
                         continue;
                     }
-                    if (originalCursor.x > ImGui::GetWindowSize().x + s_splitterState * s_rootWindowSize.x) break;
+                    if (originalCursor.x > ImGui::GetWindowSize().x + s_splitterState * s_rootWindowSize.x + s_rootWindowPos.x) break;
                     float average = glm::abs(waveformRecord.data[i]);
                     float averageInPixels = average * LAYER_HEIGHT;
                     float invertedAverageInPixels = LAYER_HEIGHT - averageInPixels;
@@ -637,7 +638,7 @@ namespace Raster {
                     auto& framebuffer = bundle.primaryFramebuffer;
                     glm::vec2 previewSize = {LAYER_HEIGHT * ((float) framebuffer.width / (float) framebuffer.height), LAYER_HEIGHT};
                     glm::vec2 rectSize = FitRectInRect(previewSize, glm::vec2{(float) framebuffer.width, (float) framebuffer.height});
-                    float legendWidth = s_splitterState * s_rootWindowSize.x;
+                    float legendWidth = s_rootWindowPos.x + s_splitterState * s_rootWindowSize.x;
                     ImVec2 upperLeft = ImGui::GetCursorScreenPos() + buttonCursor;
                     ImVec2 bottomRight = upperLeft;
                     bottomRight += ImVec2{rectSize.x, rectSize.y};
@@ -646,6 +647,7 @@ namespace Raster {
                     upperLeft.x = glm::max(upperLeft.x, legendWidth);
                     bottomRight.x = glm::max(bottomRight.x, legendWidth + rectSize.x);
                     bottomRight.x = glm::min(bottomRight.x, ImGui::GetCursorScreenPos().x + buttonCursor.x + buttonSize.x - dragSize.x);
+                    // DUMP_VAR(ImGui::GetCursorScreenPos().x);
                     upperLeft.y += 1;
                     bottomRight.y -= 1;
                     bundlePreviewSize = bottomRight - upperLeft;
@@ -656,8 +658,10 @@ namespace Raster {
                     if (ImGui::IsMouseHoveringRect(upperLeft, bottomRight) && s_timelineFocused) {
                         PopStyleVars();
                         if (ImGui::BeginTooltip()) {
-                            std::any dynamicFramebuffer = framebuffer;
-                            Dispatchers::DispatchString(dynamicFramebuffer);
+                            auto previewSize = glm::vec2(300, 300);
+                            auto fitSize = FitRectInRect(previewSize, glm::vec2(framebuffer.width, framebuffer.height));
+                            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 0.8f), ImVec4(0.1f, 0.1f, 0.1f, 0.8f), 14, 214, ImVec2(fitSize.x, fitSize.y));
+                            ImGui::Image((ImTextureID) framebuffer.attachments[0].handle, ImVec2(fitSize.x, fitSize.y));
                             ImGui::EndTooltip();
                         }
                         PushStyleVars();
