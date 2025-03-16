@@ -37,7 +37,7 @@ namespace Raster {
         print(RASTER_COMPILER_VERSION_STRING);
         RASTER_LOG("available RAM in bytes: " << GetRamAmount());
         RASTER_LOG("available RAM in megabytes: " << GetRamAmount() / 1024 / 1024);
-        RASTER_LOG("available RAM in megabytes: " << GetRamAmount() / 1024 / 1024 / 1024);
+        RASTER_LOG("available RAM in gigabytes: " << GetRamAmount() / 1024 / 1024 / 1024);
         static NFD::Guard s_guard;
         av::init();
         av::set_logging_level(AV_LOG_ERROR);
