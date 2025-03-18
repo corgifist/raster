@@ -47,7 +47,7 @@ namespace Raster {
         std::string format = "";
         float step = FLT_MAX;
         float base = 1.0f;
-        bool disableSlider;
+        bool disableSlider = false;
         if (t_metadata.has_value()) {
             auto& metadata = t_metadata.value();
             for (auto& info : metadata) {
