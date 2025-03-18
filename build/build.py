@@ -169,6 +169,7 @@ build_modules = [
     ["rendering/line2d", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/split_channels", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/combine_channels", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/bezier2d", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],
