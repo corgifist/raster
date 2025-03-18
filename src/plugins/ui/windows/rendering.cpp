@@ -356,7 +356,7 @@ namespace Raster {
                 if (ImGui::BeginChild("##miniTimeline", ImVec2(ImGui::GetContentRegionAvail().x, miniTimelineSize), ImGuiChildFlags_AutoResizeY)) {
                     static bool usingDragTimeline = false;
                     float firstTimelineCursorY = ImGui::GetCursorPosY();
-                    std::string firstTimestampText = project.FormatFrameToTime(project.currentFrame);
+                    std::string firstTimestampText = project.FormatFrameToTime(project.GetCorrectCurrentTime());
                     if (ImGui::Button(firstTimestampText.c_str())) {
                         usingDragTimeline = !usingDragTimeline;
                     }
@@ -375,7 +375,7 @@ namespace Raster {
                         if (!usingDragTimeline) {
                             ImGui::SliderFloat("##timelineSlider", &project.currentFrame, 0, project.GetProjectLength(), firstTimestampText.c_str());
                         } else {
-                            ImGui::DragFloat("##timelineSlider", &project.currentFrame, 0.05f, 0, project.GetProjectLength(), FormatString("%s (%0.2f)", firstTimestampText.c_str(), project.currentFrame / project.framerate).c_str());
+                            ImGui::DragFloat("##timelineSlider", &project.currentFrame, 0.05f, 0, project.GetProjectLength(), FormatString("%s (%0.2f)", firstTimestampText.c_str(), project.GetCorrectCurrentTime() / project.framerate).c_str());
                         }
                         if (ImGui::IsItemEdited()) {
                             project.OnTimelineSeek();
@@ -397,7 +397,7 @@ namespace Raster {
                     }
                     ImGui::SetItemTooltip("%s %s", ICON_FA_CIRCLE_NOTCH, Localization::GetString("LOOP_PLAYBACK").c_str());
                     ImGui::SameLine();
-                    firstTimestampText = project.FormatFrameToTime(project.GetProjectLength() - project.currentFrame);
+                    firstTimestampText = project.FormatFrameToTime(project.GetProjectLength() - project.GetCorrectCurrentTime());
                     if (ImGui::Button(firstTimestampText.c_str())) {
                         usingDragTimeline = !usingDragTimeline;
                     }

@@ -50,7 +50,7 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
         ImGui::PushID(id);
-            ImGui::PlotVar(name.c_str(), std::any_cast<float>(Get(project.currentFrame - parentComposition->beginFrame, parentComposition)));
+            ImGui::PlotVar(name.c_str(), std::any_cast<float>(Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition)));
         ImGui::PopID();
     }
 }

@@ -377,7 +377,7 @@ namespace Raster {
                     auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
                     if (!compositionCandidate) return std::nullopt;
                     auto& composition = *compositionCandidate;
-                    *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.currentFrame - composition->beginFrame) / project.framerate;
+                    *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate;
                     if (typeid(T) == typeid(AudioSamples)) {
                         auto decoder = std::any_cast<GenericAudioDecoder>(dynamicAttribute);
                         bool isAudioPass = RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool);
@@ -495,7 +495,7 @@ namespace Raster {
                     if (!compositionCandidate) continue;
                     auto& composition = *compositionCandidate;
                     auto& project = Workspace::GetProject();
-                    decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
+                    decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
                     attribute.second = decoder;
                 }
             }

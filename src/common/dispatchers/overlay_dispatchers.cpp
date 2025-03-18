@@ -295,7 +295,7 @@ namespace Raster {
 
         if (transformChanged && attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
-            float compositionRelativeTime = std::floor(project.currentFrame - t_composition->beginFrame);
+            float compositionRelativeTime = std::floor(project.GetCorrectCurrentTime() - t_composition->beginFrame);
             if (attribute->keyframes.size() == 1) {
                 attribute->keyframes[0].value = transform;
             } else if (attribute->KeyframeExists(compositionRelativeTime) && attribute->keyframes.size() > 1) {
@@ -459,7 +459,7 @@ namespace Raster {
 
         if (lineChanged && attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
-            float compositionRelativeTime = std::floor(project.currentFrame - t_composition->beginFrame);
+            float compositionRelativeTime = std::floor(project.GetCorrectCurrentTime() - t_composition->beginFrame);
             if (attribute->keyframes.size() == 1) {
                 attribute->keyframes[0].value = line;
             } else if (attribute->KeyframeExists(compositionRelativeTime) && attribute->keyframes.size() > 1) {
@@ -844,7 +844,7 @@ namespace Raster {
 
         if (bezierChanged && attributeCandidate.has_value()) {
             auto& attribute = attributeCandidate.value();
-            float compositionRelativeTime = std::floor(project.currentFrame - t_composition->beginFrame);
+            float compositionRelativeTime = std::floor(project.GetCorrectCurrentTime() - t_composition->beginFrame);
             if (attribute->keyframes.size() == 1) {
                 attribute->keyframes[0].value = bezier;
             } else if (attribute->KeyframeExists(compositionRelativeTime) && attribute->keyframes.size() > 1) {

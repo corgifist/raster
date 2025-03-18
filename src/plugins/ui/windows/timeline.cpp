@@ -535,7 +535,7 @@ namespace Raster {
                             if (childAttributesCandidate) {
                                 scanAttributes(*childAttributesCandidate);
                             }
-                            auto& valueType = attribute->Get(project.currentFrame - composition->beginFrame, composition).type();
+                            auto& valueType = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition).type();
                             if (valueType == typeid(Transform2D) || valueType == typeid(Line2D)) {
                                 newSelectedAttributes.push_back(attribute->id);
                             }
@@ -958,7 +958,7 @@ namespace Raster {
                     }
                     if (ImGui::BeginItemTooltip()) {
                         auto& bundles = Compositor::s_bundles;
-                        if (!IsInBounds(project.currentFrame, t_composition->beginFrame, t_composition->endFrame) || bundles.GetFrontValue().find(t_composition->id) == bundles.GetFrontValue().end()) {
+                        if (!IsInBounds(project.GetCorrectCurrentTime(), t_composition->beginFrame, t_composition->endFrame) || bundles.GetFrontValue().find(t_composition->id) == bundles.GetFrontValue().end()) {
                             ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
                         } else {
                             // FIXME: restore blending preview
@@ -1103,13 +1103,13 @@ namespace Raster {
             auto baseCompositionCandidate = Workspace::GetCompositionByID(compositionID);
             if (!baseCompositionCandidate) continue;
             auto& baseComposition = *baseCompositionCandidate;
-            if (!IsInBounds(project.currentFrame, baseComposition->beginFrame - 1, baseComposition->endFrame + 1)) continue;
+            if (!IsInBounds(project.GetCorrectCurrentTime(), baseComposition->beginFrame - 1, baseComposition->endFrame + 1)) continue;
             auto copiedCompositionCandidate = Workspace::CopyComposition(compositionID);
             if (!copiedCompositionCandidate) continue;
             auto& copiedComposition = *copiedCompositionCandidate;
             baseComposition->lockedCompositionID = 0;
-            baseComposition->endFrame = project.currentFrame;
-            copiedComposition.beginFrame = project.currentFrame;
+            baseComposition->endFrame = project.GetCorrectCurrentTime();
+            copiedComposition.beginFrame = project.GetCorrectCurrentTime();
             copiedComposition.cutTimeOffset += baseComposition->endFrame - baseComposition->beginFrame;
             copiedComposition.lockedCompositionID = 0;
             int baseCompositionIndex = 0;
@@ -1545,7 +1545,7 @@ namespace Raster {
         s_timelineRulerDragged = s_timelineDrag.isActive;
 
         RectBounds timelineBounds(
-            ImVec2(project.currentFrame * s_pixelsPerFrame, ImGui::GetScrollY()),
+            ImVec2(project.GetCorrectCurrentTime() * s_pixelsPerFrame, ImGui::GetScrollY()),
             ImVec2(TIMELINE_RULER_WIDTH, ImGui::GetWindowSize().y)
         );
         SetDrawListChannel(TimelineChannels::TimelineRuler);
@@ -1590,9 +1590,9 @@ namespace Raster {
                 } else {
                     timestampFormat = static_cast<TimestampFormat>(project.customData["TimelineTimestampFormat"]);
                 }
-                std::string formattedTimestamp = project.FormatFrameToTime(project.currentFrame);
-                if (timestampFormat == TimestampFormat::Frame) formattedTimestamp = std::to_string((int) project.currentFrame);
-                if (timestampFormat == TimestampFormat::Seconds) formattedTimestamp = FormatString("%.2f", Precision(project.currentFrame / project.framerate, 2));
+                std::string formattedTimestamp = project.FormatFrameToTime(project.GetCorrectCurrentTime());
+                if (timestampFormat == TimestampFormat::Frame) formattedTimestamp = std::to_string((int) project.GetCorrectCurrentTime());
+                if (timestampFormat == TimestampFormat::Seconds) formattedTimestamp = FormatString("%.2f", Precision(project.GetCorrectCurrentTime() / project.framerate, 2));
                 ImVec2 timestampSize = ImGui::CalcTextSize(formattedTimestamp.c_str());
                 ImGui::SetCursorPos(ImVec2(
                     5,
@@ -1698,7 +1698,7 @@ namespace Raster {
                 static bool timestampDragged = false;
                 if ((timestampHovered || timestampDragged) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowFocused() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                     project.currentFrame += ImGui::GetIO().MouseDelta.x / s_pixelsPerFrame;
-                    project.currentFrame = std::clamp(project.currentFrame, 0.0f, project.GetProjectLength());
+                    project.currentFrame = std::clamp(project.GetCorrectCurrentTime(), 0.0f, project.GetProjectLength());
                     project.OnTimelineSeek();
                     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
                     timestampDragged = true;

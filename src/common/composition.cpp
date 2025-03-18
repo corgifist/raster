@@ -20,6 +20,7 @@ namespace Raster {
         this->lockedCompositionID = -1;
         this->masks = {};
         this->cutTimeOffset = 0;
+        this->identityState = false;
     }
 
     Composition::Composition(Json data) {
@@ -36,6 +37,7 @@ namespace Raster {
         this->audioEnabled = data.contains("AudioEnabled") ? data["AudioEnabled"].get<bool>() : true;
         this->lockedCompositionID = data.contains("LockedCompositionID") ? data["LockedCompositionID"].get<int>() : -1;
         this->cutTimeOffset = data.contains("CutTimeOffset") ? data["CutTimeOffset"].get<float>() : 0.0f;
+        this->identityState = false;
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -61,7 +63,7 @@ namespace Raster {
         if (opacityAttributeID > 0) {
             for (auto& attribute : attributes) {
                 if (attribute->id == opacityAttributeID) {
-                    std::any opacityCandidate = attribute->Get(project.currentFrame - beginFrame, this);
+                    std::any opacityCandidate = attribute->Get(project.GetCorrectCurrentTime() - beginFrame, this);
                     if (attributeOpacityUsed) *attributeOpacityUsed = true;
                     if (opacityCandidate.type() == typeid(float)) {
                         if (correctOpacityTypeUsed) *correctOpacityTypeUsed = true;
@@ -86,7 +88,7 @@ namespace Raster {
             if (!resetWorkspaceState) break;
             auto& node = pair.second;
             node->executionsPerFrame.SetBackValue(0);
-            if (IsInBounds(project.currentFrame, beginFrame, endFrame + 1)) {
+            if (IsInBounds(project.GetCorrectCurrentTime(), beginFrame, endFrame + 1)) {
                 node->ClearAttributesCache();
             }
         }

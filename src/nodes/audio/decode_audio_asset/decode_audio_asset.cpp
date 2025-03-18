@@ -61,7 +61,7 @@ namespace Raster {
         auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
         if (!compositionCandidate) return;
         auto& composition = *compositionCandidate;
-        m_decoder.Seek((project.currentFrame - composition->beginFrame) / project.framerate);
+        m_decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
     }
 
     std::optional<float> DecodeAudioAsset::AbstractGetContentDuration() {

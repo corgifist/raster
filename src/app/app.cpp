@@ -294,6 +294,15 @@ namespace Raster {
                 }
 
                 for (auto& composition : project.compositions) {
+                    if (!IsInBounds(project.currentFrame, composition.beginFrame - 1, composition.endFrame + 1) && !composition.identityState) {
+                        composition.identityState = true;
+                        project.SetFakeTime(composition.beginFrame);
+                        composition.OnTimelineSeek();
+                        project.ResetFakeTime();
+                    }
+                    if (IsInBounds(project.currentFrame, composition.beginFrame - 1, composition.endFrame + 1)) {
+                        composition.identityState = true;
+                    }
                     if (composition.lockedCompositionID < 0) continue;
                     if (composition.lockedCompositionID == composition.id) {
                         composition.lockedCompositionID = -1;

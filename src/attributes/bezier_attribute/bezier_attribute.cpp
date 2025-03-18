@@ -89,7 +89,7 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
         ImGui::PushID(id);
-            auto currentValue = Get(project.currentFrame - parentComposition->beginFrame, parentComposition);
+            auto currentValue = Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition);
             Dispatchers::DispatchString(currentValue);
         ImGui::PopID();
     }

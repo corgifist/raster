@@ -573,8 +573,8 @@ namespace Raster {
                         ImGui::SameLine();
                         if (ImGui::Button(Localization::GetString("OK").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
                             Composition newComposition;
-                            newComposition.beginFrame = project.currentFrame;
-                            newComposition.endFrame = project.currentFrame + project.framerate;
+                            newComposition.beginFrame = project.GetCorrectCurrentTime();
+                            newComposition.endFrame = project.GetCorrectCurrentTime() + project.framerate;
                             s_compositionToAdd = newComposition;
                             project.selectedCompositions = {newComposition.id};
                             ImGui::CloseCurrentPopup();

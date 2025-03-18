@@ -176,7 +176,7 @@ namespace Raster {
                             auto& attribute = attributeCandidate.value();
                             auto& composition = compositionCandidate.value();
                             auto& project = Workspace::s_project.value();
-                            auto value = attribute->Get(project.currentFrame - composition->beginFrame, composition);
+                            auto value = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
                             ImVec2 zoomedSize = fitTextureSize * zoom;
                             ImGui::SetCursorPos(ImVec2{
                                 ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,

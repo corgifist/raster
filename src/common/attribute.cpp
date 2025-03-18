@@ -129,7 +129,7 @@ namespace Raster {
         this->composition = t_composition;
         s_legendFocused = ImGui::IsWindowFocused();
         auto& project = Workspace::s_project.value();
-        float currentFrame = project.currentFrame - t_composition->beginFrame;
+        float currentFrame = project.GetCorrectCurrentTime() - t_composition->beginFrame;
         auto currentValue = Get(currentFrame, t_composition);
         auto childAttributesCandidate = GetChildAttributes();
         bool openRenamePopup = false;
