@@ -1,0 +1,88 @@
+<effect>
+    <description name="Turbulence Distortion" packageName="turbulence_distortion" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="NumWaves" type="float" value="10.0"/>
+        <attribute name="Amplitude" type="float" value="0.7"/>
+        <attribute name="Frequency" type="float" value="2.0"/>
+        <attribute name="FrequencyMultiplier" type="float" value="1.0"/>
+        <attribute name="Time" type="float" value="0.0"/>
+        <attribute name="Speed" type="float" value="1.0"/>
+        <attribute name="SamplerSettings" type="SamplerSettings"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <samplers count="1"/>
+    <shaders>
+        <shader vertex="basic" fragment="turbulence_distortion/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uTurbulenceNum" stage="fragment">
+                <value attribute="NumWaves" type="float"/>
+            </uniform>
+            <uniform name="uTurbulenceAmplitude" stage="fragment">
+                <value attribute="Amplitude" type="float"/>
+            </uniform>
+            <uniform name="uTurbulenceTime" stage="fragment">
+                <value attribute="Time" type="float"/>
+            </uniform>
+            <uniform name="uTurbulenceFrequency" stage="fragment">
+                <value attribute="Frequency" type="float"/>
+            </uniform>
+            <uniform name="uTurbulenceFrequencyMultiplier" stage="fragment">
+                <value attribute="FrequencyMultiplier" type="float"/>
+            </uniform>
+            <uniform name="uTurbulenceSpeed" stage="fragment">
+                <value attribute="Speed" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColor" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <sampler attribute="SamplerSettings" slot="0" unit="0"/>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="NumWaves">
+            <sliderStep step="1.0"/>
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+        <property name="Amplitude">
+            <sliderStep step="0.1"/>
+            <icon icon="ICON_FA_UP_DOWN"/>
+        </property>
+        <property name="Frequency">
+            <sliderStep step="0.1"/>
+            <icon icon="ICON_FA_SQUARE_WAVE"/>
+        </property>
+        <property name="FrequencyMultiplier">
+            <sliderStep step="0.1"/>
+            <icon icon="ICON_FA_SQUARE_WAVE"/>
+        </property>
+        <property name="Time">
+            <sliderStep step="0.2"/>
+            <icon icon="ICON_FA_STOPWATCH"/>
+        </property>
+        <property name="Speed">
+            <sliderStep step="0.1"/>
+            <icon icon="ICON_FA_STOPWATCH"/>
+        </property>
+        <property name="SamplerSettings">
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_DROPLET" />
+</effect>
