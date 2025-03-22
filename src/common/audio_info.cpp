@@ -1,4 +1,5 @@
 #include "common/audio_info.h"
+#include "common/audio_memory_management.h"
 
 namespace Raster {
     int AudioInfo::s_channels = 2;
@@ -11,7 +12,7 @@ namespace Raster {
 
     SharedMutex AudioInfo::s_mutex;
 
-    SharedRawAudioSamples AudioInfo::MakeRawAudioSamples() {
-        return std::make_shared<std::vector<float>>(s_periodSize * s_channels);
+    float* AudioInfo::MakeRawAudioSamples() {
+        return (float*) AudioMemoryManagement::Allocate(s_periodSize * s_channels * sizeof(float));
     }
 };

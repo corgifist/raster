@@ -50,7 +50,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(GenericResolution), AttributeDispatchers::DispatchGenericResolutionAttribute},
             {ATTRIBUTE_TYPE(Gradient1D), AttributeDispatchers::DispatchGradient1DAttribute},
             {ATTRIBUTE_TYPE(Choice), AttributeDispatchers::DispatchChoiceAttribute},
-            {ATTRIBUTE_TYPE(Line2D), AttributeDispatchers::DispatchLine2DAttribute}
+            {ATTRIBUTE_TYPE(Line2D), AttributeDispatchers::DispatchLine2DAttribute},
+            {ATTRIBUTE_TYPE(BezierCurve), AttributeDispatchers::DispatchBezierCurveAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {

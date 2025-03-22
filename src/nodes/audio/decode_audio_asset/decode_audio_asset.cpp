@@ -41,11 +41,11 @@ namespace Raster {
         auto samplesCandidate = m_decoder.DecodeSamples(RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS_ID", int), t_contextData);
         if (samplesCandidate.has_value()) {
             auto resampledSamples = samplesCandidate.value();
-            auto samplesPtr = resampledSamples.samples->data();
+            auto samplesPtr = resampledSamples.samples;
             if (volumeCandidate.has_value()) {
                 auto& volume = volumeCandidate.value();
-                auto rawSamplesPtr = resampledSamples.samples->data();
-                for (int i = 0; i < resampledSamples.samples->size(); i++) {
+                auto rawSamplesPtr = resampledSamples.samples;
+                for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
                     rawSamplesPtr[i] *= volume; 
                 }
             } 

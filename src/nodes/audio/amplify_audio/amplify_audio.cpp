@@ -9,6 +9,7 @@ namespace Raster {
         SetupAttribute("Samples", GenericAudioDecoder());
         SetupAttribute("Intensity", 1.0f);
 
+        AddInputPin("Samples");
         AddOutputPin("Output");
     }
 
@@ -31,9 +32,9 @@ namespace Raster {
             auto& intensity = intensityCandidate.value();
 
             auto resultSamplesVector = AudioInfo::MakeRawAudioSamples();
-            auto resultSamplesPtr = resultSamplesVector->data();
-            auto originalSamplesPtr = samples.samples->data();
-            for (int i = 0; i < resultSamplesVector->size(); i++) {
+            auto resultSamplesPtr = resultSamplesVector;
+            auto originalSamplesPtr = samples.samples;
+            for (int i = 0; i < AudioInfo::s_channels * AudioInfo::s_periodSize; i++) {
                 resultSamplesPtr[i] = originalSamplesPtr[i] * intensity;
             }
 

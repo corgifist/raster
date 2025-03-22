@@ -164,7 +164,7 @@ namespace Raster {
                         ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
                         ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
                     } + imageOffset);
-                    if (!Dispatchers::DispatchOverlay(value, nullptr, 0, zoom, {zoomedSize.x, zoomedSize.y})) {
+                    if (!Dispatchers::DispatchOverlay(value, nullptr, 1, zoom, {zoomedSize.x, zoomedSize.y})) {
                         imageDragAllowed = false;
                     }
                     project.roi = std::any_cast<ROI>(value);

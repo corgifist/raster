@@ -26,6 +26,7 @@
 #include "common/rendering.h"
 #include "common/waveform_manager.h"
 #include "common/dispatchers.h"
+#include "common/audio_memory_management.h"
 
 using namespace av;
 
@@ -82,6 +83,7 @@ namespace Raster {
         Workspace::Initialize();
         Plugins::WorkspaceInitialize();
 
+        AudioMemoryManagement::Initialize(1024 * 1024 * 4);
         WaveformManager::Initialize();
 
         auto& io = ImGui::GetIO();
@@ -357,6 +359,7 @@ namespace Raster {
             Workspace::GetProject().compositions.clear();
         }
         Audio::Terminate();
+        AudioMemoryManagement::Terminate();
         WaveformManager::Terminate();
         GPU::Terminate();
         s_writerThreadRunning = false;

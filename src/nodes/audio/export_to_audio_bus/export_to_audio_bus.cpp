@@ -25,7 +25,7 @@ namespace Raster {
         auto samplesCandidate = GetAttribute<AudioSamples>("Samples", t_contextData);
         if (RASTER_GET_CONTEXT_VALUE(t_contextData, "WAVEFORM_PASS", bool) && samplesCandidate && samplesCandidate->samples) {
             auto& samples = *samplesCandidate;
-            WaveformManager::PushWaveformSamples(samples.samples);
+            WaveformManager::PushWaveformSamples(std::make_shared<std::vector<float>>(samples.samples, samples.samples + AudioInfo::s_periodSize * AudioInfo::s_channels));
             // RASTER_LOG("pushing waveform samples");
             return {};
         }
@@ -54,13 +54,13 @@ namespace Raster {
                 if (busCandidate.has_value()) {
                     auto& bus = busCandidate.value();
                     bus->ValidateBuffers();
-                    auto rawSamples = samples.samples->data();
+                    auto rawSamples = samples.samples;
                     for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
                         bus->samples[i] += rawSamples[i];
                     }
                 }
-            } else if (!samples.samples->empty()) {
-                WaveformManager::PushWaveformSamples(samples.samples);
+            } else if (samples.samples) {
+                WaveformManager::PushWaveformSamples(std::make_shared<std::vector<float>>(samples.samples, samples.samples + AudioInfo::s_periodSize * AudioInfo::s_channels));
             }
 
         }

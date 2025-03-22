@@ -29,6 +29,7 @@ namespace Raster {
         SetupAttribute("PitchScale", 1.0f);
         SetupAttribute("UseHighQualityPitch", false);
 
+        AddInputPin("Samples");
         AddOutputPin("Output");
     }
 
@@ -69,13 +70,15 @@ namespace Raster {
                     stretcher->SetPitchRatio(pitchScale);
                 }
    
-                stretcher->Push(samples.samples);
+                stretcher->Push(std::make_shared<std::vector<float>>(samplesVector, samplesVector + AudioInfo::s_periodSize * AudioInfo::s_channels));
 
                 if (stretcher->AvailableSamples() >= AudioInfo::s_periodSize) {
                     auto pitchSamples = stretcher->Pop();
 
+                    auto rawResultSamples = AudioInfo::MakeRawAudioSamples();
+                    memcpy(rawResultSamples, pitchSamples->data(), AudioInfo::s_periodSize * AudioInfo::s_channels * sizeof(float));
                     AudioSamples outputSamples = samples;
-                    outputSamples.samples = pitchSamples;
+                    outputSamples.samples = rawResultSamples;
                     context->cache.SetCachedSamples(outputSamples);
                     TryAppendAbstractPinMap(result, "Output", outputSamples);
                 }

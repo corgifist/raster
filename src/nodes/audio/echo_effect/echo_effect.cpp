@@ -55,9 +55,9 @@ namespace Raster {
                 reverbBuffer.pos = 0;
             }
 
-            auto inputBuffer = samples.samples->data();
+            auto inputBuffer = samples.samples;
             auto rawAudioSamples = AudioInfo::MakeRawAudioSamples();
-            auto outputBuffer = rawAudioSamples->data();
+            auto outputBuffer = rawAudioSamples;
             auto historyBuffer = reverbBuffer.samples->data();
             auto& pos = reverbBuffer.pos;
             for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++, pos++) {

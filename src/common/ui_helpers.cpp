@@ -260,7 +260,7 @@ namespace Raster {
 
     void UIHelpers::RenderAudioSamplesWaveform(AudioSamples& t_samples) {
 #define WAVEFORM_PRECISION 100
-        if (!t_samples.samples || t_samples.samples->size() <= 0) {
+        if (!t_samples.samples) {
             std::string waveformWarningText = FormatString("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("WAVEFORM_PREVIEW_IS_NOT_AVAILABLE").c_str());
             ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(waveformWarningText.c_str()).x / 2.0f);
             ImGui::Text("%s", waveformWarningText.c_str());
@@ -271,7 +271,7 @@ namespace Raster {
                 std::vector<float> constructedWaveform(WAVEFORM_PRECISION);
                 int waveformIndex = 0;
                 for (int i = AudioInfo::s_globalAudioOffset + AudioInfo::s_channels - 1; i < AudioInfo::s_globalAudioOffset + WAVEFORM_PRECISION * AudioInfo::s_channels; i += AudioInfo::s_channels) {
-                    constructedWaveform[waveformIndex++] = t_samples.samples->data()[i % AudioInfo::s_periodSize];
+                    constructedWaveform[waveformIndex++] = t_samples.samples[i % AudioInfo::s_periodSize];
                 }
                 RenderDecibelScale(constructedWaveform[0]);
                 ImGui::SameLine();

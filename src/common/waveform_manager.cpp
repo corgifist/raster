@@ -1,5 +1,6 @@
 #include "common/waveform_manager.h"
 #include "common/audio_info.h"
+#include "common/audio_memory_management.h"
 #include "common/synchronized_value.h"
 #include "common/workspace.h"
 #include "raster.h"
@@ -62,6 +63,7 @@ namespace Raster {
         for (auto& sample : s_waveformSamplesBuffer) {
             sample = 0.0f;
         }
+        AudioMemoryManagement::Reset();
     }
 
     void WaveformManager::PushWaveformSamples(SharedRawInterleavedAudioSamples t_samples) {
@@ -126,6 +128,7 @@ namespace Raster {
                     {"ALLOW_MEDIA_DECODING", true},
                     {"ONLY_AUDIO_NODES", true}
                 });
+                AudioMemoryManagement::Reset();
                 firstCall = false;
                 audioAccumulator.PushSamples(s_waveformSamplesBuffer);
                 bool mustBreak = false;

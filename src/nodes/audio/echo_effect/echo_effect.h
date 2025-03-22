@@ -8,13 +8,14 @@
 #include "audio/audio.h"
 #include "common/audio_cache.h"
 #include "common/shared_mutex.h"
+#include "common/audio_info.h"
 
 #define MAX_BUFFER_LIFESPAN 20
 
 namespace Raster {
 
     struct EchoBuffer {
-        SharedRawAudioSamples samples;
+        SharedRawInterleavedAudioSamples samples;
         AudioCache cache;
         int health;
         int pos;

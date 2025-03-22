@@ -1,6 +1,7 @@
 #include "audio/audio.h"
 #include "audio/time_stretcher.h"
 #include "common/audio_discretization_options.h"
+#include "common/audio_memory_management.h"
 #include "common/audio_samples.h"
 #include <memory>
 
@@ -46,6 +47,7 @@ namespace Raster {
         }
         project.audioBusesMutex->unlock();
 
+        AudioMemoryManagement::Reset();
         project.Traverse({
             {"AUDIO_PASS", true},
             {"AUDIO_PASS_ID", AudioInfo::s_audioPassID},

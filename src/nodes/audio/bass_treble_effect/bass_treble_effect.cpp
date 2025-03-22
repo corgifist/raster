@@ -98,9 +98,9 @@ namespace Raster {
                                 m_data.b0Treble, m_data.b1Treble, m_data.b2Treble);
                 }
 
-                auto rawSamples = samples.samples->data();
+                auto rawSamples = samples.samples;
                 auto rawSamplesVector = AudioInfo::MakeRawAudioSamples();
-                auto rawCachedSamples = rawSamplesVector->data();
+                auto rawCachedSamples = rawSamplesVector;
                 for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i++) {
                     float in = rawSamples[i];
                     // Bass filter

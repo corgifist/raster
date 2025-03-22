@@ -161,7 +161,7 @@ namespace Raster {
             if (resampledSamples) {
                 auto samplesPtr = resampledSamples.data();
                 SharedRawAudioSamples allocatedSamples = AudioInfo::MakeRawAudioSamples();
-                memcpy(allocatedSamples->data(), samplesPtr, resampledSamples.sampleFormat().bytesPerSample() * resampledSamples.channelsCount() * resampledSamples.samplesCount());
+                memcpy(allocatedSamples, samplesPtr, resampledSamples.sampleFormat().bytesPerSample() * resampledSamples.channelsCount() * resampledSamples.samplesCount());
 
                 AudioSamples samples;
                 samples.sampleRate = resampledSamples.sampleRate();

@@ -124,8 +124,8 @@ namespace Raster {
 
             SharedRawAudioSamples outputSamples = AudioInfo::MakeRawAudioSamples();
             for (int i = 0; i < AudioInfo::s_channels; i++) {
-                ichans[i] = samples.samples->data() + i;
-                ochans[i] = outputSamples->data() + i;
+                ichans[i] = samples.samples + i;
+                ochans[i] = outputSamples + i;
             }
 
             float dryMult = wetOnly ? 0 : DecibelToLinear(dryGain);

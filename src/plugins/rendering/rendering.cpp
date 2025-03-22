@@ -56,7 +56,7 @@ namespace Raster {
         ImGui::AlignTextToFramePadding();
         ImGui::Text("%s %s", ICON_FA_BOX_OPEN, Localization::GetString("MAX_VIDEO_CACHE_SIZE").c_str());
         ImGui::SameLine();
-        ImGui::DragInt("##videoCacheSize", &videoCacheSize, 1, 64, 3145728);
+        ImGui::DragInt("##videoCacheSize", &videoCacheSize, 1, 16, 3145728);
         pluginData["VideoCacheSize"] = videoCacheSize;
 
         ImGui::Text(FormatString("%s %s", ICON_FA_CIRCLE_INFO, Localization::GetString("VIDEO_CACHE_SIZE_APPROXIMATION").c_str()).c_str(), videoCacheSize, videoCacheSize / 6);

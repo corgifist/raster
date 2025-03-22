@@ -50,7 +50,7 @@ namespace Raster {
             float currentTime = (project.GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame + phase) / project.framerate;
 
             SharedRawAudioSamples resultSamples = AudioInfo::MakeRawAudioSamples();
-            auto samplesPtr = resultSamples->data();
+            auto samplesPtr = resultSamples;
             for (int i = 0; i < AudioInfo::s_periodSize * AudioInfo::s_channels; i += AudioInfo::s_channels) {
                 float s = (float)(sin(TAU_D * currentTime) * amplitude);
                 currentTime += (1.0f / (float) AudioInfo::s_sampleRate) * length + advance * AudioInfo::s_sampleRate;

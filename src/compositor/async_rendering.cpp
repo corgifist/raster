@@ -1,4 +1,5 @@
 #include "compositor/async_rendering.h"
+#include "common/audio_memory_management.h"
 #include "common/rendering.h"
 #include <chrono>
 #include <ratio>
@@ -27,7 +28,7 @@ namespace Raster {
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
                 while ((!project.playing && !Rendering::MustRenderFrame()) && m_running) {
-                    std::this_thread::yield();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
                     continue;
                 }
                 if (!m_running) break;
@@ -38,6 +39,7 @@ namespace Raster {
                 auto firstTimePoint = std::chrono::system_clock::now();
                 double firstTime = GPU::GetTime();
                 Compositor::s_bundles.Get().clear();
+                AudioMemoryManagement::Reset();
                 project.Traverse({
                     {"RENDERING_PASS", true},
                     {"INCREMENT_EPF", true},

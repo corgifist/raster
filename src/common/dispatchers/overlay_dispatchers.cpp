@@ -836,10 +836,12 @@ namespace Raster {
             beginDrag = false; 
         }
 
-        ImGui::SetCursorPos(ImVec2(0, 20));
-        if (ImGui::Button(ICON_FA_PLUS)) {
-            bezier.points.push_back(bezier.Get(0.5f));
-            bezierChanged = true;
+        if (t_attributeID > 0) {
+            ImGui::SetCursorPos(ImVec2(0, 20));
+            if (ImGui::Button(ICON_FA_PLUS)) {
+                bezier.points.push_back(bezier.Get(0.5f));
+                bezierChanged = true;
+            }
         }
 
         if (bezierChanged && attributeCandidate.has_value()) {

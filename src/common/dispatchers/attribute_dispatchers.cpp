@@ -685,7 +685,7 @@ namespace Raster {
         t_value = value;
     }
 
-        void AttributeDispatchers::DispatchLine2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+    void AttributeDispatchers::DispatchLine2DAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
         auto fitSize = FitRectInRect({ImGui::GetWindowSize().x, 256}, Workspace::s_project.value().preferredResolution);
         ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);
         ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
@@ -740,6 +740,36 @@ namespace Raster {
             Rendering::ForceRenderFrame();
         }
         t_value = line;
+    }
+
+    void AttributeDispatchers::DispatchBezierCurveAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto fitSize = FitRectInRect({ImGui::GetWindowSize().x, 256}, Workspace::s_project.value().preferredResolution);
+        ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);
+        ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::BeginChild("##bezierContainer", iFitSize, ImGuiChildFlags_Border);
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 20, iFitSize);
+            OverlayDispatchers::s_attributeName = t_attribute;
+            OverlayDispatchers::DispatchBezierCurve(t_value, Workspace::GetCompositionByNodeID(t_owner->nodeID).value(), t_owner->nodeID, 1.0f, fitSize);
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+
+        auto bezier = std::any_cast<BezierCurve>(t_value);
+        auto originalBezier = bezier;
+        
+        ImGui::BeginChild("##pointDrags", ImVec2(ImGui::GetWindowSize().x, 0));
+            for (int i = 0; i < bezier.points.size(); i++) {
+                ImGui::PushID(i);
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text("%s P%i ", ICON_FA_UP_DOWN_LEFT_RIGHT, i);
+                    ImGui::SameLine();
+                    ImGui::DragFloat2("##pointDrag", glm::value_ptr(bezier.points[i]), 0.01f);
+                    if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
+                ImGui::PopID();
+            }
+        ImGui::EndChild();
+
+        t_value = bezier;
     }
 
 };

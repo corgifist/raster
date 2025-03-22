@@ -4,7 +4,7 @@
 #include "gpu/gpu.h"
 
 namespace Raster {
-    using SharedRawAudioSamples = std::shared_ptr<std::vector<float>>;
+    using SharedRawAudioSamples = float*;
 
     // TODO: implement ability to store multiple attached pictures
     struct AudioSamples {
@@ -15,7 +15,7 @@ namespace Raster {
         AudioSamples() : samples(nullptr), sampleRate(0) {}
     };
 
-    using SharedRawInterleavedAudioSamples = SharedRawAudioSamples;
+    using SharedRawInterleavedAudioSamples = std::shared_ptr<std::vector<float>>;
     using SharedRawDeinterleavedAudioSamples = std::shared_ptr<std::vector<std::vector<float>>>;
 
     static void DeinterleaveAudioSamples(SharedRawInterleavedAudioSamples t_input, SharedRawDeinterleavedAudioSamples t_output, int frameCount, int channels) {

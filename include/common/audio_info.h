@@ -11,6 +11,6 @@ namespace Raster {
 
         static SharedMutex s_mutex;
 
-        static SharedRawAudioSamples MakeRawAudioSamples();
+        static float* MakeRawAudioSamples();
     };
 };
