@@ -13,6 +13,7 @@ namespace Raster {
         std::string AbstractPackageName();
 
         void AbstractOnEarlyInitialization();
+        void AbstractOnWorkspaceInitialization();
         void AbstractRenderProperties();
 
         static Json GetDefaultConfiguration();

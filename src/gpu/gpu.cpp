@@ -28,6 +28,8 @@ namespace Raster {
 
     GPUInfo GPU::info{};
     Shader GPU::s_basicShader;
+    Texture GPU::s_imageConvolutionPreviewTexture;
+    Pipeline GPU::s_kernelPreviewPipeline;
 
    void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
     {
@@ -300,6 +302,18 @@ namespace Raster {
         std::cout << info.renderer << std::endl;
 
         s_basicShader = GPU::GenerateShader(ShaderType::Vertex, "basic/shader");
+        RASTER_LOG("loading image_convolution_preview.jpg");
+        auto imageCandidate = ImageLoader::Load("image_convolution_preview.jpg");
+        if (imageCandidate) {
+            auto& image = *imageCandidate;
+            auto previewTexture = GPU::GenerateTexture(image.width, image.height, 3);
+            GPU::UpdateTexture(previewTexture, 0, 0, previewTexture.width, previewTexture.height, 3, image.data.data());
+            s_imageConvolutionPreviewTexture = previewTexture;
+            s_kernelPreviewPipeline = GPU::GeneratePipeline(GPU::s_basicShader, GPU::GenerateShader(ShaderType::Fragment, "kernel_preview/shader"));
+        } else {
+            RASTER_LOG("failed to load image_convolution_pipeline.jpg");
+            RASTER_LOG("convolution kernel previews will not be available");
+        }
     }
 
     std::vector<std::string> GPU::GetDragDropPaths() {
@@ -798,6 +812,18 @@ namespace Raster {
         auto location = GetShaderUniformLocation(shader, name);
         if (location < 0) return;
         glProgramUniform1fv(HANDLE_TO_GLUINT(shader.handle), location, 1, &f);
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, glm::mat2 mat) {
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniformMatrix2fv(HANDLE_TO_GLUINT(shader.handle), location, 1, GL_FALSE, &mat[0][0]);
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, glm::mat3 mat) {
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniformMatrix3fv(HANDLE_TO_GLUINT(shader.handle), location, 1, GL_FALSE, &mat[0][0]);
     }
 
     void GPU::SetShaderUniform(Shader shader, std::string name, glm::mat4 mat) {

@@ -83,7 +83,7 @@ namespace Raster {
         Workspace::Initialize();
         Plugins::WorkspaceInitialize();
 
-        AudioMemoryManagement::Initialize(1024 * 1024 * 4);
+        AudioMemoryManagement::Initialize(1024 * 1024 * 1);
         WaveformManager::Initialize();
 
         auto& io = ImGui::GetIO();

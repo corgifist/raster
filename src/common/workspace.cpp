@@ -3,6 +3,7 @@
 #include "common/attributes.h"
 #include "common/bezier_curve.h"
 #include "common/common.h"
+#include "common/convolution_kernel.h"
 #include "common/easings.h"
 #include "gpu/gpu.h"
 #include "common/transform2d.h"
@@ -45,7 +46,8 @@ namespace Raster {
         RASTER_PACKAGED "gradient1d_attribute",
         RASTER_PACKAGED "line2d_attribute",
         RASTER_PACKAGED "folder_attribute",
-        RASTER_PACKAGED "bezier_attribute"
+        RASTER_PACKAGED "bezier_attribute",
+        RASTER_PACKAGED "convolution_kernel_attribute"
     };
 
     std::vector<std::string> Workspace::s_pinnedAssetTypes = {
@@ -79,7 +81,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(AssetID), RASTER_COLOR32(50, 168, 82, 255)},
         {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 24, 115, 255)},
         {ATTRIBUTE_TYPE(Line2D), RASTER_COLOR32(56, 168, 82, 255)},
-        {ATTRIBUTE_TYPE(BezierCurve), RASTER_COLOR32(168, 52, 82, 255)}
+        {ATTRIBUTE_TYPE(BezierCurve), RASTER_COLOR32(168, 52, 82, 255)},
+        {ATTRIBUTE_TYPE(ConvolutionKernel), RASTER_COLOR32(102, 185, 255, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {
@@ -102,7 +105,8 @@ namespace Raster {
         RASTER_TYPE_NAME(Choice),
         RASTER_TYPE_NAME(std::nullopt),
         RASTER_TYPE_NAME(Line2D),
-        RASTER_TYPE_NAME(BezierCurve)
+        RASTER_TYPE_NAME(BezierCurve),
+        RASTER_TYPE_NAME(ConvolutionKernel)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {
@@ -303,7 +307,7 @@ namespace Raster {
     }
 
     std::optional<AbstractNode> Workspace::InstantiateSerializedNode(Json data) {
-        std::cout << data.dump() << std::endl;
+        // std::cout << data.dump() << std::endl;
         auto nodeImplementation = GetNodeImplementationByPackageName((std::string) data["PackageName"]);
         if (nodeImplementation.has_value()) {
             auto nodeInstance = InstantiateNode(nodeImplementation.value().libraryName);

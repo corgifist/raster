@@ -41,7 +41,7 @@ namespace Raster {
             auto bezier = *bezierCandidate;
             auto& gradient = gradientCandidate.value();
             auto& antialiasing = *antialiasingCandidate;
-            auto& width = *widthCandidate;
+            auto width = *widthCandidate * Compositor::previewResolutionScale;
             auto& quality = *qualityCandidate;
             auto iterations = std::pow(2, quality);
 

@@ -1,10 +1,12 @@
 #include "common/dynamic_serialization.h"
 #include "common/choice.h"
+#include "common/convolution_kernel.h"
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
 #include "common/gradient_1d.h"
 #include "common/line2d.h"
 #include "common/bezier_curve.h"
+#include "raster.h"
 
 #define TYPE_CONTAINER(type) std::type_index(typeid(type))
 #define TYPE_NAME(type) #type
@@ -27,7 +29,8 @@ namespace Raster {
         RASTER_TYPE_NAME(Gradient1D),
         RASTER_TYPE_NAME(Choice),
         RASTER_TYPE_NAME(Line2D),
-        RASTER_TYPE_NAME(BezierCurve)
+        RASTER_TYPE_NAME(BezierCurve),
+        RASTER_TYPE_NAME(ConvolutionKernel)
     };
 
     static Json SerializeInt(std::any& t_value) {
@@ -101,6 +104,10 @@ namespace Raster {
         return std::any_cast<BezierCurve>(t_value).Serialize();
     }
 
+    static Json SerializeConvolutionKernel(std::any& t_value) {
+        return std::any_cast<ConvolutionKernel>(t_value).Serialize();
+    }
+
     static std::any DeserializeInt(Json t_data) {
         return t_data.get<int>();
     }
@@ -163,6 +170,10 @@ namespace Raster {
         return BezierCurve(t_data);
     }
 
+    static std::any DeserializeConvolutionKernel(Json t_data) {
+        return ConvolutionKernel(t_data);
+    }
+
     std::unordered_map<std::type_index, SerializationFunction> DynamicSerialization::s_serializers = {
         {TYPE_CONTAINER(int), SerializeInt},
         {TYPE_CONTAINER(float), SerializeFloat},
@@ -178,7 +189,8 @@ namespace Raster {
         {TYPE_CONTAINER(Gradient1D), SerializeGradient1D},
         {TYPE_CONTAINER(Choice), SerializeChoice},
         {TYPE_CONTAINER(Line2D), SerializeLine2D},
-        {TYPE_CONTAINER(BezierCurve), SerializeBezierCurve}
+        {TYPE_CONTAINER(BezierCurve), SerializeBezierCurve},
+        {TYPE_CONTAINER(ConvolutionKernel), SerializeConvolutionKernel}
     };
 
     std::unordered_map<std::string, DeserializationFunction> DynamicSerialization::s_deserializers = {
@@ -196,7 +208,8 @@ namespace Raster {
         {TYPE_NAME(Gradient1D), DeserializeGradient1D},
         {TYPE_NAME(Choice), DeserializeChoice},
         {TYPE_NAME(Line2D), DeserializeLine2D},
-        {TYPE_NAME(BezierCurve), DeserializeBezierCurve}
+        {TYPE_NAME(BezierCurve), DeserializeBezierCurve},
+        {TYPE_NAME(ConvolutionKernel), DeserializeConvolutionKernel}
     };
 
     std::optional<Json> DynamicSerialization::Serialize(std::any& t_value) {

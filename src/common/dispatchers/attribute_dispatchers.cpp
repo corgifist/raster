@@ -767,6 +767,10 @@ namespace Raster {
                     if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
                 ImGui::PopID();
             }
+            if (UIHelpers::CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_POINT").c_str()).c_str())) {
+                bezier.points.push_back(bezier.Get(0.5f));
+                Rendering::ForceRenderFrame();
+            }
         ImGui::EndChild();
 
         t_value = bezier;

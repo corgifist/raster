@@ -144,6 +144,8 @@ namespace Raster {
     struct GPU {
         static GPUInfo info;
         static Shader s_basicShader;
+        static Pipeline s_kernelPreviewPipeline;
+        static Texture s_imageConvolutionPreviewTexture;
 
         static void Initialize();
         static void SetRenderingFunction(std::function<void()> t_function);
@@ -192,6 +194,8 @@ namespace Raster {
         static void SetShaderUniform(Shader shader, std::string name, glm::vec3 vec);
         static void SetShaderUniform(Shader shader, std::string name, glm::vec2 vec);
         static void SetShaderUniform(Shader shader, std::string name, float f);
+        static void SetShaderUniform(Shader shader, std::string name, glm::mat2 mat);
+        static void SetShaderUniform(Shader shader, std::string name, glm::mat3 mat);
         static void SetShaderUniform(Shader shader, std::string name, glm::mat4 mat);
 
         static void DrawArrays(int count);

@@ -38,7 +38,7 @@ namespace Raster {
             auto& line = *lineCandidate;
             auto& color = colorCandidate.value();
             auto& antialiasing = *antialiasingCandidate;
-            auto& width = *widthCandidate;
+            auto width = *widthCandidate * Compositor::previewResolutionScale;
 
             GPU::BindFramebuffer(framebuffer);
 

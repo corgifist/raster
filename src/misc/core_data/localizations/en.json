@@ -355,5 +355,8 @@
     "CUT_COMPOSITIONS": "Cut Compositions",
     "EDIT_ATTRIBUTE_METADATA": "Edit Attribute Metadata",
     "POINTS": "Points",
-    "NEW_POINT": "Add Point"
+    "NEW_POINT": "Add Point",
+    "EDIT_KERNEL": "Edit Kernel",
+    "KERNEL_PRESETS": "Kernel Presets",
+    "MULTIPLIER": "Multiplier"
 }

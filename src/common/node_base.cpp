@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "common/convolution_kernel.h"
 #include "common/transform2d.h"
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
@@ -38,7 +39,8 @@ namespace Raster {
         {TYPE_NAME(ICON_FA_DROPLET, Gradient1D), MAKE(Gradient1D())},
         {TYPE_NAME(ICON_FA_QUESTION, Choice), MAKE(Choice())},
         {TYPE_NAME(ICON_FA_LINES_LEANING, Line2D), MAKE(Line2D())},
-        {TYPE_NAME(ICON_FA_BEZIER_CURVE, BezierCurve), MAKE(BezierCurve())}
+        {TYPE_NAME(ICON_FA_BEZIER_CURVE, BezierCurve), MAKE(BezierCurve())},
+        {TYPE_NAME(ICON_FA_IMAGE, ConvolutionKernel), MAKE(ConvolutionKernel())}
     };
 
     NodeBase::~NodeBase() {
@@ -532,4 +534,5 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Choice);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Line2D);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(BezierCurve);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(ConvolutionKernel);
 };

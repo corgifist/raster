@@ -116,11 +116,12 @@ build_modules = [
     ["line2d_attribute", attribute, [raster_common, raster_ImGui]],
     ["folder_attribute", attribute, [raster_common, raster_ImGui]],
     ["bezier_attribute", attribute, [raster_common, raster_ImGui]],
+    ["convolution_kernel_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["preferences", plugin, [raster_common]],
     ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
     ["matchbox_effects", plugin, [raster_common, raster_gpu, raster_compositor, raster_image, raster_ImGui]],
-    ["rendering", plugin, [raster_common, raster_gpu, raster_ImGui, raster_font]],
+    ["rendering", plugin, [raster_common, raster_gpu, raster_image, raster_ImGui, raster_font]],
     ["ui", plugin, ui_deps],
 
     ["audio/decode_audio_asset", node, [raster_common, raster_avcpp, raster_audio, ffmpeg]],
@@ -170,6 +171,7 @@ build_modules = [
     ["rendering/split_channels", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/combine_channels", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/bezier2d", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/convolve", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],

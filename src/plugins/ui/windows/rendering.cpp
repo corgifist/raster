@@ -338,6 +338,7 @@ namespace Raster {
                                 Dispatchers::s_enableOverlays = s_previousOverlayEnabled;
                             }
                         }
+                        ImGui::SetItemTooltip("%s %s", ICON_FA_EXPAND, Localization::GetString("REGION_OF_INTEREST").c_str());
                         ImGui::SameLine();
                         if (Dispatchers::s_editingROI) ImGui::BeginDisabled();
                         ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
