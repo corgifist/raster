@@ -85,7 +85,10 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Framebuffer), PreviewDispatchers::DispatchFramebufferValue}, 
             {ATTRIBUTE_TYPE(bool), PreviewDispatchers::DispatchBoolValue},
             {ATTRIBUTE_TYPE(AudioSamples), PreviewDispatchers::DispatchAudioSamplesValue},
-            {ATTRIBUTE_TYPE(AssetID), PreviewDispatchers::DispatchAssetIDValue}
+            {ATTRIBUTE_TYPE(AssetID), PreviewDispatchers::DispatchAssetIDValue},
+            {ATTRIBUTE_TYPE(Transform2D), PreviewDispatchers::DispatchTransform2DValue},
+            {ATTRIBUTE_TYPE(BezierCurve), PreviewDispatchers::DispatchTransform2DValue},
+            {ATTRIBUTE_TYPE(Line2D), PreviewDispatchers::DispatchTransform2DValue}
         };
 
         Dispatchers::s_overlayDispatchers = {

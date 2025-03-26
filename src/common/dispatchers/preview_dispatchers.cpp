@@ -1,5 +1,8 @@
+#include "common/bezier_curve.h"
 #include "common/common.h"
+#include "common/line2d.h"
 #include "common/localization.h"
+#include "compositor/compositor.h"
 #include "font/IconsFontAwesome5.h"
 #include "font/font.h"
 #include "../../ImGui/imgui.h"
@@ -642,6 +645,110 @@ namespace Raster {
             StringDispatchers::DispatchAssetIDValue(t_attribute);
             s_childSize = ImGui::GetWindowSize();
         }
+        ImGui::EndChild();
+    }
+
+    void PreviewDispatchers::DispatchTransform2DValue(std::any& t_attribute) {
+        static DragStructure imageDrag;
+        static ImVec2 imageOffset;
+        static float zoom = 1.0f;
+        bool imageDragAllowed = true;
+
+        static bool mustAnimate = false;
+        static float beginZoom = 0.0f;
+        static float endZoom = 0.0f;
+        static ImVec2 beginImageOffset;
+        static ImVec2 endImageOffset;
+
+        static float animationPercentage = 1.0f;
+
+        if (mustAnimate) {
+            zoom = ImLerp(beginZoom, endZoom, std::clamp(animationPercentage * animationPercentage, 0.0f, 1.0f));
+            imageOffset = ImLerp(beginImageOffset, endImageOffset, std::clamp(animationPercentage * animationPercentage, 0.0f, 1.0f));
+            if (animationPercentage > 1.0f) {
+                mustAnimate = false;
+            }
+        }
+        animationPercentage += ImGui::GetIO().DeltaTime * 4;
+
+        ImVec2 fitTextureSize = FitRectInRect(ImGui::GetWindowSize(), ImVec2(Workspace::GetProject().preferredResolution.x, Workspace::GetProject().preferredResolution.y));
+
+        ImGui::BeginChild("##imageContainer", ImGui::GetContentRegionAvail(), 0, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            ImGui::SetCursorPos(ImVec2{
+                ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+            } + imageOffset);
+
+            ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 40, 194, ImVec2{fitTextureSize.x, fitTextureSize.y} * zoom);
+
+            auto& project = Workspace::GetProject();
+            bool blockPopups = false;
+            if (Dispatchers::s_enableOverlays || Dispatchers::s_editingROI) {
+                if (Dispatchers::s_editingROI) {
+                    auto& project = Workspace::s_project.value();
+                    std::any value = project.roi;
+                    ImVec2 zoomedSize = fitTextureSize * zoom;
+                    ImGui::SetCursorPos(ImVec2{
+                        ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                        ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                    } + imageOffset);
+                    if (!Dispatchers::DispatchOverlay(value, nullptr, 0, zoom, {zoomedSize.x, zoomedSize.y})) {
+                        imageDragAllowed = false;
+                    }
+                    project.roi = std::any_cast<ROI>(value);
+                } else {
+                    auto& project = Workspace::s_project.value();
+                    ImVec2 zoomedSize = fitTextureSize * zoom;
+                    ImGui::SetCursorPos(ImVec2{
+                        ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                        ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                    } + imageOffset);
+                    if (!Dispatchers::DispatchOverlay(t_attribute, nullptr, 0, zoom, {zoomedSize.x, zoomedSize.y})) {
+                        imageDragAllowed = false;
+                    }
+                }
+                blockPopups = Dispatchers::s_blockPopups;
+            }
+            Dispatchers::s_blockPopups = false;
+
+            imageDrag.Activate();
+            float imageDragDistance;
+
+            static float zoomPower;
+
+            if (imageDrag.GetDragDistance(imageDragDistance) && imageDragAllowed && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+                imageOffset = imageOffset + ImGui::GetIO().MouseDelta;
+            } else imageDrag.Deactivate();
+            if (ImGui::GetIO().MouseWheel != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows)) {
+                zoomPower = ImGui::GetIO().MouseWheel * 0.1f;
+            }
+
+            zoom += zoomPower / 2.0f;
+            zoomPower /= 2.0f;
+
+            zoom = std::max(zoom, 0.5f);
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && !blockPopups) {
+                ImGui::OpenPopup("##transformPopup");
+            }
+            if (ImGui::BeginPopup("##transformPopup") && !blockPopups) {
+                const char* icon = ICON_FA_UP_DOWN_LEFT_RIGHT;
+                if (t_attribute.type() == typeid(BezierCurve)) icon = ICON_FA_BEZIER_CURVE;
+                if (t_attribute.type() == typeid(Line2D)) icon = ICON_FA_LINES_LEANING;
+                ImGui::SeparatorText(FormatString("%s %s", icon, Localization::GetString("ATTRIBUTE").c_str()).c_str());
+                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_IMAGE, Localization::GetString("REVERT_VIEW").c_str()).c_str())) {
+                    /* zoom = 1.0f;
+                    imageOffset = ImVec2(0, 0); */
+                    mustAnimate = true;
+                    beginZoom = zoom;
+                    endZoom = 1.0f;
+                    beginImageOffset = imageOffset;
+                    endImageOffset = ImVec2(0, 0);
+                    animationPercentage = 0.0f;
+                }
+                ImGui::EndPopup();
+            }
+
         ImGui::EndChild();
     }
 };

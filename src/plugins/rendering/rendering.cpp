@@ -214,9 +214,69 @@ namespace Raster {
         t_value = kernel;
     }
 
+    static void DispatchPreviewConvolutionKernelAttribute(std::any& t_attribute) {
+        static ImVec2 s_childSize = ImVec2(300, 300);
+
+        ImGui::SetCursorPos(ImGui::GetWindowSize() / 2.0f - s_childSize / 2.0f);
+        if (ImGui::BeginChild("##kernelContainer", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY)) {
+            auto kernel = std::any_cast<ConvolutionKernel>(t_attribute);
+            if (GPU::s_imageConvolutionPreviewTexture.handle) {
+                ImVec2 dstSize = ImVec2(256, 256);
+                auto fitSize = FitRectInRect(dstSize, ImVec2(GPU::s_imageConvolutionPreviewTexture.width, GPU::s_imageConvolutionPreviewTexture.height));
+                ImVec2 iFitSize = ImVec2(fitSize.x, fitSize.y);
+                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - iFitSize.x / 2.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+                ImGui::BeginChild("##previewContainer", iFitSize, ImGuiChildFlags_Border);
+                if (GPU::s_imageConvolutionPreviewTexture.handle && GPU::s_kernelPreviewPipeline.handle) {
+                    static Framebuffer s_previewFramebuffer;
+                    auto& previewTexture = GPU::s_imageConvolutionPreviewTexture;
+                    if (!s_previewFramebuffer.handle) {
+                        s_previewFramebuffer = GPU::GenerateFramebuffer(previewTexture.width, previewTexture.height, {GPU::GenerateTexture(previewTexture.width, previewTexture.height, 3)});
+                    }
+                    static std::optional<glm::mat3> s_lastRenderedKernel = std::nullopt;
+                    if (!s_lastRenderedKernel || (s_lastRenderedKernel && *s_lastRenderedKernel != kernel.GetKernel())) {
+                        GPU::BindPipeline(GPU::s_kernelPreviewPipeline);
+                        GPU::BindFramebuffer(s_previewFramebuffer);
+                        GPU::ClearFramebuffer(0, 0, 0, 1);
+                        GPU::SetShaderUniform(GPU::s_kernelPreviewPipeline.fragment, "uResolution", glm::vec2(s_previewFramebuffer.width, s_previewFramebuffer.height));
+                        GPU::SetShaderUniform(GPU::s_kernelPreviewPipeline.fragment, "uKernel", kernel.GetKernel());
+                        GPU::BindTextureToShader(GPU::s_kernelPreviewPipeline.fragment, "uBase", previewTexture, 0);
+                        GPU::DrawArrays(3);
+                        // RASTER_LOG("rendering kernel preview");
+                        s_lastRenderedKernel = kernel.GetKernel();
+                    }
+                    auto fitSize = FitRectInRect(dstSize, ImVec2(previewTexture.width, previewTexture.height));
+                    ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - fitSize.x / 2.0f);
+                    ImGui::Image((ImTextureID) s_previewFramebuffer.attachments[0].handle, fitSize);
+                }
+                ImGui::EndChild();
+                ImGui::PopStyleVar();
+            }
+
+            ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - 200 / 2.0f);
+            ImGui::BeginChild("##kernelDrags", ImVec2(200, 0), ImGuiChildFlags_AutoResizeY);
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("%s %s ", ICON_FA_XMARK, Localization::GetString("MULTIPLIER").c_str());
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::DragFloat("##multiplierDrag", &kernel.multiplier, 0.01f);
+                ImGui::PopItemWidth();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                    ImGui::DragFloat3("##kernel0", glm::value_ptr(kernel.kernel[0]), 1);
+                    ImGui::DragFloat3("##kernel1", glm::value_ptr(kernel.kernel[1]), 1);
+                    ImGui::DragFloat3("##kernel2", glm::value_ptr(kernel.kernel[2]), 1);
+                ImGui::PopItemWidth();
+            ImGui::EndChild();
+
+            s_childSize = ImGui::GetWindowSize();
+        }
+        ImGui::EndChild();
+    }
+
     void RenderingPlugin::AbstractOnWorkspaceInitialization() {
         Dispatchers::s_stringDispatchers[std::type_index(typeid(ConvolutionKernel))] = DispatchStringConvolutionKernel;
         Dispatchers::s_propertyDispatchers[std::type_index(typeid(ConvolutionKernel))] = DispatchConvolutionKernelAttribute;
+        Dispatchers::s_previewDispatchers[std::type_index(typeid(ConvolutionKernel))] = DispatchPreviewConvolutionKernelAttribute;
     }
 
     Json RenderingPlugin::GetDefaultConfiguration() {

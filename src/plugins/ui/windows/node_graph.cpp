@@ -1209,8 +1209,8 @@ namespace Raster {
                                                     int attributeIndex = 0;
                                                     for (auto& attribute : composition->attributes) {
                                                         if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
+                                                            attribute->internalAttributeName = ReplaceString(attribute->internalAttributeName, exposedAttributeID, "");
                                                             Rendering::ForceRenderFrame();
-                                                            composition->attributes.erase(composition->attributes.begin() + attributeIndex);
                                                             ImGui::CloseCurrentPopup();
                                                             break;
                                                         }
@@ -1222,36 +1222,39 @@ namespace Raster {
                                             if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, createNewAttributeText.c_str()).c_str())) {
                                                 newAttributeOpenPopup = true;
                                             }
-                                            auto parentComposition = Workspace::GetCompositionByNodeID(node->nodeID).value();
-                                            bool oneCandidateWasDisplayed = false;
-                                            bool mustShowByID = false;
-                                            for (auto& parentAttribute : parentComposition->attributes) {
-                                                if (std::to_string(parentAttribute->id) == ReplaceString(s_searchFilter, " ", "")) {
-                                                    mustShowByID = true;
-                                                    break;
-                                                }
-                                            }
-                                            for (auto& parentAttribute : parentComposition->attributes) {
-                                                if (!mustShowByID) {
-                                                    if (!s_searchFilter.empty() && LowerCase(ReplaceString(parentAttribute->name, " ", "")).find(LowerCase(ReplaceString(s_searchFilter, " ", ""))) == std::string::npos) continue;
-                                                } else {
-                                                    if (!s_searchFilter.empty() && std::to_string(parentAttribute->id) != ReplaceString(s_searchFilter, " ", "")) continue;
-                                                }
-                                                ImGui::PushID(parentAttribute->id);
-                                                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_LINK, parentAttribute->name.c_str()).c_str())) {
-                                                    for (auto& replaceAttribute : parentComposition->attributes) {
-                                                        replaceAttribute->internalAttributeName = ReplaceString(replaceAttribute->internalAttributeName, FormatString("<%i>.%s", node->nodeID, attribute.c_str()), "");
+                                            if (ImGui::BeginChild("##attributesChild", ImGui::GetContentRegionAvail())) {
+                                                auto parentComposition = Workspace::GetCompositionByNodeID(node->nodeID).value();
+                                                bool oneCandidateWasDisplayed = false;
+                                                bool mustShowByID = false;
+                                                for (auto& parentAttribute : parentComposition->attributes) {
+                                                    if (std::to_string(parentAttribute->id) == ReplaceString(s_searchFilter, " ", "")) {
+                                                        mustShowByID = true;
+                                                        break;
                                                     }
-                                                    parentAttribute->internalAttributeName += (parentAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
-                                                    ImGui::CloseCurrentPopup();
                                                 }
-                                                oneCandidateWasDisplayed = true;
-                                                ImGui::PopID();
+                                                for (auto& parentAttribute : parentComposition->attributes) {
+                                                    if (!mustShowByID) {
+                                                        if (!s_searchFilter.empty() && LowerCase(ReplaceString(parentAttribute->name, " ", "")).find(LowerCase(ReplaceString(s_searchFilter, " ", ""))) == std::string::npos) continue;
+                                                    } else {
+                                                        if (!s_searchFilter.empty() && std::to_string(parentAttribute->id) != ReplaceString(s_searchFilter, " ", "")) continue;
+                                                    }
+                                                    ImGui::PushID(parentAttribute->id);
+                                                    if (ImGui::MenuItem(FormatString("%s %s", parentAttribute->internalAttributeName.find(FormatString("<%i>.%s", node->nodeID, attribute.c_str())) == std::string::npos ? ICON_FA_LINK : ICON_FA_LINK " " ICON_FA_CHECK, parentAttribute->name.c_str()).c_str())) {
+                                                        for (auto& replaceAttribute : parentComposition->attributes) {
+                                                            replaceAttribute->internalAttributeName = ReplaceString(replaceAttribute->internalAttributeName, FormatString("<%i>.%s", node->nodeID, attribute.c_str()), "");
+                                                        }
+                                                        parentAttribute->internalAttributeName += (parentAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
+                                                        ImGui::CloseCurrentPopup();
+                                                    }
+                                                    oneCandidateWasDisplayed = true;
+                                                    ImGui::PopID();
+                                                }
+                                                if (!oneCandidateWasDisplayed) {
+                                                    ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
+                                                    ImGui::Text("%s", Localization::GetString("NOTHING_TO_SHOW").c_str());
+                                                }
                                             }
-                                            if (!oneCandidateWasDisplayed) {
-                                                ImGui::SetCursorPosX(ImGui::GetWindowSize().x / 2.0f - ImGui::CalcTextSize(Localization::GetString("NOTHING_TO_SHOW").c_str()).x / 2.0f);
-                                                ImGui::Text("%s", Localization::GetString("NOTHING_TO_SHOW").c_str());
-                                            }
+                                            ImGui::EndChild();
                                         }
                                         ImGui::EndChild();
                                         if (newAttributeOpenPopup) {
