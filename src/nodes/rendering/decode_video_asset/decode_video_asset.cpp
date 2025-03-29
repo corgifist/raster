@@ -42,11 +42,11 @@ namespace Raster {
             auto composition = *Workspace::GetCompositionByNodeID(nodeID);
             TexturePrecision targetTexturePrecision = TexturePrecision::Usual;
 
-            float currentSeconds = (project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate;
+            float currentSeconds = (project.GetCorrectCurrentTime() - composition->GetBeginFrame()) / project.framerate;
             int currentVideoFrame = framerate * currentSeconds;
 
             m_decoder.targetPrecision = targetPrecision;
-            auto decodingResult = m_decoder.DecodeFrame(m_imageAllocation, RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS_ID", int), (project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
+            auto decodingResult = m_decoder.DecodeFrame(m_imageAllocation, RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS_ID", int), (project.GetCorrectCurrentTime() - composition->GetBeginFrame()) / project.framerate);
             if (decodingResult) {
                 if (!m_videoTexture.handle || (m_videoTexture.width != m_imageAllocation.width || m_videoTexture.height != m_imageAllocation.height || m_videoTexture.channels != m_imageAllocation.channels)) {
                     if (m_videoTexture.handle) {
@@ -74,7 +74,7 @@ namespace Raster {
         auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
         if (!compositionCandidate) return;
         auto& composition = compositionCandidate.value();
-        m_decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
+        m_decoder.Seek(composition->MapTime(project.GetCorrectCurrentTime() - composition->GetBeginFrame()) / project.framerate);
     }
 
     std::optional<float> DecodeVideoAsset::AbstractGetContentDuration() {

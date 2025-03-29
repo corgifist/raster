@@ -91,7 +91,7 @@ namespace Raster {
         if (!Workspace::IsProjectLoaded()) return;
         auto& project = Workspace::GetProject();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
-        auto assetID = std::any_cast<AssetID>(Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition));
+        auto assetID = std::any_cast<AssetID>(Get(project.GetCorrectCurrentTime() - parentComposition->GetBeginFrame(), parentComposition));
         auto assetCandidate = Workspace::GetAssetByAssetID(assetID.id);
         if (assetCandidate.has_value()) {
             assetCandidate.value()->RenderDetails();

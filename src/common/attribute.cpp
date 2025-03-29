@@ -1,4 +1,5 @@
 #include "common/attribute.h"
+#include "common/localization.h"
 #include "common/randomizer.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_drag.h"
@@ -11,6 +12,7 @@
 #include "common/dispatchers.h"
 #include "common/easings.h"
 #include "common/rendering.h"
+#include "font/IconsFontAwesome5.h"
 
 namespace Raster {
 
@@ -129,7 +131,7 @@ namespace Raster {
         this->composition = t_composition;
         s_legendFocused = ImGui::IsWindowFocused();
         auto& project = Workspace::s_project.value();
-        float currentFrame = project.GetCorrectCurrentTime() - t_composition->beginFrame;
+        float currentFrame = project.GetCorrectCurrentTime() - t_composition->GetBeginFrame();
         auto currentValue = Get(currentFrame, t_composition);
         auto childAttributesCandidate = GetChildAttributes();
         bool openRenamePopup = false;
@@ -365,8 +367,11 @@ namespace Raster {
             }
             ImGui::EndMenu();
         }
-        if (ImGui::MenuItem(FormatString("%s%s %s", t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", ICON_FA_DROPLET, Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
+        if (ImGui::MenuItem(FormatString("%s%s %s", ICON_FA_DROPLET, t_composition->opacityAttributeID == id ? ICON_FA_CHECK " " : "", Localization::GetString("USE_AS_OPACITY_ATTRIBUTE").c_str()).c_str())) {
             t_composition->opacityAttributeID = id;
+        }
+        if (ImGui::MenuItem(FormatString("%s%s %s", ICON_FA_FORWARD, t_composition->speedAttributeID == id ? ICON_FA_CHECK " " : "", Localization::GetString("USE_AS_SPEED_ATTRIBUTE").c_str()).c_str())) {
+            t_composition->speedAttributeID = id;
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_ATTRIBUTE").c_str()).c_str(), "Ctrl+D")) {
             auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
@@ -449,19 +454,19 @@ namespace Raster {
         SortKeyframes();
         float keyframeYOffset = -3;
         PushClipRect(RectBounds(
-            ImVec2(composition->beginFrame * UIShared::s_timelinePixelsPerFrame, keyframeYOffset),
-            ImVec2((composition->endFrame - composition->beginFrame) * UIShared::s_timelinePixelsPerFrame, ImGui::GetWindowSize().y)
+            ImVec2(composition->GetBeginFrame() * UIShared::s_timelinePixelsPerFrame, keyframeYOffset),
+            ImVec2((composition->GetEndFrame() - composition->GetBeginFrame()) * UIShared::s_timelinePixelsPerFrame, ImGui::GetWindowSize().y)
         ));
         float keyframeHeight = UIShared::s_timelineAttributeHeights[composition->id];
         float keyframeWidth = 9;
         RectBounds keyframeBounds(
-            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, keyframeYOffset),
+            ImVec2((composition->GetBeginFrame() + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, keyframeYOffset),
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
         keyframeWidth *= 1.5f;
         RectBounds keyframeLogicBounds(
-            ImVec2((composition->beginFrame + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, keyframeYOffset),
+            ImVec2((composition->GetBeginFrame() + std::floor(t_keyframe.timestamp)) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, keyframeYOffset),
             ImVec2(keyframeWidth, keyframeHeight)
         );
 
@@ -562,7 +567,7 @@ namespace Raster {
                         auto& selectedKeyframe = selectedKeyframeCandidate.value();
                         selectedKeyframe->timestamp += keyframeDragDistance / UIShared::s_timelinePixelsPerFrame;
                         selectedKeyframe->timestamp = std::max(selectedKeyframe->timestamp, 1.0f);
-                        selectedKeyframe->timestamp = std::min(selectedKeyframe->timestamp, composition->endFrame - composition->beginFrame);
+                        selectedKeyframe->timestamp = std::min(selectedKeyframe->timestamp, composition->GetEndFrame() - composition->GetBeginFrame());
                     }
                 }
             } else {
@@ -578,7 +583,7 @@ namespace Raster {
                 bool oneKeyframeTouched = false;
                 for (auto& keyframe : keyframes) {
                     RectBounds keyframeTestLogicBounds(
-                        ImVec2((composition->beginFrame + keyframe.timestamp) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
+                        ImVec2((composition->GetBeginFrame() + keyframe.timestamp) * UIShared::s_timelinePixelsPerFrame - keyframeWidth / 2.0f, 0),
                         ImVec2(keyframeWidth, keyframeHeight)
                     );
                     if (MouseHoveringBounds(keyframeTestLogicBounds) || !ImGui::IsWindowHovered() || !UIShared::s_timelineDragged) {

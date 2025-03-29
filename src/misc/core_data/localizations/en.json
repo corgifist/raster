@@ -362,5 +362,6 @@
     "MODE": "Mode",
     "BEZIER_CURVE": "Bezier Curve",
     "SMOOTH_CURVE": "Catmull-Rom Spline",
-    "INSERT_SELECTED_ASSETS": "Insert Selected Assets"
+    "INSERT_SELECTED_ASSETS": "Insert Selected Assets",
+    "USE_AS_SPEED_ATTRIBUTE": "Use as Speed Attribute"
 }

@@ -1,7 +1,10 @@
 #include "common/composition.h"
+#include "common/attribute.h"
 #include "common/composition_mask.h"
 #include "raster.h"
 #include "common/common.h"
+#include <algorithm>
+#include <cmath>
 
 namespace Raster {
 
@@ -21,6 +24,9 @@ namespace Raster {
         this->masks = {};
         this->cutTimeOffset = 0;
         this->identityState = false;
+        this->speedAttributeID = this->pitchAttributeID = -1;
+        this->lockPitchToSpeed = true;
+        this->speed = this->pitch = 1.0f;
     }
 
     Composition::Composition(Json data) {
@@ -38,6 +44,11 @@ namespace Raster {
         this->lockedCompositionID = data.contains("LockedCompositionID") ? data["LockedCompositionID"].get<int>() : -1;
         this->cutTimeOffset = data.contains("CutTimeOffset") ? data["CutTimeOffset"].get<float>() : 0.0f;
         this->identityState = false;
+        this->speedAttributeID = data.contains("SpeedAttributeID") ? data["SpeedAttributeID"].get<int>() : -1;
+        this->pitchAttributeID = data.contains("PitchAttributeID") ? data["PitchAttributeID"].get<int>() : -1;
+        this->lockPitchToSpeed = data.contains("LockPitchToSpeed") ? data["LockPitchToSpeed"].get<bool>() : true;
+        this->speed = data.contains("Speed") ? data["Speed"].get<float>() : 1.0f;
+        this->pitch = data.contains("Pitch") ? data["Pitch"].get<float>() : 1.0f;
         for (auto& node : data["Nodes"]) {
             auto nodeCandidate = Workspace::InstantiateSerializedNode(node);
             if (nodeCandidate.has_value()) {
@@ -88,15 +99,16 @@ namespace Raster {
             if (!resetWorkspaceState) break;
             auto& node = pair.second;
             node->executionsPerFrame.SetBackValue(0);
-            if (IsInBounds(project.GetCorrectCurrentTime(), beginFrame, endFrame + 1)) {
+            if (IsInBounds(project.GetCorrectCurrentTime(), GetBeginFrame() - 1, GetEndFrame() + 1)) {
                 node->ClearAttributesCache();
             }
         }
         if (audioMixing && !audioEnabled) return;
-        if (!IsInBounds(project.GetCorrectCurrentTime(), beginFrame - 1, endFrame + 1)) return;
+        if (!IsInBounds(project.GetCorrectCurrentTime(), GetBeginFrame() - 1, GetEndFrame() + 1)) return;
         if (!enabled) return;
         AbstractPinMap accumulator;
         project.TimeTravel(cutTimeOffset);
+        if (!RASTER_GET_CONTEXT_VALUE(t_data, "MANUAL_SPEED_CONTROL", bool)) project.SetFakeTime(beginFrame + MapTime(project.GetCorrectCurrentTime() - beginFrame));
         for (auto& pair : nodes) {
             auto& node = pair.second;
             if (node->flowInputPin.has_value()) {
@@ -116,6 +128,7 @@ namespace Raster {
                 }
             }
         }
+        if (!RASTER_GET_CONTEXT_VALUE(t_data, "MANUAL_SPEED_CONTROL", bool)) project.ResetFakeTime();
         project.ResetTimeTravel();
     }
 
@@ -154,6 +167,100 @@ namespace Raster {
         }
     }
 
+    static float InternalMapTime(Composition* t_composition, float t_time, bool t_inverseSpeed) {
+        if (t_composition->speedAttributeID < 0) return t_time * (t_inverseSpeed ? 1.0f / t_composition->speed : t_composition->speed);
+        auto lockedCompositionCandidate = Workspace::GetCompositionByID(t_composition->lockedCompositionID);
+        int speedAttributeID = t_composition->speedAttributeID;
+        if (lockedCompositionCandidate) speedAttributeID = (*lockedCompositionCandidate)->speedAttributeID;
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(speedAttributeID);
+        if (!attributeCandidate || (attributeCandidate && (*attributeCandidate)->packageName != RASTER_PACKAGED "float_attribute")) return t_time * (t_inverseSpeed ? 1.0f * t_composition->speed : t_composition->speed);
+        auto& attribute = *attributeCandidate;
+        if (attribute->keyframes.size() == 1) return t_time * (t_inverseSpeed ? 1.0f / std::any_cast<float>(attribute->keyframes[0].value) : std::any_cast<float>(attribute->keyframes[0].value));
+        auto keyframes = attribute->keyframes;
+        if (keyframes[keyframes.size() - 1].timestamp != t_composition->endFrame - t_composition->endFrame) {
+            keyframes.push_back(AttributeKeyframe(t_composition->endFrame - t_composition->beginFrame, keyframes[keyframes.size() - 1].value));
+        }
+        float result = 0;
+        for (int i = 0; i < keyframes.size() - 1; i++) {
+            bool mustBreak = false;
+            auto keyframe = keyframes[i];
+            auto nextKeyframe = keyframes[i + 1];
+            if (nextKeyframe.timestamp > t_time) {
+                mustBreak = true;
+                auto speed = std::any_cast<float>(keyframe.value);
+                auto nextSpeed = std::any_cast<float>(nextKeyframe.value);
+                auto percentage = GetPercentageInBounds(t_time, keyframe.timestamp, nextKeyframe.timestamp);
+                nextKeyframe.value = glm::mix(speed, nextSpeed, percentage);
+                nextKeyframe.timestamp = t_time;
+            }
+            auto speed = std::any_cast<float>(keyframe.value);
+            auto nextSpeed = std::any_cast<float>(nextKeyframe.value);
+            speed = glm::max(speed, 0.1f);
+            nextSpeed = glm::max(nextSpeed, 0.1f);
+            if (t_inverseSpeed) {
+                speed = 1.0f / speed;
+                nextSpeed = 1.0f / nextSpeed;
+            }
+            float width = (nextKeyframe.timestamp - keyframe.timestamp);
+            float innerHeight = std::max(speed, nextSpeed) - std::min(speed, nextSpeed);
+            float upperWidth = std::sqrt(width*width+innerHeight*innerHeight);
+            float area = (upperWidth + width) / 2.0f * std::max(speed, nextSpeed);
+            result += area;
+            if (mustBreak) break;
+        }
+        return result;
+    }
+
+    float Composition::GetSpeed() {
+        int attributeID = speedAttributeID;
+        if (lockedCompositionID > 0) {
+            auto lockedCompositionCandidate = Workspace::GetCompositionByID(lockedCompositionID);
+            if (lockedCompositionCandidate) {
+                attributeID = (*lockedCompositionCandidate)->speedAttributeID;
+            }
+        }
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
+        if (attributeCandidate) {
+            auto& attribute = *attributeCandidate;
+            auto speedCandidate = attribute->Get(Workspace::GetProject().GetCorrectCurrentTime() - beginFrame, this);
+            if (speedCandidate.type() == typeid(float)) return glm::max(0.1f, std::any_cast<float>(speedCandidate));
+        }
+        return glm::max(speed, 0.1f);
+    }
+
+    float Composition::GetPitch() {
+        int attributeID = pitchAttributeID;
+        if (lockedCompositionID > 0) {
+            auto lockedCompositionCandidate = Workspace::GetCompositionByID(lockedCompositionID);
+            if (lockedCompositionCandidate) {
+                attributeID = (*lockedCompositionCandidate)->pitchAttributeID;
+            }
+        }
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(attributeID);
+        if (attributeCandidate) {
+            auto& attribute = *attributeCandidate;
+            auto pitchCandidate = attribute->Get(Workspace::GetProject().GetCorrectCurrentTime() - beginFrame, this);
+            if (pitchCandidate.type() == typeid(float)) return glm::max(0.1f, std::any_cast<float>(pitchCandidate));
+        }
+        return glm::max(pitch, 0.1f);
+    }
+
+    float Composition::GetBeginFrame() {
+        return beginFrame;
+    }
+
+    float Composition::GetEndFrame() {
+        return beginFrame + GetLength();
+    }
+
+    float Composition::MapTime(float t_time) {
+        return InternalMapTime(this, t_time, false);
+    }
+
+    float Composition::GetLength() {
+        return InternalMapTime(this, endFrame - beginFrame, true);
+    }
+
     Json Composition::Serialize() {
         Json data = {};
         data["ID"] = id;
@@ -169,6 +276,11 @@ namespace Raster {
         data["AudioEnabled"] = audioEnabled;
         data["LockedCompositionID"] = lockedCompositionID;
         data["CutTimeOffset"] = cutTimeOffset;
+        data["SpeedAttributeID"] = speedAttributeID;
+        data["PitchAttributeID"] = pitchAttributeID;
+        data["LockPitchToSpeed"] = lockPitchToSpeed;
+        data["Speed"] = speed;
+        data["Pitch"] = pitch;
         data["Nodes"] = {};
         for (auto& pair : nodes) {
             data["Nodes"].push_back(pair.second->Serialize());

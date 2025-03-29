@@ -17,7 +17,7 @@ namespace Raster {
             bool relativeTime = relativeTimeCandidate.value();
             m_lastRelativeTime = relativeTime;
             if (relativeTime) {
-                TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame);
+                TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->GetBeginFrame());
             } else {
                 TryAppendAbstractPinMap(result, "Time", Workspace::GetProject().GetCorrectCurrentTime());
             }

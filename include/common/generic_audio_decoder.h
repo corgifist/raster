@@ -19,6 +19,8 @@ namespace Raster {
         std::shared_ptr<std::unordered_map<float, int>> decoderContexts;
         std::shared_ptr<std::unordered_map<float, int>> waveformDecoderContexts;
         std::shared_ptr<float> seekTarget;
+        std::shared_ptr<float> speed;
+        std::shared_ptr<float> pitch;
 
         GenericAudioDecoder();
 

@@ -334,7 +334,7 @@ namespace Raster {
                         if (resultCandidate) return *resultCandidate;
                     }
                     if (attribute->internalAttributeName.find(exposedPinAttributeName) != std::string::npos) {
-                        auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
+                        auto attributeValue = attribute->Get(project.GetCorrectCurrentTime() - composition->GetBeginFrame(), composition);
                         backAttributesCache.GetReference()[t_attribute] = attributeValue;
                         backAttributesCache.Unlock();
                         return attributeValue;
@@ -379,7 +379,7 @@ namespace Raster {
                     auto compositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
                     if (!compositionCandidate) return std::nullopt;
                     auto& composition = *compositionCandidate;
-                    *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = (project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate;
+                    *std::any_cast<GenericAudioDecoder>(dynamicAttribute).seekTarget = composition->MapTime(project.GetCorrectCurrentTime() - composition->GetBeginFrame()) / project.framerate;
                     if (typeid(T) == typeid(AudioSamples)) {
                         auto decoder = std::any_cast<GenericAudioDecoder>(dynamicAttribute);
                         bool isAudioPass = RASTER_GET_CONTEXT_VALUE(t_contextData, "AUDIO_PASS", bool);
@@ -497,7 +497,7 @@ namespace Raster {
                     if (!compositionCandidate) continue;
                     auto& composition = *compositionCandidate;
                     auto& project = Workspace::GetProject();
-                    decoder.Seek((project.GetCorrectCurrentTime() - composition->beginFrame) / project.framerate);
+                    decoder.Seek(composition->MapTime(project.GetCorrectCurrentTime() - composition->GetBeginFrame()) / project.framerate);
                     attribute.second = decoder;
                 }
             }

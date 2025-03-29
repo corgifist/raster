@@ -7,7 +7,7 @@ namespace Raster {
         keyframes.push_back(
             AttributeKeyframe(
                 0,
-                0.0f
+                1.0f
             )
         );
     }
@@ -36,7 +36,7 @@ namespace Raster {
 
     std::any FloatAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
         float fValue = std::any_cast<float>(t_originalValue);
-        bool isOpacityAttribute = t_composition->opacityAttributeID == id;
+        bool isOpacityAttribute = t_composition->opacityAttributeID == id || t_composition->speedAttributeID == id;
         if (!isOpacityAttribute) {
             ImGui::DragFloat("##dragFloat", &fValue, 0.01);
         } else {
@@ -50,7 +50,7 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
         ImGui::PushID(id);
-            ImGui::PlotVar(name.c_str(), std::any_cast<float>(Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition)));
+            ImGui::PlotVar(name.c_str(), std::any_cast<float>(Get(project.GetCorrectCurrentTime() - parentComposition->GetBeginFrame(), parentComposition)));
         ImGui::PopID();
     }
 }

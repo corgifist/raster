@@ -25,7 +25,7 @@ namespace Raster {
             auto parentCompositionCandidate = Workspace::GetCompositionByNodeID(nodeID);
             if (parentCompositionCandidate) {
                 auto parentComposition = *parentCompositionCandidate;
-                TryAppendAbstractPinMap(result, "Value", attribute->Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition));
+                TryAppendAbstractPinMap(result, "Value", attribute->Get(project.GetCorrectCurrentTime() - parentComposition->GetBeginFrame(), parentComposition));
             }
         }
         return result;

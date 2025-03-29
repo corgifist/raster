@@ -29,6 +29,12 @@ namespace Raster {
         // of composition with ID that's equals to lockedCompositionID
         int lockedCompositionID; 
 
+        int speedAttributeID;
+        int pitchAttributeID;
+        bool lockPitchToSpeed;
+
+        float speed, pitch;
+
         std::vector<CompositionMask> masks;
 
         // changes when cutting compositions
@@ -38,6 +44,14 @@ namespace Raster {
         Composition(Json data);
 
         float GetOpacity(bool* attributeOpacityUsed = nullptr, bool* correctOpacityTypeUsed = nullptr);
+        float GetLength();
+        float MapTime(float t_time);
+        
+        float GetSpeed();
+        float GetPitch();
+
+        float GetBeginFrame();
+        float GetEndFrame();
 
         void Traverse(ContextData t_context = {});
         void OnTimelineSeek();

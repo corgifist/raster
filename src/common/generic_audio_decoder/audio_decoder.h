@@ -12,6 +12,7 @@
 #include "../../avcpp/codeccontext.h"
 #include "common/synchronized_value.h"
 #include "common/audio_cache.h"
+#include <rubberband/RubberBandStretcher.h>
 
 
 #define MAX_GENERIC_AUDIO_DECODER_LIFESPAN 5
@@ -24,6 +25,8 @@ namespace Raster {
         av::AudioResampler audioResampler;
         bool cacheValid;
         SynchronizedValue<AudioCache> cache;
+        std::shared_ptr<RubberBand::RubberBandStretcher> stretcher;
+        int stretcherSampleRate;
 
         bool wasOpened;
         int lastAudioPassID;
@@ -43,6 +46,8 @@ namespace Raster {
             this->health = MAX_GENERIC_AUDIO_DECODER_LIFESPAN;
             this->cacheValid = false;
             this->timeOffset = 0;
+            this->stretcher = nullptr;
+            this->stretcherSampleRate = 0;
         }
 
         AudioDecoder(AudioDecoder const&) = delete;

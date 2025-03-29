@@ -130,7 +130,7 @@ namespace Raster {
                             } else {
                                 auto& project = Workspace::s_project.value();
                                 ImGui::Text("%s", composition->description.c_str());
-                                ImGui::Text("%s %s: %i -> %i", ICON_FA_STOPWATCH, Localization::GetString("COMPOSITION_TIMING").c_str(), int(composition->beginFrame / project.framerate), int(composition->endFrame / project.framerate));
+                                ImGui::Text("%s %s: %i -> %i", ICON_FA_STOPWATCH, Localization::GetString("COMPOSITION_TIMING").c_str(), int(composition->beginFrame / project.framerate), int(composition->GetEndFrame() / project.framerate));
                                 ImGui::Text("%s %s: %i", ICON_FA_CIRCLE_NODES, Localization::GetString("TOTAL_NODES_COUNT").c_str(), (int) composition->nodes.size());
                                 isEditingDescription = UIHelpers::CenteredButton(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT").c_str()).c_str());
                             }

@@ -53,7 +53,7 @@ namespace Raster {
         auto& project = Workspace::s_project.value();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
         ImGui::PushID(id);
-            auto currentValue = Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition);
+            auto currentValue = Get(project.GetCorrectCurrentTime() - parentComposition->GetBeginFrame(), parentComposition);
             auto vector = std::any_cast<glm::vec4>(currentValue);
             if (!interpretAsColor) {
                 ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1, 0, 0, 1));

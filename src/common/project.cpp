@@ -87,8 +87,8 @@ namespace Raster {
     float Project::GetProjectLength() {
         float candidate = FLT_MIN;
         for (auto& composition : compositions) {
-            if (composition.endFrame > candidate) {
-                candidate = composition.endFrame;
+            if (composition.GetEndFrame() > candidate) {
+                candidate = composition.GetEndFrame();
             }
         }
         return candidate == FLT_MIN ? 0 : candidate;

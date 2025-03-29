@@ -47,7 +47,7 @@ namespace Raster {
             auto& phase = phaseCandidate.value();
             auto& advance = advanceCandidate.value();
 
-            float currentTime = (project.GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->beginFrame + phase) / project.framerate;
+            float currentTime = (project.GetCorrectCurrentTime() - Workspace::GetCompositionByNodeID(nodeID).value()->GetBeginFrame() + phase) / project.framerate;
 
             SharedRawAudioSamples resultSamples = AudioInfo::MakeRawAudioSamples();
             auto samplesPtr = resultSamples;

@@ -463,7 +463,7 @@ namespace Raster {
             auto& composition = compositionCandidate.value();
             auto& selectedCompositions = project.selectedCompositions;
             ImGui::PushID(composition->id);
-            ImGui::SetCursorPosX(std::ceil(composition->beginFrame * s_pixelsPerFrame));
+            ImGui::SetCursorPosX(std::ceil(composition->GetBeginFrame() * s_pixelsPerFrame));
             ImVec4 buttonColor = ImGui::ColorConvertU32ToFloat4(composition->colorMark);
             bool isCompositionSelected = false;
             if (std::find(selectedCompositions.begin(), selectedCompositions.end(), t_id) != selectedCompositions.end()) {
@@ -478,7 +478,7 @@ namespace Raster {
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, buttonColor * 1.1f);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor * 1.2f);
             ImVec2 buttonCursor = ImGui::GetCursorPos();
-            ImVec2 buttonSize = ImVec2(std::ceil((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame), LAYER_HEIGHT);
+            ImVec2 buttonSize = ImVec2(std::ceil((composition->GetEndFrame() - composition->GetBeginFrame()) * s_pixelsPerFrame), LAYER_HEIGHT);
             bool compositionHovered;
             std::string compositionIcons = "";
             if (composition->lockedCompositionID > 0) compositionIcons += ICON_FA_LOCK " ";
@@ -535,7 +535,7 @@ namespace Raster {
                             if (childAttributesCandidate) {
                                 scanAttributes(*childAttributesCandidate);
                             }
-                            auto& valueType = attribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition).type();
+                            auto& valueType = attribute->Get(project.GetCorrectCurrentTime() - composition->GetBeginFrame(), composition).type();
                             if (valueType == typeid(Transform2D) || valueType == typeid(Line2D)) {
                                 newSelectedAttributes.push_back(attribute->id);
                             }
@@ -554,7 +554,7 @@ namespace Raster {
                 UIShared::s_lastClickedObjectType = LastClickedObjectType::Composition;
             }
 
-            ImVec2 dragSize = ImVec2((composition->endFrame - composition->beginFrame) * s_pixelsPerFrame / 10, LAYER_HEIGHT - 1);
+            ImVec2 dragSize = ImVec2((composition->GetEndFrame() - composition->GetBeginFrame()) * s_pixelsPerFrame / 10, LAYER_HEIGHT - 1);
             dragSize.x = std::clamp(dragSize.x, 1.0f, 30.0f);
 
             ImGui::SetCursorPos({0, 0});
@@ -600,13 +600,13 @@ namespace Raster {
                 ImGui::SetCursorPos(buttonCursor);
                 auto& waveformRecord = waveformRecords[t_id];
                 ImVec2 originalCursor = ImGui::GetCursorScreenPos();
-                ImVec2 layerEndCursor = {originalCursor.x + s_rootWindowPos.x + composition->endFrame * s_pixelsPerFrame, originalCursor.y};
+                ImVec2 layerEndCursor = {originalCursor.x + s_rootWindowPos.x + composition->GetEndFrame() * s_pixelsPerFrame, originalCursor.y};
                 float pixelAdvance = (float) waveformRecord.precision / (float) AudioInfo::s_sampleRate * project.framerate * s_pixelsPerFrame;
                 float advanceAccumulator = 0;
                 ImVec4 waveformColor = buttonColor * 0.7f;
                 waveformColor.w = 1.0f;
                 for (size_t i = 0; i < waveformRecord.data.size(); i++) {
-                    if (advanceAccumulator > (composition->endFrame - composition->beginFrame) * s_pixelsPerFrame + s_rootWindowPos.x) break;
+                    if (advanceAccumulator > (composition->GetEndFrame() - composition->GetBeginFrame()) * s_pixelsPerFrame + s_rootWindowPos.x) break;
                     if (originalCursor.x < s_splitterState * s_rootWindowSize.x + s_rootWindowPos.x) {
                         originalCursor.x += pixelAdvance;
                         advanceAccumulator += pixelAdvance;
@@ -776,7 +776,7 @@ namespace Raster {
                             auto selectedCompositionCandidate = Workspace::GetCompositionByID(testingCompositionID);
                             if (selectedCompositionCandidate.has_value()) {
                                 auto& testingComposition = selectedCompositionCandidate.value();
-                                if (testingComposition->beginFrame <= 0) {
+                                if (testingComposition->GetBeginFrame() <= 0) {
                                     breakDrag = true;
                                     break;
                                 }
@@ -787,7 +787,7 @@ namespace Raster {
                         if (selectedCompositionCandidate.has_value() && ImGui::IsWindowFocused()) {
                             auto& selectedComposition = selectedCompositionCandidate.value();
                             selectedComposition->OnTimelineSeek();
-                            ImVec2 reservedBounds = ImVec2(selectedComposition->beginFrame, selectedComposition->endFrame);
+                            ImVec2 reservedBounds = ImVec2(selectedComposition->GetBeginFrame(), selectedComposition->GetEndFrame());
 
                             selectedComposition->beginFrame += layerDragDistance / s_pixelsPerFrame;
                             selectedComposition->endFrame += layerDragDistance / s_pixelsPerFrame;
@@ -796,13 +796,13 @@ namespace Raster {
                             selectedComposition->beginFrame += scrollAmount / s_pixelsPerFrame;
                             selectedComposition->endFrame += scrollAmount / s_pixelsPerFrame;
 
-                            if (selectedComposition->beginFrame < 0) {
+                            if (selectedComposition->GetBeginFrame() < 0) {
                                 selectedComposition->beginFrame = reservedBounds.x;
                                 selectedComposition->endFrame = reservedBounds.y;
                             }
 
-                            selectedComposition->beginFrame = std::max(selectedComposition->beginFrame, 0.0f);
-                            selectedComposition->endFrame = std::max(selectedComposition->endFrame, 0.0f);
+                            selectedComposition->beginFrame = std::max(selectedComposition->GetBeginFrame(), 0.0f);
+                            selectedComposition->endFrame = std::max(selectedComposition->GetEndFrame(), 0.0f);
                         }
                     }
                     
@@ -958,7 +958,7 @@ namespace Raster {
                     }
                     if (ImGui::BeginItemTooltip()) {
                         auto& bundles = Compositor::s_bundles;
-                        if (!IsInBounds(project.GetCorrectCurrentTime(), t_composition->beginFrame, t_composition->endFrame) || bundles.GetFrontValue().find(t_composition->id) == bundles.GetFrontValue().end()) {
+                        if (!IsInBounds(project.GetCorrectCurrentTime(), t_composition->GetBeginFrame(), t_composition->GetEndFrame()) || bundles.GetFrontValue().find(t_composition->id) == bundles.GetFrontValue().end()) {
                             ImGui::Text("%s %s", ICON_FA_TRIANGLE_EXCLAMATION, Localization::GetString("BLENDING_PREVIEW_IS_UNAVAILABLE").c_str());
                         } else {
                             // FIXME: restore blending preview
@@ -1103,14 +1103,14 @@ namespace Raster {
             auto baseCompositionCandidate = Workspace::GetCompositionByID(compositionID);
             if (!baseCompositionCandidate) continue;
             auto& baseComposition = *baseCompositionCandidate;
-            if (!IsInBounds(project.GetCorrectCurrentTime(), baseComposition->beginFrame - 1, baseComposition->endFrame + 1)) continue;
+            if (!IsInBounds(project.GetCorrectCurrentTime(), baseComposition->GetBeginFrame() - 1, baseComposition->GetEndFrame() + 1)) continue;
             auto copiedCompositionCandidate = Workspace::CopyComposition(compositionID);
             if (!copiedCompositionCandidate) continue;
             auto& copiedComposition = *copiedCompositionCandidate;
             baseComposition->lockedCompositionID = 0;
             baseComposition->endFrame = project.GetCorrectCurrentTime();
             copiedComposition.beginFrame = project.GetCorrectCurrentTime();
-            copiedComposition.cutTimeOffset += baseComposition->endFrame - baseComposition->beginFrame;
+            copiedComposition.cutTimeOffset += baseComposition->GetEndFrame() - baseComposition->GetBeginFrame();
             copiedComposition.lockedCompositionID = 0;
             int baseCompositionIndex = 0;
             bool compositionIndexFound = false;
@@ -1174,7 +1174,7 @@ namespace Raster {
                 }
                 if (contentDuration.has_value()) {
                     auto duration = contentDuration.value();
-                    composition->endFrame = composition->beginFrame + duration;
+                    composition->endFrame = composition->GetBeginFrame() + duration;
                 }
             }
         }
@@ -1924,8 +1924,8 @@ namespace Raster {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
             ImGui::SetDragDropPayload(LAYER_REARRANGE_DRAG_DROP, &t_composition->id, sizeof(t_composition->id));
             TextColorButton(FormatString("%s %s", ICON_FA_LAYER_GROUP, t_composition->name.c_str()).c_str(), ImGui::ColorConvertU32ToFloat4(t_composition->colorMark));
-            ImGui::Text("%s %s: %s (%0.1f)", ICON_FA_TIMELINE, Localization::GetString("IN_POINT").c_str(), project.FormatFrameToTime(t_composition->beginFrame).c_str(), t_composition->beginFrame);
-            ImGui::Text("%s %s: %s (%0.1f)", ICON_FA_TIMELINE, Localization::GetString("OUT_POINT").c_str(), project.FormatFrameToTime(t_composition->endFrame).c_str(), t_composition->endFrame);
+            ImGui::Text("%s %s: %s (%0.1f)", ICON_FA_TIMELINE, Localization::GetString("IN_POINT").c_str(), project.FormatFrameToTime(t_composition->GetBeginFrame()).c_str(), t_composition->GetBeginFrame());
+            ImGui::Text("%s %s: %s (%0.1f)", ICON_FA_TIMELINE, Localization::GetString("OUT_POINT").c_str(), project.FormatFrameToTime(t_composition->GetEndFrame()).c_str(), t_composition->GetEndFrame());
             ImGui::EndDragDropSource();
         }
         if (ImGui::BeginDragDropTarget()) {

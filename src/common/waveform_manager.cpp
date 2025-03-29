@@ -90,6 +90,7 @@ namespace Raster {
     }
 
     static void ComputeWaveform(int t_compositionID) {
+        // return;
         auto& project = Workspace::GetProject();
         auto compositionCandidate = Workspace::GetCompositionByID(t_compositionID);
         if (s_waveformSamplesBuffer.size() != AudioInfo::s_periodSize * AudioInfo::s_channels) {
@@ -105,16 +106,16 @@ namespace Raster {
             std::vector<float> accumulatedWaveform;
             int waveformPassID = 1;
             AudioAccumulator audioAccumulator;
-            float currentFakeTime = composition->beginFrame;
+            float currentFakeTime = composition->GetBeginFrame();
             bool firstCall = true;
             while (true) {
-                if (!IsInBounds(currentFakeTime, composition->beginFrame - 1, composition->endFrame + 1)) {
+                if (!IsInBounds(currentFakeTime, composition->GetBeginFrame() - 1, composition->GetEndFrame() + 1)) {
                     // RASTER_LOG("fake time is out of bounds: " << currentFakeTime);
                     break;
                 }
                 if (!composition->enabled) break;
                 project.ResetTimeTravel();
-                project.SetFakeTime(currentFakeTime);
+                project.SetFakeTime(composition->GetBeginFrame() + composition->MapTime(currentFakeTime - composition->GetBeginFrame()));
                 // DUMP_VAR(currentFakeTime);
                 ClearWaveformSamples();
                 // RASTER_SYNCHRONIZED(Workspace::s_nodesMutex);
@@ -126,7 +127,8 @@ namespace Raster {
                     {"INCREMENT_EPF", false},
                     {"RESET_WORKSPACE_STATE", false},
                     {"ALLOW_MEDIA_DECODING", true},
-                    {"ONLY_AUDIO_NODES", true}
+                    {"ONLY_AUDIO_NODES", true}, 
+                    {"MANUAL_SPEED_CONTROL", true}
                 });
                 AudioMemoryManagement::Reset();
                 firstCall = false;

@@ -39,7 +39,7 @@ namespace Raster {
         if (parentAttributeCandidate.has_value()) {
             auto& parentAttribute = parentAttributeCandidate.value();
             auto parentComposition = Workspace::GetCompositionByAttributeID(parentAttribute->id).value();
-            auto dynamicValue = parentAttribute->Get(project.GetCorrectCurrentTime() - parentComposition->beginFrame, parentComposition);
+            auto dynamicValue = parentAttribute->Get(project.GetCorrectCurrentTime() - parentComposition->GetBeginFrame(), parentComposition);
 
             if (dynamicValue.type() == typeid(Transform2D)) {
                 auto transform = std::any_cast<Transform2D>(dynamicValue);
@@ -56,7 +56,7 @@ namespace Raster {
                 auto assetAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAssetID);
                 if (assetAttributeCandidate.has_value()) {
                     auto& assetAttribute = assetAttributeCandidate.value();
-                    auto assetIDCandidate = assetAttribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
+                    auto assetIDCandidate = assetAttribute->Get(project.GetCorrectCurrentTime() - composition->GetBeginFrame(), composition);
                     if (assetIDCandidate.type() == typeid(int) || assetIDCandidate.type() == typeid(AssetID)) {
                         auto assetID = assetIDCandidate.type() == typeid(AssetID) ? std::any_cast<AssetID>(assetIDCandidate).id : std::any_cast<int>(assetIDCandidate);
                         parentAssetCandidate = Workspace::GetAssetByAssetID(assetID);
@@ -115,7 +115,7 @@ namespace Raster {
                 auto assetAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAssetID);
                 if (assetAttributeCandidate.has_value()) {
                     auto& assetAttribute = assetAttributeCandidate.value();
-                    auto assetIDCandidate = assetAttribute->Get(project.GetCorrectCurrentTime() - composition->beginFrame, composition);
+                    auto assetIDCandidate = assetAttribute->Get(project.GetCorrectCurrentTime() - composition->GetBeginFrame(), composition);
                     if (assetIDCandidate.type() == typeid(int) || assetIDCandidate.type() == typeid(AssetID)) {
                         auto assetID = assetIDCandidate.type() == typeid(AssetID) ? std::any_cast<AssetID>(assetIDCandidate).id : std::any_cast<int>(assetIDCandidate);
                         auto testAssetCandidate = Workspace::GetAssetByAssetID(assetID);
