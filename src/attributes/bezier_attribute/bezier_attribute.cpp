@@ -48,12 +48,12 @@ namespace Raster {
         auto bezier = std::any_cast<BezierCurve>(t_originalValue);
         auto originalLine = bezier;
 
-        auto buttonText = FormatString("%s %i %s", ICON_FA_BEZIER_CURVE, (int) bezier.points.size(), Localization::GetString("POINTS").c_str());
+        auto buttonText = FormatString("%s %i %s", bezier.smoothCurve ? ICON_FA_LINES_LEANING : ICON_FA_BEZIER_CURVE, (int) bezier.points.size(), Localization::GetString("POINTS").c_str());
         if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
             ImGui::OpenPopup("##editBezier");
         }
         if (ImGui::BeginPopup("##editBezier")) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_BEZIER_CURVE, name.c_str()).c_str());
+            ImGui::SeparatorText(FormatString("%s %s: %s", bezier.smoothCurve ? ICON_FA_LINES_LEANING : ICON_FA_BEZIER_CURVE, Localization::GetString("EDIT_VALUE").c_str(), name.c_str()).c_str());
             int targetDeletePoint = -1;
             for (int i = 0; i < bezier.points.size(); i++) {
                 ImGui::PushID(i);
@@ -71,6 +71,11 @@ namespace Raster {
 
             if (UIHelpers::CenteredButton(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("NEW_POINT").c_str()).c_str())) {
                 bezier.points.push_back(bezier.Get(0.5f));
+                isItemEdited = true;
+            }
+
+            if (ImGui::Button(FormatString("%s %s: %s", bezier.smoothCurve ? ICON_FA_LINES_LEANING : ICON_FA_BEZIER_CURVE, Localization::GetString("MODE").c_str(), Localization::GetString(bezier.smoothCurve ? "SMOOTH_CURVE" : "BEZIER_CURVE").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                bezier.smoothCurve = !bezier.smoothCurve;
                 isItemEdited = true;
             }
 

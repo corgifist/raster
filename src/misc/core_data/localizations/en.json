@@ -358,5 +358,9 @@
     "NEW_POINT": "Add Point",
     "EDIT_KERNEL": "Edit Kernel",
     "KERNEL_PRESETS": "Kernel Presets",
-    "MULTIPLIER": "Multiplier"
+    "MULTIPLIER": "Multiplier",
+    "MODE": "Mode",
+    "BEZIER_CURVE": "Bezier Curve",
+    "SMOOTH_CURVE": "Catmull-Rom Spline",
+    "INSERT_SELECTED_ASSETS": "Insert Selected Assets"
 }

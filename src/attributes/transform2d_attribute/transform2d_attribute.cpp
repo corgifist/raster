@@ -199,7 +199,7 @@ namespace Raster {
             ImGui::EndDragDropSource();
         }
         if (ImGui::BeginPopup(FormatString("##%iattribute", id).c_str())) {
-            ImGui::SeparatorText(FormatString("%s Edit Value: %s", ICON_FA_UP_DOWN_LEFT_RIGHT, name.c_str()).c_str());
+            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("EDIT_VALUE").c_str(), name.c_str()).c_str());
             
             ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Position", ICON_FA_UP_DOWN_LEFT_RIGHT);

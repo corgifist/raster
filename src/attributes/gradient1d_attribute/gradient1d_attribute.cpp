@@ -56,7 +56,7 @@ namespace Raster {
         }
         bool editingGradient = false;
         if (ImGui::BeginPopup("##gradientEditor")) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_DROPLET, name.c_str()).c_str());
+            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_DROPLET, Localization::GetString("EDIT_VALUE").c_str(), name.c_str()).c_str());
             isItemEdited = UIHelpers::RenderGradient1DEditor(m_persistentGradient, 350);
             ImGui::EndPopup();
             editingGradient = true;

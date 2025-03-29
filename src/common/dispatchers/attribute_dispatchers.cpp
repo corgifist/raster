@@ -771,6 +771,10 @@ namespace Raster {
                 bezier.points.push_back(bezier.Get(0.5f));
                 Rendering::ForceRenderFrame();
             }
+            if (ImGui::Button(FormatString("%s %s: %s", bezier.smoothCurve ? ICON_FA_LINES_LEANING : ICON_FA_BEZIER_CURVE, Localization::GetString("MODE").c_str(), Localization::GetString(bezier.smoothCurve ? "SMOOTH_CURVE" : "BEZIER_CURVE").c_str()).c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
+                bezier.smoothCurve = !bezier.smoothCurve;
+                Rendering::ForceRenderFrame();
+            }
         ImGui::EndChild();
 
         t_value = bezier;

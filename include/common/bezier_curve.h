@@ -5,6 +5,7 @@
 namespace Raster {
     struct BezierCurve {
         std::vector<glm::vec2> points;
+        bool smoothCurve;
 
         BezierCurve();
         BezierCurve(Json t_data);

@@ -47,7 +47,7 @@ namespace Raster {
             ImGui::OpenPopup("##editKernel");
         }
         if (ImGui::BeginPopup("##editKernel")) {
-            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_IMAGE, name.c_str()).c_str());
+            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_IMAGE, Localization::GetString("EDIT_VALUE").c_str(), name.c_str()).c_str());
             if (GPU::s_imageConvolutionPreviewTexture.handle && GPU::s_kernelPreviewPipeline.handle) {
                 static Framebuffer s_previewFramebuffer;
                 auto& previewTexture = GPU::s_imageConvolutionPreviewTexture;

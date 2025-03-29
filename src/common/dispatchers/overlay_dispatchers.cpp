@@ -21,8 +21,9 @@
 #include "common/dispatchers.h"
 
 #define DRAG_CIRCLE_RADIUS 8
+#define DRAG_LOGIC_RADIUS 16
 #define ANCHOR_CIRCLE_RADIUS 6
-#define ANCHOR_LOGIC_RADIUS 16
+#define ANCHOR_LOGIC_RADIUS 12
 
 namespace Raster {
 
@@ -837,11 +838,17 @@ namespace Raster {
         }
 
         if (t_attributeID > 0) {
-            ImGui::SetCursorPos(ImVec2(0, 20));
+            ImGui::SetCursorPos(ImVec2(0, 30));
             if (ImGui::Button(ICON_FA_PLUS)) {
                 bezier.points.push_back(bezier.Get(0.5f));
                 bezierChanged = true;
             }
+            ImGui::SameLine();
+            if (ImGui::Button(FormatString("%s", bezier.smoothCurve ? ICON_FA_LINES_LEANING : ICON_FA_BEZIER_CURVE).c_str())) {
+                bezier.smoothCurve = !bezier.smoothCurve;
+                bezierChanged = true;
+            }
+            ImGui::SetItemTooltip("%s %s: %s", bezier.smoothCurve ? ICON_FA_LINES_LEANING : ICON_FA_BEZIER_CURVE, Localization::GetString("MODE").c_str(), Localization::GetString(bezier.smoothCurve ? "SMOOTH_CURVE" : "BEZIER_CURVE").c_str());
         }
 
         if (bezierChanged && attributeCandidate.has_value()) {

@@ -1,5 +1,7 @@
 #include "image_asset.h"
 #include "raster.h"
+#include "common/asset_id.h"
+#include "../../attributes/transform2d_attribute/transform2d_attribute.h"
 
 namespace Raster {
 
@@ -80,6 +82,79 @@ namespace Raster {
         }
 
         return false;
+    }
+
+    void ImageAsset::AbstractOnTimelineDrop(float t_frame) {
+        if (!Workspace::IsProjectLoaded()) return;
+        auto& project = Workspace::GetProject();
+
+        
+        std::optional<Composition> targetAttachedPicComposition;
+
+        Composition attachedPicComposition = Composition();
+        attachedPicComposition.beginFrame = t_frame;
+        attachedPicComposition.endFrame = t_frame + project.framerate;
+        attachedPicComposition.name = name;
+
+        auto assetTextureNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "get_asset_texture");
+        if (!assetTextureNodeCandidate) return;
+        auto& assetTextureNode = *assetTextureNodeCandidate;
+        assetTextureNode->AddInputPin("AssetID");
+        auto textureOutputPinCandidate = assetTextureNode->GetAttributePin("Texture");
+        if (!textureOutputPinCandidate) return;
+        auto& textureOutputPin = *textureOutputPinCandidate;
+
+        auto assetAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "asset_attribute");
+        if (!assetAttributeCandidate) return;
+        auto& assetAttribute = *assetAttributeCandidate;
+        assetAttribute->internalAttributeName = FormatString("<%i>.AssetID", assetTextureNode->nodeID);
+        assetAttribute->name = "Attached Picture Asset";
+        assetAttribute->keyframes[0].value = AssetID(id);
+        attachedPicComposition.attributes.push_back(assetAttribute);
+
+        auto layerNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "layer2d");
+        if (!layerNodeCandidate) return;
+        auto& layerNode = *layerNodeCandidate;
+        layerNode->nodePosition = glm::vec2(250, -20);
+        layerNode->AddInputPin("Texture");
+        layerNode->AddInputPin("Transform");
+        for (auto& pin : layerNode->inputPins) {
+            if (pin.linkedAttribute == "Texture") {
+                pin.connectedPinID = textureOutputPin.pinID;
+                break;
+            }
+        }
+        auto layerOutputPinCandidate = layerNode->GetAttributePin("Framebuffer");
+        if (!layerOutputPinCandidate) return;
+        auto& layerOutputPin = *layerOutputPinCandidate;
+
+        auto transformAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "transform2d_attribute");
+        if (!transformAttributeCandidate) return;
+        auto& transformAttribute = *transformAttributeCandidate;
+        transformAttribute->name = "Transform";
+        transformAttribute->internalAttributeName = FormatString("<%i>.Transform", layerNode->nodeID);
+        Transform2DAttribute* rawTransformAttribute = (Transform2DAttribute*) transformAttribute.get();
+        rawTransformAttribute->m_parentAssetType = ParentAssetType::Attribute;
+        rawTransformAttribute->m_parentAssetID = assetAttribute->id;
+        attachedPicComposition.attributes.push_back(transformAttribute);
+
+        auto exportNodeCandidate = Workspace::InstantiateNode(RASTER_PACKAGED "export_renderable");
+        if (!exportNodeCandidate) return;
+        auto& exportNode = *exportNodeCandidate;
+        exportNode->nodePosition = glm::vec2(600, -15);
+        for (auto& pin : exportNode->inputPins) {
+            if (pin.linkedAttribute == "Renderable") {
+                pin.connectedPinID = layerOutputPin.pinID;
+                break;
+            }
+        }
+
+        attachedPicComposition.nodes[assetTextureNode->nodeID] = assetTextureNode;
+        attachedPicComposition.nodes[layerNode->nodeID] = layerNode;
+        attachedPicComposition.nodes[exportNode->nodeID] = exportNode;
+
+        targetAttachedPicComposition = attachedPicComposition;
+        project.compositions.push_back(*targetAttachedPicComposition);
     }
 
     std::optional<Texture> ImageAsset::AbstractGetPreviewTexture() {

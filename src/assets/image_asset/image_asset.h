@@ -27,6 +27,8 @@ namespace Raster {
         std::optional<std::string> AbstractGetResolution();
         std::optional<std::string> AbstractGetPath();
 
+        void AbstractOnTimelineDrop(float t_frame);
+
         std::string m_relativePath;
         std::string m_originalPath;
 
