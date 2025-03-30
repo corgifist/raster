@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <ostream>
@@ -61,6 +62,8 @@ int main(int argc, char** argv) {
         print("extracting " << entry.path().string());
         zip_extract(entry.path().c_str(), temporaryFolderPath.c_str(), nullptr, nullptr);
     }
+
+    // getchar();
 
     auto originalCwd = std::filesystem::current_path();
     try {

@@ -4,6 +4,31 @@
             "Name": "Basic Shapes",
             "Path": "examples/basic_shapes.raster_example",
             "Icon": "ICON_FA_SHAPES"
+        },
+        {
+            "Name": "Shapes and Gradients",
+            "Path": "examples/gradients.raster_example",
+            "Icon": "ICON_FA_DROPLET"
+        },
+        {
+            "Name": "Blending & Transparency",
+            "Path": "examples/blending.raster_example",
+            "Icon": "ICON_FA_IMAGES"
+        },
+        {
+            "Name": "Composition Masking",
+            "Path": "examples/masking.raster_example",
+            "Icon": "ICON_FA_IMAGE"
+        },
+        {
+            "Name": "Audio Testing",
+            "Path": "examples/audio_test.raster_example",
+            "Icon": "ICON_FA_VOLUME_HIGH"
+        },
+        {
+            "Name": "Video Testing",
+            "Path": "examples/video_testing.raster_example",
+            "Icon": "ICON_FA_VIDEO"
         }
     ]
 }
