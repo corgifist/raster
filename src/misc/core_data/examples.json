@@ -21,6 +21,11 @@
             "Icon": "ICON_FA_IMAGE"
         },
         {
+            "Name": "Curves & Lines",
+            "Path": "examples/curves.raster_example",
+            "Icon": "ICON_FA_BEZIER_CURVE"
+        },
+        {
             "Name": "Audio Testing",
             "Path": "examples/audio_test.raster_example",
             "Icon": "ICON_FA_VOLUME_HIGH"
