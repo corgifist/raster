@@ -371,5 +371,6 @@
     "SELECT_SPEED_ATTRIBUTE": "Select Speed Attribute",
     "SELECT_PITCH_ATTRIBUTE": "Select Pitch Attribute",
     "SPEED_ATTRIBUTE_FORMAT": "Speed Attribute: %s",
-    "PITCH_ATTRIBUTE_FORMAT": "Pitch Attribute: %s"
+    "PITCH_ATTRIBUTE_FORMAT": "Pitch Attribute: %s",
+    "EXAMPLES_LIBRARY": "Examples Library"
 }

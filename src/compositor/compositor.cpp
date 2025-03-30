@@ -14,11 +14,15 @@ namespace Raster {
     Blending Compositor::s_blending;
     Pipeline Compositor::s_pipeline;
 
+    static Pipeline s_solidColorPipeline;
+
     void Compositor::Initialize() {
         s_pipeline = GPU::GeneratePipeline(
-            GPU::GenerateShader(ShaderType::Vertex, "compositor/shader"),
+            GPU::s_basicShader,
             GPU::GenerateShader(ShaderType::Fragment, "compositor/shader")
         );
+        s_solidColorPipeline = GPU::GeneratePipeline(
+            GPU::s_basicShader, GPU::GenerateShader(ShaderType::Fragment, "solid_color/shader"));
 
         try {
             s_blending = Blending(ReadJson("blending.json"));
@@ -59,9 +63,12 @@ namespace Raster {
         auto& framebuffer = t_fbo;
         auto pipeline = t_pipeline.value_or(s_pipeline);
         GPU::BindFramebuffer(framebuffer);
-        GPU::BindPipeline(pipeline);
         auto& bg = t_backgroundColor.has_value() ? t_backgroundColor.value() : Workspace::s_project.value().backgroundColor;
-        GPU::ClearFramebuffer(bg.r, bg.g, bg.b, bg.a);
+        GPU::ClearFramebuffer(0, 0, 0, 0);
+        GPU::BindPipeline(s_solidColorPipeline);
+        GPU::SetShaderUniform(s_solidColorPipeline.fragment, "uColor", bg);
+        GPU::DrawArrays(3);
+        GPU::BindPipeline(pipeline);
         auto blending = t_blending.value_or(&s_blending);
         std::vector<int> skipCompositions;
         for (auto& target : t_targets) {
@@ -150,6 +157,7 @@ namespace Raster {
                 GPU::SetShaderUniform(pipeline.fragment, "uOpacity", 1.0f);
                 GPU::DrawArrays(3);
             } else {
+                GPU::BindPipeline(pipeline);
                 GPU::BindTextureToShader(pipeline.fragment, "uColor", colorAttachment, 0);
                 GPU::BindTextureToShader(pipeline.fragment, "uUV", uvAttachment, 1);
                 GPU::SetShaderUniform(pipeline.fragment, "uOpacity", target.opacity);

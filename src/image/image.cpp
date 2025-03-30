@@ -38,6 +38,7 @@ namespace Raster {
         result.width = spec.width;
         result.height = spec.height;
         result.data = data;
+        result.colorSpace = spec.extra_attribs.get_string("oiio:ColorSpace", "scene_linear");
 
         input->close();
         return result;

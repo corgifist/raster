@@ -388,7 +388,7 @@ namespace Raster {
     }
 
     void GPU::SetupContextState() {
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         glEnable              ( GL_DEBUG_OUTPUT );
         glDebugMessageCallback( MessageCallback, 0 );

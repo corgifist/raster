@@ -8,6 +8,7 @@
 namespace Raster {
     struct ImageAsset : public AssetBase {
     public:
+        std::string colorSpace;
         ImageAsset();
 
     private:

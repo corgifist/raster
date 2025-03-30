@@ -17,6 +17,7 @@ namespace Raster {
 
         this->m_relativePath = "";
         this->m_originalPath = "";
+        this->colorSpace = "";
 
         if (!s_gammaPipeline.has_value()) {
             s_gammaPipeline = GPU::GeneratePipeline(
@@ -39,6 +40,7 @@ namespace Raster {
             auto imageCandidate = m_loader.Get();
             if (imageCandidate.has_value()) {
                 auto& image = imageCandidate.value();
+                colorSpace = image->colorSpace;
 
                 TexturePrecision precision = TexturePrecision::Usual;
                 if (image->precision == ImagePrecision::Half) precision = TexturePrecision::Half;

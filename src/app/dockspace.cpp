@@ -1,5 +1,6 @@
 #include "dockspace.h"
 #include "build_number.h"
+#include "common/examples.h"
 #include "common/localization.h"
 #include "common/plugins.h"
 #include "common/randomizer.h"
@@ -163,7 +164,7 @@ namespace Raster {
                 std::string saveProject = Workspace::IsProjectLoaded() ? 
                         FormatString("%s %s '%s'", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE").c_str(), Workspace::GetProject().name.c_str()) :
                         FormatString("%s %s", ICON_FA_FLOPPY_DISK, Localization::GetString("SAVE_PROJECT").c_str());
-                if (ImGui::MenuItem(saveProject.c_str(), "Ctrl+S", nullptr, Workspace::IsProjectLoaded())) {
+                if (ImGui::MenuItem(saveProject.c_str(), "Ctrl+S", nullptr, Workspace::IsProjectLoaded() && Workspace::GetProject().packedProjectPath.find(".raster_example") == std::string::npos)) {
                     Workspace::SaveProject();
                 }
                 auto saveProjectAsText = Workspace::IsProjectLoaded() ? 
@@ -188,6 +189,15 @@ namespace Raster {
                         Workspace::SaveProject();
                         project.packedProjectPath = reservedPackPath;
                     }
+                }
+                if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("EXAMPLES_LIBRARY").c_str()).c_str())) {
+                    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FOLDER_OPEN, Localization::GetString("EXAMPLES_LIBRARY").c_str()).c_str());
+                    for (auto& example : Examples::s_examples) {
+                        if (ImGui::MenuItem(FormatString("%s %s", Font::GetIcon(example.icon).c_str(), example.name.c_str()).c_str())) {
+                            Workspace::OpenProject(example.path);
+                        }
+                    }
+                    ImGui::EndMenu();
                 }
                 if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_GEARS, Localization::GetString("PREFERENCES").c_str()).c_str())) {
                     openPreferencesModal = true;

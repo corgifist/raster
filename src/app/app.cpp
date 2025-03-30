@@ -27,6 +27,7 @@
 #include "common/waveform_manager.h"
 #include "common/dispatchers.h"
 #include "common/audio_memory_management.h"
+#include "common/examples.h"
 
 using namespace av;
 
@@ -100,7 +101,8 @@ namespace Raster {
             RASTER_LOG("no layout was applied");
         }
 
-        Plugins::LateInitialize();
+        Plugins::LateInitialize();\
+        Examples::Initialize();
 
         ImFontConfig fontCfg = {};
 
