@@ -48,7 +48,7 @@ namespace Raster {
         cacheValid = false;
         needsSeeking = false;
         FlushResampler();
-         av::AudioSamples seekSamples;
+        av::AudioSamples seekSamples;
         while ((seekSamples = DecodeOneFrame())) {
             if (seekSamples.pts().seconds() >= currentTime) break;
         }  

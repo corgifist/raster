@@ -1028,6 +1028,75 @@ namespace Raster {
             RenderMaskCompositionPopup(t_composition);
             ImGui::EndMenu();
         }
+        bool openSpeedAttributeSelector = false;
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("COMPOSITION_SPEED").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("COMPOSITION_SPEED").c_str()).c_str());
+            float speed = t_composition->speed;
+            if (t_composition->speedAttributeID > 0 && Workspace::GetAttributeByAttributeID(t_composition->speedAttributeID)) {
+                speed = t_composition->GetSpeed();
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text(ICON_FA_LINK);
+                ImGui::SameLine();
+            }
+            ImGui::SliderFloat("##speedSlider", &speed, 0.1f, 3.0f, "%.2fx");
+            if (ImGui::IsItemEdited()) {
+                Rendering::ForceRenderFrame();
+                WaveformManager::RequestWaveformRefresh(t_composition->id);
+            }
+            if (t_composition->speedAttributeID < 0 || !Workspace::GetAttributeByAttributeID(t_composition->speedAttributeID))
+                t_composition->speed = speed;
+            std::string buttonText = FormatString("%s %s", ICON_FA_LINK, Localization::GetString("SELECT_SPEED_ATTRIBUTE").c_str());
+            auto lockedCompositionCandidate = Workspace::GetCompositionByID(t_composition->lockedCompositionID);
+            int speedAttributeID = t_composition->speedAttributeID;
+            if (lockedCompositionCandidate) speedAttributeID = (*lockedCompositionCandidate)->speedAttributeID;
+            auto attributeCandidate = Workspace::GetAttributeByAttributeID(speedAttributeID);
+            if (attributeCandidate) {
+                buttonText = FormatString("%s %s", ICON_FA_LINK, FormatString(Localization::GetString("SPEED_ATTRIBUTE_FORMAT"), (*attributeCandidate)->name.c_str()).c_str());
+            }
+            if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                openSpeedAttributeSelector = true;
+            }
+            UIHelpers::SelectAttribute(t_composition, t_composition->speedAttributeID, FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("COMPOSITION_SPEED").c_str()).c_str());
+            if (openSpeedAttributeSelector) UIHelpers::OpenSelectAttributePopup();
+            ImGui::EndMenu();
+        }
+
+        bool openPitchAttributeSelector = false;
+        if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_VOLUME_HIGH, Localization::GetString("COMPOSITION_PITCH").c_str()).c_str())) {
+            ImGui::SeparatorText(FormatString("%s %s", ICON_FA_FORWARD, Localization::GetString("COMPOSITION_PITCH").c_str()).c_str());
+            float pitch = t_composition->pitch;
+            if (t_composition->pitchAttributeID > 0 && Workspace::GetAttributeByAttributeID(t_composition->pitchAttributeID) || (t_composition->lockPitchToSpeed && Workspace::GetAttributeByAttributeID(t_composition->speedAttributeID))) {
+                pitch = t_composition->GetPitch();
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text(ICON_FA_LINK);
+                ImGui::SameLine();
+            }
+            ImGui::SliderFloat("##pitchSlider", &pitch, 0.1f, 3.0f, "%.2fx");
+            if (ImGui::IsItemEdited()) {
+                Rendering::ForceRenderFrame();
+                WaveformManager::RequestWaveformRefresh(t_composition->id);
+                t_composition->OnTimelineSeek();
+            }
+            if (t_composition->pitchAttributeID < 0 || !Workspace::GetAttributeByAttributeID(t_composition->pitchAttributeID) || t_composition->lockPitchToSpeed && !Workspace::GetAttributeByAttributeID(t_composition->speedAttributeID))
+                t_composition->pitch = pitch;
+            std::string buttonText = FormatString("%s %s", ICON_FA_LINK, Localization::GetString("SELECT_PITCH_ATTRIBUTE").c_str());
+            auto lockedCompositionCandidate = Workspace::GetCompositionByID(t_composition->lockedCompositionID);
+            int pitchAttributeID = t_composition->lockPitchToSpeed ? t_composition->speedAttributeID : t_composition->pitchAttributeID;
+            if (lockedCompositionCandidate) pitchAttributeID = t_composition->lockPitchToSpeed ? (*lockedCompositionCandidate)->speedAttributeID : (*lockedCompositionCandidate)->pitchAttributeID;
+            auto attributeCandidate = Workspace::GetAttributeByAttributeID(pitchAttributeID);
+            if (attributeCandidate) {
+                buttonText = FormatString("%s %s", ICON_FA_LINK, FormatString(Localization::GetString("PITCH_ATTRIBUTE_FORMAT"), (*attributeCandidate)->name.c_str()).c_str());
+            }
+            if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                openSpeedAttributeSelector = true;
+            }
+            UIHelpers::SelectAttribute(t_composition, t_composition->speedAttributeID, FormatString("%s %s", ICON_FA_VOLUME_HIGH, Localization::GetString("SELECT_PITCH_ATTRIBUTE").c_str()).c_str());
+            if (openSpeedAttributeSelector) UIHelpers::OpenSelectAttributePopup();
+            ImGui::EndMenu();
+        }
+        if (ImGui::MenuItem(FormatString("%s%s %s", ICON_FA_VOLUME_HIGH, t_composition->lockPitchToSpeed ? " " ICON_FA_CHECK " " : "", Localization::GetString("LOCK_PITCH_TO_SPEED").c_str()).c_str())) {
+            t_composition->lockPitchToSpeed = !t_composition->lockPitchToSpeed;
+        }
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("EDIT_METADATA").c_str()).c_str());
             ImGui::InputTextWithHint("##compositionName", FormatString("%s %s", ICON_FA_PENCIL, Localization::GetString("COMPOSITION_NAME").c_str()).c_str(), &t_composition->name);

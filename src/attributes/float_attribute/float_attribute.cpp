@@ -1,4 +1,6 @@
 #include "float_attribute.h"
+#include "common/rendering.h"
+#include "common/waveform_manager.h"
 
 namespace Raster {
     FloatAttribute::FloatAttribute() {
@@ -43,6 +45,14 @@ namespace Raster {
             ImGui::SliderFloat("##sliderFloat", &fValue, 0, 1);
         }
         isItemEdited = ImGui::IsItemEdited();
+        if (isItemEdited && t_composition->speedAttributeID == id) {
+            Rendering::ForceRenderFrame();
+            WaveformManager::RequestWaveformRefresh(t_composition->id);
+            t_composition->OnTimelineSeek();
+        }
+        if (isItemEdited && (t_composition->pitchAttributeID == id || t_composition->lockPitchToSpeed && t_composition->lockPitchToSpeed == id)) {
+            WaveformManager::RequestWaveformRefresh(t_composition->id);
+        }
         return fValue;
     }
 

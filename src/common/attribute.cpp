@@ -194,7 +194,7 @@ namespace Raster {
             if (attributeTextClicked) textColor = textColor * 0.9f;
             if (!childAttributesCandidate) {
                 ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-                    ImGui::Text("%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str()); 
+                    ImGui::Text("%s%s%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", t_composition->speedAttributeID == id ? ICON_FA_FORWARD " " : "", t_composition->pitchAttributeID == id || (t_composition->lockPitchToSpeed && t_composition->speedAttributeID == id) ? ICON_FA_VOLUME_HIGH " " : "", ICON_FA_LINK, name.c_str()); 
                 ImGui::PopStyleColor();
             } else {
                 if (ImGui::TreeNodeEx(FormatString("%s%s%s %s###%i", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str(), id).c_str())) {
@@ -372,6 +372,9 @@ namespace Raster {
         }
         if (ImGui::MenuItem(FormatString("%s%s %s", ICON_FA_FORWARD, t_composition->speedAttributeID == id ? ICON_FA_CHECK " " : "", Localization::GetString("USE_AS_SPEED_ATTRIBUTE").c_str()).c_str())) {
             t_composition->speedAttributeID = id;
+        }
+        if (t_composition->DoesAudioMixing() && ImGui::MenuItem(FormatString("%s%s %s", ICON_FA_VOLUME_HIGH, t_composition->pitchAttributeID == id ? ICON_FA_CHECK " " : "", Localization::GetString("USE_AS_PITCH_ATTRIBUTE").c_str()).c_str())) {
+            t_composition->pitchAttributeID = id;
         }
         if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_CLONE, Localization::GetString("DUPLICATE_ATTRIBUTE").c_str()).c_str(), "Ctrl+D")) {
             auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();

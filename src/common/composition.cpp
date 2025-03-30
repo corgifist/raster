@@ -254,11 +254,17 @@ namespace Raster {
     }
 
     float Composition::MapTime(float t_time) {
-        return InternalMapTime(this, t_time, false);
+        auto lockedCompositionCandidate = Workspace::GetCompositionByID(lockedCompositionID);
+        Composition* t_composition = this;
+        if (lockedCompositionCandidate) t_composition = *lockedCompositionCandidate;
+        return InternalMapTime(t_composition, t_time, false);
     }
 
     float Composition::GetLength() {
-        return InternalMapTime(this, endFrame - beginFrame, true);
+        auto lockedCompositionCandidate = Workspace::GetCompositionByID(lockedCompositionID);
+        Composition* t_composition = this;
+        if (lockedCompositionCandidate) t_composition = *lockedCompositionCandidate;
+        return InternalMapTime(t_composition, endFrame - beginFrame, true);
     }
 
     Json Composition::Serialize() {

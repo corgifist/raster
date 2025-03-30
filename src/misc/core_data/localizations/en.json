@@ -78,7 +78,7 @@
     "PROJECT_BACKGROUND_COLOR": "Project Background Color",
     "ATTACHMENTS_COUNT": "Attachments Count",
     "EXECUTIONS_PER_FRAME": "Executions Per Frame",
-    "BLENDING": "Blending",
+    "BLENDING": "Blending & Transparency",
     "COMPOSITION_OPACITY": "Composition Opacity",
     "BLENDING_PREVIEW_IS_UNAVAILABLE": "Blending Preview is Unavailable",
     "BAD_OPACITY_ATTRIBUTE": "Opacity Attribute Must Return Float",
@@ -363,5 +363,13 @@
     "BEZIER_CURVE": "Bezier Curve",
     "SMOOTH_CURVE": "Catmull-Rom Spline",
     "INSERT_SELECTED_ASSETS": "Insert Selected Assets",
-    "USE_AS_SPEED_ATTRIBUTE": "Use as Speed Attribute"
+    "USE_AS_SPEED_ATTRIBUTE": "Use as Speed Attribute",
+    "USE_AS_PITCH_ATTRIBUTE": "Use as Pitch Attribute",
+    "COMPOSITION_SPEED": "Composition Speed",
+    "COMPOSITION_PITCH": "Composition Audio Pitch",
+    "LOCK_PITCH_TO_SPEED": "Lock Composition Pitch to Speed",
+    "SELECT_SPEED_ATTRIBUTE": "Select Speed Attribute",
+    "SELECT_PITCH_ATTRIBUTE": "Select Pitch Attribute",
+    "SPEED_ATTRIBUTE_FORMAT": "Speed Attribute: %s",
+    "PITCH_ATTRIBUTE_FORMAT": "Pitch Attribute: %s"
 }
