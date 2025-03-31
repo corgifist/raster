@@ -5,6 +5,7 @@
 #include "../../../ImGui/imgui.h"
 #include "../../../ImGui/imgui_stripes.h"
 #include "common/dispatchers.h"
+#include "raster.h"
 
 #define UNIFORM_CLAUSE(t_uniform, t_type) \
     if (t_uniform.value.type() == typeid(t_type)) GPU::SetShaderUniform(pipeline.fragment, t_uniform.name, std::any_cast<t_type>(t_uniform.value))
@@ -53,6 +54,10 @@ namespace Raster {
         auto aspectRatioCorrectionCandidate = GetAttribute<bool>("AspectRatioCorrection", t_contextData);
         auto shapeCandidate = GetShape(t_contextData);
         auto pipelineCandidate = GetPipeline(t_contextData);
+
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
 
         if (pipelineCandidate && transformCandidate.has_value() && colorCandidate.has_value() && textureCandidate.has_value() && samplerSettingsCandidate.has_value() && uvTransformCandidate.has_value() && aspectRatioCorrectionCandidate.has_value() && shapeCandidate.has_value()) {
             auto& pipeline = pipelineCandidate.value();

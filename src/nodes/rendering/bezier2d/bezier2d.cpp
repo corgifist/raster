@@ -37,6 +37,10 @@ namespace Raster {
 
         auto projectionMatrix = project.GetProjectionMatrix();
 
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
+
         if (bezierCandidate.has_value() && gradientCandidate.has_value() && antialiasingCandidate && widthCandidate && qualityCandidate) {
             auto bezier = *bezierCandidate;
             auto& gradient = gradientCandidate.value();

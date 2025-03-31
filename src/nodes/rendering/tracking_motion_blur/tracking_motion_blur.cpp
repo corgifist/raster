@@ -31,6 +31,14 @@ namespace Raster {
         AbstractPinMap result = {};
         auto& project = Workspace::GetProject();
 
+        auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
+        auto baseTransformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
+        auto blurIntensityCandidate = GetAttribute<float>("BlurIntensity", t_contextData);
+        auto samplesCandidate = GetAttribute<int>("Samples", t_contextData);
+
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
                 GPU::s_basicShader,
@@ -41,11 +49,6 @@ namespace Raster {
             GPU::SetSamplerTextureWrappingMode(s_sampler.value(), TextureWrappingAxis::S, TextureWrappingMode::MirroredRepeat);
             GPU::SetSamplerTextureWrappingMode(s_sampler.value(), TextureWrappingAxis::T, TextureWrappingMode::MirroredRepeat);
         }
-
-        auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
-        auto baseTransformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
-        auto blurIntensityCandidate = GetAttribute<float>("BlurIntensity", t_contextData);
-        auto samplesCandidate = GetAttribute<int>("Samples", t_contextData);
         if (s_pipeline.has_value() && s_sampler.has_value() && baseCandidate.has_value() && baseTransformCandidate.has_value() && blurIntensityCandidate.has_value() && samplesCandidate.has_value() && baseCandidate.value().attachments.size() > 0) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_temporalFramebuffer);

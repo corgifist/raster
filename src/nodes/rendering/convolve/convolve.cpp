@@ -34,6 +34,9 @@ namespace Raster {
         auto kernelCandidate = GetAttribute<ConvolutionKernel>("Kernel", t_contextData);
         auto multiplierCandidate = GetAttribute<float>("Multiplier", t_contextData);
 
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
         if (!s_pipeline) {
             s_pipeline = GPU::GeneratePipeline(GPU::s_basicShader, GPU::GenerateShader(ShaderType::Fragment, "convolve/shader"));
         }

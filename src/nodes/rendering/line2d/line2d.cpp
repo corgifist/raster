@@ -34,6 +34,10 @@ namespace Raster {
 
         auto projectionMatrix = project.GetProjectionMatrix();
 
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
+
         if (lineCandidate.has_value() && colorCandidate.has_value()) {
             auto& line = *lineCandidate;
             auto& color = colorCandidate.value();

@@ -24,18 +24,20 @@ namespace Raster {
     AbstractPinMap Echo::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
+        auto& project = Workspace::GetProject();
+        auto requiredResolution = Compositor::GetRequiredResolution();
+        
+        auto stepsCandidate = GetAttribute<int>("Steps", t_contextData);
+        auto frameStepCandidate = GetAttribute<int>("FrameStep", t_contextData);
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
         if (!s_echoPipeline.has_value()) {
             s_echoPipeline = GPU::GeneratePipeline(
                 GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "echo/shader")
             );
         }
-
-        auto& project = Workspace::GetProject();
-        auto requiredResolution = Compositor::GetRequiredResolution();
-        
-        auto stepsCandidate = GetAttribute<int>("Steps", t_contextData);
-        auto frameStepCandidate = GetAttribute<int>("FrameStep", t_contextData);
         if (stepsCandidate.has_value() && s_echoPipeline.has_value()) {
             Compositor::EnsureResolutionConstraintsForFramebuffer(m_framebuffer);
             auto framebuffer = m_framebuffer.GetFrontFramebuffer();

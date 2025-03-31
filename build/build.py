@@ -176,6 +176,7 @@ build_modules = [
     ["rendering/bezier2d", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/convolve", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/ocio_grading_primary_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
+    ["rendering/ocio_colorspace_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
     ["rendering/rasterize", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],

@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <memory>
 #include "common/choice.h"
+#include "ocio_compiler.h"
 
 
 namespace Raster {
@@ -101,6 +102,7 @@ namespace Raster {
             GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_saturation", saturation);
             GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_localBypass", localBypass);
             GPU::SetShaderUniform(context->pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+            if (!framebuffer.attachments.empty()) GPU::BindTextureToShader(context->pipeline.fragment, "uTexture", framebuffer.attachments[0], 0);
             GPU::DrawArrays(3);
 
             TryAppendAbstractPinMap(result, "Output", framebuffer);
@@ -123,19 +125,7 @@ namespace Raster {
         shaderDesc->setResourcePrefix("ocio_");
         gpuProcessor->extractGpuShaderInfo(shaderDesc);
 
-        static std::optional<std::string> s_ocioPlaceholder;
-        if (!s_ocioPlaceholder) {
-            s_ocioPlaceholder = ReadFile(GPU::GetShadersPath() + "/ocio_processor/shader.frag");
-        }
-        auto& placeholder = *s_ocioPlaceholder;
-        auto finalShaderCode = ReplaceString(placeholder, "OCIO_SHADER_PLACEHOLDER", shaderDesc->getShaderText());
-        int id = Randomizer::GetRandomInteger();
-        auto cleanShaderPath = "ocio/shader" + std::to_string(id);
-        auto writePath = GPU::GetShadersPath() + cleanShaderPath + ".frag";
-        WriteFile(writePath, finalShaderCode);
-        auto generatedShader = GPU::GenerateShader(ShaderType::Fragment, cleanShaderPath, false);
-        std::filesystem::remove(writePath);
-        pipeline = GPU::GeneratePipeline(GPU::s_basicShader, generatedShader);
+        pipeline = CompileOCIOShader(shaderDesc->getShaderText());
     }
 
     OCIOGradingPrimaryTransformContext::~OCIOGradingPrimaryTransformContext() {

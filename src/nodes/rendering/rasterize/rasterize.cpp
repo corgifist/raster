@@ -23,6 +23,9 @@ namespace Raster {
         AbstractPinMap result = {};
         auto& project = Workspace::s_project.value();
 
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
         int renderingPassID = RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS_ID", int);
         if (m_lastPassID < 0 || m_lastPassID != renderingPassID) {
             m_lastPassID = renderingPassID;

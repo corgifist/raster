@@ -36,6 +36,9 @@ namespace Raster {
         auto transformCandidate = GetAttribute<Transform2D>("Transform", t_contextData);
         auto colorCandidate = GetAttribute<glm::vec4>("Color", t_contextData);
 
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
         if (s_pipeline.has_value() && transformCandidate.has_value() && colorCandidate.has_value()) {
             auto& pipeline = s_pipeline.value();
             auto& transform = transformCandidate.value();

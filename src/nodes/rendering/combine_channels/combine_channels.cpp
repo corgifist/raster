@@ -29,6 +29,15 @@ namespace Raster {
 
     AbstractPinMap CombineChannels::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
+        auto& project = Workspace::GetProject();
+        auto rCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("R", t_contextData));
+        auto gCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("G", t_contextData));
+        auto bCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("B", t_contextData));
+        auto aCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("A", t_contextData));
+        
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
 
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
@@ -37,11 +46,6 @@ namespace Raster {
             );
         }
 
-        auto& project = Workspace::GetProject();
-        auto rCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("R", t_contextData));
-        auto gCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("G", t_contextData));
-        auto bCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("B", t_contextData));
-        auto aCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("A", t_contextData));
         if (s_pipeline && rCandidate && bCandidate && gCandidate && aCandidate) {
             auto& pipeline = s_pipeline.value();
             auto& rFramebuffer = *rCandidate;

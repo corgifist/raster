@@ -28,18 +28,22 @@ namespace Raster {
     AbstractPinMap SplitChannels::AbstractExecute(ContextData& t_contextData) {
         AbstractPinMap result = {};
 
+
+        auto& project = Workspace::GetProject();
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto replaceAlphaCandidate = GetAttribute<bool>("ReplaceAlpha", t_contextData);
+        auto alphaCandidate = GetAttribute<float>("AlphaForRGBChannels", t_contextData);
+
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
+
         if (!s_pipeline.has_value()) {
             s_pipeline = GPU::GeneratePipeline(
                 GPU::s_basicShader,
                 GPU::GenerateShader(ShaderType::Fragment, "split_channels/shader")
             );
         }
-
-        auto& project = Workspace::GetProject();
-        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
-        auto replaceAlphaCandidate = GetAttribute<bool>("ReplaceAlpha", t_contextData);
-        auto alphaCandidate = GetAttribute<float>("AlphaForRGBChannels", t_contextData);
-        
         if (baseCandidate.has_value() && alphaCandidate && s_pipeline.has_value() && replaceAlphaCandidate && baseCandidate->attachments.size() > 0) {
             auto& pipeline = *s_pipeline;
             auto& base = baseCandidate.value();

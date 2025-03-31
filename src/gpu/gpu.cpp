@@ -224,7 +224,7 @@ namespace Raster {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_FORWARD_COMPAT);
 
         GLFWwindow* display = glfwCreateWindow(1280, 720, "Raster", nullptr, nullptr);
         s_width = 1280;
@@ -377,7 +377,7 @@ namespace Raster {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_FORWARD_COMPAT);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
         auto newContext = glfwCreateWindow(8, 8, "Raster Background Context", nullptr, (GLFWwindow*) info.display);
@@ -499,6 +499,7 @@ namespace Raster {
     }
 
     void GPU::DestroyTexture(Texture texture) {
+        if (!texture.handle) return;
         GLuint textureHandle = (uint32_t) (uint64_t) texture.handle;
         glDeleteTextures(1, &textureHandle);
     }
@@ -766,6 +767,7 @@ namespace Raster {
     }
 
     void GPU::DestroyPipeline(Pipeline pipeline) {
+        if (!pipeline.handle) return;
         if (pipeline.vertex.handle != s_basicShader.handle) DestroyShader(pipeline.vertex);
         DestroyShader(pipeline.fragment);
         DestroyShader(pipeline.compute);

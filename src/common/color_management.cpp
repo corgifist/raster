@@ -2,6 +2,7 @@
 #include "raster.h"
 #include <OpenColorIO/OpenColorIO.h>
 #include <OpenColorIO/OpenColorTypes.h>
+#include <cstdlib>
 #include <string>
 
 namespace Raster {
@@ -12,7 +13,8 @@ namespace Raster {
     bool ColorManagement::s_useLegacyGPU = false;
 
     void ColorManagement::Initialize() {
-        s_config = OCIO::GetCurrentConfig();
+        setenv("OCIO", "ocioconf/config.ocio", 0);
+        s_config = OCIO::Config::CreateFromEnv();
         s_config->getDefaultDisplay();
         s_display = s_config->getDefaultDisplay();
         s_transformName = s_config->getDefaultView(s_display.c_str());
@@ -20,6 +22,10 @@ namespace Raster {
         DUMP_VAR(s_display);
         DUMP_VAR(s_transformName);
         DUMP_VAR(s_look); 
+        RASTER_LOG("available OCIO colorspaces:");
+        for (int i = 0; i < s_config->getNumColorSpaces(); i++) {
+            print("\t" << s_config->getColorSpaceNameByIndex(i));
+        }
     }
 
     std::string ColorManagement::GetColorSpaceFromFile(std::string t_path) {

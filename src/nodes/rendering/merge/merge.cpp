@@ -24,6 +24,10 @@ namespace Raster {
         auto opacityCandidate = GetAttribute<float>("Opacity", t_contextData);
         auto blendingModeCandidate = GetAttribute<std::string>("BlendingMode", t_contextData);
 
+        if (!RASTER_GET_CONTEXT_VALUE(t_contextData, "RENDERING_PASS", bool)) {
+            return {};
+        }
+
         if (aCandidate.has_value() && bCandidate.has_value() && opacityCandidate.has_value() && blendingModeCandidate.has_value() && aCandidate.value().attachments.size() > 1 && bCandidate.value().attachments.size() > 1) {
             auto& framebuffer = m_framebuffer.Get(std::nullopt);
             auto& a = aCandidate.value();
