@@ -19,7 +19,8 @@ global_compiler_flags.append("-D__STDC_CONSTANT_MACROS")
 build_dependencies = [
     "glfw3", "freetype2", "OpenImageIO", "rubberband",
     "libavcodec", "libavformat", "libavutil", "libavdevice",
-    "libavfilter", "libswscale", "libswresample"
+    "libavfilter", "libswscale", "libswresample",
+    "OpenColorIO"
 ]
 
 check_if_header_exists("glm/glm.hpp")
@@ -48,8 +49,10 @@ rubberband = get_library("rubberband")
 freetype2 = get_library("freetype2")
 OpenImageIO = get_library("OpenImageIO")
 ffmpeg = get_library(ffmpeg_libraries_list)
+OpenColorIO = get_library("OpenColorIO")
 
 global_compiler_flags.append(get_cflags(ffmpeg_libraries_list))
+global_compiler_flags.append(get_cflags("OpenColorIO"))
 
 global_compiler_flags.append(get_cflags("freetype2"))
 if get_platform() == "linux":
@@ -172,6 +175,8 @@ build_modules = [
     ["rendering/combine_channels", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/bezier2d", node, [raster_common, raster_gpu, raster_compositor]],
     ["rendering/convolve", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/ocio_grading_primary_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
+    ["rendering/rasterize", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
     ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],

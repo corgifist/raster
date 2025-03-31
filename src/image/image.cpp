@@ -2,6 +2,7 @@
 
 #include <OpenImageIO/imageio.h>
 #include "image/image.h"
+#include "common/color_management.h"
 
 
 namespace Raster {
@@ -38,7 +39,10 @@ namespace Raster {
         result.width = spec.width;
         result.height = spec.height;
         result.data = data;
-        result.colorSpace = spec.extra_attribs.get_string("oiio:ColorSpace", "scene_linear");
+        result.colorSpace = ColorManagement::GetColorSpaceFromFile(t_path);
+        if (result.colorSpace.empty()) {
+            result.colorSpace = spec.extra_attribs.get_string("oiio:ColorSpace", "scene_linear");
+        }
 
         input->close();
         return result;

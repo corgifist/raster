@@ -41,6 +41,7 @@ namespace Raster {
             if (imageCandidate.has_value()) {
                 auto& image = imageCandidate.value();
                 colorSpace = image->colorSpace;
+                DUMP_VAR(colorSpace);
 
                 TexturePrecision precision = TexturePrecision::Usual;
                 if (image->precision == ImagePrecision::Half) precision = TexturePrecision::Half;

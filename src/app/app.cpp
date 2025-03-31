@@ -28,6 +28,7 @@
 #include "common/dispatchers.h"
 #include "common/audio_memory_management.h"
 #include "common/examples.h"
+#include "common/color_management.h"
 
 using namespace av;
 
@@ -58,6 +59,7 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
+        ColorManagement::Initialize();
         GPU::InitializeImGui();
         GPU::SetRenderingFunction(App::RenderLoop);
         GPU::StartRenderingThread();
@@ -101,7 +103,7 @@ namespace Raster {
             RASTER_LOG("no layout was applied");
         }
 
-        Plugins::LateInitialize();\
+        Plugins::LateInitialize();
         Examples::Initialize();
 
         ImFontConfig fontCfg = {};
