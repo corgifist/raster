@@ -12,8 +12,6 @@ Main features:
 * Video decoding and caching system
 * Color grading and colorspaces support using OpenColorIO
 
-Raster is getting
-
 ## Building
 Raster uses custom build system which is specifically tailored for compiling lots of build targets.
 
