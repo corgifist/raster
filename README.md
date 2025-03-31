@@ -10,6 +10,7 @@ Main features:
 * Advanced audio processing capabilities (pitch shifting, time stretching, audio effects)
 * Support for Bezier curves, Catmull-Rom curves, lines and gradients
 * Video decoding and caching system
+* Color grading and colorspaces support using OpenColorIO
 
 Raster is getting
 
