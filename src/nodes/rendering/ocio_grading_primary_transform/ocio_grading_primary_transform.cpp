@@ -31,7 +31,7 @@ namespace Raster {
         SetupAttribute("Offset", glm::vec4(0, 0, 0, 0));
         SetupAttribute("Exposure", glm::vec4(0, 0, 0, 0));
         SetupAttribute("Contrast", glm::vec4(1, 1, 1, 1));
-        SetupAttribute("Pivot", 1.0f);
+        SetupAttribute("Pivot", 0.18f);
         SetupAttribute("ClampBlack", 0.0f);
         SetupAttribute("ClampWhite", 1.0f);
         SetupAttribute("Saturation", 1.0f);

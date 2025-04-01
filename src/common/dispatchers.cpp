@@ -19,6 +19,7 @@
 #include "common/gradient_1d.h"
 #include "common/choice.h"
 #include "common/line2d.h"
+#include "common/colorspace.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -51,7 +52,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Gradient1D), AttributeDispatchers::DispatchGradient1DAttribute},
             {ATTRIBUTE_TYPE(Choice), AttributeDispatchers::DispatchChoiceAttribute},
             {ATTRIBUTE_TYPE(Line2D), AttributeDispatchers::DispatchLine2DAttribute},
-            {ATTRIBUTE_TYPE(BezierCurve), AttributeDispatchers::DispatchBezierCurveAttribute}
+            {ATTRIBUTE_TYPE(BezierCurve), AttributeDispatchers::DispatchBezierCurveAttribute},
+            {ATTRIBUTE_TYPE(Colorspace), AttributeDispatchers::DispatchColorspaceAttribute}
         };
 
         Dispatchers::s_stringDispatchers = {
@@ -71,7 +73,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(GenericResolution), StringDispatchers::DispatchGenericResolutionValue},
             {ATTRIBUTE_TYPE(Gradient1D), StringDispatchers::DispatchGradient1DValue},
             {ATTRIBUTE_TYPE(Line2D), StringDispatchers::DispatchLine2DValue},
-            {ATTRIBUTE_TYPE(BezierCurve), StringDispatchers::DispatchBezierCurveValue}
+            {ATTRIBUTE_TYPE(BezierCurve), StringDispatchers::DispatchBezierCurveValue},
+            {ATTRIBUTE_TYPE(Colorspace), StringDispatchers::DispatchColorspaceValue}
         };
 
         Dispatchers::s_previewDispatchers = {
@@ -105,7 +108,8 @@ namespace Raster {
             {TYPE_PAIR(glm::vec3, glm::vec4), ConversionDispatchers::ConvertVec3ToVec4},
             {TYPE_PAIR(AssetID, Texture), ConversionDispatchers::ConvertAssetIDToTexture},
             {TYPE_PAIR(GenericResolution, glm::vec2), ConversionDispatchers::ConvertGenericResolutionToVec2},
-            {TYPE_PAIR(Choice, int), ConversionDispatchers::ConvertChoiceToInt}
+            {TYPE_PAIR(Choice, int), ConversionDispatchers::ConvertChoiceToInt},
+            {TYPE_PAIR(Colorspace, std::string), ConversionDispatchers::ConvertColorspaceToString}
         };
     }
 

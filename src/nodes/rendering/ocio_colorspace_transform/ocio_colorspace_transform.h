@@ -24,7 +24,8 @@ namespace Raster {
         bool valid;
 
         OCIOColorSpaceTransformContext(OCIO::TransformDirection t_direction, std::string t_src, std::string t_dst, bool t_bypass);
-        ~OCIOColorSpaceTransformContext();
+        
+        void Destroy();
     };
 
     struct OCIOColorSpaceTransform : public NodeBase {

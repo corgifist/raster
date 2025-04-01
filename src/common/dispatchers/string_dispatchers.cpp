@@ -1,4 +1,5 @@
 #include "common/bezier_curve.h"
+#include "common/colorspace.h"
 #include "common/common.h"
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
@@ -282,6 +283,10 @@ namespace Raster {
             ImGui::Stripes(ImVec4(0.05f, 0.05f, 0.05f, 1), ImVec4(0.1f, 0.1f, 0.1f, 1), 20, 28, fitSize);
             OverlayDispatchers::DispatchBezierCurve(lineCopy, nullptr, -1, 0.5f, {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y});
         ImGui::EndChild();
+    }
+
+    void StringDispatchers::DispatchColorspaceValue(std::any& t_attribute) {
+        ImGui::Text("%s %s", ICON_FA_DROPLET, std::any_cast<Colorspace>(t_attribute).name.c_str());
     }
 
 };

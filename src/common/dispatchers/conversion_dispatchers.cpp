@@ -6,6 +6,7 @@
 #include "common/generic_resolution.h"
 #include "common/choice.h"
 #include <any>
+#include "common/colorspace.h"
 
 namespace Raster {
     std::optional<std::any> ConversionDispatchers::ConvertAssetIDToInt(std::any& t_value) {
@@ -45,5 +46,9 @@ namespace Raster {
 
     std::optional<std::any> ConversionDispatchers::ConvertChoiceToInt(std::any &t_value) {
         return std::any_cast<Choice>(t_value).selectedVariant;
+    }
+
+    std::optional<std::any> ConversionDispatchers::ConvertColorspaceToString(std::any& t_value) {
+        return std::any_cast<Colorspace>(t_value).name;
     }
 };

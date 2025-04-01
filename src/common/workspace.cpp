@@ -79,10 +79,10 @@ namespace Raster {
         {ATTRIBUTE_TYPE(int), RASTER_COLOR32(50, 168, 82, 255)},
         {ATTRIBUTE_TYPE(AudioSamples), RASTER_COLOR32(139, 95, 239, 255)},
         {ATTRIBUTE_TYPE(AssetID), RASTER_COLOR32(50, 168, 82, 255)},
-        {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 24, 115, 255)},
+        {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 224, 115, 255)},
         {ATTRIBUTE_TYPE(Line2D), RASTER_COLOR32(56, 168, 82, 255)},
-        {ATTRIBUTE_TYPE(BezierCurve), RASTER_COLOR32(168, 52, 82, 255)},
-        {ATTRIBUTE_TYPE(ConvolutionKernel), RASTER_COLOR32(102, 185, 255, 255)}
+        {ATTRIBUTE_TYPE(BezierCurve), RASTER_COLOR32(198, 152, 42, 255)},
+        {ATTRIBUTE_TYPE(ConvolutionKernel), RASTER_COLOR32(1, 185, 255, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {

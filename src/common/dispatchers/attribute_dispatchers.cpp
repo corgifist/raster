@@ -1,8 +1,11 @@
+#include "common/color_management.h"
+#include "common/colorspace.h"
 #include "common/common.h"
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_stdlib.h"
 #include "../../ImGui/imgui_drag.h"
 #include "attribute_dispatchers.h"
+#include "common/localization.h"
 #include "common/project.h"
 #include "font/IconsFontAwesome5.h"
 #include "overlay_dispatchers.h"
@@ -11,6 +14,7 @@
 #include "common/dispatchers.h"
 #include "common/ui_helpers.h"
 #include "common/asset_id.h"
+#include "raster.h"
 #include "string_dispatchers.h"
 #include "common/generic_audio_decoder.h"
 #include "common/generic_resolution.h"
@@ -778,6 +782,38 @@ namespace Raster {
         ImGui::EndChild();
 
         t_value = bezier;
+    }
+
+    void AttributeDispatchers::DispatchColorspaceAttribute(NodeBase* t_owner, std::string t_attribute, std::any& t_value, bool t_isAttributeExposed, std::vector<std::any> t_metadata) {
+        auto value = std::any_cast<Colorspace>(t_value);
+        auto originalValue = value;
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s", t_attribute.c_str());
+        ImGui::SameLine();
+        std::string buttonText = FormatString("%s %s", ICON_FA_DROPLET, value.name.c_str());
+        if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x, 0))) {
+            ImGui::OpenPopup("##colorspaceSelector");
+        }
+        if (ImGui::BeginPopup("##colorspaceSelector")) {
+            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_DROPLET, Localization::GetString("EDIT_VALUE").c_str(), t_attribute.c_str()).c_str());
+            static std::string s_searchFilter = "";
+            ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_FILTER").c_str()).c_str(), &s_searchFilter);
+            if (ImGui::BeginChild("##colorspaceCandidates", ImVec2(ImGui::GetContentRegionAvail().x, RASTER_PREFERRED_POPUP_HEIGHT))) {
+                for (auto& colorspace : ColorManagement::s_colorspaces) {
+                    if (!s_searchFilter.empty() && LowerCase(colorspace).find(LowerCase(s_searchFilter)) == std::string::npos) continue;
+                    if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_DISPLAY, colorspace.c_str()).c_str())) {
+                        value = Colorspace(colorspace);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }   
+            }
+            ImGui::EndChild();
+            ImGui::EndPopup();
+        }
+        if (value.name != originalValue.name) {
+            Rendering::ForceRenderFrame();
+        }
+        t_value = value;
     }
 
 };

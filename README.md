@@ -21,7 +21,7 @@ How to build:
 * Run `build.sh` or `python build/build.py`
 * Install required dependencies, if they're missing (build system will notify you about missing libraries)
 
-After successfull compilation binaries of Raster can be found at `dist/`
+After successful compilation binaries of Raster can be found at `dist/`
 
 ## Examples
 Currently there is no extensive documentation about Raster's functionality. Raster ships with a bunch of example projects, that can be found at Project -> Examples.

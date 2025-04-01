@@ -11,6 +11,8 @@ namespace Raster {
     std::string ColorManagement::s_look;
     std::string ColorManagement::s_transformName;
     bool ColorManagement::s_useLegacyGPU = false;
+    std::vector<std::string> ColorManagement::s_colorspaces;
+    std::string ColorManagement::s_defaultColorspace;
 
     void ColorManagement::Initialize() {
         setenv("OCIO", "ocioconf/config.ocio", 0);
@@ -25,7 +27,9 @@ namespace Raster {
         RASTER_LOG("available OCIO colorspaces:");
         for (int i = 0; i < s_config->getNumColorSpaces(); i++) {
             print("\t" << s_config->getColorSpaceNameByIndex(i));
+            s_colorspaces.push_back(s_config->getColorSpaceNameByIndex(i));
         }
+        s_defaultColorspace = "Raw";
     }
 
     std::string ColorManagement::GetColorSpaceFromFile(std::string t_path) {
