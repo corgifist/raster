@@ -7,6 +7,7 @@
 
 #include "../../../ImGui/imgui.h"
 #include "common/dispatchers.h"
+#include "ocio_pipeline.h"
 #include "raster.h"
 #include <OpenColorIO/OpenColorTransforms.h>
 #include <OpenColorIO/OpenColorTypes.h>
@@ -28,15 +29,20 @@ namespace Raster {
         AddOutputPin("Output");
 
         SetupAttribute("Base", Framebuffer());
+        SetupAttribute("Brightness", glm::vec4(0, 0, 0, 0));
+        SetupAttribute("Contrast", glm::vec4(1, 1, 1, 1));
+        SetupAttribute("Gamma", glm::vec4(1));
         SetupAttribute("Offset", glm::vec4(0, 0, 0, 0));
         SetupAttribute("Exposure", glm::vec4(0, 0, 0, 0));
-        SetupAttribute("Contrast", glm::vec4(1, 1, 1, 1));
-        SetupAttribute("Pivot", 0.18f);
-        SetupAttribute("ClampBlack", 0.0f);
-        SetupAttribute("ClampWhite", 1.0f);
+        SetupAttribute("Lift", glm::vec4(0));
+        SetupAttribute("Gain", glm::vec4(1));
         SetupAttribute("Saturation", 1.0f);
+        SetupAttribute("Pivot", 0.18f);
+        SetupAttribute("PivotBlack", 0.0f);
+        SetupAttribute("PivotWhite", 1.0f);
+        SetupAttribute("ClampBlack", (float) OCIO::GradingPrimary::NoClampBlack());
+        SetupAttribute("ClampWhite", (float) OCIO::GradingPrimary::NoClampWhite());
         SetupAttribute("Direction", Choice(std::vector<std::string>{"Forward", "Inverse"}));
-        SetupAttribute("LocalBypass", false);
     }
 
     AbstractPinMap OCIOGradingPrimaryTransform::AbstractExecute(ContextData& t_contextData) {
@@ -44,7 +50,8 @@ namespace Raster {
 
         auto& project = Workspace::s_project.value();
 
-        auto& framebuffer = m_managedFramebuffer.Get(GetAttribute<Framebuffer>("Base", t_contextData));
+        auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
+        auto& framebuffer = m_managedFramebuffer.Get(baseCandidate);
         auto offsetCandidate = GetAttribute<glm::vec4>("Offset", t_contextData);
         auto exposureCandidate = GetAttribute<glm::vec4>("Exposure", t_contextData);
         auto contrastCandidate = GetAttribute<glm::vec4>("Contrast", t_contextData);
@@ -53,17 +60,19 @@ namespace Raster {
         auto clampWhiteCandidate = GetAttribute<float>("ClampWhite", t_contextData);
         auto saturationCandidate = GetAttribute<float>("Saturation", t_contextData);
         auto choiceCandidate = GetAttribute<int>("Direction", t_contextData);
-        auto localBypassCandidate = GetAttribute<bool>("LocalBypass", t_contextData);
+        auto brightnessCandidate = GetAttribute<glm::vec4>("Brightness", t_contextData);
+        auto gammaCandidate = GetAttribute<glm::vec4>("Gamma", t_contextData);
+        auto liftCandidate = GetAttribute<glm::vec4>("Lift", t_contextData);
+        auto gainCandidate = GetAttribute<glm::vec4>("Gain", t_contextData);
+        auto pBlackCandidate = GetAttribute<float>("PivotBlack", t_contextData);
+        auto pWhiteCandidate = GetAttribute<float>("PivotWhite", t_contextData);
 
-        if (framebuffer.handle && offsetCandidate && exposureCandidate && choiceCandidate && contrastCandidate && pivotCandidate && saturationCandidate && clampBlackCandidate && clampWhiteCandidate && localBypassCandidate) {
+        if (framebuffer.handle && baseCandidate && pWhiteCandidate && gainCandidate && pBlackCandidate && liftCandidate && gammaCandidate && offsetCandidate && exposureCandidate && brightnessCandidate && choiceCandidate && contrastCandidate && pivotCandidate && saturationCandidate && clampBlackCandidate && clampWhiteCandidate) {
             if (!m_context || !m_inverseContext) {
                 m_context = std::make_shared<OCIOGradingPrimaryTransformContext>(OCIO::TransformDirection::TRANSFORM_DIR_FORWARD);
                 m_inverseContext = std::make_shared<OCIOGradingPrimaryTransformContext>(OCIO::TransformDirection::TRANSFORM_DIR_INVERSE);
             }
-            const int MASTER_CHANNEL = 3;
-            const int RED_CHANNEL = 0;
-            const int GREEN_CHANNEL = 1;
-            const int BLUE_CHANNEL = 2;
+            auto& base = *baseCandidate;
             auto& offset = *offsetCandidate;
             auto& exposure = *exposureCandidate;
             auto& contrast = *contrastCandidate;
@@ -72,38 +81,39 @@ namespace Raster {
             auto& clampWhite = *clampWhiteCandidate;
             auto& saturation = *saturationCandidate;
             auto& direction = *choiceCandidate;
-            auto& localBypass = *localBypassCandidate;
+            auto& brightness = *brightnessCandidate;
+            auto& gamma = *gammaCandidate;
+            auto& lift = *liftCandidate;
+            auto& gain = *gainCandidate;
+            auto& pBlack = *pBlackCandidate;
+            auto& pWhite = *pWhiteCandidate;
 
             auto& context = direction == 0 ? m_context : m_inverseContext;
-            GPU::BindFramebuffer(framebuffer);
-            GPU::BindPipeline(context->pipeline);
+            if (!context->pipeline.valid) return {};
+            auto& ocio = context->pipeline;
 
-            auto offset3 = glm::vec3(offset[RED_CHANNEL], offset[GREEN_CHANNEL], offset[BLUE_CHANNEL]);
-            offset3[RED_CHANNEL] += offset[MASTER_CHANNEL];
-            offset3[GREEN_CHANNEL] += offset[MASTER_CHANNEL];
-            offset3[BLUE_CHANNEL] += offset[MASTER_CHANNEL];
-
-            auto exposure3 = glm::vec3(exposure[RED_CHANNEL], exposure[GREEN_CHANNEL], exposure[BLUE_CHANNEL]);
-            exposure3[RED_CHANNEL] = std::pow(2.0f, exposure[MASTER_CHANNEL] + exposure[RED_CHANNEL]);
-            exposure3[GREEN_CHANNEL] = std::pow(2.0f, exposure[MASTER_CHANNEL] + exposure[GREEN_CHANNEL]);
-            exposure3[BLUE_CHANNEL] = std::pow(2.0f, exposure[MASTER_CHANNEL] + exposure[BLUE_CHANNEL]);
+            OCIO::GradingPrimary data(OCIO::GradingStyle::GRADING_LIN);
+            data.m_brightness = {brightness.r, brightness.g, brightness.b, brightness.a};
+            data.m_contrast = {contrast.r, contrast.g, contrast.b, contrast.a};
+            data.m_gamma = {gamma.r, gamma.g, gamma.b, gamma.a};
+            data.m_offset = {offset.r, offset.g, offset.b, offset.a};
+            data.m_exposure = {exposure.r, exposure.g, exposure.b, exposure.a};
+            data.m_lift = {lift.r, lift.g, lift.b, lift.a};
+            data.m_gain = {gain.r, gain.g, gain.b, gain.a};
+            data.m_saturation = saturation;
+            data.m_pivot = pivot;
+            data.m_pivotBlack = pBlack;
+            data.m_pivotWhite = pWhite;
+            data.m_clampBlack = clampBlack;
+            data.m_clampWhite = clampWhite;
             
-            auto contrast3 = glm::vec3(contrast[RED_CHANNEL], contrast[GREEN_CHANNEL], contrast[BLUE_CHANNEL]);
-            contrast3[RED_CHANNEL] *= contrast[MASTER_CHANNEL];
-            contrast3[GREEN_CHANNEL] *= contrast[MASTER_CHANNEL];
-            contrast3[BLUE_CHANNEL] *= contrast[MASTER_CHANNEL];
+            if (ocio.Ready()) {
+                OCIO::DynamicPropertyRcPtr dp = ocio.GetDynamicProperty(OCIO::DYNAMIC_PROPERTY_GRADING_PRIMARY);
+                OCIO::DynamicPropertyGradingPrimaryRcPtr prop = OCIO::DynamicPropertyValue::AsGradingPrimary(dp);
+                prop->setValue(data);
+            }
 
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_offset", offset3);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_exposure", exposure3);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_contrast", contrast3);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_pivot", pivot);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_clampBlack", clampBlack);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_clampWhite", clampWhite);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_saturation", saturation);
-            GPU::SetShaderUniform(context->pipeline.fragment, "ocio_grading_primary_localBypass", localBypass);
-            GPU::SetShaderUniform(context->pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
-            if (!framebuffer.attachments.empty()) GPU::BindTextureToShader(context->pipeline.fragment, "uTexture", framebuffer.attachments[0], 0);
-            GPU::DrawArrays(3);
+            ocio.Apply(framebuffer, base);
 
             TryAppendAbstractPinMap(result, "Output", framebuffer);
         }
@@ -115,22 +125,11 @@ namespace Raster {
         this->gp = OCIO::GradingPrimaryTransform::Create(OCIO::GradingStyle::GRADING_LIN);
         gp->makeDynamic();
         gp->setDirection(t_direction);
-        this->processor = ColorManagement::s_config->getProcessor(gp);
-        this->gpuProcessor = ColorManagement::s_useLegacyGPU ?
-                                processor->getOptimizedLegacyGPUProcessor(OCIO::OptimizationFlags::OPTIMIZATION_DEFAULT, 32) :
-                                processor->getOptimizedGPUProcessor(OCIO::OptimizationFlags::OPTIMIZATION_DEFAULT);
-        this->shaderDesc = OCIO::GpuShaderDesc::CreateShaderDesc();
-        shaderDesc->setLanguage(OCIO::GPU_LANGUAGE_GLSL_ES_3_0);
-        shaderDesc->setFunctionName("OCIODisplay");
-        shaderDesc->setResourcePrefix("ocio_");
-        gpuProcessor->extractGpuShaderInfo(shaderDesc);
-
-        pipeline = CompileOCIOShader(shaderDesc->getShaderText());
+        this->pipeline = OCIOPipeline(gp);
     }
 
     OCIOGradingPrimaryTransformContext::~OCIOGradingPrimaryTransformContext() {
-        GPU::DestroyShader(pipeline.fragment);
-        GPU::DestroyPipeline(pipeline);
+        pipeline.Destroy();
     }
 
     void OCIOGradingPrimaryTransform::AbstractLoadSerialized(Json t_data) {
@@ -142,38 +141,61 @@ namespace Raster {
     }
 
     void OCIOGradingPrimaryTransform::AbstractRenderProperties() {
-        RenderAttributeProperty("Offset", {
-            SliderStepMetadata(0.01),
-            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT)
-        });
-        RenderAttributeProperty("Exposure", {
-            IconMetadata(ICON_FA_SUN),
+        RenderAttributeProperty("Brightness", {
+            IconMetadata(ICON_FA_SUN), 
             SliderStepMetadata(0.01)
         });
         RenderAttributeProperty("Contrast", {
-            IconMetadata(ICON_FA_SUN),
+            IconMetadata(ICON_FA_SUN), 
             SliderStepMetadata(0.01)
         });
-        RenderAttributeProperty("Pivot", {
-            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
+        RenderAttributeProperty("Gamma", {
+            IconMetadata(ICON_FA_SUN), 
             SliderStepMetadata(0.01)
         });
-        RenderAttributeProperty("ClampBlack", {
-            IconMetadata(ICON_FA_GEARS),
+        RenderAttributeProperty("Offset", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT), 
             SliderStepMetadata(0.01)
         });
-        RenderAttributeProperty("ClampWhite", {
-            IconMetadata(ICON_FA_GEARS),
+        RenderAttributeProperty("Exposure", {
+            IconMetadata(ICON_FA_SUN), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("Lift", {
+            IconMetadata(ICON_FA_SUN), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("Gain", {
+            IconMetadata(ICON_FA_SUN), 
             SliderStepMetadata(0.01)
         });
         RenderAttributeProperty("Saturation", {
-            IconMetadata(ICON_FA_DROPLET),
+            IconMetadata(ICON_FA_DROPLET), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("Pivot", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("PivotBlack", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("PivotWhite", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("ClampBlack", {
+            IconMetadata(ICON_FA_DROPLET), 
+            SliderStepMetadata(0.01)
+        });
+        RenderAttributeProperty("ClampWhite", {
+            IconMetadata(ICON_FA_DROPLET), 
             SliderStepMetadata(0.01)
         });
         RenderAttributeProperty("Direction", {
             IconMetadata(ICON_FA_LEFT_RIGHT)
         });
-        RenderAttributeProperty("LocalBypass", {IconMetadata(ICON_FA_ROUTE)});
     }
 
     bool OCIOGradingPrimaryTransform::AbstractDetailsAvailable() {

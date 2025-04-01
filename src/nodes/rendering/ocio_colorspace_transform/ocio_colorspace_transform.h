@@ -11,16 +11,16 @@
 #include <OpenColorIO/OpenColorIO.h>
 #include <OpenColorIO/OpenColorTypes.h>
 #include <memory>
+#include "ocio_pipeline.h"
 
 namespace Raster {
 
     struct OCIOColorSpaceTransformContext {
+        OCIO::ColorSpaceTransformRcPtr gp;
         std::string src, dst;
         bool bypass;
         OCIO::TransformDirection direction;
-        Pipeline pipeline;
-        std::vector<Texture> lut1ds;
-        std::vector<std::string> uniformNames;
+        OCIOPipeline pipeline;
         bool valid;
 
         OCIOColorSpaceTransformContext(OCIO::TransformDirection t_direction, std::string t_src, std::string t_dst, bool t_bypass);

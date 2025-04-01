@@ -9,6 +9,7 @@
 #include "../../../ImGui/imgui.h"
 #include "common/dispatchers.h"
 #include "gpu/gpu.h"
+#include "ocio_pipeline.h"
 #include "raster.h"
 #include <OpenColorIO/OpenColorTransforms.h>
 #include <OpenColorIO/OpenColorTypes.h>
@@ -54,20 +55,18 @@ namespace Raster {
             auto& direction = *directionCandidate;
             auto& bypass = *bypassCandidate;
             if (!m_context || (m_context && (m_context->src != src || m_context->dst != dst || m_context->bypass != bypass || m_context->direction != (direction == 0 ? OCIO::TransformDirection::TRANSFORM_DIR_FORWARD : OCIO::TransformDirection::TRANSFORM_DIR_INVERSE)))) {
-                if (m_context) m_context = std::nullopt;
                 if (m_context) m_context->Destroy();
                 m_context = OCIOColorSpaceTransformContext(direction == 0 ? OCIO::TransformDirection::TRANSFORM_DIR_FORWARD : OCIO::TransformDirection::TRANSFORM_DIR_INVERSE, src, dst, bypass);
             }
-            if (!m_context || !m_context->valid || !m_context->pipeline.handle) return {};
-            auto& pipeline = m_context->pipeline;
+            if (!m_context || !m_context->valid) return {};
+            auto& ocio = m_context->pipeline;
             GPU::BindFramebuffer(framebuffer);
-            GPU::BindPipeline(pipeline);
-            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+            GPU::BindPipeline(ocio.pipeline);
+            GPU::SetShaderUniform(ocio.pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
             if (!framebuffer.attachments.empty())
-                GPU::BindTextureToShader(pipeline.fragment, "uTexture", framebuffer.attachments[0], 0);
-            for (int i = 0; i < m_context->lut1ds.size(); i++) {
-                GPU::BindTextureToShader(pipeline.fragment, m_context->uniformNames[i], m_context->lut1ds[i], i + 1);
-            }
+                GPU::BindTextureToShader(ocio.pipeline.fragment, "uTexture", framebuffer.attachments[0], 0);
+            ocio.BindAllTextures(1);
+            ocio.SetAllUniforms();
             GPU::DrawArrays(3);
 
             TryAppendAbstractPinMap(result, "Output", framebuffer);
@@ -82,36 +81,12 @@ namespace Raster {
             this->dst = t_dst;
             this->bypass = t_bypass;
             this->direction = t_direction;
-            auto gp = OCIO::ColorSpaceTransform::Create();
+            this->gp = OCIO::ColorSpaceTransform::Create();
             gp->setDirection(direction);
             gp->setSrc(src.c_str());
             gp->setDst(dst.c_str());
             gp->setDataBypass(bypass);
-            auto processor = ColorManagement::s_config->getProcessor(gp);
-            auto gpuProcessor = ColorManagement::s_useLegacyGPU ?
-                                    processor->getOptimizedLegacyGPUProcessor(OCIO::OptimizationFlags::OPTIMIZATION_DEFAULT, 32) :
-                                    processor->getOptimizedGPUProcessor(OCIO::OptimizationFlags::OPTIMIZATION_DEFAULT);
-            auto shaderDesc = OCIO::GpuShaderDesc::CreateShaderDesc();
-            shaderDesc->setLanguage(OCIO::GPU_LANGUAGE_GLSL_ES_3_0);
-            shaderDesc->setFunctionName("OCIODisplay");
-            shaderDesc->setResourcePrefix("ocio_");
-            gpuProcessor->extractGpuShaderInfo(shaderDesc);
-            pipeline = CompileOCIOShader(shaderDesc->getShaderText());
-            for (int i = 0; i < shaderDesc->getNumTextures(); i++) {
-                const char* textureName, *samplerName;
-                unsigned int width, height;
-                OCIO::GpuShaderCreator::TextureType channel;
-                OCIO::GpuShaderCreator::TextureDimensions dimensions;
-                OCIO::Interpolation interpolation;
-                shaderDesc->getTexture(i, textureName, samplerName, width, height, channel, dimensions, interpolation);
-                Texture generatedTexture = GPU::GenerateTexture(width, height, channel == OCIO::GpuShaderDesc::TEXTURE_RGB_CHANNEL ? 3 : 1, TexturePrecision::Full);
-                std::unique_ptr<float> data = (std::unique_ptr<float>) new float[width * height * (channel == OCIO::GpuShaderDesc::TEXTURE_RGB_CHANNEL ? 3 : 1)];
-                const float* cData = data.get();
-                shaderDesc->getTextureValues(i, cData);
-                GPU::UpdateTexture(generatedTexture, 0, 0, width, height, (channel == OCIO::GpuShaderDesc::TEXTURE_RGB_CHANNEL ? 3 : 1), (uint8_t*) cData);
-                lut1ds.push_back(generatedTexture);
-                uniformNames.push_back(samplerName);
-            }
+            pipeline = OCIOPipeline(gp);
             this->valid = true; 
         } catch (const OCIO::Exception& ex) {
             RASTER_LOG("failed to generate OCIOColorSpaceTransformContext");
@@ -125,10 +100,7 @@ namespace Raster {
 
     void OCIOColorSpaceTransformContext::Destroy() {
         if (!this->valid) return;
-        for (auto& texture : lut1ds) {
-            GPU::DestroyTexture(texture);
-        }
-        GPU::DestroyPipeline(pipeline);
+        pipeline.Destroy();
     }
 
     void OCIOColorSpaceTransform::AbstractLoadSerialized(Json t_data) {

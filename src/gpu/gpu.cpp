@@ -159,6 +159,11 @@ namespace Raster {
         return GL_ARRAY_BUFFER;
     }
 
+    static GLenum InterpretTextureDimensions(TextureDimensions dimensions) {
+        if (dimensions == TextureDimensions::_3D) return GL_TEXTURE_3D;
+        return GL_TEXTURE_2D;
+    }
+
     static unsigned int RSHash(const std::string& str)
     {
         unsigned int b    = 378551;
@@ -436,43 +441,53 @@ namespace Raster {
         }
     }
 
-    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision, bool mipmapped) {
+    Texture GPU::GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision, bool mipmapped, TextureDimensions dimensions, int depth) {
         width = std::max(1, (int) width);
         height = std::max(1, (int) height);
         GLuint textureHandle;
         glGenTextures(1, &textureHandle);
-        glBindTexture(GL_TEXTURE_2D, textureHandle);
+        glBindTexture(InterpretTextureDimensions(dimensions), textureHandle);
         
         auto format = InterpretTextureInfo(channels, precision);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexStorage2D(GL_TEXTURE_2D, mipmapped ? 8 : 1, format, width, height);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        if (dimensions == TextureDimensions::_2D) {
+            glTexStorage2D(InterpretTextureDimensions(dimensions), mipmapped ? 8 : 1, format, width, height);
+        } else {
+            glTexStorage3D(GL_TEXTURE_3D, mipmapped ? 8 : 1, format, width, height, depth);
+        }
+        glTexParameteri(InterpretTextureDimensions(dimensions), GL_TEXTURE_WRAP_S, GL_REPEAT);	
+        glTexParameteri(InterpretTextureDimensions(dimensions), GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(InterpretTextureDimensions(dimensions), GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(InterpretTextureDimensions(dimensions), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Texture texture;
         texture.width = width;
         texture.height = height;
         texture.precision = precision;
         texture.channels = channels;
+        texture.dimensions = dimensions;
+        texture.depth = depth;
         texture.handle = GLUINT_TO_HANDLE(textureHandle);
         return texture;
     }
 
     void GPU::GenerateMipmaps(Texture texture) {
         GLuint textureHandle = HANDLE_TO_GLUINT(texture.handle);
-        glBindTexture(GL_TEXTURE_2D, textureHandle);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(InterpretTextureDimensions(texture.dimensions), textureHandle);
+        glGenerateMipmap(InterpretTextureDimensions(texture.dimensions));
     }
 
-    void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels) {
-        glBindTexture(GL_TEXTURE_2D, HANDLE_TO_GLUINT(texture.handle));
+    void GPU::UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels, int z) {
+        glBindTexture(InterpretTextureDimensions(texture.dimensions), HANDLE_TO_GLUINT(texture.handle));
 
         auto format = GL_UNSIGNED_BYTE;
         if (texture.precision == TexturePrecision::Full) format = GL_FLOAT;
         if (texture.precision == TexturePrecision::Half) format = GL_HALF_FLOAT;
-        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, InterpretTextureChannels(channels), format, pixels);
+        if (texture.dimensions == TextureDimensions::_2D) {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, InterpretTextureChannels(channels), format, pixels);
+        } else {
+            glTexSubImage3D(GL_TEXTURE_3D, 0, x, y, z, w, h, texture.depth, InterpretTextureChannels(channels), format, pixels);
+        }
     }
 
     Texture GPU::ImportTexture(const char* path) {
@@ -490,7 +505,7 @@ namespace Raster {
             auto texture = GenerateTexture(image.width, image.height, image.channels, precision);
 
             UpdateTexture(texture, 0, 0, texture.width, texture.height, texture.channels, image.data.data());
-            glGenerateMipmap(GL_TEXTURE_2D);
+            GenerateMipmaps(texture);
             
             return texture;
         } 
@@ -506,7 +521,7 @@ namespace Raster {
 
     void GPU::BindTextureToShader(Shader shader, std::string name, Texture texture, int unit) {
         glActiveTexture(GL_TEXTURE0 + unit);
-        glBindTexture(GL_TEXTURE_2D, HANDLE_TO_GLUINT(texture.handle));
+        glBindTexture(InterpretTextureDimensions(texture.dimensions), HANDLE_TO_GLUINT(texture.handle));
         SetShaderUniform(shader, name, unit);
     }
 
@@ -833,6 +848,18 @@ namespace Raster {
         auto location = GetShaderUniformLocation(shader, name);
         if (location < 0) return;
         glProgramUniformMatrix4fv(HANDLE_TO_GLUINT(shader.handle), location, 1, GL_FALSE, &mat[0][0]);
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, int size, float* f) {
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform1fv(HANDLE_TO_GLUINT(shader.handle), location, size, f);
+    }
+
+    void GPU::SetShaderUniform(Shader shader, std::string name, int size, int* i) {
+        auto location = GetShaderUniformLocation(shader, name);
+        if (location < 0) return;
+        glProgramUniform1iv(HANDLE_TO_GLUINT(shader.handle), location, size, i);
     }
 
     void GPU::BindPipeline(Pipeline pipeline) {

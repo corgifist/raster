@@ -8,17 +8,15 @@
 #include "common/transform2d.h"
 #include "raster.h"
 #include "common/color_management.h"
+#include <OpenColorIO/OpenColorTransforms.h>
 #include <OpenColorIO/OpenColorTypes.h>
-#include <memory>
+#include "ocio_pipeline.h"
 
 namespace Raster {
 
     struct OCIOGradingPrimaryTransformContext {
         OCIO::GradingPrimaryTransformRcPtr gp;
-        OCIO::ConstProcessorRcPtr processor;
-        OCIO::ConstGPUProcessorRcPtr gpuProcessor;
-        OCIO::GpuShaderDescRcPtr shaderDesc;
-        Pipeline pipeline;
+        OCIOPipeline pipeline;
 
         OCIOGradingPrimaryTransformContext(OCIO::TransformDirection t_direction);
         ~OCIOGradingPrimaryTransformContext();

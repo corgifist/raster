@@ -19,6 +19,10 @@ namespace Raster {
         Usual, // RGBA8
     };
 
+    enum class TextureDimensions {
+        _2D, _3D
+    };
+
     enum class ShaderType {
         Vertex, Fragment, Compute
     };
@@ -52,6 +56,8 @@ namespace Raster {
         uint32_t width, height;
         int channels;
         TexturePrecision precision;
+        TextureDimensions dimensions;
+        int depth;
         void* handle;
 
         Texture();
@@ -170,9 +176,9 @@ namespace Raster {
         static void SetClipRect(glm::vec2 upperLeft, glm::vec2 bottomRight);
 
         static Texture ImportTexture(const char* path);
-        static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual, bool mipmapped = false);
+        static Texture GenerateTexture(uint32_t width, uint32_t height, int channels, TexturePrecision precision = TexturePrecision::Usual, bool mipmapped = false, TextureDimensions dimensions = TextureDimensions::_2D, int depth = 1);
         static void GenerateMipmaps(Texture texture);
-        static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels);
+        static void UpdateTexture(Texture texture, uint32_t x, uint32_t y, uint32_t w, uint32_t h, int channels, void* pixels, int z = 0);
         static void DestroyTexture(Texture texture);
         static void BindTextureToShader(Shader shader, std::string name, Texture texture, int unit);
         static void BlitTexture(Texture base, Texture blit);
@@ -197,6 +203,8 @@ namespace Raster {
         static void SetShaderUniform(Shader shader, std::string name, glm::mat2 mat);
         static void SetShaderUniform(Shader shader, std::string name, glm::mat3 mat);
         static void SetShaderUniform(Shader shader, std::string name, glm::mat4 mat);
+        static void SetShaderUniform(Shader shader, std::string name, int size, float* f);
+        static void SetShaderUniform(Shader shader, std::string name, int size, int* i);
 
         static void DrawArrays(int count);
 
