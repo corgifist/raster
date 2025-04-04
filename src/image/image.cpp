@@ -2,14 +2,25 @@
 
 #include <OpenImageIO/imageio.h>
 #include "image/image.h"
-#include "common/color_management.h"
 
+#include <OpenColorIO/OpenColorIO.h>
+namespace OCIO = OCIO_NAMESPACE;
 
 namespace Raster {
     Image::Image() {
         this->width = this->height = 0;
         this->channels = 0;
         this->precision = ImagePrecision::Usual;
+    }
+
+    static std::string GetColorSpaceFromFile(std::string t_path) {
+        try {
+            std::string candidate = OCIO::GetCurrentConfig()->getColorSpaceFromFilepath(t_path.c_str());
+            if (!candidate.empty()) return candidate;
+            return OCIO::ROLE_SCENE_LINEAR;
+        } catch (...) {
+            return "";
+        }
     }
 
     std::optional<Image> ImageLoader::Load(std::string t_path) {
@@ -39,7 +50,7 @@ namespace Raster {
         result.width = spec.width;
         result.height = spec.height;
         result.data = data;
-        result.colorSpace = ColorManagement::GetColorSpaceFromFile(t_path);
+        result.colorSpace = GetColorSpaceFromFile(t_path);
         if (result.colorSpace.empty()) {
             result.colorSpace = spec.extra_attribs.get_string("oiio:ColorSpace", "scene_linear");
         }

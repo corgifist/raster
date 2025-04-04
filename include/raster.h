@@ -72,10 +72,13 @@
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     #define SystemOpenURL(url) system(FormatString("%s %s", "start", (url).c_str()).c_str())
+    #define RASTER_PLATFORM_WINDOWS
 #elif __APPLE__
     #define SystemOpenURL(url)  system(FormatString("%s \"%s\" &&", "open", (url).c_str()).c_str())
+    #define RASTER_PLATFORM_APPLE
 #elif __linux__
     #define SystemOpenURL(url)  system(FormatString("%s \"%s\" &&", "xdg-open", (url).c_str()).c_str())
+    #define RASTER_PLATFORM_LINUX
 #else
     #error "Cannot determine valid SystemOpenURL implementation for your platform :("
 #endif
@@ -98,6 +101,7 @@
 #include <unistd.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#include <winbase.h>
 #endif
 
 // use this macro to get info about the compiler
@@ -317,7 +321,6 @@ namespace Raster {
         return pages * page_size;
     }
 #elif defined(_WIN32)
-    #include <windows.h>
 
     static unsigned long long GetRamAmount()
     {
@@ -338,5 +341,15 @@ namespace Raster {
         if (ending.size() > value.size()) return false;
         return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
     }
+
+#ifdef RASTER_PLATFORM_WINDOWS
+    static void SetEnv(std::string name, std::string data) {
+        SetEnvironmentVariable(name.c_str(), data.c_str());
+    } 
+#elif defined(RASTER_PLATFORM_LINUX)
+    static void SetEnv(std::string name, std::string data) {
+        setenv(name.c_str(), data.c_str(), 0);
+    } 
+#endif
 
 }

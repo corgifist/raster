@@ -4,6 +4,13 @@
 #ifndef TAU_D
     #define TAU_D   6.28318530717958647693
 #endif
+
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+
 #include "common/audio_info.h"
 
 namespace Raster {

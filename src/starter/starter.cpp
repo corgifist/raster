@@ -11,10 +11,18 @@
 // - the purpose of PAK files is to simplify distribution of custom plugins/nodes/attributes and etc.
 // - starter creates hidden temporary folder to which all PAK files will be extracted
 
-#if defined(UNIX) || defined(__linux__)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+    #define RASTER_PLATFORM_WINDOWS
+#elif __APPLE__
+    #define RASTER_PLATFORM_APPLE
+#elif __linux__
+    #define RASTER_PLATFORM_LINUX
+#endif
+
+#if defined(RASTER_PLATFORM_LINUX) || defined(RASTER_PLATFORM_APPLE)
     #define EXECUTABLE_EXTENSION ""
-#elif #defined(_WIN32)
-    #define EXECUTABLE_EXTENSION "exe"
+#elif defined(RASTER_PLATFORM_WINDOWS)
+    #define EXECUTABLE_EXTENSION ".exe"
 #endif
 
 #define print(expr) std::cout << expr << std::endl
@@ -60,20 +68,20 @@ int main(int argc, char** argv) {
     auto paksIterator = std::filesystem::recursive_directory_iterator(paksFolder);
     for (auto& entry : paksIterator) {
         print("extracting " << entry.path().string());
-        zip_extract(entry.path().c_str(), temporaryFolderPath.c_str(), nullptr, nullptr);
+        zip_extract(entry.path().string().c_str(), temporaryFolderPath.c_str(), nullptr, nullptr);
     }
 
     // getchar();
 
     auto originalCwd = std::filesystem::current_path();
     try {
-        std::string targetExecutable = temporaryFolderPath + "raster_core" + EXECUTABLE_EXTENSION;
+        std::string targetExecutable = temporaryFolderPath + "raster_core" + std::string(EXECUTABLE_EXTENSION);
         if (std::filesystem::exists(targetExecutable)) {
             std::filesystem::current_path(temporaryFolderPath);
             std::flush(std::cout);
-            #if defined(UNIX) || defined(__linux__)
+            #if defined(RASTER_PLATFORM_LINUX) || defined(RASTER_PLATFORM_APPLE)
                 system("./raster_core");
-            #elif #defined(_WIN32)
+            #else defined(RASTER_PLATFORM_WINDOWS)
                 system("raster_core");
             #endif
         } else {

@@ -8,6 +8,10 @@
 #include <cmath>
 #include <glm/common.hpp>
 
+#ifndef M_E
+#define M_E 2.71828182845904523536
+#endif
+
 namespace Raster {
     BounceEasing::BounceEasing() {
         EasingBase::Initialize();

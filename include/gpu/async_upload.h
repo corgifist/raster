@@ -1,7 +1,6 @@
 #pragma once
 
 #include "gpu.h"
-#include "common/randomizer.h"
 #include "raster.h"
 #include "image/image.h"
 

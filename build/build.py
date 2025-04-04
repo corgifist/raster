@@ -37,6 +37,10 @@ for dependency in build_dependencies:
         failed_dependencies.append(dependency)
 
 
+binary_extension = ""
+if current_platform == "windows":
+    binary_extension = ".exe"
+
 if len(failed_dependencies) > 0:
     error("missing build dependencies:")
     for dependency in failed_dependencies:
@@ -87,10 +91,10 @@ build_modules = [
     ["ImGui", shared, [freetype2]],
     ["avcpp", shared, [ffmpeg]],
     ["font", shared],
-    ["common", shared, [raster_ImGui, raster_font, raster_avcpp, ffmpeg]],
+    ["image", shared, [OpenImageIO, OpenColorIO]],
+    ["gpu", shared, [glfw3, raster_ImGui, raster_image]],
+    ["common", shared, [raster_ImGui, raster_gpu, raster_image, raster_font, raster_avcpp, ffmpeg, OpenColorIO, rubberband, nfd]],
     ["audio", shared, [raster_common, rubberband]],
-    ["image", shared, [raster_common, OpenImageIO]],
-    ["gpu", shared, [glfw3, raster_common, raster_ImGui, raster_image]],
     ["compositor", shared, [raster_gpu, raster_common]],
     ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio]],
     ["sampler_constants_base", shared, [raster_common]],
@@ -119,10 +123,10 @@ build_modules = [
     ["line2d_attribute", attribute, [raster_common, raster_ImGui]],
     ["folder_attribute", attribute, [raster_common, raster_ImGui]],
     ["bezier_attribute", attribute, [raster_common, raster_ImGui]],
-    ["convolution_kernel_attribute", attribute, [raster_common, raster_ImGui]],
+    ["convolution_kernel_attribute", attribute, [raster_common, raster_ImGui, raster_gpu]],
 
     ["preferences", plugin, [raster_common]],
-    ["xml_effects", plugin, [raster_common, raster_gpu, raster_ImGui]],
+    ["xml_effects", plugin, [raster_common, raster_font, raster_gpu, raster_compositor, raster_ImGui]],
     ["matchbox_effects", plugin, [raster_common, raster_gpu, raster_compositor, raster_image, raster_ImGui]],
     ["rendering", plugin, [raster_common, raster_gpu, raster_image, raster_ImGui, raster_font]],
     ["ui", plugin, ui_deps],
@@ -279,9 +283,12 @@ def build_nfd():
     nfd_deps = []
     if get_platform() == "linux":
         nfd_deps.append(get_library("gtk+-3.0"))
+    if get_platform() == "windows":
+        nfd_deps.append("-lOle32")
+        nfd_deps.append("-luuid")
 
     nfd_objects = compile_files(nfd_files)
-    link_shared_library(nfd_objects, executable_name="raster_nfd", local_linker_flags=nfd_deps)
+    link_shared_library(nfd_objects, executable_name="raster_nfd", local_linker_flags=nfd_deps, cxx=True)
 
 def move_core_libraries():
     core_files = glob_files(".", shared_library_extension, False)
@@ -313,7 +320,7 @@ def build_module(module):
     if folder_name is not None:
         mv(process_shared_library_name(output_path), f"{build_environment}{folder_name}/{path_basename(process_shared_library_name(output_path))}")
     if module_type == binary:
-        mv(output_path, f"{build_environment}/{output_path}{'' if len(executale_extension) == 0 else '.' + executale_extension}")
+        mv(f"{output_path}{binary_extension}", f"{build_environment}/{output_path}{'' if len(executale_extension) == 0 else '.' + executale_extension}")
 
 def get_folder_name_by_module_type(module_type):
     if module_type == node:

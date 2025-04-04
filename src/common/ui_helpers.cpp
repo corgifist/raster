@@ -458,7 +458,7 @@ namespace Raster {
         }
 
         bool gradientMustBeResorted = false;
-        bool gradientWasEdited = true;
+        bool gradientWasEdited = false;
 
         ImVec2 dragTrackCursor = ImGui::GetCursorPos();
         ImVec2 dragSize = ImVec2(20, 20);

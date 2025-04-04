@@ -15,7 +15,7 @@ namespace Raster {
     std::string ColorManagement::s_defaultColorspace;
 
     void ColorManagement::Initialize() {
-        setenv("OCIO", "ocioconf/config.ocio", 0);
+        SetEnv("OCIO", "ocioconf/config.ocio");
         s_config = OCIO::Config::CreateFromEnv();
         s_config->getDefaultDisplay();
         s_display = s_config->getDefaultDisplay();
