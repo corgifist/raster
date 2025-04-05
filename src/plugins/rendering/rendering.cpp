@@ -15,6 +15,8 @@
 #include "common/convolution_kernel.h"
 #include "common/rendering.h"
 #include "../../ImGui/imgui_stdlib.h"
+#include "common/workspace.h"
+#include "sampler_constants_base.h"
 
 namespace Raster {
     std::string RenderingPlugin::AbstractName() {
@@ -274,9 +276,88 @@ namespace Raster {
     }
 
     void RenderingPlugin::AbstractOnWorkspaceInitialization() {
+        Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"));
         Dispatchers::s_stringDispatchers[std::type_index(typeid(ConvolutionKernel))] = DispatchStringConvolutionKernel;
         Dispatchers::s_propertyDispatchers[std::type_index(typeid(ConvolutionKernel))] = DispatchConvolutionKernelAttribute;
         Dispatchers::s_previewDispatchers[std::type_index(typeid(ConvolutionKernel))] = DispatchPreviewConvolutionKernelAttribute;
+        Workspace::s_nodeImplementations.push_back(
+            Raster::NodeImplementation{
+                .libraryName = RASTER_PACKAGED "clamp_to_border_sampler_wrapping_constant",
+                .description = Raster::NodeDescription{
+                    .prettyName = "Clamp To Border Sampler Wrapping",
+                    .packageName = RASTER_PACKAGED "clamp_to_border_sampler_wrapping_constant",
+                    .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
+                },
+                .spawn = []() {
+                    return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureWrappingMode::ClampToBorder));
+                }
+            }
+        );
+        Workspace::s_nodeImplementations.push_back(
+            Raster::NodeImplementation{
+                .libraryName = RASTER_PACKAGED "clamp_to_edge_sampler_wrapping_constant",
+                .description = Raster::NodeDescription{
+                    .prettyName = "Clamp To Edge Sampler Wrapping",
+                    .packageName = RASTER_PACKAGED "clamp_to_edge_sampler_wrapping_constant",
+                    .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
+                },
+                .spawn = []() {
+                    return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureWrappingMode::ClampToEdge));
+                }
+            }
+        );
+        Workspace::s_nodeImplementations.push_back(
+            Raster::NodeImplementation{
+                .libraryName = RASTER_PACKAGED "mirrored_repeat_sampler_wrapping_constant",
+                .description = Raster::NodeDescription{
+                    .prettyName = "Mirrored Repeat Sampler Wrapping",
+                    .packageName = RASTER_PACKAGED "mirrored_repeat_sampler_wrapping_constant",
+                    .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
+                },
+                .spawn = []() {
+                    return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureWrappingMode::MirroredRepeat));
+                }
+            }
+        );
+        Workspace::s_nodeImplementations.push_back(
+            Raster::NodeImplementation{
+                .libraryName = RASTER_PACKAGED "repeat_sampler_wrapping_constant",
+                .description = Raster::NodeDescription{
+                    .prettyName = "Repeat Sampler Wrapping",
+                    .packageName = RASTER_PACKAGED "repeat_sampler_wrapping_constant",
+                    .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
+                },
+                .spawn = []() {
+                    return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureWrappingMode::Repeat));
+                }
+            }
+        );
+        Workspace::s_nodeImplementations.push_back(
+            Raster::NodeImplementation{
+                .libraryName = RASTER_PACKAGED "linear_sampler_filtering_constant",
+                .description = Raster::NodeDescription{
+                    .prettyName = "Linear Sampler Filtering",
+                    .packageName = RASTER_PACKAGED "linear_sampler_filtering_constant",
+                    .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
+                },
+                .spawn = []() {
+                    return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureFilteringMode::Linear));
+                }
+            }
+        );
+        Workspace::s_nodeImplementations.push_back(
+            Raster::NodeImplementation{
+                .libraryName = RASTER_PACKAGED "nearest_sampler_filtering_constant",
+                .description = Raster::NodeDescription{
+                    .prettyName = "Nearest Sampler Filtering",
+                    .packageName = RASTER_PACKAGED "nearest_sampler_filtering_constant",
+                    .category = Raster::NodeCategoryUtils::RegisterCategory(ICON_FA_IMAGE, Raster::Localization::GetString("SAMPLER_CONSTANTS"))
+                },
+                .spawn = []() {
+                    return (Raster::AbstractNode) std::make_shared<Raster::SamplerConstantsBase>(Raster::SamplerConstantsBase(Raster::TextureFilteringMode::Nearest));
+                }
+            }
+        );
     }
 
     Json RenderingPlugin::GetDefaultConfiguration() {

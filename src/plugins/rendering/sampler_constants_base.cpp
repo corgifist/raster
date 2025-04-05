@@ -2,7 +2,7 @@
 #include "font/font.h"
 #include "raster.h"
 
-#include "sampler_constants_base/sampler_constants_base.h"
+#include "sampler_constants_base.h"
 
 namespace Raster {
 

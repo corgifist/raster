@@ -1,4 +1,4 @@
-#include "app/app.h"
+#include "app.h"
 #include "common/configuration.h"
 #include "common/project_color_precision.h"
 #include "common/user_interface.h"

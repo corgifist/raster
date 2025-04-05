@@ -3,7 +3,6 @@
 #include "common/transform2d.h"
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
-#include "app/app.h"
 #include "font/font.h"
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_stdlib.h"

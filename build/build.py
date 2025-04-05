@@ -71,7 +71,6 @@ raster_image                  = "-lraster_image"
 raster_gpu                    = "-lraster_gpu"
 raster_compositor             = "-lraster_compositor"
 raster_app                    = "-lraster_app"
-raster_sampler_constants_base = "-lraster_sampler_constants_base" # TODO: get rid of this module
 
 nfd = "-lraster_nfd"
 
@@ -96,9 +95,7 @@ build_modules = [
     ["common", shared, [raster_ImGui, raster_gpu, raster_image, raster_font, raster_avcpp, ffmpeg, OpenColorIO, rubberband, nfd]],
     ["audio", shared, [raster_common, rubberband]],
     ["compositor", shared, [raster_gpu, raster_common]],
-    ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio]],
-    ["sampler_constants_base", shared, [raster_common]],
-    ["core", binary, [raster_common, raster_app, "-lbfd", "-lunwind"] + ["-ldbghelp"] if current_platform == "windows" else []],
+    ["core", binary, [raster_common, raster_ImGui, raster_gpu, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio, "-lbfd", "-lunwind"] + ["-ldbghelp"] if current_platform == "windows" else []],
     
     ["bezier_easing", easing, [raster_common, raster_ImGui]],
     ["constant_easing", easing, [raster_common, raster_ImGui]],
@@ -182,13 +179,6 @@ build_modules = [
     ["rendering/ocio_grading_primary_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
     ["rendering/ocio_colorspace_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
     ["rendering/rasterize", node, [raster_common, raster_gpu, raster_compositor]],
-
-    ["sampler_constants/nearest_filtering", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/linear_filtering", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/repeat_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/mirrored_repeat_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/clamp_to_edge_wrapping", node, [raster_common, raster_sampler_constants_base]],
-    ["sampler_constants/clamp_to_border_wrapping", node, [raster_common, raster_sampler_constants_base]],
 
     ["math/sine", node, [raster_common, raster_ImGui]],
     ["math/abs", node, [raster_common, raster_ImGui]],
