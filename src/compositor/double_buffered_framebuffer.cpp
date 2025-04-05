@@ -17,15 +17,15 @@ namespace Raster {
     }
 
     Framebuffer& DoubleBufferedFramebuffer::Get() {
-        return !(DoubleBufferingIndex::s_index.Get() % 2) ? m_back : m_front;
+        return !(m_index % 2) ? m_back : m_front;
     }
 
     Framebuffer& DoubleBufferedFramebuffer::GetWithOffset(int offset) {
-        return !((DoubleBufferingIndex::s_index.Get() + offset) % 2) ? m_back : m_front;
+        return !((m_index + offset) % 2) ? m_back : m_front;
     }
 
     Framebuffer& DoubleBufferedFramebuffer::GetFrontFramebufferWithoutSwapping() {
-        return (DoubleBufferingIndex::s_index.Get() % 2) ? m_back : m_front;
+        return (m_index % 2) ? m_back : m_front;
     }
 
     void DoubleBufferedFramebuffer::SwapBuffers() {

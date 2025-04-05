@@ -357,9 +357,8 @@ namespace Raster {
             }
        });
        glfwMakeContextCurrent(nullptr);
-        while (s_running) {
-            glfwPollEvents();
-            s_running = !GPU::MustTerminate();
+        while (!GPU::MustTerminate()) {
+            glfwWaitEvents();
             auto targetTitle = s_targetTitle.Get();
             static std::string s_cachedTitle = "";
             if (targetTitle != s_cachedTitle) {
@@ -367,13 +366,18 @@ namespace Raster {
                 s_cachedTitle = targetTitle;
             }
         }
+        s_running = false;
         s_renderingThread.join();
     }
 
     void GPU::Flush() {
+#ifndef _WIN32
         auto fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         glFlush();
         glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+#else
+        glFinish();
+#endif   
     }
 
     void* GPU::ReserveContext() {

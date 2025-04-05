@@ -46,7 +46,7 @@ namespace Raster {
         static void EnsureResolutionConstraintsForFramebuffer(DoubleBufferedFramebuffer& t_fbo);
 
         static void PerformManualComposition(std::vector<CompositorTarget> t_targets, Framebuffer& t_fbo, std::optional<glm::vec4> t_backgroundColor = std::nullopt, std::optional<Blending*> t_blending = std::nullopt, std::optional<Pipeline> s_pipeline = std::nullopt);
-        static void PerformComposition(std::vector<int> t_allowedCompositions = {});
+        static Framebuffer PerformComposition(std::vector<int> t_allowedCompositions = {});
 
         static glm::vec2 GetRequiredResolution();
     };

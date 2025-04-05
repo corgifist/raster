@@ -45,7 +45,7 @@ namespace Raster {
         bool& imageHovered = s_hoveredMap[imageID];
 
         ImVec4 tint = ImVec4(1, 1, 1, imageHovered ? 0.7f : 1.0f);
-        ImGui::Image((ImTextureID) texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint);
+        ImGui::Image((ImTextureID) texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), tint, ImVec4(0, 0, 0, 0));
         imageHovered = ImGui::IsItemHovered();
 
         if (imageHovered && ImGui::IsItemClicked()) {
@@ -194,7 +194,7 @@ namespace Raster {
                         bool& imageHovered = s_hoveredMap[imageID];
 
                         ImVec4 tint = ImVec4(1, 1, 1, imageHovered ? 0.7f : 1.0f);
-                        ImGui::Image((ImTextureID) texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint);
+                        ImGui::Image((ImTextureID) texture.handle, fitSize, ImVec2(0, 0), ImVec2(1, 1), tint, ImVec4(0, 0, 0, 0));
                         imageHovered = ImGui::IsItemHovered();
 
                         if (imageHovered && ImGui::IsItemClicked()) {

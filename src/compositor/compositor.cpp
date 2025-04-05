@@ -33,12 +33,13 @@ namespace Raster {
         }
     }
 
-    void Compositor::PerformComposition(std::vector<int> t_allowedCompositions) {
-        if (!primaryFramebuffer.has_value()) return;
+    Framebuffer Compositor::PerformComposition(std::vector<int> t_allowedCompositions) {
+        if (!primaryFramebuffer.has_value()) return Framebuffer();
         if (t_allowedCompositions.empty()) {
             PerformManualComposition(s_targets.Get(), primaryFramebuffer.value().Get());
+            Framebuffer result = primaryFramebuffer.value().Get();
             primaryFramebuffer.value().SwapBuffers();
-            return;
+            return result;
         }
 
         std::vector<CompositorTarget> filteredTargets;
@@ -49,7 +50,9 @@ namespace Raster {
         }
 
         PerformManualComposition(filteredTargets, primaryFramebuffer.value().Get());
+        auto result = primaryFramebuffer.value().Get();
         primaryFramebuffer.value().SwapBuffers();
+        return result;
     }
 
     struct MaskPipelineStructure {

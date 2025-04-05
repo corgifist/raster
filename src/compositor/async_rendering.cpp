@@ -11,6 +11,7 @@ namespace Raster {
     bool AsyncRendering::m_allowRendering = false;
     std::thread AsyncRendering::m_renderingThread;
     float AsyncRendering::s_renderTime = 0;
+    Framebuffer AsyncRendering::s_readyFramebuffer;
 
     void AsyncRendering::Initialize() {
         s_context = GPU::ReserveContext();
@@ -58,10 +59,11 @@ namespace Raster {
                 });
                 // DUMP_VAR(Workspace::s_pinCache.GetFrontValue().size());
                 s_renderingPassID++;
-                Compositor::PerformComposition();
+                auto f = Compositor::PerformComposition();
                 GPU::DisableClipping();
-                DoubleBufferingIndex::s_index.Set((DoubleBufferingIndex::s_index.Get() + 1) % 2);
                 GPU::Flush();
+                s_readyFramebuffer = f;
+                DoubleBufferingIndex::s_index.Set((DoubleBufferingIndex::s_index.Get() + 1) % 2);
 
                 double secondTime = GPU::GetTime();
                 double timeDifference = (secondTime - firstTime) * 1000;

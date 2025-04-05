@@ -89,8 +89,8 @@ namespace Raster {
                     } else selectedPin = "";
 
                     if (selectedPin.empty() || compositionLock) {
-                        if (Compositor::primaryFramebuffer.has_value()) {
-                            dispatcherTarget = Compositor::primaryFramebuffer.value().GetFrontFramebufferWithoutSwapping();
+                        if (AsyncRendering::s_readyFramebuffer.handle) {
+                            dispatcherTarget = AsyncRendering::s_readyFramebuffer;
                             mustDispatchOverlay = true;
                         }
                     }

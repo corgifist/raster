@@ -15,7 +15,7 @@ namespace Raster {
         }
 
         T& Get() {
-            return !DoubleBufferingIndex::s_index.Get() ? m_back : m_front;
+            return DoubleBufferingIndex::s_index.Get() ? m_front : m_back;
         }
         T& GetFrontValue() {
             return DoubleBufferingIndex::s_index.Get() ? m_back : m_front;
