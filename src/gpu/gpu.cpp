@@ -1,5 +1,6 @@
 #include "gpu/gpu.h"
 #include "raster.h"
+#include "common/fast_mutex.h"
 #include <filesystem>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <mutex>
@@ -9,7 +10,8 @@
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
+#define IMGUI_IMPL_OPENGL_ES3
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #include "../ImGui/imgui.h"
 #include "ImGui/imgui_impl_opengl3.h"
 #include "ImGui/imgui_impl_glfw.h"
@@ -30,6 +32,7 @@ namespace Raster {
     Shader GPU::s_basicShader;
     Texture GPU::s_imageConvolutionPreviewTexture;
     Pipeline GPU::s_kernelPreviewPipeline;
+
 
    void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
     {
@@ -275,14 +278,6 @@ namespace Raster {
             }
         });
 
-        glfwSetWindowRefreshCallback(display, [](GLFWwindow* d) {
-            int w, h;
-            glfwGetWindowSize((GLFWwindow*) info.display, &w, &h);
-            glViewport(0, 0, w, h);
-            s_renderingFunction();
-            glfwSwapBuffers((GLFWwindow*) info.display);
-        });
-
         info.version = std::string((const char*) glGetString(GL_VERSION));
         info.renderer = std::string((const char*) glGetString(GL_RENDERER)) + std::string(" / GLFW ") + glfwGetVersionString();
 
@@ -347,29 +342,32 @@ namespace Raster {
     }
 
     void GPU::StartRenderingThread() {
-        s_running = true;
-        glfwMakeContextCurrent((GLFWwindow*) info.display);
         static int s_viewportWidth = 0, s_viewportHeight = 0;
         s_running = true;
+        s_renderingThread = std::thread([&]() {
+            while (s_running) {
+                glfwMakeContextCurrent((GLFWwindow*) info.display); 
+                if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
+                    glViewport(0, 0, s_width, s_height);
+                    s_viewportWidth = s_width;
+                    s_viewportHeight = s_height;
+                }
+                s_renderingFunction();
+                glfwSwapBuffers((GLFWwindow*) info.display);
+            }
+       });
+       glfwMakeContextCurrent(nullptr);
         while (s_running) {
-            s_running = !GPU::MustTerminate();
             glfwPollEvents();
+            s_running = !GPU::MustTerminate();
             auto targetTitle = s_targetTitle.Get();
             static std::string s_cachedTitle = "";
             if (targetTitle != s_cachedTitle) {
                 glfwSetWindowTitle((GLFWwindow*) info.display, targetTitle.c_str());
                 s_cachedTitle = targetTitle;
             }
-            if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
-                glViewport(0, 0, s_width, s_height);
-                s_viewportWidth = s_width;
-                s_viewportHeight = s_height;
-            }
-            s_renderingFunction();
-            glfwSwapBuffers((GLFWwindow*) info.display);
         }
-        s_running = false;
-        // s_renderingThread.join();
+        s_renderingThread.join();
     }
 
     void GPU::Flush() {
@@ -421,6 +419,7 @@ namespace Raster {
         auto bgColor = ImGui::GetStyleColorVec4(ImGuiCol_DockingEmptyBg);
         glClearColor(bgColor.x, bgColor.y, bgColor.z, bgColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
+
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();

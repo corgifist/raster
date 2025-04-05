@@ -556,7 +556,7 @@ namespace Raster {
                 ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
                 ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
             );
-            ImVec4 dragColor = ImVec4(1.0f);
+            ImVec4 dragColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
             ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? dragColor * 0.9f : dragColor));
         
             if (!overlayState->AnyOtherDragActive(drag.id) && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (MouseHoveringBounds(dragBounds) || drag.isActive)) {
@@ -790,7 +790,7 @@ namespace Raster {
                 ImVec2{screenDrag.x - DRAG_CIRCLE_RADIUS * 3 / 2.0f, screenDrag.y - DRAG_CIRCLE_RADIUS * 3 / 2.0f},
                 ImVec2(DRAG_CIRCLE_RADIUS * 3, DRAG_CIRCLE_RADIUS * 3)
             );
-            ImVec4 dragColor = ImVec4(1);
+            ImVec4 dragColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
             ImGui::GetWindowDrawList()->AddCircleFilled(canvasPos + ImVec2{screenDrag.x, screenDrag.y}, DRAG_CIRCLE_RADIUS * t_zoom, ImGui::GetColorU32(MouseHoveringBounds(dragBounds) ? dragColor * 0.9f : dragColor));
         
             // DrawRect(dragBounds, ImVec4(1, 0, 0, 1));

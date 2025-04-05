@@ -22,11 +22,10 @@
 // - apt-get install binutils-dev ...
 // - g++/clang++ -lbfd ...
 
-#if defined(UNIX) || defined(__linux__)
-    #define BACKWARD_HAS_BFD 1
-    #define BACKWARD_HAS_LIBUNWIND 1
+#if !defined(_WIN32)
+#define BACKWARD_HAS_BFD 1
+#define BACKWARD_HAS_LIBUNWIND 1
 #endif
-
 
 // - apt-get install libdwarf-dev ...
 // - g++/clang++ -ldwarf ...
@@ -35,16 +34,12 @@
 // Regardless of the library you choose to read the debug information,
 // for potentially more detailed stack traces you can use libunwind
 // - apt-get install libunwind-dev
-// - g++/clang++ -lunwind
 
-#if defined(UNIX) || defined(__linux__)
+
 #include "backward.hpp"
-#endif
 
 namespace backward {
 
-#if defined(UNIX) || defined(__linux__)
-        backward::SignalHandling sh;
-#endif
+backward::SignalHandling sh;
 
 } // namespace backward

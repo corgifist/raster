@@ -1,11 +1,12 @@
 #pragma once
 
 #include "raster.h"
+#include "fast_mutex.h"
 
 namespace Raster {
     struct SharedMutex {
         SharedMutex() {
-            this->m_mutex = std::make_shared<std::mutex>();
+            this->m_mutex = std::make_shared<FastMutex>();
         }
 
         void Lock() {
@@ -16,7 +17,7 @@ namespace Raster {
          }
 
     private:
-        std::shared_ptr<std::mutex> m_mutex;
+        std::shared_ptr<FastMutex> m_mutex;
     };
 
     struct SharedLockGuard {

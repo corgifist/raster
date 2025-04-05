@@ -98,7 +98,7 @@ build_modules = [
     ["compositor", shared, [raster_gpu, raster_common]],
     ["app", shared, [raster_common, raster_ImGui, raster_gpu, raster_font, raster_compositor, nfd, raster_avcpp, ffmpeg, raster_audio]],
     ["sampler_constants_base", shared, [raster_common]],
-    ["core", binary, [raster_common, raster_app, "-lbfd", "-lunwind"]],
+    ["core", binary, [raster_common, raster_app, "-lbfd", "-lunwind"] + ["-ldbghelp"] if current_platform == "windows" else []],
     
     ["bezier_easing", easing, [raster_common, raster_ImGui]],
     ["constant_easing", easing, [raster_common, raster_ImGui]],
@@ -314,7 +314,7 @@ def build_module(module):
     objects = compile_files(module_files)
     output_path = "raster_" + module_name
     if folder_name is not None:
-        output_path = f"raster_{hash_string(module_name)}"
+        output_path = f"raster_{hash_string(module_name)[:10]}"
     link_objects(objects, output_path, linker_flags, executable_type=executable_type, cxx=True)
 
     if folder_name is not None:

@@ -59,8 +59,10 @@ namespace Raster {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-        ColorManagement::Initialize();
         GPU::InitializeImGui();
+        ColorManagement::Initialize();
+        AsyncUpload::Initialize();
+        AsyncRendering::Initialize();
         GPU::SetRenderingFunction(App::RenderLoop);
         GPU::StartRenderingThread();
         Terminate();
@@ -74,9 +76,6 @@ namespace Raster {
     }
 
     void App::InitializeInternals() {
-        AsyncUpload::Initialize();
-        AsyncRendering::Initialize();
-
         Plugins::Initialize();
         Plugins::SetupUI();
         Plugins::EarlyInitialize();
@@ -169,7 +168,7 @@ namespace Raster {
         style.TabRounding = 0.0f;
         style.TabBorderSize = 0.0f;
         style.TabBarBorderSize = 0.0f;
-        style.TabMinWidthForCloseButton = 0.0f;
+        // style.TabMinWidthForCloseButton = 0.0f;
         style.ColorButtonPosition = ImGuiDir_Right;
         style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
         style.SelectableTextAlign = ImVec2(0, 0.0f);
