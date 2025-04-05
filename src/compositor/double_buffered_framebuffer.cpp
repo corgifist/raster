@@ -1,6 +1,7 @@
 #include "compositor/double_buffered_framebuffer.h"
 #include "compositor/compositor.h"
 #include "compositor/async_rendering.h"
+#include "common/double_buffering_index.h"
 
 namespace Raster {
     DoubleBufferedFramebuffer::DoubleBufferedFramebuffer() {
@@ -17,15 +18,15 @@ namespace Raster {
     }
 
     Framebuffer& DoubleBufferedFramebuffer::Get() {
-        return !(m_index % 2) ? m_back : m_front;
+        return !(DoubleBufferingIndex::s_index.Get() % 2) ? m_back : m_front;
     }
 
     Framebuffer& DoubleBufferedFramebuffer::GetWithOffset(int offset) {
-        return !((m_index + offset) % 2) ? m_back : m_front;
+        return !((DoubleBufferingIndex::s_index.Get() + offset) % 2) ? m_back : m_front;
     }
 
     Framebuffer& DoubleBufferedFramebuffer::GetFrontFramebufferWithoutSwapping() {
-        return (m_index % 2) ? m_back : m_front;
+        return (DoubleBufferingIndex::s_index.Get() % 2) ? m_back : m_front;
     }
 
     void DoubleBufferedFramebuffer::SwapBuffers() {
