@@ -162,6 +162,7 @@ namespace Raster {
         static void InitializeImGui();
 
         static void* ReserveContext();
+        static void DestroyContext(void* context);
         static void SetupContextState();
         static void SetCurrentContext(void* context);
 

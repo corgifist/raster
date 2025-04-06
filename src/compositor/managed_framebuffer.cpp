@@ -15,7 +15,7 @@ namespace Raster {
 
     Framebuffer& ManagedFramebuffer::Get(std::optional<Framebuffer> t_framebuffer) {
         EnsureResolutionConstraints(t_framebuffer);
-        auto& internalFramebuffer =  m_internalFramebuffer.GetFrontFramebuffer();
+        auto& internalFramebuffer =  m_internalFramebuffer.Get();
         GPU::BindFramebuffer(internalFramebuffer);
         GPU::ClearFramebuffer(0, 0, 0, 0);
         if (t_framebuffer.has_value() && t_framebuffer.value().handle && t_framebuffer.value().attachments.size() == internalFramebuffer.attachments.size() && t_framebuffer->attachments[0].precision == internalFramebuffer.attachments[0].precision) {
@@ -30,11 +30,11 @@ namespace Raster {
 
     Framebuffer& ManagedFramebuffer::GetWithoutBlitting(std::optional<Framebuffer> t_framebuffer) {
         EnsureResolutionConstraints(t_framebuffer);
-        return m_internalFramebuffer.GetFrontFramebuffer();
+        return m_internalFramebuffer.Get();
     }
 
     Framebuffer& ManagedFramebuffer::GetReadyFramebuffer() {
-        return m_internalFramebuffer.Get();
+        return m_internalFramebuffer.GetFrontFramebuffer();
     }
 
     void ManagedFramebuffer::Destroy() {

@@ -11,14 +11,14 @@ namespace Raster {
 
     public:
         T& GetWithOffset(int t_offset = 0) {
-            return (DoubleBufferingIndex::s_index.Get() + t_offset) % 2 ? m_back : m_front;
+            return (DoubleBufferingIndex::s_index + t_offset) % 2 ? m_back : m_front;
         }
 
         T& Get() {
-            return DoubleBufferingIndex::s_index.Get() ? m_front : m_back;
+            return GetWithOffset(0);
         }
         T& GetFrontValue() {
-            return DoubleBufferingIndex::s_index.Get() ? m_back : m_front;
+            return GetWithOffset(1);
         }
 
         void SetBackValue(T t_back) {

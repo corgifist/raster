@@ -283,20 +283,6 @@ namespace Raster {
                         project.OnTimelineSeek();
                     }
                 }
-                if (project.playing) {
-                    Rendering::ForceRenderFrame();
-                    auto projectLength = project.GetProjectLength();
-                    if (project.currentFrame >= projectLength) {
-                        if (project.looping) {
-                            project.currentFrame = 0;
-                            project.OnTimelineSeek();
-                        } else project.playing = false;
-                    } else {
-                        if (project.currentFrame < projectLength) {
-                            project.currentFrame += (project.framerate * ImGui::GetIO().DeltaTime);
-                        }
-                    }
-                }
 
                 for (auto& composition : project.compositions) {
                     if (!IsInBounds(project.currentFrame, composition.GetBeginFrame() - 1, composition.GetEndFrame() + 1) && !composition.identityState) {
@@ -347,11 +333,26 @@ namespace Raster {
             ImGui::ShowDemoWindow();
             GPU::BindFramebuffer(std::nullopt);
         GPU::EndFrame();
+        GPU::Flush();
         AsyncRendering::AllowRendering();
 
         if (Workspace::IsProjectLoaded()) {
             auto& project = Workspace::GetProject();
             AudioInfo::s_globalAudioOffset = std::fmod(project.currentFrame / project.framerate * AudioInfo::s_sampleRate, AudioInfo::s_periodSize);
+            if (project.playing) {
+                Rendering::ForceRenderFrame();
+                auto projectLength = project.GetProjectLength();
+                if (project.currentFrame >= projectLength) {
+                    if (project.looping) {
+                        project.currentFrame = 0;
+                        project.OnTimelineSeek();
+                    } else project.playing = false;
+                } else {
+                    if (project.currentFrame < projectLength) {
+                        project.currentFrame += (project.framerate * ImGui::GetIO().DeltaTime);
+                    }
+                }
+            }
         }
     }
 
@@ -361,10 +362,10 @@ namespace Raster {
         if (Workspace::s_project.has_value()) {
             Workspace::GetProject().compositions.clear();
         }
+        GPU::Terminate();
         Audio::Terminate();
         AudioMemoryManagement::Terminate();
         WaveformManager::Terminate();
-        GPU::Terminate();
         s_writerThreadRunning = false;
         s_writerThread.join();
     }

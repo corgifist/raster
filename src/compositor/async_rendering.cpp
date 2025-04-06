@@ -23,16 +23,16 @@ namespace Raster {
     void AsyncRendering::RenderingLoop() {
         GPU::SetCurrentContext(s_context);
         Compositor::Initialize();
-        DoubleBufferingIndex::s_index.Set(0);
+        DoubleBufferingIndex::s_index = 0;
         static int s_renderingPassID = 1;
         while (m_running) {
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
                 while ((!project.playing && !Rendering::MustRenderFrame()) && m_running) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
                     continue;
                 }
                 if (!m_running) break;
+                if (!Rendering::MustRenderFrame() || !m_allowRendering) continue;
                 Rendering::CancelRenderFrame();
                 Compositor::EnsureResolutionConstraints();
                 GPU::EnableClipping();
@@ -57,13 +57,11 @@ namespace Raster {
                     {"ONLY_AUDIO_NODES", true},
                     {"RENDERING_PASS_ID", s_renderingPassID}
                 });
-                // DUMP_VAR(Workspace::s_pinCache.GetFrontValue().size());
                 s_renderingPassID++;
                 auto f = Compositor::PerformComposition();
                 GPU::DisableClipping();
                 GPU::Flush();
-                s_readyFramebuffer = f;
-                DoubleBufferingIndex::s_index.Set((DoubleBufferingIndex::s_index.Get() + 1) % 2);
+                if (Compositor::primaryFramebuffer) s_readyFramebuffer = Compositor::primaryFramebuffer.value().Get();
 
                 double secondTime = GPU::GetTime();
                 double timeDifference = (secondTime - firstTime) * 1000;
@@ -74,6 +72,8 @@ namespace Raster {
                     ExperimentalSleepFor(idealTimeDifference / 1000.0); 
                 }
                 double finalTime = GPU::GetTime();
+                DoubleBufferingIndex::s_index = (DoubleBufferingIndex::s_index + 1) % 2;
+                m_allowRendering = false;
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
@@ -87,5 +87,6 @@ namespace Raster {
     void AsyncRendering::Terminate() {
         m_running = false;
         m_renderingThread.join();
+        GPU::DestroyContext(s_context);
     }
 };

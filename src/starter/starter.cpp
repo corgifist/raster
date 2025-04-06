@@ -47,6 +47,22 @@ static std::string FormatString( const std::string& format, Args ... args ) {
 }
 
 int main(int argc, char** argv) {
+    bool extractOnly = false;
+    for (int i = 1; i < argc; i++) {
+        if (std::string(argv[i]).find("extract") != std::string::npos) {
+            extractOnly = true;
+        }
+        if (std::string(argv[i]).find("help") != std::string::npos) {
+            print("Usage: ");
+            print("\t" << argv[0] << " [--extract|-extract|extract] [--help|-help|help]");
+            print("\t--extract: only extract raster files");
+            print("\t--help: print usage info");
+            return 0;
+        }
+    }
+    if (extractOnly) {
+        print("extract only mode!");
+    }
     print("starting raster from " << std::filesystem::current_path());
     int randomID = GetRandomInteger();
     std::string temporaryFolderPath = FormatString("./.raster%i/", randomID);
@@ -74,26 +90,28 @@ int main(int argc, char** argv) {
     // getchar();
 
     auto originalCwd = std::filesystem::current_path();
-    try {
-        std::string targetExecutable = temporaryFolderPath + "raster_core" + std::string(EXECUTABLE_EXTENSION);
-        if (std::filesystem::exists(targetExecutable)) {
-            std::filesystem::current_path(temporaryFolderPath);
-            std::flush(std::cout);
-            #if defined(RASTER_PLATFORM_LINUX) || defined(RASTER_PLATFORM_APPLE)
-                system("./raster_core");
-            #else defined(RASTER_PLATFORM_WINDOWS)
-                system("raster_core");
-            #endif
-        } else {
-            print("raster_core is not found! nothing to run");
+    if (!extractOnly) {
+        try {
+            std::string targetExecutable = temporaryFolderPath + "raster_core" + std::string(EXECUTABLE_EXTENSION);
+            if (std::filesystem::exists(targetExecutable)) {
+                std::filesystem::current_path(temporaryFolderPath);
+                std::flush(std::cout);
+                #if defined(RASTER_PLATFORM_LINUX) || defined(RASTER_PLATFORM_APPLE)
+                    system("./raster_core");
+                #elif defined(RASTER_PLATFORM_WINDOWS)
+                    system("raster_core");
+                #endif
+            } else {
+                print("raster_core is not found! nothing to run");
+            }
+        } catch (...) {
+            print("raster has crashed! exiting");
         }
-    } catch (...) {
-        print("raster has crashed! exiting");
     }
 
-    print("removing temporary files...");
+    if (!extractOnly) print("removing temporary files...");
     std::filesystem::current_path(originalCwd);
-    std::filesystem::remove_all(temporaryFolderPath);
+    if (!extractOnly) std::filesystem::remove_all(temporaryFolderPath);
 
     return 0;
 }

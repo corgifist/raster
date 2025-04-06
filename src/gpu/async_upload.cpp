@@ -23,6 +23,7 @@ namespace Raster {
     void AsyncUpload::Terminate() {
         m_running = false;
         m_uploader.join();
+        GPU::DestroyContext(m_context);
     }
 
     AsyncUploadInfoID AsyncUpload::GenerateTextureFromImage(std::shared_ptr<Image> image) {
@@ -68,10 +69,10 @@ namespace Raster {
         std::vector<int> skipID;
         while (m_running) {
             if (SyncIsInfosEmpty()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
-            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             auto pair = SyncGetFirstAsyncUploadInfo();
             auto& info = pair.second;
             if (info.executed) continue;

@@ -371,13 +371,9 @@ namespace Raster {
     }
 
     void GPU::Flush() {
-#ifndef _WIN32
         auto fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         glFlush();
         glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
-#else
-        glFinish();
-#endif   
     }
 
     void* GPU::ReserveContext() {
@@ -392,6 +388,10 @@ namespace Raster {
             std::cout << "failed to create background context!" << std::endl;
         }
         return newContext;
+    }
+
+    void GPU::DestroyContext(void* context) {
+        glfwDestroyWindow((GLFWwindow*) context);
     }
 
     void GPU::SetupContextState() {

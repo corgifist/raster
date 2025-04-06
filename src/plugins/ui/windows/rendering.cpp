@@ -88,11 +88,9 @@ namespace Raster {
                         }
                     } else selectedPin = "";
 
-                    if (selectedPin.empty() || compositionLock) {
-                        if (AsyncRendering::s_readyFramebuffer.handle) {
-                            dispatcherTarget = AsyncRendering::s_readyFramebuffer;
-                            mustDispatchOverlay = true;
-                        }
+                    if ((selectedPin.empty() || compositionLock) && AsyncRendering::s_readyFramebuffer.handle) {
+                        dispatcherTarget = AsyncRendering::s_readyFramebuffer;
+                        mustDispatchOverlay = true;
                     }
                 
                     if (Dispatchers::s_editingROI) {
