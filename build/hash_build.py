@@ -358,7 +358,7 @@ def collect_all_dependencies(file: str, previous_acc: list[str] = []):
     return acc
 
 # compiles one single file using `cc` command (c/c++)
-def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=None, log_compiler_commands=False):
+def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=None, log_compiler_commands=False, pch_cxx=False, custom_output_path=None):
     if not path_exists(file):
         error(f"file {file} doesn't exist!")
         exit(1)
@@ -368,6 +368,8 @@ def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=
     source_code_hash = hash_string(read_file(file))
     saved_source_code_hash = read_file(hash_path)
     object_file_path = f".hash_build_files/{name_hash}.o"
+    if custom_output_path is not None:
+        object_file_path = custom_output_path
     file_dependencies = get_source_file_header_dependencies(file)
 
     file_must_be_recompiled = False
@@ -386,6 +388,9 @@ def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=
         compiler_flags = local_compiler_flags + global_compiler_flags
         compiler_command = []
         compiler_command.append("cc")
+        if pch_cxx:
+            compiler_command.append("-x")
+            compiler_command.append("c++-header")
         compiler_command.append("-c")
         compiler_command.append(architecture_flag)
         compiler_command.append("-o")

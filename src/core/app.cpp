@@ -109,6 +109,7 @@ namespace Raster {
 
         static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
 
+        fontCfg.RasterizerDensity = 1.5f;
         Font::s_normalFont = io.Fonts->AddFontFromMemoryCompressedTTF(
             Font::s_fontBytes.data(), Font::s_fontSize,
             16.0f, &fontCfg, io.Fonts->GetGlyphRangesCyrillic()

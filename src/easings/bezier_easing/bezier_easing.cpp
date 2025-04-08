@@ -197,22 +197,16 @@ namespace Raster {
                                     beginBezierSize = actualBezierSize;
 
                                     std::optional<float> sizeCandidate = std::nullopt;
+                                    bool hasOvershoot = false;
                                     for (int i = 0; i < 4; i++) {
                                         auto point = previewPoints[i];
                                         if (IsInBounds(point, 0.0f, 1.0f)) continue;
-                                        float overshootAmount;
-                                        if (point > 1) overshootAmount = point - 1;
-                                        else if (point < 0) overshootAmount = +point;
-                                        
-                                        float overshootMultiplier = 0.7f;
-                                        if (sizeCandidate.value_or(-100) < overshootAmount * overshootMultiplier) {
-                                            sizeCandidate = std::abs(overshootAmount * overshootMultiplier);
-                                        }
+                                        hasOvershoot = true;
+                                        break;
                                     }
 
-                                    if (sizeCandidate.has_value()) {
-                                        float size = sizeCandidate.value();
-                                        endBezierSize = curvePreviewProcessedSize * (1.0f - std::abs(sizeCandidate.value()));
+                                    if (hasOvershoot) {
+                                        endBezierSize = curvePreviewProcessedSize * 0.4;
                                     } else {
                                         endBezierSize = curvePreviewProcessedSize;
                                     }

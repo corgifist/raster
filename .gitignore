@@ -18,3 +18,4 @@ raster_core
 compile_commands.json
 .cache
 dist/
+raster.h.gch

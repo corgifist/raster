@@ -180,6 +180,7 @@ build_modules = [
     ["rendering/ocio_grading_primary_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
     ["rendering/ocio_colorspace_transform", node, [raster_common, raster_gpu, raster_compositor, OpenColorIO]],
     ["rendering/rasterize", node, [raster_common, raster_gpu, raster_compositor]],
+    ["rendering/basic_perspective", node, [raster_common, raster_gpu, raster_compositor]],
 
     ["math/sine", node, [raster_common, raster_ImGui]],
     ["math/abs", node, [raster_common, raster_ImGui]],
@@ -234,6 +235,7 @@ def build():
 
     write_build_number()
     check_required_folders()
+    build_pch()
     build_nfd()
     for module in build_modules:
         build_module(module)
@@ -248,6 +250,10 @@ def build():
     create_paks()
 
     rmdir(build_environment)
+
+def build_pch():
+    info("compiling include/raster.h (include/raster.g.gch)")
+    compile_file("include/raster.h", custom_output_path="include/raster.h.gch", pch_cxx=True, progress=1, files_count=1)
 
 def create_paks():
     for pak in pak_targets:

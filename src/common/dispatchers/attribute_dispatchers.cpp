@@ -251,8 +251,8 @@ namespace Raster {
                 ImGui::SliderFloat4(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
             }
         } else {
-            ImGui::PushItemWidth(200);
-                ImGui::ColorPicker4("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::ColorEdit4("##colorEdit4", glm::value_ptr(v));
             ImGui::PopItemWidth();
         }
         if (ImGui::IsItemEdited()) {
@@ -297,8 +297,8 @@ namespace Raster {
                 ImGui::SliderFloat3(formattedAttribute.c_str(), glm::value_ptr(v), metadata.sliderMin, metadata.sliderMax, GetMetadataFormat(metadata).c_str());
             }
         } else {
-            ImGui::PushItemWidth(200);
-                ImGui::ColorPicker3("##colorPreview", glm::value_ptr(v), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview);
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::ColorEdit3("##colorEdit4", glm::value_ptr(v));
             ImGui::PopItemWidth();
         }
         if (ImGui::IsItemEdited()) {
