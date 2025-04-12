@@ -45,6 +45,7 @@ namespace Raster {
         auto rational = targetAudioStream.timeBase().getValue();
         formatCtx.seek((int64_t) (currentTime) * (int64_t)rational.den / (int64_t) rational.num, targetAudioStream.index(), AVSEEK_FLAG_ANY);
         avcodec_flush_buffers(audioDecoderCtx.raw());
+        if (stretcher) stretcher->reset();
         cacheValid = false;
         needsSeeking = false;
         FlushResampler();

@@ -5,6 +5,7 @@
 #include "gpu/gpu.h"
 #include "compositor/compositor.h"
 #include "compositor/texture_interoperability.h"
+#include "compositor/geometry_framebuffer.h"
 
 namespace Raster {
     struct BasicPerspective : public NodeBase {
@@ -24,7 +25,9 @@ namespace Raster {
         std::optional<std::string> Footer();
     private:
         ManagedFramebuffer m_framebuffer;
+        GeometryFramebuffer m_geometryBuffer;
+        GeometryFramebuffer m_temporaryBuffer;
 
-        static std::optional<Pipeline> s_pipeline;
+        static std::optional<Pipeline> s_pipeline, s_geometryPipeline, s_combinerPipeline;
     };
 };

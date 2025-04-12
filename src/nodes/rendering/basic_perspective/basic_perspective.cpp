@@ -8,11 +8,14 @@
 namespace Raster {
 
     std::optional<Pipeline> BasicPerspective::s_pipeline;
+    std::optional<Pipeline> BasicPerspective::s_geometryPipeline;
+    std::optional<Pipeline> BasicPerspective::s_combinerPipeline;
 
     BasicPerspective::BasicPerspective() {
         NodeBase::Initialize();
 
         SetupAttribute("Base", Framebuffer());
+        SetupAttribute("InputGeometryBuffer", Framebuffer());
         SetupAttribute("Texture", Texture());
         SetupAttribute("Position", glm::vec3(0, 0, 0));
         SetupAttribute("Size", glm::vec2(1, 1));
@@ -24,6 +27,7 @@ namespace Raster {
 
         AddInputPin("Base");
         AddOutputPin("Output");
+        AddOutputPin("GeometryBuffer");
     }
 
     BasicPerspective::~BasicPerspective() {
@@ -38,13 +42,23 @@ namespace Raster {
         }
 
         if (!s_pipeline.has_value()) {
+            auto sh = GPU::GenerateShader(ShaderType::Vertex, "basic_perspective/shader");
             s_pipeline = GPU::GeneratePipeline(
-                GPU::GenerateShader(ShaderType::Vertex, "basic_perspective/shader"),
+                sh,
                 GPU::GenerateShader(ShaderType::Fragment, "basic_perspective/shader")
+            );
+            s_geometryPipeline = GPU::GeneratePipeline(
+                sh,
+                GPU::GenerateShader(ShaderType::Fragment, "basic_perspective/geometry")
+            );
+            s_combinerPipeline = GPU::GeneratePipeline(
+                sh,
+                GPU::GenerateShader(ShaderType::Fragment, "basic_perspective/geometry_combiner")
             );
         }
 
         auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
+        auto inputGeometryBufferCandidate = GetAttribute<Framebuffer>("InputGeometryBuffer", t_contextData);
         auto textureCandidate = GetAttribute<Texture>("Texture", t_contextData);
         auto positionCandidate = GetAttribute<glm::vec3>("Position", t_contextData);
         auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
@@ -54,9 +68,14 @@ namespace Raster {
         auto respectAspectRatioCandidate = GetAttribute<bool>("RespectAspectRatio", t_contextData);
         auto fovCandidate = GetAttribute<float>("FOV", t_contextData);
         auto& framebuffer = m_framebuffer.Get(baseCandidate);
+        auto& geometryBuffer = m_geometryBuffer.Get(baseCandidate);
+        auto& temporaryBuffer = m_temporaryBuffer.Get(baseCandidate);
 
-        if (s_pipeline && textureCandidate && positionCandidate && sizeCandidate && scaleCandidate && rotationCandidate && anchorCandidate && fovCandidate && respectAspectRatioCandidate) {
+        if (s_pipeline && inputGeometryBufferCandidate && textureCandidate && positionCandidate && sizeCandidate && scaleCandidate && rotationCandidate && anchorCandidate && fovCandidate && respectAspectRatioCandidate) {
             auto& pipeline = s_pipeline.value();
+            auto& combinerPipeline = *s_combinerPipeline;
+            auto& geometryPipeline = *s_geometryPipeline;
+            auto& inputGeometryBuffer = *inputGeometryBufferCandidate;
             GPU::BindPipeline(pipeline);
             GPU::BindFramebuffer(framebuffer);
             auto& texture = *textureCandidate;
@@ -87,13 +106,36 @@ namespace Raster {
 
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", projectionMatrix * transform);
             GPU::SetShaderUniform(pipeline.fragment, "uTextureAvailable", texture.handle ? true : false);
+            GPU::SetShaderUniform(pipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
             if (texture.handle) {
                 GPU::BindTextureToShader(pipeline.fragment, "uTexture", texture, 0);
             }
+            GPU::SetShaderUniform(pipeline.fragment, "uDepthAvailable", inputGeometryBuffer.handle ? true : false);
+            if (inputGeometryBuffer.handle) {
+                GPU::BindTextureToShader(pipeline.fragment, "uDepth", inputGeometryBuffer.attachments.at(0), 1);
+            }
             GPU::SetShaderUniform(pipeline.fragment, "uAspectRatio", aspectRatio);
             GPU::DrawArrays(6);
-            TryAppendAbstractPinMap(result, "Output", framebuffer);
 
+            GPU::BindFramebuffer(temporaryBuffer);
+            GPU::BindPipeline(geometryPipeline);
+            GPU::ClearFramebuffer(0, 0, 0, 0);
+            GPU::SetShaderUniform(geometryPipeline.vertex, "uMatrix", projectionMatrix * transform);
+            GPU::DrawArrays(6);
+
+            if (inputGeometryBuffer.handle) {
+                GPU::BindFramebuffer(geometryBuffer);
+                GPU::BindPipeline(combinerPipeline);
+                GPU::ClearFramebuffer(0, 0, 0, 0);
+                GPU::SetShaderUniform(combinerPipeline.vertex, "uMatrix", glm::scale(glm::vec3(100, 100, 100)));
+                GPU::SetShaderUniform(combinerPipeline.fragment, "uResolution", glm::vec2(framebuffer.width, framebuffer.height));
+                GPU::BindTextureToShader(combinerPipeline.fragment, "uA", temporaryBuffer.attachments.at(0), 0);
+                GPU::BindTextureToShader(combinerPipeline.fragment, "uB", inputGeometryBuffer.attachments.at(0), 1);
+                GPU::DrawArrays(6);
+            }
+
+            TryAppendAbstractPinMap(result, "Output", framebuffer);
+            TryAppendAbstractPinMap(result, "GeometryBuffer", inputGeometryBuffer.handle ? geometryBuffer : temporaryBuffer);
         }
 
         return result;

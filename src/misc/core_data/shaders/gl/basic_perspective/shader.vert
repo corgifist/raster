@@ -22,12 +22,14 @@ const vec2 uv[6] = vec2[](
     vec2(1.0, 0.0)
 );
 
+out vec4 vPos;
 out vec2 vUV;
 
 uniform mat4 uMatrix;
 
 void main() {
     gl_Position = uMatrix * vec4(vertices[gl_VertexID], 0.0, 1.0);
+    vPos = gl_Position;
 
     vUV = uv[gl_VertexID];
 }

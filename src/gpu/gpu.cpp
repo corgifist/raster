@@ -728,7 +728,8 @@ namespace Raster {
         GLsizei length;
         glGetProgramInfoLog(program, 1024, &length, log.data());
         if (length != 0) {
-            throw std::runtime_error(std::string(log.data()));
+            RASTER_LOG(log.data());
+            throw std::runtime_error("failed to generate shader program");
         }
 
         if (std::filesystem::exists(nameHashPath) && useBinaryCache) {

@@ -17,6 +17,14 @@ namespace Raster {
         this->m_index = 0;
     }
 
+    DoubleBufferedFramebuffer::DoubleBufferedFramebuffer(Framebuffer t_front, Framebuffer t_back) {
+        this->m_back = t_back;
+        this->m_front = t_front;
+        this->width = m_front.width;
+        this->height = m_front.height;
+        this->m_index = 0;
+    }
+
     Framebuffer& DoubleBufferedFramebuffer::Get() {
         return GetWithOffset(0);
     }

@@ -10,6 +10,7 @@ namespace Raster {
 
         DoubleBufferedFramebuffer();
         DoubleBufferedFramebuffer(int width, int height, TexturePrecision precision = TexturePrecision::Usual);
+        DoubleBufferedFramebuffer(Framebuffer t_front, Framebuffer t_back);
 
         Framebuffer& Get();
         Framebuffer& GetWithOffset(int offset = 0);
@@ -19,8 +20,8 @@ namespace Raster {
 
         void SwapBuffers();
         void Destroy();
-        private:
-            int m_index;
-            Framebuffer m_front, m_back;
+    private:
+        int m_index;
+        Framebuffer m_front, m_back;
     };
 };
