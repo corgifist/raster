@@ -48,7 +48,7 @@ namespace Raster {
     }
 
     std::string MakeVec3::AbstractHeader() {
-        return "Make Vec4";
+        return "Make Vec3";
     }
 
     std::string MakeVec3::Icon() {

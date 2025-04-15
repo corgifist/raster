@@ -289,4 +289,24 @@ namespace Raster {
         ImGui::Text("%s %s", ICON_FA_DROPLET, std::any_cast<Colorspace>(t_attribute).name.c_str());
     }
 
+    void StringDispatchers::DispatchCameraValue(std::any& t_attribute) {
+        auto camera = std::any_cast<Camera>(t_attribute);
+        ImGui::Text("%s %s", ICON_FA_EYE, Localization::GetString(camera.persp ? "PERSP_PROJECTION": "ORTHO_PROJECTION").c_str());
+        ImGui::Text("%s Position: %0.2f; %0.2f; %0.2f", ICON_FA_UP_DOWN_LEFT_RIGHT, camera.position.x, camera.position.y, camera.position.z);
+        ImGui::Text("%s Rotation: %0.2f; %0.2f; %0.2f", ICON_FA_ROTATE, camera.rotation.x, camera.rotation.y, camera.rotation.z);
+        ImGui::Text("%s Anchor: %0.2f; %0.2f; %0.2f", ICON_FA_ANCHOR, camera.anchor.x, camera.anchor.y, camera.anchor.z);
+        if (camera.persp) {
+            ImGui::Text("%s %s: %0.2f / %0.2f", ICON_FA_CUBE, Localization::GetString("NEAR_FAR_PLANE").c_str(), camera.perspNear, camera.perspFar);
+            if (camera.customF) {
+                ImGui::Text("%s %s: %0.2f", ICON_FA_EYE, Localization::GetString("FOV").c_str(), camera.GetF());
+            } else {
+                ImGui::Text("%s %s: %0.2f", ICON_FA_LEFT_RIGHT, Localization::GetString("FILM_LENGTH").c_str(), camera.fLength);
+                ImGui::Text("%s %s: %0.2f", ICON_FA_EXPAND, Localization::GetString("FILM_SIZE").c_str(), camera.fSize);
+                ImGui::Text("%s %s: %0.2f", ICON_FA_EYE, Localization::GetString("ESTIMATED_CAMERA_FOV").c_str(), camera.GetF());
+            }
+        } else {
+            ImGui::Text("%s %s: %0.2f", ICON_FA_LEFT_RIGHT, Localization::GetString("ORTHO_WIDTH").c_str(), camera.orthoWidth);
+        }
+    }
+
 };

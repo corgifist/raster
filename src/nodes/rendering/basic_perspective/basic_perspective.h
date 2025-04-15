@@ -28,6 +28,8 @@ namespace Raster {
         GeometryFramebuffer m_geometryBuffer;
         GeometryFramebuffer m_temporaryBuffer;
 
+        bool m_hasCamera;
+
         static std::optional<Pipeline> s_pipeline, s_geometryPipeline, s_combinerPipeline;
     };
 };

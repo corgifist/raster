@@ -108,6 +108,36 @@ namespace Raster {
         return glm::ortho(-aspect, aspect, 1.0f * (invert ? -1 : 1), -1.0f * (invert ? -1 : 1), -1.0f, 1.0f);
     }
 
+    std::optional<Camera> Project::GetCamera() {
+        for (int i = compositions.size(); i --> 0;) {
+            auto& composition = compositions[i];
+            if (!composition.enabled) continue;
+            if (!IsInBounds(GetCorrectCurrentTime(), composition.beginFrame - 1, composition.endFrame + 1)) continue;
+            for (auto& attribute : composition.attributes) {
+                if (attribute->packageName != RASTER_PACKAGED "camera_attribute") continue;
+                auto cameraCandidate = attribute->Get(GetCorrectCurrentTime() - composition.beginFrame, &composition);
+                auto camera = std::any_cast<Camera>(cameraCandidate);
+                if (camera.enabled) return camera;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AbstractAttribute> Project::GetCameraAttribute() {
+        for (int i = compositions.size(); i --> 0;) {
+            auto& composition = compositions[i];
+            if (!composition.enabled) continue;
+            if (!IsInBounds(GetCorrectCurrentTime(), composition.beginFrame - 1, composition.endFrame + 1)) continue;
+            for (auto& attribute : composition.attributes) {
+                if (attribute->packageName != RASTER_PACKAGED "camera_attribute") continue;
+                auto cameraCandidate = attribute->Get(GetCorrectCurrentTime() - composition.beginFrame, &composition);
+                auto camera = std::any_cast<Camera>(cameraCandidate);
+                if (camera.enabled) return attribute;
+            }
+        }
+        return std::nullopt;
+    }
+
     float Project::GetCorrectCurrentTime() {
         auto& fakeTime = m_fakeTime.Get();
         if (fakeTime) {

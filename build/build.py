@@ -122,6 +122,7 @@ build_modules = [
     ["bezier_attribute", attribute, [raster_common, raster_ImGui]],
     ["convolution_kernel_attribute", attribute, [raster_common, raster_ImGui, raster_gpu]],
     ["colorspace_attribute", attribute, [raster_common, raster_ImGui]],
+    ["camera_attribute", attribute, [raster_common, raster_ImGui]],
 
     ["preferences", plugin, [raster_common]],
     ["xml_effects", plugin, [raster_common, raster_font, raster_gpu, raster_compositor, raster_ImGui]],

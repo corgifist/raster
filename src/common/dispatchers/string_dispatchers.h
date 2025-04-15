@@ -24,5 +24,6 @@ namespace Raster {
         static void DispatchLine2DValue(std::any& t_attribute);
         static void DispatchBezierCurveValue(std::any& t_attribute);
         static void DispatchColorspaceValue(std::any& t_attribute);
+        static void DispatchCameraValue(std::any& t_attribute);
     };
 };

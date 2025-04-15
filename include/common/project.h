@@ -9,6 +9,8 @@
 #include "asset_base.h"
 #include "project_color_precision.h"
 #include "roi.h"
+#include "camera.h"
+#include "attribute.h"
 
 namespace Raster {
     struct Project {
@@ -57,6 +59,9 @@ namespace Raster {
 
         void Traverse(ContextData t_data = {});
         void OnTimelineSeek();
+
+        std::optional<Camera> GetCamera();
+        std::optional<AbstractAttribute> GetCameraAttribute();
 
         // using SetFakeTime() / ResetFakeTime() you can fake current frame of project
         // without changine Project::currentFrame field 

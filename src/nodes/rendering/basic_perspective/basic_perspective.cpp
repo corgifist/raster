@@ -28,6 +28,8 @@ namespace Raster {
         AddInputPin("Base");
         AddOutputPin("Output");
         AddOutputPin("GeometryBuffer");
+
+        m_hasCamera = false;
     }
 
     BasicPerspective::~BasicPerspective() {
@@ -57,9 +59,15 @@ namespace Raster {
             );
         }
 
-        auto baseCandidate = GetAttribute<Framebuffer>("Base", t_contextData);
-        auto inputGeometryBufferCandidate = GetAttribute<Framebuffer>("InputGeometryBuffer", t_contextData);
-        auto textureCandidate = GetAttribute<Texture>("Texture", t_contextData);
+        auto cameraCandidate = project.GetCamera();
+        if (!cameraCandidate) {
+            m_hasCamera = false;
+            return {};
+        }
+        m_hasCamera = true;
+        auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
+        auto inputGeometryBufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("InputGeometryBuffer", t_contextData));
+        auto textureCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Texture", t_contextData));
         auto positionCandidate = GetAttribute<glm::vec3>("Position", t_contextData);
         auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
         auto scaleCandidate = GetAttribute<float>("Scale", t_contextData);
@@ -86,15 +94,13 @@ namespace Raster {
             auto& anchor = *anchorCandidate;
             auto& respectAspectRation = *respectAspectRatioCandidate;
             auto& fov = *fovCandidate;
+            auto& camera = *cameraCandidate;
 
-            auto projectionMatrix = glm::perspective(glm::radians(-fov), (float) framebuffer.width / (float) framebuffer.height, 0.001f, 100.0f);
             auto aspectRatio = texture.handle ? (float) texture.width / (float) texture.height : 1.0f;
             if (texture.handle) {
                 size *= glm::vec2((float) texture.width / (float) texture.height, 1);
             }
-            position.x *= -1;
-            size.x *= -1;
-            position.z -= 2.42f;
+            auto projectionMatrix = camera.GetProjectionMatrix();
             auto transform = glm::identity<glm::mat4>();
             transform = glm::translate(transform, position);
             transform = glm::translate(transform, anchor);
@@ -103,6 +109,7 @@ namespace Raster {
             transform = glm::rotate(transform, glm::radians(rotation.z), glm::vec3(0, 0, 1));
             transform = glm::translate(transform, -anchor); 
             transform = glm::scale(transform, glm::vec3(size * scale, 1.0)); 
+            transform = camera.GetTransformationMatrix() * transform;
 
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", projectionMatrix * transform);
             GPU::SetShaderUniform(pipeline.fragment, "uTextureAvailable", texture.handle ? true : false);
@@ -192,7 +199,7 @@ namespace Raster {
     }
 
     std::optional<std::string> BasicPerspective::Footer() {
-        return std::nullopt;
+        return m_hasCamera ? std::nullopt : std::optional<std::string>(FormatString("%s %s", ICON_FA_CAMERA, Localization::GetString("NO_ACTIVE_CAMERA").c_str()));
     }
 }
 

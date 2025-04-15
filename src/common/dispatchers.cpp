@@ -74,7 +74,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Gradient1D), StringDispatchers::DispatchGradient1DValue},
             {ATTRIBUTE_TYPE(Line2D), StringDispatchers::DispatchLine2DValue},
             {ATTRIBUTE_TYPE(BezierCurve), StringDispatchers::DispatchBezierCurveValue},
-            {ATTRIBUTE_TYPE(Colorspace), StringDispatchers::DispatchColorspaceValue}
+            {ATTRIBUTE_TYPE(Colorspace), StringDispatchers::DispatchColorspaceValue},
+            {ATTRIBUTE_TYPE(Camera), StringDispatchers::DispatchCameraValue}
         };
 
         Dispatchers::s_previewDispatchers = {

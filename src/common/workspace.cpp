@@ -48,7 +48,8 @@ namespace Raster {
         RASTER_PACKAGED "folder_attribute",
         RASTER_PACKAGED "bezier_attribute",
         RASTER_PACKAGED "convolution_kernel_attribute",
-        RASTER_PACKAGED "colorspace_attribute"
+        RASTER_PACKAGED "colorspace_attribute",
+        RASTER_PACKAGED "camera_attribute"
     };
 
     std::vector<std::string> Workspace::s_pinnedAssetTypes = {

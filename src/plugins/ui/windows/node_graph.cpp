@@ -1645,6 +1645,35 @@ namespace Raster {
                     }
                 }
                 if (s_currentComposition) {
+                    auto currentCameraCandidate = Workspace::GetProject().GetCameraAttribute();
+                    std::string cameraText = FormatString("%s %s", ICON_FA_CAMERA, Localization::GetString("NO_ACTIVE_CAMERA").c_str());
+                    if (currentCameraCandidate) {
+                        cameraText = FormatString("%s %s", ICON_FA_CAMERA, (*currentCameraCandidate)->name.c_str());
+                    }
+                    ImGui::PushFont(Font::s_denseFont);
+                    ImGui::SetWindowFontScale(1.4f);
+                        ImVec2 textSize = ImGui::CalcTextSize(cameraText.c_str());
+                        ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - textSize.x, 0) + ImVec2(-5, 5));
+                        static bool s_cameraTextHold = false;
+                        ImGui::PushStyleColor(ImGuiCol_Text, s_cameraTextHold ? ImGui::GetStyleColorVec4(ImGuiCol_Text) * (0.9f, 0.9f, 0.9f, 0.9f) : ImGui::GetStyleColorVec4(ImGuiCol_Text) * (1.0f, 1.0f, 1.0f, 1.0f));
+                        ImGui::Text("%s", cameraText.c_str());
+                        ImGui::PopStyleColor();
+                        s_cameraTextHold = ImGui::IsItemHovered();
+                        if (s_cameraTextHold && currentCameraCandidate) {
+                            std::any dynamicCamera = *Workspace::GetProject().GetCamera();
+                            ImGui::PopFont();
+                            ImGui::SetWindowFontScale(1);
+                            if (ImGui::BeginTooltip()) {
+                                Dispatchers::DispatchString(dynamicCamera);
+                                ImGui::EndTooltip();
+                            }
+                            ImGui::PushFont(Font::s_denseFont);
+                        }
+                        if (ImGui::IsItemClicked()) {
+                            Workspace::GetProject().selectedCompositions = {(*Workspace::GetCompositionByAttributeID((*currentCameraCandidate)->id))->id};
+                        }
+                    ImGui::SetWindowFontScale(1.0f);
+                    ImGui::PopFont();
                     ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));
                     bool mustOpenRenamePopup = false;
                     bool mustOpenPropertiesPopup = false;
