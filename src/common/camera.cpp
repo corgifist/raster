@@ -18,7 +18,7 @@ namespace Raster {
     }
 
     float Camera::GetF() {
-        if (customF) return glm::degrees(f);
+        if (customF) return f;
         return glm::degrees(2 * glm::atan(fSize / (2.0f * fLength)));
     }
 
@@ -27,7 +27,7 @@ namespace Raster {
         float aspect = project.preferredResolution.x / project.preferredResolution.y;
         if (!persp) {
             aspect *= orthoWidth;
-            return glm::ortho(-aspect, aspect, 1.0f, -1.0f, -1.0f, 1.0f);
+            return glm::ortho(-aspect, aspect, 1.0f, -1.0f, -1.0f, 1000.0f);
         }
         float f = glm::radians(GetF());
         return glm::perspective(f, aspect, perspNear, perspFar);
