@@ -190,14 +190,15 @@ namespace Raster {
             attributeTextHovered = attributeTextHovered || std::find(selectedAttributes.begin(), selectedAttributes.end(), id) != selectedAttributes.end();
 
             ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+            auto implementationCandidate = Attributes::GetAttributeImplementationByPackageName(packageName);
             if (attributeTextHovered) textColor = textColor * 0.9f;
             if (attributeTextClicked) textColor = textColor * 0.9f;
             if (!childAttributesCandidate) {
                 ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-                    ImGui::Text("%s%s%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", t_composition->speedAttributeID == id ? ICON_FA_FORWARD " " : "", t_composition->pitchAttributeID == id || (t_composition->lockPitchToSpeed && t_composition->speedAttributeID == id) ? ICON_FA_VOLUME_HIGH " " : "", ICON_FA_LINK, name.c_str()); 
+                    ImGui::Text("%s%s%s%s%s %s", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", t_composition->speedAttributeID == id ? ICON_FA_FORWARD " " : "", t_composition->pitchAttributeID == id || (t_composition->lockPitchToSpeed && t_composition->speedAttributeID == id) ? ICON_FA_VOLUME_HIGH " " : "", implementationCandidate ? implementationCandidate->description.prettyName.substr(0, 3).c_str() : ICON_FA_LINK, name.c_str()); 
                 ImGui::PopStyleColor();
             } else {
-                if (ImGui::TreeNodeEx(FormatString("%s%s%s %s###%i", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", ICON_FA_LINK, name.c_str(), id).c_str())) {
+                if (ImGui::TreeNodeEx(FormatString("%s%s%s %s###%i", internalAttributeName.empty() ? "" : ICON_FA_CIRCLE_NODES " ", t_composition->opacityAttributeID == id ? ICON_FA_DROPLET " " : "", implementationCandidate ? implementationCandidate->description.prettyName.substr(0, 3).c_str() : ICON_FA_LINK, name.c_str(), id).c_str())) {
                     for (auto& attribute : **childAttributesCandidate) {
                         attribute->RenderLegend(t_composition);
                     }

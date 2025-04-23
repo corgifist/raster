@@ -14,11 +14,15 @@
 #include "common/workspace.h"
 
 #include "../../attributes/transform2d_attribute/transform2d_attribute.h"
+#include "../../attributes/transform3d_attribute/transform3d_attribute.h"
 
 #include "common/rendering.h"
 #include "common/line2d.h"
 
 #include "common/dispatchers.h"
+#include "common/transform3d.h"
+#include "../../ImGui/ImGuizmo.h"
+#include "common/ui_helpers.h"
 
 #define DRAG_CIRCLE_RADIUS 8
 #define DRAG_LOGIC_RADIUS 16
@@ -53,7 +57,6 @@ namespace Raster {
     };
 
     struct Transform2DOverlayState {
-
         std::vector<ObjectDrag> drags;
         std::vector<ObjectDrag> angleDrags;
         ObjectDrag anchorDrag;
@@ -870,4 +873,150 @@ namespace Raster {
         }
         return !bezierChanged; 
     }
+
+    struct Transform3DOverlayState {
+
+        Transform3DOverlayState() {
+        }
+
+        bool AnyOtherDragActive(int t_excludeDrag = -1) {
+            return false;
+        }
+    };
+
+#define INTERNAL_GIZMO_TRANSLATE 0
+#define INTERNAL_GIZMO_ROTATE 1
+#define INTERNAL_GIZMO_SCALE 2
+#define INTERNAL_GIZMO_SCALE_ALL 3
+#define INTERNAL_GIZMO_ALL 4
+
+    bool OverlayDispatchers::DispatchTransform3DValue(std::any& t_attribute, Composition* t_composition, int t_attributeID, float t_zoom, glm::vec2 t_regionSize) {
+        static Transform3DOverlayState s_primaryState;
+        static std::unordered_map<std::string, Transform3DOverlayState> s_attributeStates;
+
+        Transform3D transform = std::any_cast<Transform3D>(t_attribute);
+        Transform3D reservedTransform = transform;
+        auto& project = Workspace::s_project.value();
+        auto attributeCandidate = Workspace::GetAttributeByAttributeID(t_attributeID);
+        ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+        ImVec2 cursor = ImGui::GetCursorPos();
+
+        bool transformChanged = false;
+        bool blockDragging = false;
+
+        auto originalTransformationMatrix = transform.GetTransformationMatrix();
+
+        auto stringID = attributeCandidate.has_value() ? std::to_string(t_attributeID) : std::to_string(t_attributeID) + s_attributeName;
+        Transform3DOverlayState* overlayState = nullptr;
+        if (attributeCandidate.has_value()) {
+            overlayState = &s_primaryState;
+        } else {
+            if (s_attributeStates.find(stringID) == s_attributeStates.end()) {
+                s_attributeStates[stringID] = Transform3DOverlayState();
+            }
+            overlayState = &s_attributeStates[stringID];
+        }
+
+        if (attributeCandidate.has_value()) {
+            auto& attribute = attributeCandidate.value();
+            if (attribute->packageName == RASTER_PACKAGED "transform3d_attribute") {
+                auto transform3dAttribute = (Transform3DAttribute*) attribute.get();
+                if (transform3dAttribute->m_parentAssetID > 0 && transform.parentTransform) {
+                    transform = *transform.parentTransform;
+                }
+            }
+        }
+
+        if (!project.customData.contains("Transform3DGizmoAttributeData")) {
+            project.customData["Transform3DGizmoAttributeData"] = {};
+        }
+        auto& customData = project.customData["Transform3DGizmoAttributeData"];
+        if (!customData.contains(stringID)) {
+            customData[stringID] = Json::object();
+        }
+        Json& dataDict = customData[stringID];
+        if (!dataDict.contains("GizmoMode")) {
+            dataDict["GizmoMode"] = INTERNAL_GIZMO_TRANSLATE;
+        }
+
+        ImGuizmo::SetDrawlist();
+
+        auto cameraCandidate = Workspace::GetProject().GetCamera();
+        if (cameraCandidate) {
+            auto& camera = *cameraCandidate;
+            auto projectionMatrix = camera.GetProjectionMatrix();
+            auto transformMatrix = camera.GetTransformationMatrix();
+            auto objectTransform = transform.GetTransformationMatrix();
+            auto gizmoMode = ImGuizmo::OPERATION::TRANSLATE;
+            if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_ROTATE) gizmoMode = ImGuizmo::OPERATION::ROTATE;
+            if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_SCALE) gizmoMode = ImGuizmo::OPERATION::SCALE;
+            if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_SCALE_ALL) gizmoMode = ImGuizmo::OPERATION::SCALEU;
+            if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_ALL) gizmoMode = ImGuizmo::OPERATION::UNIVERSAL;
+            ImGuizmo::Enable(true);
+            ImGuizmo::SetRect(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, t_regionSize.x, t_regionSize.y);
+            ImGuizmo::Manipulate(glm::value_ptr(transformMatrix), glm::value_ptr(projectionMatrix), gizmoMode, ImGuizmo::MODE::LOCAL, glm::value_ptr(objectTransform));
+            glm::vec3 scale;
+            glm::quat rotation;
+            glm::vec3 translation;
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::decompose(objectTransform, scale, rotation, translation, skew, perspective);
+            transform.position = translation;
+            transform.size = scale;
+            transform.rotation = glm::degrees(glm::eulerAngles(rotation));
+            if (ImGuizmo::IsUsing()) transformChanged = true;
+        }
+
+        if (!UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_T)) {
+            dataDict["GizmoMode"] = INTERNAL_GIZMO_TRANSLATE;
+        }
+
+        if (!UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_R)) {
+            dataDict["GizmoMode"] = INTERNAL_GIZMO_ROTATE;
+        }
+
+        if (!UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_S)) {
+            dataDict["GizmoMode"] = INTERNAL_GIZMO_SCALE;
+        }
+
+        if (!UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_X)) {
+            dataDict["GizmoMode"] = INTERNAL_GIZMO_SCALE_ALL;
+        }
+
+        if (!UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_U)) {
+            dataDict["GizmoMode"] = INTERNAL_GIZMO_ALL;
+        }
+
+        if (transformChanged && attributeCandidate.has_value()) {
+            auto& attribute = attributeCandidate.value();
+            float compositionRelativeTime = std::floor(project.GetCorrectCurrentTime() - t_composition->GetBeginFrame());
+            if (attribute->keyframes.size() == 1) {
+                attribute->keyframes[0].value = transform;
+            } else if (attribute->KeyframeExists(compositionRelativeTime) && attribute->keyframes.size() > 1) {
+                auto keyframe = attribute->GetKeyframeByTimestamp(compositionRelativeTime).value();
+                keyframe->value = transform;
+            } else {
+                attribute->keyframes.push_back(AttributeKeyframe(compositionRelativeTime, transform));
+            }
+        }
+
+        if (attributeCandidate.has_value()) {
+            auto& attribute = attributeCandidate.value();
+            if (attribute->packageName == RASTER_PACKAGED "transform3d_attribute") {
+                auto transform2dAttribute = (Transform3DAttribute*) attribute.get();
+                if (transform2dAttribute->m_parentAssetID > 0 && transform.parentTransform) {
+                    Transform3D correctedTransform = reservedTransform;
+                    correctedTransform.parentTransform = std::make_shared<Transform3D>(transform);
+                    transform = correctedTransform;
+                }
+            }
+        }
+        t_attribute = transform;
+        if (transformChanged) {
+            Rendering::ForceRenderFrame();
+        }
+        return !transformChanged; 
+    }
+
+
 };

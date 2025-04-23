@@ -21,6 +21,7 @@
 #include "raster.h"
 #include <filesystem>
 #include "common/zip.h"
+#include "common/transform3d.h"
 
 
 namespace Raster {
@@ -49,7 +50,8 @@ namespace Raster {
         RASTER_PACKAGED "bezier_attribute",
         RASTER_PACKAGED "convolution_kernel_attribute",
         RASTER_PACKAGED "colorspace_attribute",
-        RASTER_PACKAGED "camera_attribute"
+        RASTER_PACKAGED "camera_attribute",
+        RASTER_PACKAGED "transform3d_attribute"
     };
 
     std::vector<std::string> Workspace::s_pinnedAssetTypes = {
@@ -108,7 +110,8 @@ namespace Raster {
         RASTER_TYPE_NAME(std::nullopt),
         RASTER_TYPE_NAME(Line2D),
         RASTER_TYPE_NAME(BezierCurve),
-        RASTER_TYPE_NAME(ConvolutionKernel)
+        RASTER_TYPE_NAME(ConvolutionKernel),
+        RASTER_TYPE_NAME(Transform3D)
     };
 
     std::unordered_map<std::string, uint32_t> Workspace::s_colorMarks = {

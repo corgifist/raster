@@ -17,6 +17,7 @@
 #include "common/rendering.h"
 #include "common/line2d.h"
 #include "common/bezier_curve.h"
+#include "common/transform3d.h"
 
 #define TYPE_NAME(icon, type) icon " " #type
 #define MAKE(x) []() {return x;}
@@ -534,4 +535,5 @@ namespace Raster {
     INSTANTIATE_ATTRIBUTE_TEMPLATE(Line2D);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(BezierCurve);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(ConvolutionKernel);
+    INSTANTIATE_ATTRIBUTE_TEMPLATE(Transform3D);
 };

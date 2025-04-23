@@ -20,6 +20,34 @@
 
 namespace Raster {
 
+    static void AddLineDashed(const ImVec2& a, const ImVec2& b, ImU32 col, float thickness, unsigned int num_segments, unsigned int on_segments, unsigned int off_segments)
+    {
+        if ((col >> 24) == 0)
+            return;
+        int on = 0, off = 0;
+        ImVec2 dir = (b - a) / num_segments;
+        for (int i = 0; i <= num_segments; i++)
+        {
+            ImVec2 point(a + dir * i);
+            if(on < on_segments) {
+                ImGui::GetWindowDrawList()->PathLineTo(point);
+                on++;
+            } else if(on == on_segments && off == 0) {
+                ImGui::GetWindowDrawList()->PathLineTo(point);
+                ImGui::GetWindowDrawList()->PathStroke(col, false, thickness);
+                off++;
+            } else if(on == on_segments && off < off_segments) {
+                off++;
+            } else {
+                ImGui::GetWindowDrawList()->PathClear();
+                ImGui::GetWindowDrawList()->PathLineTo(point);
+                on=1;
+                off=0;
+            }
+        }
+        ImGui::GetWindowDrawList()->PathStroke(col, false, thickness);
+    }
+
     static ImVec2 FitRectInRect(ImVec2 dst, ImVec2 src) {
         float scale = std::min(dst.x / src.x, dst.y / src.y);
         return ImVec2{src.x * scale, src.y * scale};
@@ -158,6 +186,30 @@ namespace Raster {
 
             auto& project = Workspace::GetProject();
             bool blockPopups = false;
+            {
+                ImVec2 zoomedSize = fitTextureSize * zoom;
+                float aspect = zoomedSize.x / zoomedSize.y;
+                auto upperLeftCursor = ImVec2(GetPercentageInBounds(project.roi.upperLeft.x, -aspect, aspect) * zoomedSize.x, GetPercentageInBounds(project.roi.upperLeft.y, -1, 1) * zoomedSize.y);
+                auto bottomRightCursor = ImVec2(GetPercentageInBounds(project.roi.bottomRight.x, -aspect, aspect) * zoomedSize.x, GetPercentageInBounds(project.roi.bottomRight.y, -1, 1) * zoomedSize.y);
+                auto roiSize = bottomRightCursor - upperLeftCursor;
+                ImGui::SetCursorPos(ImVec2{
+                    ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                    ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                } + imageOffset + upperLeftCursor);
+                auto initialCursor = ImGui::GetCursorPos();
+                ImGui::SetWindowFontScale(glm::min(zoom, 1.5f));
+                AddLineDashed(ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2(roiSize.x, 0), 0xFF, 2.0f, 30, 1, 1);
+                AddLineDashed(ImGui::GetCursorScreenPos() + ImVec2(roiSize.x, 0), ImGui::GetCursorScreenPos() + roiSize, 0xFF, 2.0f, 30, 1, 1);
+                AddLineDashed(ImGui::GetCursorScreenPos() + roiSize, ImGui::GetCursorScreenPos() + ImVec2(0, roiSize.y), 0xFF, 2.0f, 30, 1, 1);
+                AddLineDashed(ImGui::GetCursorScreenPos() + ImVec2(0, roiSize.y), ImGui::GetCursorScreenPos(), 0xFF, 2.0f, 30, 1, 1);
+                std::string roiText = FormatString("%s %s: %0.2f; %0.2f", ICON_FA_EXPAND, "ROI", project.roi.upperLeft.x, project.roi.upperLeft.y);
+                ImGui::SetCursorPos({initialCursor.x - 5 - ImGui::CalcTextSize(roiText.c_str()).x, initialCursor.y});
+                ImGui::Text("%s", roiText.c_str());
+                roiText = FormatString("%s %s: %0.2f; %0.2f", ICON_FA_EXPAND, "ROI", project.roi.bottomRight.x, project.roi.bottomRight.y);
+                ImGui::SetCursorPos({initialCursor.x + roiSize.x + 5, initialCursor.y + roiSize.y - ImGui::CalcTextSize(roiText.c_str()).y});
+                ImGui::Text("%s", roiText.c_str());
+                ImGui::SetWindowFontScale(1.0f);
+            }
             if (!project.selectedAttributes.empty() && Dispatchers::s_enableOverlays || Dispatchers::s_editingROI) {
                 if (Dispatchers::s_editingROI) {
                     auto& project = Workspace::s_project.value();
@@ -192,7 +244,7 @@ namespace Raster {
                     }
                 }
                 blockPopups = Dispatchers::s_blockPopups;
-            }
+            } 
             Dispatchers::s_blockPopups = false;
 
             auto footerText = FormatString("%ix%i; %s (%s); %s %0.3f", (int) texture.width, (int) texture.height, texture.PrecisionToString().c_str(), texture.GetShortPrecisionInfo().c_str(), ICON_FA_IMAGE, (float) texture.width / (float) texture.height);

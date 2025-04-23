@@ -1,15 +1,15 @@
-#include "transform2d_attribute.h"
+#include "transform3d_attribute.h"
 #include "common/asset_base.h"
 #include "common/workspace.h"
 #include "common/asset_id.h"
 #include "common/ui_helpers.h"
 
 namespace Raster {
-    Transform2DAttribute::Transform2DAttribute() {
+    Transform3DAttribute::Transform3DAttribute() {
         AttributeBase::Initialize();
 
-        Transform2D transform;
-        transform.size = {1, 1};
+        Transform3D transform;
+        transform.size = {1, 1, 1};
 
         keyframes.push_back(
             AttributeKeyframe(
@@ -22,18 +22,16 @@ namespace Raster {
         this->m_parentAssetID = -1;
     }
 
-    std::any Transform2DAttribute::AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) {
-        Transform2D a = std::any_cast<Transform2D>(t_beginValue);
-        Transform2D b = std::any_cast<Transform2D>(t_endValue);
+    std::any Transform3DAttribute::AbstractInterpolate(std::any t_beginValue, std::any t_endValue, float t_percentage, float t_frame, Composition* composition) {
+        Transform3D a = std::any_cast<Transform3D>(t_beginValue);
+        Transform3D b = std::any_cast<Transform3D>(t_endValue);
         float t = t_percentage;
         auto& project = Workspace::GetProject();
 
-        Transform2D result;
+        Transform3D result;
         result.position = glm::mix(a.position, b.position, t);
         result.size = glm::mix(a.size, b.size, t);
-        result.anchor = glm::mix(a.anchor, b.anchor, t);
-        result.angle = glm::mix(a.angle, b.angle, t);
-        result.scale = glm::mix(a.scale, b.scale, t);
+        result.rotation = glm::mix(a.rotation, b.rotation, t);
 
         auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
         if (parentAttributeCandidate.has_value()) {
@@ -41,18 +39,18 @@ namespace Raster {
             auto parentComposition = Workspace::GetCompositionByAttributeID(parentAttribute->id).value();
             auto dynamicValue = parentAttribute->Get(project.GetCorrectCurrentTime() - parentComposition->GetBeginFrame(), parentComposition);
 
-            if (dynamicValue.type() == typeid(Transform2D)) {
-                auto transform = std::any_cast<Transform2D>(dynamicValue);
-                result.parentTransform = std::make_shared<Transform2D>(transform);
+            if (dynamicValue.type() == typeid(Transform3D)) {
+                auto transform = std::any_cast<Transform3D>(dynamicValue);
+                result.parentTransform = std::make_shared<Transform3D>(transform);
             }
         }
 
         std::optional<AbstractAsset> parentAssetCandidate = std::nullopt;
 
         if (m_parentAssetID > 0) {
-            if (m_parentAssetType == ParentAssetType::Asset) {
+            if (m_parentAssetType == ParentAssetType3D::Asset) {
                 parentAssetCandidate = Workspace::GetAssetByAssetID(m_parentAssetID);
-            } else if (m_parentAssetType == ParentAssetType::Attribute) {
+            } else if (m_parentAssetType == ParentAssetType3D::Attribute) {
                 auto assetAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAssetID);
                 if (assetAttributeCandidate.has_value()) {
                     auto& assetAttribute = assetAttributeCandidate.value();
@@ -73,9 +71,9 @@ namespace Raster {
                 auto& texture = textureCandidate.value();
                 float aspectRatio = (float) texture.width / (float) texture.height;
 
-                Transform2D correctedTransform;
-                correctedTransform.size = glm::vec2(aspectRatio, 1.0f);
-                correctedTransform.parentTransform = std::make_shared<Transform2D>(result);
+                Transform3D correctedTransform;
+                correctedTransform.size = glm::vec3(aspectRatio, 1.0f, 1.0f);
+                correctedTransform.parentTransform = std::make_shared<Transform3D>(result);
 
                 result = correctedTransform;
             }
@@ -84,34 +82,33 @@ namespace Raster {
         return result;
     }
 
-    Json Transform2DAttribute::SerializeKeyframeValue(std::any t_value) {
-        return std::any_cast<Transform2D>(t_value).Serialize();
+    Json Transform3DAttribute::SerializeKeyframeValue(std::any t_value) {
+        return std::any_cast<Transform3D>(t_value).Serialize();
     }  
 
-    std::any Transform2DAttribute::LoadKeyframeValue(Json t_value) {
-        return Transform2D(t_value);
+    std::any Transform3DAttribute::LoadKeyframeValue(Json t_value) {
+        return Transform3D(t_value);
     }
 
-    void Transform2DAttribute::RenderKeyframes() {
+    void Transform3DAttribute::RenderKeyframes() {
         for (auto& keyframe : keyframes) {
             RenderKeyframe(keyframe);
         }
     }
 
-    std::any Transform2DAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
+    std::any Transform3DAttribute::AbstractRenderLegend(Composition* t_composition, std::any t_originalValue, bool& isItemEdited) {
         auto& project = Workspace::s_project.value();
-        Transform2D transform = std::any_cast<Transform2D>(t_originalValue);
-
+        Transform3D transform = std::any_cast<Transform3D>(t_originalValue);
 
         if (m_parentAssetID > 0) {
-            if (m_parentAssetType == ParentAssetType::Asset) {
+            if (m_parentAssetType == ParentAssetType3D::Asset) {
                 auto testAssetCandidate = Workspace::GetAssetByAssetID(m_parentAssetID);
                 if (testAssetCandidate.has_value()) {
                     if (transform.parentTransform) {
                         transform = *transform.parentTransform;
                     }
                 }
-            } else if (m_parentAssetType == ParentAssetType::Attribute) {
+            } else if (m_parentAssetType == ParentAssetType3D::Attribute) {
                 auto assetAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAssetID);
                 if (assetAttributeCandidate.has_value()) {
                     auto& assetAttribute = assetAttributeCandidate.value();
@@ -131,10 +128,10 @@ namespace Raster {
         auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
         auto parentAssetCandidate = Workspace::GetAssetByAssetID(m_parentAssetID);
         std::string buttonText = FormatString("%s %s | %s %s", parentAssetCandidate ? ICON_FA_FOLDER_OPEN : ICON_FA_FOLDER_CLOSED, parentAssetCandidate ? (*parentAssetCandidate)->name.c_str() : Localization::GetString("NO_PARENT").c_str(), ICON_FA_SITEMAP, parentAttributeCandidate.has_value() ? parentAttributeCandidate.value()->name.c_str() : Localization::GetString("NO_PARENT").c_str());
-        if (!project.customData.contains("Transform2DAttributeData")) {
-            project.customData["Transform2DAttributeData"] = {};
+        if (!project.customData.contains("Transform3DAttributeData")) {
+            project.customData["Transform3DAttributeData"] = {};
         }
-        auto& customData = project.customData["Transform2DAttributeData"];
+        auto& customData = project.customData["Transform3DAttributeData"];
         auto stringID = std::to_string(id);
         if (!customData.contains(stringID)) {
             customData[stringID] = false;
@@ -176,37 +173,37 @@ namespace Raster {
         }
         
         if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(TRANSFORM2D_PARENT_PAYLOAD)) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(TRANSFORM3D_PARENT_PAYLOAD)) {
                 m_parentAttributeID = *((int*) payload->Data);
             }
 
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ASSET_ATTRIBUTE_DRAG_DROP_PAYLOAD)) {
                 int assetAttributeID = *((int*) payload->Data);
-                m_parentAssetType = ParentAssetType::Attribute;
+                m_parentAssetType = ParentAssetType3D::Attribute;
                 m_parentAssetID = assetAttributeID;
             }
 
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ASSET_MANAGER_DRAG_DROP_PAYLOAD)) {
                 int assetID = *((int*) payload->Data);
-                m_parentAssetType = ParentAssetType::Asset;
+                m_parentAssetType = ParentAssetType3D::Asset;
                 m_parentAssetID = assetID;
             }
 
             ImGui::EndDragDropTarget();
         }
         if (ImGui::BeginDragDropSource()) {
-            ImGui::SetDragDropPayload(TRANSFORM2D_PARENT_PAYLOAD, &id, sizeof(id));
+            ImGui::SetDragDropPayload(TRANSFORM3D_PARENT_PAYLOAD, &id, sizeof(id));
             ImGui::Text("%s %s: %s", ICON_FA_SITEMAP, Localization::GetString("SET_AS_PARENT_ATTRIBUTE").c_str(), name.c_str());
             ImGui::EndDragDropSource();
         }
         if (ImGui::BeginPopup(FormatString("##%iattribute", id).c_str())) {
-            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_UP_DOWN_LEFT_RIGHT, Localization::GetString("EDIT_VALUE").c_str(), name.c_str()).c_str());
+            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_CUBE, Localization::GetString("EDIT_VALUE").c_str(), name.c_str()).c_str());
             
             ImGui::AlignTextToFramePadding();
             ImGui::Text("%s Position", ICON_FA_UP_DOWN_LEFT_RIGHT);
             ImGui::SameLine();
             float cursorX = ImGui::GetCursorPosX();
-            ImGui::DragFloat2("##dragPosition", glm::value_ptr(transform.position), 0.05f);
+            ImGui::DragFloat3("##dragPosition", glm::value_ptr(transform.position), 0.05f);
             isItemEdited = isItemEdited || ImGui::IsItemEdited();
             
 
@@ -219,38 +216,29 @@ namespace Raster {
             }
             ImGui::SetItemTooltip("%s %s", ICON_FA_LINK, "Link Dimensions");
             ImGui::SameLine(0, 2.0f);
-            glm::vec2 reservedSize = transform.size;
+            glm::vec3 reservedSize = transform.size;
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::DragFloat2("##dragSize", glm::value_ptr(transform.size), 0.05f);
+                ImGui::DragFloat3("##dragSize", glm::value_ptr(transform.size), 0.05f);
             ImGui::PopItemWidth();
             isItemEdited = isItemEdited || ImGui::IsItemEdited();
             if (linkedSize) {
                 if (reservedSize.x != transform.size.x) {
                     transform.size.y = transform.size.x;
+                    transform.size.z = transform.size.x;
                 } else if (reservedSize.y != transform.size.y) {
                     transform.size.x = transform.size.y;
+                    transform.size.z = transform.size.y;
+                } else if (reservedSize.z != transform.size.z) {
+                    transform.size.x = transform.size.z;
+                    transform.size.y = transform.size.z;
                 }
             }
 
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s Scale", ICON_FA_EXPAND);
+            ImGui::Text("%s Rotation", ICON_FA_ROTATE);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
-            ImGui::DragFloat("##dragScale", &transform.scale, 0.05f);
-            isItemEdited = isItemEdited || ImGui::IsItemEdited();
-
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s Anchor", ICON_FA_ANCHOR);
-            ImGui::SameLine();
-            ImGui::SetCursorPosX(cursorX);
-            ImGui::DragFloat2("##dragAnchor", glm::value_ptr(transform.anchor), 0.05f);
-            isItemEdited = isItemEdited || ImGui::IsItemEdited();
-
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s Angle", ICON_FA_ROTATE);
-            ImGui::SameLine();
-            ImGui::SetCursorPosX(cursorX);
-            ImGui::DragFloat("##dragAngle", &transform.angle, 0.5f);
+            ImGui::DragFloat3("##dragAngle", glm::value_ptr(transform.rotation), 0.5f);
             isItemEdited = isItemEdited || ImGui::IsItemEdited();
             
             std::string parentAttributePopupID = FormatString("##parentAttributeOptionsPopup%i", id);
@@ -283,7 +271,7 @@ namespace Raster {
         return transform;
     }
 
-    Json Transform2DAttribute::AbstractSerialize() {
+    Json Transform3DAttribute::AbstractSerialize() {
         return {
             {"ParentAttributeID", m_parentAttributeID},
             {"ParentAssetID", m_parentAssetID},
@@ -291,7 +279,7 @@ namespace Raster {
         };
     }
 
-    bool Transform2DAttribute::RenderParentAttributePopup() {
+    bool Transform3DAttribute::RenderParentAttributePopup() {
         bool openMoreAttributesPopup = false;
         if (ImGui::BeginMenu(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_PARENT_ATTRIBUTE").c_str()).c_str())) {
             ImGui::SeparatorText(FormatString("%s %s", ICON_FA_LIST, Localization::GetString("SELECT_PARENT_ATTRIBUTE").c_str()).c_str());
@@ -299,9 +287,6 @@ namespace Raster {
             ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
             auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
             bool oneCandidateWasDisplayed = false;
-            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
-                m_parentAttributeID = -1;
-            }
             bool mustShowByID = false;
             for (auto& attribute : parentComposition->attributes) {
                 if (std::to_string(attribute->id) == ReplaceString(attributeFilter, " ", "")) {
@@ -340,9 +325,6 @@ namespace Raster {
             auto& project = Workspace::GetProject();
             std::function<void(std::vector<AbstractAsset>&)> renderAssets = [&](std::vector<AbstractAsset>& t_assets) {
                 bool hasCandidates = false;
-                if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
-                    m_parentAssetID = -1;
-                }
                 for (auto& asset : t_assets) {
                     if (!assetFilter.empty() && LowerCase(ReplaceString(asset->name, " ", "")).find(LowerCase(ReplaceString(assetFilter, " ", ""))) == std::string::npos) continue;
                     hasCandidates = true;
@@ -377,15 +359,12 @@ namespace Raster {
         return openMoreAttributesPopup;
     }
 
-    void Transform2DAttribute::RenderMoreAttributesPopup() {
+    void Transform3DAttribute::RenderMoreAttributesPopup() {
         ImGui::SeparatorText(FormatString("%s %s %s", ICON_FA_GLOBE, ICON_FA_LINK, Localization::GetString("SELECT_EXTERNAL_PARENT_ATTRIBUTE").c_str()).c_str());
         static std::string attributeFilter = "";
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::InputTextWithHint("##attributeFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ATTRIBUTE_ID").c_str()).c_str(), &attributeFilter);
         ImGui::PopItemWidth();
-        if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
-            m_parentAttributeID = -1;
-        }
 
         auto& project = Workspace::s_project.value();
         for (auto& composition : project.compositions) {
@@ -424,18 +403,18 @@ namespace Raster {
         }
     }
 
-    void Transform2DAttribute::Load(Json t_data) {
+    void Transform3DAttribute::Load(Json t_data) {
         m_parentAttributeID = t_data["ParentAttributeID"];
         m_parentAssetID = t_data["ParentAssetID"];
-        m_parentAssetType = static_cast<ParentAssetType>(t_data["ParentAssetType"].get<int>());
+        m_parentAssetType = static_cast<ParentAssetType3D>(t_data["ParentAssetType"].get<int>());
     }
 
-    void Transform2DAttribute::AbstractRenderDetails() {
+    void Transform3DAttribute::AbstractRenderDetails() {
         auto& project = Workspace::s_project.value();
         auto parentComposition = Workspace::GetCompositionByAttributeID(id).value();
     }
 
-    void Transform2DAttribute::AbstractRenderPopup() {
+    void Transform3DAttribute::AbstractRenderPopup() {
         if (RenderParentAttributePopup()) {
             ImGui::OpenPopup(FormatString("%imoreAttributes", id).c_str());
         }
@@ -445,13 +424,13 @@ namespace Raster {
 
 extern "C" {
     RASTER_DL_EXPORT Raster::AbstractAttribute SpawnAttribute() {
-        return (Raster::AbstractAttribute) std::make_shared<Raster::Transform2DAttribute>();
+        return (Raster::AbstractAttribute) std::make_shared<Raster::Transform3DAttribute>();
     }
 
     RASTER_DL_EXPORT Raster::AttributeDescription GetDescription() {
         return Raster::AttributeDescription{
-            .packageName = RASTER_PACKAGED "transform2d_attribute",
-            .prettyName = ICON_FA_UP_DOWN_LEFT_RIGHT " Transform2D"
+            .packageName = RASTER_PACKAGED "transform3d_attribute",
+            .prettyName = ICON_FA_CUBE " Transform3D"
         };
     }
 }

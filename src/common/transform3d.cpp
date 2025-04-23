@@ -2,9 +2,8 @@
 
 namespace Raster {
     Transform3D::Transform3D() {
-        this->position = this->anchor = this->rotation = glm::vec3(0);
+        this->position = this->rotation = glm::vec3(0);
         this->size = glm::vec3(1);
-        this->scale = 1.0f;
 
         this->parentTransform = nullptr;
     }
@@ -16,26 +15,19 @@ namespace Raster {
         this->size = {
             t_data["Size"][0], t_data["Size"][1], t_data["Size"][2]
         };
-        this->anchor = {
-            t_data["Anchor"][0], t_data["Anchor"][1], t_data["Anchor"][2]
-        };
         this->rotation = {
             t_data["Rotation"][0], t_data["Rotation"][1], t_data["Rotation"][2]
         };
-        if (t_data.contains("Scale")) this->scale = t_data["Scale"];
-        else this->scale = 1.0f;
         this->parentTransform = nullptr;
     }
 
     glm::mat4 Transform3D::GetTransformationMatrix() {
         auto transform = glm::identity<glm::mat4>();
         transform = glm::translate(transform, position);
-        transform = glm::translate(transform, anchor);
         transform = glm::rotate(transform, glm::radians(rotation.y), glm::vec3(1, 0, 0));
         transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(0, 1, 0));
         transform = glm::rotate(transform, glm::radians(rotation.z), glm::vec3(0, 0, 1));
-        transform = glm::translate(transform, -anchor); 
-        transform = glm::scale(transform, size * scale); 
+        transform = glm::scale(transform, size); 
 
         return GetParentMatrix() * transform;
     }
@@ -69,9 +61,7 @@ namespace Raster {
         return {
             {"Position", {position.x, position.y, position.z}},
             {"Size", {size.x, size.y, size.z}},
-            {"Anchor", {anchor.x, anchor.y, anchor.z}},
             {"Rotation", {rotation.x, rotation.y, rotation.z}},
-            {"Scale", scale}
         };
     }
 };

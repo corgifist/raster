@@ -378,6 +378,7 @@
     "ESTIMATED_CAMERA_FOV": "Estimated Camera FOV",
     "CAMERA_FILM_SIZE": "Camera Film Size",
     "CAMERA_FILM_LENGTH": "Camera Film Length",
+    "CAMERA_FILM_SIZE_LENGTH": "Camera Film Size / Length",
     "ORTHO_WIDTH": "Ortho Width",
     "PARENT_ATTRIBUTE": "Parent Attribute",
     "ENABLE_DISABLE_CAMERA": "Enable/Disable Camera",
@@ -386,7 +387,8 @@
     "FAR_PLANE": "Far Plane",
     "NO_ACTIVE_CAMERA": "No Active Camera",
     "FOV": "FOV",
-    "NEAR_FAR_PLANE": "Near/Far Plane",
+    "NEAR_FAR_PLANE": "Near / Far Plane",
     "FILM_LENGTH": "Film Length",
-    "FILM_SIZE": "Film Size"
+    "FILM_SIZE": "Film Size",
+    "FILM_SIZE_LENGTH": "Film Size / Length"
 }

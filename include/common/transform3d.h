@@ -9,8 +9,7 @@ namespace Raster {
     struct Transform3D;
 
     struct Transform3D {
-        glm::vec3 position, size, anchor, rotation;
-        float scale;
+        glm::vec3 position, size, rotation;
 
         std::shared_ptr<Transform3D> parentTransform;
 

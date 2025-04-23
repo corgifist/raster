@@ -74,17 +74,15 @@ namespace Raster {
 
             if (camera.persp) {
                 ImGui::AlignTextToFramePadding();
-                ImGui::Text("%s %s", ICON_FA_LEFT_RIGHT, Localization::GetString("NEAR_PLANE").c_str());
+                ImGui::Text("%s %s", ICON_FA_LEFT_RIGHT, Localization::GetString("NEAR_FAR_PLANE").c_str());
                 ImGui::SameLine();
                 s_aligner.AlignCursor();
-                ImGui::DragFloat("##nearPlane", &camera.perspNear, 0.001);
-                if (ImGui::IsItemEdited()) isItemEdited = true;
-    
-                ImGui::AlignTextToFramePadding();
-                ImGui::Text("%s %s", ICON_FA_LEFT_RIGHT, Localization::GetString("FAR_PLANE").c_str());
-                ImGui::SameLine();
-                s_aligner.AlignCursor();
-                ImGui::DragFloat("##farPlane", &camera.perspFar, 0.001);
+                float planes[] = {
+                    camera.perspNear, camera.perspFar
+                };
+                ImGui::DragFloat2("##nearPlane", planes, 0.001);
+                camera.perspNear = planes[0];
+                camera.perspFar = planes[1];
                 if (ImGui::IsItemEdited()) isItemEdited = true;
 
                 if (camera.customF) {
@@ -96,17 +94,15 @@ namespace Raster {
                     if (ImGui::IsItemEdited()) isItemEdited = true;
                 } else {
                     ImGui::AlignTextToFramePadding();
-                    ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("CAMERA_FILM_SIZE").c_str());
+                    ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("CAMERA_FILM_SIZE_LENGTH").c_str());
                     ImGui::SameLine();
                     s_aligner.AlignCursor();
-                    ImGui::DragFloat("##sizeSlider", &camera.fSize, 1.0f, 0.0f, 0.0f, "%0.1f mm");
-                    if (ImGui::IsItemEdited()) isItemEdited = true;
-
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("%s %s", ICON_FA_EXPAND, Localization::GetString("CAMERA_FILM_LENGTH").c_str());
-                    ImGui::SameLine();
-                    s_aligner.AlignCursor();
-                    ImGui::DragFloat("##lengthSlider", &camera.fLength, 1.0f, 0.0f, 0.0f, "%0.1f mm");
+                    float parameters[] = {
+                        camera.fSize, camera.fLength
+                    };
+                    ImGui::DragFloat2("##sizeSlider", parameters, 1.0f, 0.0f, 0.0f, "%0.1f mm");
+                    camera.fSize = parameters[0];
+                    camera.fLength = parameters[1];
                     if (ImGui::IsItemEdited()) isItemEdited = true;
 
                     ImGui::Text("%s %s: %0.2f", ICON_FA_GEARS, Localization::GetString("ESTIMATED_CAMERA_FOV").c_str(), camera.GetF());

@@ -27,7 +27,7 @@ namespace Raster {
     }
 
     AsyncUploadInfoID AsyncUpload::GenerateTextureFromImage(std::shared_ptr<Image> image) {
-        int uploadID = s_uploadIdCache++;
+        int uploadID = ++s_uploadIdCache;
         AsyncUploadInfo info;
         info.image = image;
         info.ready = false;
@@ -41,7 +41,7 @@ namespace Raster {
     void AsyncUpload::DestroyTexture(Texture texture) {
         AsyncUploadInfo info;
         info.deleteTexture = texture;
-        SyncPutAsyncUploadInfo(s_uploadIdCache++, info);
+        SyncPutAsyncUploadInfo(++s_uploadIdCache, info);
     }
 
     bool AsyncUpload::IsUploadReady(AsyncUploadInfoID t_id) {

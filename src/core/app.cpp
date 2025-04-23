@@ -29,6 +29,7 @@
 #include "common/audio_memory_management.h"
 #include "common/examples.h"
 #include "common/color_management.h"
+#include "../ImGui/ImGuizmo.h"
 
 using namespace av;
 
@@ -267,6 +268,7 @@ namespace Raster {
         }
 
         GPU::BeginFrame();
+            ImGuizmo::BeginFrame();
             if (Workspace::s_project.has_value() && !UIHelpers::AnyItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Space)) {
                 Workspace::GetProject().playing = !Workspace::GetProject().playing;
             }

@@ -300,8 +300,7 @@ namespace Raster {
             if (camera.customF) {
                 ImGui::Text("%s %s: %0.2f", ICON_FA_EYE, Localization::GetString("FOV").c_str(), camera.GetF());
             } else {
-                ImGui::Text("%s %s: %0.2f", ICON_FA_LEFT_RIGHT, Localization::GetString("FILM_LENGTH").c_str(), camera.fLength);
-                ImGui::Text("%s %s: %0.2f", ICON_FA_EXPAND, Localization::GetString("FILM_SIZE").c_str(), camera.fSize);
+                ImGui::Text("%s %s: %0.2f / %0.2f", ICON_FA_EXPAND, Localization::GetString("FILM_SIZE_LENGTH").c_str(), camera.fSize, camera.fLength);
                 ImGui::Text("%s %s: %0.2f", ICON_FA_EYE, Localization::GetString("ESTIMATED_CAMERA_FOV").c_str(), camera.GetF());
             }
         } else {

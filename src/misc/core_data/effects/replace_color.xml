@@ -1,0 +1,64 @@
+<effect>
+    <description name="Replace Color" packageName="replace_color" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="SourceColor" type="glm::vec4" value="1.0;1.0;1.0;1.0"/>
+        <attribute name="DestinationColor" type="glm::vec4" value="1.0;1.0;1.0;1.0"/>
+        <attribute name="Threshold" type="float" value="0.5"/>
+        <attribute name="Softness" type="float" value="0.3"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="replace_color/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uSourceColor" stage="fragment">
+                <value attribute="SourceColor" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uDestinationColor" stage="fragment">
+                <value attribute="DestinationColor" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uThreshold" stage="fragment">
+                <value attribute="Threshold" type="float"/>
+            </uniform>
+            <uniform name="uSoftness" stage="fragment">
+                <value attribute="Softness" type="float"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColor" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="SourceColor">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="DestinationColor">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="Threshold">
+            <icon icon="ICON_FA_GEARS"/>
+            <sliderRange min="0.0" max="1.0"/>
+        </property>
+        <property name="Softness">
+            <icon icon="ICON_FA_GEARS"/>
+            <sliderRange min="0.0" max="1.0"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_DROPLET" />
+</effect>

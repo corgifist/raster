@@ -4,6 +4,7 @@
 #include "compositor/texture_interoperability.h"
 #include "font/IconsFontAwesome5.h"
 #include "gpu/gpu.h"
+#include "common/transform3d.h"
 
 namespace Raster {
 
@@ -17,13 +18,7 @@ namespace Raster {
         SetupAttribute("Base", Framebuffer());
         SetupAttribute("InputGeometryBuffer", Framebuffer());
         SetupAttribute("Texture", Texture());
-        SetupAttribute("Position", glm::vec3(0, 0, 0));
-        SetupAttribute("Size", glm::vec2(1, 1));
-        SetupAttribute("Scale", 1.0f);
-        SetupAttribute("Rotation", glm::vec3(0, 0, 0));
-        SetupAttribute("Anchor", glm::vec3(0, 0, 0));
-        SetupAttribute("FOV", 45.0f);
-        SetupAttribute("RespectAspectRatio", true);
+        SetupAttribute("Transform", Transform3D());
 
         AddInputPin("Base");
         AddOutputPin("Output");
@@ -68,18 +63,12 @@ namespace Raster {
         auto baseCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("Base", t_contextData));
         auto inputGeometryBufferCandidate = TextureInteroperability::GetFramebuffer(GetDynamicAttribute("InputGeometryBuffer", t_contextData));
         auto textureCandidate = TextureInteroperability::GetTexture(GetDynamicAttribute("Texture", t_contextData));
-        auto positionCandidate = GetAttribute<glm::vec3>("Position", t_contextData);
-        auto sizeCandidate = GetAttribute<glm::vec2>("Size", t_contextData);
-        auto scaleCandidate = GetAttribute<float>("Scale", t_contextData);
-        auto rotationCandidate = GetAttribute<glm::vec3>("Rotation", t_contextData);
-        auto anchorCandidate = GetAttribute<glm::vec3>("Anchor", t_contextData);
-        auto respectAspectRatioCandidate = GetAttribute<bool>("RespectAspectRatio", t_contextData);
-        auto fovCandidate = GetAttribute<float>("FOV", t_contextData);
+        auto transformCandidate = GetAttribute<Transform3D>("Transform", t_contextData);
         auto& framebuffer = m_framebuffer.Get(baseCandidate);
         auto& geometryBuffer = m_geometryBuffer.Get(baseCandidate);
         auto& temporaryBuffer = m_temporaryBuffer.Get(baseCandidate);
 
-        if (s_pipeline && inputGeometryBufferCandidate && textureCandidate && positionCandidate && sizeCandidate && scaleCandidate && rotationCandidate && anchorCandidate && fovCandidate && respectAspectRatioCandidate) {
+        if (s_pipeline && inputGeometryBufferCandidate && textureCandidate && transformCandidate) {
             auto& pipeline = s_pipeline.value();
             auto& combinerPipeline = *s_combinerPipeline;
             auto& geometryPipeline = *s_geometryPipeline;
@@ -87,28 +76,12 @@ namespace Raster {
             GPU::BindPipeline(pipeline);
             GPU::BindFramebuffer(framebuffer);
             auto& texture = *textureCandidate;
-            auto position = *positionCandidate;
-            auto& size = *sizeCandidate;
-            auto& scale = *scaleCandidate;
-            auto& rotation = *rotationCandidate;
-            auto& anchor = *anchorCandidate;
-            auto& respectAspectRation = *respectAspectRatioCandidate;
-            auto& fov = *fovCandidate;
+            auto& transformObject = *transformCandidate;
             auto& camera = *cameraCandidate;
 
             auto aspectRatio = texture.handle ? (float) texture.width / (float) texture.height : 1.0f;
-            if (texture.handle) {
-                size *= glm::vec2((float) texture.width / (float) texture.height, 1);
-            }
             auto projectionMatrix = camera.GetProjectionMatrix();
-            auto transform = glm::identity<glm::mat4>();
-            transform = glm::translate(transform, position);
-            transform = glm::translate(transform, anchor);
-            transform = glm::rotate(transform, glm::radians(rotation.y), glm::vec3(1, 0, 0));
-            transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(0, 1, 0));
-            transform = glm::rotate(transform, glm::radians(rotation.z), glm::vec3(0, 0, 1));
-            transform = glm::translate(transform, -anchor); 
-            transform = glm::scale(transform, glm::vec3(size * scale, 1.0)); 
+            auto transform = transformObject.GetTransformationMatrix();
             transform = camera.GetTransformationMatrix() * transform;
 
             GPU::SetShaderUniform(pipeline.vertex, "uMatrix", projectionMatrix * transform);
@@ -157,32 +130,8 @@ namespace Raster {
     }
 
     void BasicPerspective::AbstractRenderProperties() {
-        RenderAttributeProperty("Position", {
-            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT),
-            SliderStepMetadata(0.05)
-        });
-        RenderAttributeProperty("Size", {
-            IconMetadata(ICON_FA_EXPAND),
-            SliderStepMetadata(0.05)
-        });
-        RenderAttributeProperty("Scale", {
-            IconMetadata(ICON_FA_EXPAND),
-            SliderStepMetadata(0.05)
-        });
-        RenderAttributeProperty("Rotation", {
-            IconMetadata(ICON_FA_ROTATE),
-            SliderStepMetadata(0.05)
-        });
-        RenderAttributeProperty("Anchor", {
-            IconMetadata(ICON_FA_ANCHOR),
-            SliderStepMetadata(0.05)
-        });
-        RenderAttributeProperty("FOV", {
-            IconMetadata(ICON_FA_CAMERA),
-            SliderRangeMetadata(1, 360)
-        });
-        RenderAttributeProperty("RespectAspectRatio", {
-            IconMetadata(ICON_FA_IMAGE)
+        RenderAttributeProperty("Transform", {
+            IconMetadata(ICON_FA_UP_DOWN_LEFT_RIGHT)
         });
     }
 

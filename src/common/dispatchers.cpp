@@ -20,6 +20,7 @@
 #include "common/choice.h"
 #include "common/line2d.h"
 #include "common/colorspace.h"
+#include "common/transform3d.h"
 
 #define TYPE_PAIR(T1, T2) std::type_index(typeid(T1)), std::type_index(typeid(T2))
 
@@ -99,7 +100,8 @@ namespace Raster {
             {ATTRIBUTE_TYPE(Transform2D), OverlayDispatchers::DispatchTransform2DValue},
             {ATTRIBUTE_TYPE(Line2D), OverlayDispatchers::DispatchLine2DValue},
             {ATTRIBUTE_TYPE(ROI), OverlayDispatchers::DispatchROIValue},
-            {ATTRIBUTE_TYPE(BezierCurve), OverlayDispatchers::DispatchBezierCurve}
+            {ATTRIBUTE_TYPE(BezierCurve), OverlayDispatchers::DispatchBezierCurve},
+            {ATTRIBUTE_TYPE(Transform3D), OverlayDispatchers::DispatchTransform3DValue}
         };
 
         Dispatchers::s_conversionDispatchers = {

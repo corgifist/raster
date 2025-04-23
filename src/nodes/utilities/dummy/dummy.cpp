@@ -16,7 +16,7 @@ namespace Raster {
         AbstractPinMap result = {};
         auto inputCandidate = GetDynamicAttribute("Input", t_contextData);
         if (inputCandidate) {
-            TryAppendAbstractPinMap(result, " ", *inputCandidate);
+            TryAppendAbstractPinMap(result, "     ", *inputCandidate);
         }
         return result;
     }

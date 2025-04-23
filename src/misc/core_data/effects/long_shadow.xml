@@ -1,0 +1,65 @@
+<effect>
+    <description name="Long Shadow" packageName="long_shadow" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Color" type="glm::vec4" value="1.0;1.0;1.0;1.0"/>
+        <attribute name="Angle" type="float" value="0.0"/>
+        <attribute name="Length" type="float" value="0.1"/>
+        <attribute name="Quality" type="float" value="0.25"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="long_shadow/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uLength" stage="fragment">
+                <value attribute="Length" type="float"/>
+            </uniform>
+            <uniform name="uQuality" stage="fragment">
+                <value attribute="Quality" type="float"/>
+            </uniform>
+            <uniform name="uAngle" stage="fragment">
+                <value attribute="Angle" type="float"/>
+            </uniform>
+            <uniform name="uShadowColor" stage="fragment">
+                <value attribute="Color" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColor" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Color">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="Angle">
+            <icon icon="ICON_FA_ROTATE"/>
+            <sliderStep step="0.5"/>
+        </property>
+        <property name="Length">
+            <sliderStep step="0.05"/>
+            <icon icon="ICON_FA_LEFT_RIGHT"/>
+        </property>
+        <property name="Quality">
+            <sliderRange min="0.05" max="1.0"/>
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_LIGHTBULB" />
+</effect>

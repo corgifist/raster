@@ -438,7 +438,7 @@ namespace Raster {
             if (ImGui::IsItemEdited()) Rendering::ForceRenderFrame();
 
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s Rotation", ICON_FA_ROTATE);
+            ImGui::Text("%s Angle", ICON_FA_ROTATE);
             ImGui::SameLine();
             ImGui::SetCursorPosX(cursorX);
             ImGui::DragFloat("##dragAngle", &transform.angle, 0.5f);
