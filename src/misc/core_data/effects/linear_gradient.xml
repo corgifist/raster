@@ -46,11 +46,11 @@
     </rendering>
 
     <properties>
-        <property name="UseYPlane">
-            <icon icon="ICON_FA_UP_DOWN"/>
-        </property>
         <property name="Gradient">
             <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="UseYPlane">
+            <icon icon="ICON_FA_UP_DOWN"/>
         </property>
         <property name="Opacity">
             <sliderBase base="100"/>

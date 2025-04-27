@@ -93,6 +93,7 @@ namespace Raster {
 
         void OnTimelineSeek();
         std::string GetAttributeName(std::string t_attributeName);
+        std::optional<std::any> GetAttributeDefaultValue(std::string t_name);
 
         protected:
         SynchronizedValue<std::unordered_map<std::string, std::any>> m_attributes;

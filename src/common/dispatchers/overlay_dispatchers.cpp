@@ -939,7 +939,6 @@ namespace Raster {
             dataDict["GizmoMode"] = INTERNAL_GIZMO_TRANSLATE;
         }
 
-        ImGuizmo::SetDrawlist();
 
         auto cameraCandidate = Workspace::GetProject().GetCamera();
         if (cameraCandidate) {
@@ -958,8 +957,10 @@ namespace Raster {
             if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_SCALE) gizmoMode = ImGuizmo::OPERATION::SCALE;
             if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_SCALE_ALL) gizmoMode = ImGuizmo::OPERATION::SCALEU;
             if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_ALL) gizmoMode = ImGuizmo::OPERATION::UNIVERSAL;
-            ImGuizmo::Enable(true);
             ImGuizmo::SetRect(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, t_regionSize.x, t_regionSize.y);
+            ImGuizmo::SetDrawlist();
+            ImGui::GetWindowDrawList()->PushClipRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), true);
+            ImGuizmo::Enable(true);
             ImGuizmo::SetOrthographic(false);
 
             glm::mat4 compatibleMatrix;
@@ -977,7 +978,6 @@ namespace Raster {
             ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), glm::value_ptr(decomposedDeltaPosition), glm::value_ptr(decomposedDeltaRotation), glm::value_ptr(decomposedDeltaSize));
             ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(compatibleMatrix), glm::value_ptr(newPosition), glm::value_ptr(newRotation), glm::value_ptr(newSize));
 
-            // RASTER_LOG(newRotation.x << " " << newRotation.y << " " << newRotation.z);
 
             transform.position += decomposedDeltaPosition;
             transform.rotation += newRotation - transform.rotation;
@@ -988,6 +988,7 @@ namespace Raster {
             transform.rotation.z *= -1;
             transform.position.z *= -1;
 
+            ImGui::GetWindowDrawList()->PopClipRect();
             if (ImGuizmo::IsUsing()) transformChanged = true;
         }
 

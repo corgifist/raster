@@ -143,17 +143,17 @@ namespace Raster {
                 referenceFramebuffer->height = pass.outputHeight;
             }
             if (pass.outputBitDepth != "Output") {
-                if (referenceFramebuffer->attachments.empty()) {
+                if (referenceFramebuffer && referenceFramebuffer->attachments.empty()) {
                     referenceFramebuffer->attachments.push_back(Texture());
                 }
-                if (pass.outputBitDepth == "Float32") {
+                if (referenceFramebuffer && pass.outputBitDepth == "Float32") {
                     referenceFramebuffer->attachments[0].precision = TexturePrecision::Full;
                 }
-                if (pass.outputBitDepth == "Float16") {
+                if (referenceFramebuffer && pass.outputBitDepth == "Float16") {
                     referenceFramebuffer->attachments[0].precision = TexturePrecision::Half;
                 }
             } else {
-                if (referenceFramebuffer->attachments.empty()) {
+                if (referenceFramebuffer && referenceFramebuffer->attachments.empty()) {
                     referenceFramebuffer->attachments.push_back(Texture());
                 }
                 if (referenceFramebuffer && !referenceFramebuffer->attachments.empty()) {

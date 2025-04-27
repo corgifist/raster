@@ -197,16 +197,27 @@ namespace Raster {
                     ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
                 } + imageOffset + upperLeftCursor);
                 auto initialCursor = ImGui::GetCursorPos();
+                auto outlineUpperLeftCursor = ImVec2(GetPercentageInBounds(project.roi.upperLeft.x, -aspect, aspect) * zoomedSize.x, (1 - GetPercentageInBounds(project.roi.upperLeft.y, -1, 1)) * zoomedSize.y);
+                auto outlineBottomRightCursor = ImVec2(GetPercentageInBounds(project.roi.bottomRight.x, -aspect, aspect) * zoomedSize.x, (1 - GetPercentageInBounds(project.roi.bottomRight.y, -1, 1)) * zoomedSize.y);
+                auto outlineRoiSize = outlineBottomRightCursor - outlineUpperLeftCursor;
+                auto outlineInitialCursor = ImVec2{
+                    ImGui::GetWindowSize().x / 2.0f - fitTextureSize.x * zoom / 2,
+                    ImGui::GetWindowSize().y / 2.0f - fitTextureSize.y * zoom / 2
+                } + imageOffset + outlineUpperLeftCursor;
+                auto fixedUpperLeft = ImGui::GetWindowPos() + ImVec2{initialCursor.x + roiSize.x, initialCursor.y};
+                auto fixedBottomRight = ImGui::GetWindowPos() + ImVec2{initialCursor.x, initialCursor.y + roiSize.y};
+                auto fixedOutlineUpperLeft = ImGui::GetWindowPos() + ImVec2{outlineInitialCursor.x + outlineRoiSize.x, outlineInitialCursor.y};
+                auto fixedOutlineBottomRight = ImGui::GetWindowPos() + ImVec2{outlineInitialCursor.x, outlineInitialCursor.y + outlineRoiSize.y};
                 ImGui::SetWindowFontScale(glm::min(zoom, 1.5f));
-                AddLineDashed(ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2(roiSize.x, 0), 0xFF, 2.0f, 30, 1, 1);
-                AddLineDashed(ImGui::GetCursorScreenPos() + ImVec2(roiSize.x, 0), ImGui::GetCursorScreenPos() + roiSize, 0xFF, 2.0f, 30, 1, 1);
-                AddLineDashed(ImGui::GetCursorScreenPos() + roiSize, ImGui::GetCursorScreenPos() + ImVec2(0, roiSize.y), 0xFF, 2.0f, 30, 1, 1);
-                AddLineDashed(ImGui::GetCursorScreenPos() + ImVec2(0, roiSize.y), ImGui::GetCursorScreenPos(), 0xFF, 2.0f, 30, 1, 1);
-                std::string roiText = FormatString("%s %s: %0.2f; %0.2f", ICON_FA_EXPAND, "ROI", project.roi.upperLeft.x, project.roi.upperLeft.y);
-                ImGui::SetCursorPos({initialCursor.x - 5 - ImGui::CalcTextSize(roiText.c_str()).x, initialCursor.y});
+                AddLineDashed(fixedOutlineUpperLeft, ImVec2(fixedOutlineBottomRight.x, fixedOutlineUpperLeft.y), IM_COL32(255, 255, 255, 128), 2.0f, 30, 1, 1);
+                AddLineDashed(ImVec2(fixedOutlineBottomRight.x, fixedOutlineUpperLeft.y), fixedOutlineBottomRight, IM_COL32(255, 255, 255, 128), 2.0f, 30, 1, 1);
+                AddLineDashed(fixedOutlineBottomRight, ImVec2(fixedOutlineUpperLeft.x, fixedOutlineBottomRight.y), IM_COL32(255, 255, 255, 128), 2.0f, 30, 1, 1);
+                AddLineDashed(ImVec2(fixedOutlineUpperLeft.x, fixedOutlineBottomRight.y), fixedOutlineUpperLeft, IM_COL32(255, 255, 255, 128), 2.0f, 30, 1, 1);
+                std::string roiText = FormatString("%s %s: %0.2f; %0.2f", ICON_FA_EXPAND, "ROI", project.roi.bottomRight.x, project.roi.bottomRight.y);
+                ImGui::SetCursorPos({outlineInitialCursor.x + outlineRoiSize.x - 5 - ImGui::CalcTextSize(roiText.c_str()).x, outlineInitialCursor.y + outlineRoiSize.y});
                 ImGui::Text("%s", roiText.c_str());
-                roiText = FormatString("%s %s: %0.2f; %0.2f", ICON_FA_EXPAND, "ROI", project.roi.bottomRight.x, project.roi.bottomRight.y);
-                ImGui::SetCursorPos({initialCursor.x + roiSize.x + 5, initialCursor.y + roiSize.y - ImGui::CalcTextSize(roiText.c_str()).y});
+                roiText = FormatString("%s %s: %0.2f; %0.2f", ICON_FA_EXPAND, "ROI", project.roi.upperLeft.x, project.roi.upperLeft.y);
+                ImGui::SetCursorPos({outlineInitialCursor.x + 5, outlineInitialCursor.y + outlineRoiSize.y - ImGui::CalcTextSize(roiText.c_str()).y - outlineRoiSize.y});
                 ImGui::Text("%s", roiText.c_str());
                 ImGui::SetWindowFontScale(1.0f);
             }

@@ -1187,7 +1187,7 @@ namespace Raster {
                                     }
                                     auto menuName = FormatString("%s%s %s", isAttributeExposed ? ICON_FA_LINK : ICON_FA_LINK_SLASH, exposedToTimeline ? " " ICON_FA_TIMELINE : "", attribute.c_str());
                                     if (ImGui::BeginMenu(menuName.c_str())) {
-                                        ImGui::SeparatorText(FormatString("%s %s %s", ICON_FA_LINK, Localization::GetString("EXPOSE_HIDE").c_str(), menuName.c_str()).c_str ());
+                                        ImGui::SeparatorText(FormatString("%s", menuName.c_str()).c_str());
                                         static std::string s_searchFilter = "";
                                         if (ImGui::Button(isAttributeExposed ? ICON_FA_LINK : ICON_FA_LINK_SLASH)) {
                                             if (!isAttributeExposed) {
@@ -1202,7 +1202,7 @@ namespace Raster {
                                         ImGui::InputTextWithHint("##searchFilter", FormatString("%s %s", ICON_FA_MAGNIFYING_GLASS, Localization::GetString("SEARCH_BY_NAME_OR_ID").c_str()).c_str(), &s_searchFilter);
                                         bool newAttributeOpenPopup = false;
                                         if (ImGui::BeginChild("##timelineAttribute", ImVec2(0, RASTER_PREFERRED_POPUP_HEIGHT))) {
-                                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NO_ATTRIBUTE").c_str()).c_str())) {
+                                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_XMARK, Localization::GetString("NONE").c_str()).c_str())) {
                                                 if (compositionCandidate.has_value()) {
                                                     auto& composition = compositionCandidate.value();
                                                     std::string exposedAttributeID = FormatString("<%i>.%s", node->nodeID, attribute.c_str());
@@ -1211,7 +1211,6 @@ namespace Raster {
                                                         if (attribute->internalAttributeName.find(exposedAttributeID) != std::string::npos) {
                                                             attribute->internalAttributeName = ReplaceString(attribute->internalAttributeName, exposedAttributeID, "");
                                                             Rendering::ForceRenderFrame();
-                                                            ImGui::CloseCurrentPopup();
                                                             break;
                                                         }
                                                         attributeIndex++;
@@ -1261,14 +1260,18 @@ namespace Raster {
                                             ImGui::OpenPopup("##newAttributePopup");
                                         }
                                         if (ImGui::BeginPopup("##newAttributePopup")) {
-                                            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_TIMELINE, Localization::GetString("EXPOSE_TO_TIMELINE").c_str(), attribute.c_str()).c_str());    ImGui::SeparatorText(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ATTRIBUTE").c_str()).c_str());
+                                            ImGui::SeparatorText(FormatString("%s %s: %s", ICON_FA_TIMELINE, Localization::GetString("EXPOSE_TO_TIMELINE").c_str(), attribute.c_str()).c_str());
                                             for (auto& entry : Attributes::s_implementations) {
                                                 if (ImGui::MenuItem(FormatString("%s %s %s", ICON_FA_PLUS, entry.description.prettyName.c_str(), Localization::GetString("ATTRIBUTE").c_str()).c_str())) {
                                                     auto attributeCandidate = Attributes::InstantiateAttribute(entry.description.packageName);
                                                     if (attributeCandidate.has_value()) {
+                                                        auto defaultParameter = node->GetAttributeDefaultValue(attribute);
                                                         auto& exposedAttribute = attributeCandidate.value();
                                                         exposedAttribute->internalAttributeName += (exposedAttribute->internalAttributeName.empty() ? "" : " | ") + FormatString("<%i>.%s", node->nodeID, attribute.c_str());
                                                         exposedAttribute->name = attribute;
+                                                        if (defaultParameter && (exposedAttribute->keyframes[0].value.type() == (*defaultParameter).type())) {
+                                                            exposedAttribute->keyframes[0].value = *defaultParameter;
+                                                        }
                                                         s_currentComposition->attributes.push_back(exposedAttribute);
                                                         Rendering::ForceRenderFrame();
                                                     }
@@ -1658,6 +1661,10 @@ namespace Raster {
                         ImGui::PushStyleColor(ImGuiCol_Text, s_cameraTextHold ? ImGui::GetStyleColorVec4(ImGuiCol_Text) * (0.9f, 0.9f, 0.9f, 0.9f) : ImGui::GetStyleColorVec4(ImGuiCol_Text) * (1.0f, 1.0f, 1.0f, 1.0f));
                         ImGui::Text("%s", cameraText.c_str());
                         ImGui::PopStyleColor();
+                        if (s_cameraTextHold && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                            if (currentCameraCandidate) Workspace::GetProject().selectedCompositions = {(*Workspace::GetCompositionByAttributeID((*currentCameraCandidate)->id))->id};
+                            else ImGui::OpenPopup("##createNewCamera");
+                         }
                         s_cameraTextHold = ImGui::IsItemHovered();
                         if (s_cameraTextHold && currentCameraCandidate) {
                             std::any dynamicCamera = *Workspace::GetProject().GetCamera();
@@ -1669,9 +1676,37 @@ namespace Raster {
                             }
                             ImGui::PushFont(Font::s_denseFont);
                         }
-                        if (ImGui::IsItemClicked()) {
-                            Workspace::GetProject().selectedCompositions = {(*Workspace::GetCompositionByAttributeID((*currentCameraCandidate)->id))->id};
+                        ImGui::PopFont();
+                        ImGui::SetWindowFontScale(1.0f);
+                        if (ImGui::BeginPopup("##createNewCamera")) {
+                            ImGui::SeparatorText(cameraText.c_str());
+                            bool createCamera = false;
+                            bool orthoCamera = false;
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_PERSP_CAMERA").c_str()).c_str(), nullptr, nullptr, Workspace::IsProjectLoaded())) {
+                                createCamera = true;
+                                ImGui::CloseCurrentPopup();
+                            }
+                            if (ImGui::MenuItem(FormatString("%s %s", ICON_FA_PLUS, Localization::GetString("CREATE_NEW_ORTHO_CAMERA").c_str()).c_str(), nullptr, nullptr, Workspace::IsProjectLoaded())) {
+                                createCamera = true;
+                                orthoCamera = true;
+                                ImGui::CloseCurrentPopup();
+                            }
+                            if (createCamera) {
+                                auto cameraAttributeCandidate = Attributes::InstantiateAttribute(RASTER_PACKAGED "camera_attribute");
+                                if (cameraAttributeCandidate) {
+                                    auto& cameraAttribute = *cameraAttributeCandidate;
+                                    cameraAttribute->name = orthoCamera ? Localization::GetString("ORTHOGRAPHIC_CAMERA") : Localization::GetString("PERSPECTIVE_CAMERA");
+                                    Camera targetCamera;
+                                    targetCamera.persp = !orthoCamera;
+                                    cameraAttribute->keyframes[0].value = targetCamera;
+                                    s_currentComposition->attributes.push_back(cameraAttribute);
+                                    Workspace::GetProject().selectedAttributes = {cameraAttribute->id};
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            }
+                            ImGui::EndPopup();
                         }
+                        ImGui::PushFont(Font::s_denseFont);
                     ImGui::SetWindowFontScale(1.0f);
                     ImGui::PopFont();
                     ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2(5, 5));

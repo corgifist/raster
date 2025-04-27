@@ -390,5 +390,9 @@
     "NEAR_FAR_PLANE": "Near / Far Plane",
     "FILM_LENGTH": "Film Length",
     "FILM_SIZE": "Film Size",
-    "FILM_SIZE_LENGTH": "Film Size / Length"
+    "FILM_SIZE_LENGTH": "Film Size / Length",
+    "CREATE_NEW_PERSP_CAMERA": "Create New Perspective Camera",
+    "CREATE_NEW_ORTHO_CAMERA": "Create New Orthographic Camera",
+    "PERSPECTIVE_CAMERA": "Perspective Camera",
+    "ORTHOGRAPHIC_CAMERA": "Orthographic Camera"
 }

@@ -1,0 +1,99 @@
+<effect>
+    <description name="Linear Wipe" packageName="linear_wipe" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="A" type="glm::vec4" value="1.0;0.0;0.0;1.0"/>
+        <attribute name="B" type="glm::vec4" value="0.0;1.0;0.0;1.0"/>
+        <attribute name="Phase" type="float" value="0.5"/>
+        <attribute name="UseYPlane" type="bool" value="false"/>
+        <attribute name="Invert" type="bool" value="false"/>
+        <attribute name="SwapColors" type="bool" value="false"/>
+        <attribute name="Opacity" type="float" value="1.0"/>
+        <attribute name="OnlyScreenSpaceRendering" type="bool" value="false"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="linear_wipe/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uAColor" stage="fragment">
+                <value attribute="A" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uBColor" stage="fragment">
+                <value attribute="B" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uUseYPlane" stage="fragment">
+                <value attribute="UseYPlane" type="bool"/>
+            </uniform>
+            <uniform name="uInvertPhase" stage="fragment">
+                <value attribute="Invert" type="bool"/>
+            </uniform>
+            <uniform name="uPhase" stage="fragment">
+                <value attribute="Phase" type="float"/>
+            </uniform>
+            <uniform name="uSwapColors" stage="fragment">
+                <value attribute="SwapColors" type="bool"/>
+            </uniform>
+            <uniform name="uResolution" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uColorTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <uniform name="uUVTexture" stage="fragment">
+                <attachment attribute="Base" index="1" unit="1"/>
+            </uniform>
+            <uniform name="uScreenSpaceRendering" stage="fragment">
+                <screenSpaceRendering attribute="Base" override="OnlyScreenSpaceRendering"/>
+            </uniform>
+            <uniform name="uOpacity" stage="fragment">
+                <value attribute="Opacity" type="float"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="A">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="B">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="Phase">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_GEARS"/>
+        </property>
+        <property name="UseYPlane">
+            <icon icon="ICON_FA_UP_DOWN"/>
+        </property>
+        <property name="Invert">
+            <icon icon="ICON_FA_MINUS"/>
+        </property>
+        <property name="SwapColors">
+            <icon icon="ICON_FA_SHUFFLE"/>
+        </property>
+        <property name="Opacity">
+            <sliderBase base="100"/>
+            <sliderRange min="0" max="100"/>
+            <formatString format="%"/>
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="OnlyScreenSpaceRendering">
+            <icon icon="ICON_FA_IMAGE"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_SUN" />
+</effect>

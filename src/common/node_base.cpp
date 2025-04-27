@@ -517,6 +517,18 @@ namespace Raster {
         return t_data.find("AUDIO_PASS") != t_data.end();
     }
 
+    std::optional<std::any> NodeBase::GetAttributeDefaultValue(std::string t_name) {
+        m_attributes.Lock();
+        auto& attrs = m_attributes.GetReference();
+        if (attrs.find(t_name) != attrs.end()) {
+            auto result = attrs[t_name];
+            m_attributes.Unlock();
+            return result;
+        }
+        m_attributes.Unlock();
+        return std::nullopt;
+    }
+
     INSTANTIATE_ATTRIBUTE_TEMPLATE(std::string);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(float);
     INSTANTIATE_ATTRIBUTE_TEMPLATE(int);

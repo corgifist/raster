@@ -69,7 +69,6 @@ namespace Raster {
                 double idealTime = (1.0 / (double) project.framerate) * 1000;
                 if (idealTime > timeDifference) {
                     int idealTimeDifference = idealTime - timeDifference;
-                    // ExperimentalSleepFor(idealTimeDifference / 1000.0); 
                 }
                 double finalTime = GPU::GetTime();
                 DoubleBufferingIndex::s_index = (DoubleBufferingIndex::s_index + 1) % 2;
