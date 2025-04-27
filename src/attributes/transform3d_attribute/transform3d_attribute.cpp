@@ -4,12 +4,12 @@
 #include "common/asset_id.h"
 #include "common/ui_helpers.h"
 
+
 namespace Raster {
     Transform3DAttribute::Transform3DAttribute() {
         AttributeBase::Initialize();
 
         Transform3D transform;
-        transform.size = {1, 1, 1};
 
         keyframes.push_back(
             AttributeKeyframe(
@@ -29,9 +29,13 @@ namespace Raster {
         auto& project = Workspace::GetProject();
 
         Transform3D result;
-        result.position = glm::mix(a.position, b.position, t);
-        result.size = glm::mix(a.size, b.size, t);
-        result.rotation = glm::mix(a.rotation, b.rotation, t);
+        auto newTranslation = glm::mix(a.position, b.position, t);
+        auto newRotation = glm::mix(a.rotation, b.rotation, t);
+        auto newSize = glm::mix(a.size, b.size, t);
+
+        result.position = newTranslation;
+        result.rotation = newRotation;
+        result.size = newSize;
 
         auto parentAttributeCandidate = Workspace::GetAttributeByAttributeID(m_parentAttributeID);
         if (parentAttributeCandidate.has_value()) {
@@ -72,7 +76,7 @@ namespace Raster {
                 float aspectRatio = (float) texture.width / (float) texture.height;
 
                 Transform3D correctedTransform;
-                correctedTransform.size = glm::vec3(aspectRatio, 1.0f, 1.0f);
+                correctedTransform.size = glm::bvec3(aspectRatio, 1, 1);
                 correctedTransform.parentTransform = std::make_shared<Transform3D>(result);
 
                 result = correctedTransform;
@@ -262,7 +266,6 @@ namespace Raster {
                 RenderMoreAttributesPopup();
                 ImGui::EndPopup();
             }
-
 
             ImGui::EndPopup();
         }

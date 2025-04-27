@@ -1,0 +1,64 @@
+<effect>
+    <description name="Bevel Alpha" packageName="bevel_alpha" packaged="true"/>
+    
+    <attributes>
+        <attribute name="Base" type="Framebuffer"/>
+        <attribute name="Angle" type="float" value="0.0"/>
+        <attribute name="Thickness" type="float" value="2.0"/>
+        <attribute name="LightColor" type="glm::vec4" value="1.0;1.0;1.0;0,7"/>
+        <attribute name="ShadowColor" type="glm::vec4" value="0.0;0.0;0.0;0.7"/>
+    </attributes>
+
+    <pins>
+        <input name="Base"/>
+        <output name="Output"/>
+    </pins>
+
+    <framebuffers count="1" />
+    <shaders>
+        <shader vertex="basic" fragment="bevel/shader"/>
+    </shaders>
+
+    <rendering result="0" pin="Output">
+        <pass framebuffer="0" base="Base" shader="0" clearColor="0;0;0;0">
+            <uniform name="uAngle" stage="fragment">
+                <value attribute="Angle" type="float"/>
+            </uniform>
+            <uniform name="uThickness" stage="fragment">
+                <value attribute="Thickness" type="float"/>
+            </uniform>
+            <uniform name="uLightColor" stage="fragment">
+                <value attribute="LightColor" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uShadowColor" stage="fragment">
+                <value attribute="ShadowColor" type="glm::vec4"/>
+            </uniform>
+            <uniform name="uInputSize" stage="fragment">
+                <resolution framebuffer="0"/>
+            </uniform>
+            <uniform name="uTexture" stage="fragment">
+                <attachment attribute="Base" index="0" unit="0"/>
+            </uniform>
+            <draw count="3"/>
+        </pass>
+    </rendering>
+
+    <properties>
+        <property name="Angle">
+            <sliderStep step="0.05"/>
+            <icon icon="ICON_FA_ROTATE"/>
+        </property>
+        <property name="Thickness">
+            <sliderStep step="0.05"/>
+            <icon icon="ICON_FA_LEFT_RIGHT"/>
+        </property>
+        <property name="LightColor">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+        <property name="ShadowColor">
+            <icon icon="ICON_FA_DROPLET"/>
+        </property>
+    </properties>
+
+    <icon icon="ICON_FA_SQUARE" />
+</effect>

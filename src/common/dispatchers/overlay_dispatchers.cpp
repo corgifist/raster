@@ -945,8 +945,14 @@ namespace Raster {
         if (cameraCandidate) {
             auto& camera = *cameraCandidate;
             auto projectionMatrix = camera.GetProjectionMatrix();
-            auto transformMatrix = camera.GetTransformationMatrix();
-            auto objectTransform = transform.GetTransformationMatrix();
+            auto cameraTransform = glm::identity<glm::mat4>();
+            camera.position.y *= -1;
+            cameraTransform = glm::translate(cameraTransform, camera.position);
+            cameraTransform = glm::translate(cameraTransform, camera.anchor);
+            cameraTransform = glm::rotate(cameraTransform, glm::radians(camera.rotation.y), glm::vec3(1, 0, 0));
+            cameraTransform = glm::rotate(cameraTransform, glm::radians(camera.rotation.x), glm::vec3(0, 1, 0));
+            cameraTransform = glm::rotate(cameraTransform, glm::radians(camera.rotation.z), glm::vec3(0, 0, 1));
+            cameraTransform = glm::translate(cameraTransform, -camera.anchor); 
             auto gizmoMode = ImGuizmo::OPERATION::TRANSLATE;
             if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_ROTATE) gizmoMode = ImGuizmo::OPERATION::ROTATE;
             if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_SCALE) gizmoMode = ImGuizmo::OPERATION::SCALE;
@@ -954,16 +960,34 @@ namespace Raster {
             if (dataDict["GizmoMode"].get<int>() == INTERNAL_GIZMO_ALL) gizmoMode = ImGuizmo::OPERATION::UNIVERSAL;
             ImGuizmo::Enable(true);
             ImGuizmo::SetRect(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, t_regionSize.x, t_regionSize.y);
-            ImGuizmo::Manipulate(glm::value_ptr(transformMatrix), glm::value_ptr(projectionMatrix), gizmoMode, ImGuizmo::MODE::LOCAL, glm::value_ptr(objectTransform));
-            glm::vec3 scale;
-            glm::quat rotation;
-            glm::vec3 translation;
-            glm::vec3 skew;
-            glm::vec4 perspective;
-            glm::decompose(objectTransform, scale, rotation, translation, skew, perspective);
-            transform.position = translation;
-            transform.size = scale;
-            transform.rotation = glm::degrees(glm::eulerAngles(rotation));
+            ImGuizmo::SetOrthographic(false);
+
+            glm::mat4 compatibleMatrix;
+            transform.rotation.y *= -1;
+            transform.rotation.z *= -1;
+            transform.position.z *= -1;
+            std::swap(transform.rotation.x, transform.rotation.y);
+            ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(transform.position), glm::value_ptr(transform.rotation), glm::value_ptr(transform.size), glm::value_ptr(compatibleMatrix));
+            ImGuizmo::DrawCubes(glm::value_ptr(cameraTransform), glm::value_ptr(projectionMatrix), glm::value_ptr(compatibleMatrix), 1);
+            glm::mat4 deltaMatrix;
+            ImGuizmo::Manipulate(glm::value_ptr(cameraTransform), glm::value_ptr(projectionMatrix), gizmoMode, ImGuizmo::MODE::LOCAL, glm::value_ptr(compatibleMatrix), glm::value_ptr(deltaMatrix));
+
+            glm::vec3 newPosition, newRotation, newSize;
+            glm::vec3 decomposedDeltaPosition, decomposedDeltaRotation, decomposedDeltaSize;
+            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), glm::value_ptr(decomposedDeltaPosition), glm::value_ptr(decomposedDeltaRotation), glm::value_ptr(decomposedDeltaSize));
+            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(compatibleMatrix), glm::value_ptr(newPosition), glm::value_ptr(newRotation), glm::value_ptr(newSize));
+
+            // RASTER_LOG(newRotation.x << " " << newRotation.y << " " << newRotation.z);
+
+            transform.position += decomposedDeltaPosition;
+            transform.rotation += newRotation - transform.rotation;
+            transform.size = decomposedDeltaSize;
+
+            std::swap(transform.rotation.x, transform.rotation.y);
+            transform.rotation.y *= -1;
+            transform.rotation.z *= -1;
+            transform.position.z *= -1;
+
             if (ImGuizmo::IsUsing()) transformChanged = true;
         }
 

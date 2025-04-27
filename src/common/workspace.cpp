@@ -86,7 +86,8 @@ namespace Raster {
         {ATTRIBUTE_TYPE(Gradient1D), RASTER_COLOR32(201, 224, 115, 255)},
         {ATTRIBUTE_TYPE(Line2D), RASTER_COLOR32(56, 168, 82, 255)},
         {ATTRIBUTE_TYPE(BezierCurve), RASTER_COLOR32(198, 152, 42, 255)},
-        {ATTRIBUTE_TYPE(ConvolutionKernel), RASTER_COLOR32(1, 185, 255, 255)}
+        {ATTRIBUTE_TYPE(ConvolutionKernel), RASTER_COLOR32(1, 185, 255, 255)},
+        {ATTRIBUTE_TYPE(Transform3D), RASTER_COLOR32(240, 78, 152, 255)}
     };
 
     std::unordered_map<std::type_index, std::string> Workspace::s_typeNames = {

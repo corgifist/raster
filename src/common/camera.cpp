@@ -1,5 +1,7 @@
 #include "common/camera.h"
 #include "common/workspace.h"
+#include "../ImGui/ImGui.h"
+#include "../ImGui/ImGuizmo.h"
 
 namespace Raster {
     Camera::Camera(Json t_data) {
@@ -29,17 +31,17 @@ namespace Raster {
             aspect *= orthoWidth;
             return glm::ortho(-aspect, aspect, 1.0f, -1.0f, -1.0f, 1000.0f);
         }
-        float f = glm::radians(GetF());
-        return glm::perspective(f, aspect, perspNear, perspFar);
+        float f = GetF();
+        return glm::perspective(glm::radians(f), aspect, perspNear, perspFar);
     }
 
     glm::mat4 Camera::GetTransformationMatrix() {
         auto transform = glm::identity<glm::mat4>();
         transform = glm::translate(transform, position);
         transform = glm::translate(transform, anchor);
-        transform = glm::rotate(transform, glm::radians(rotation.y), glm::vec3(1, 0, 0));
-        transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(0, 1, 0));
         transform = glm::rotate(transform, glm::radians(rotation.z), glm::vec3(0, 0, 1));
+        transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(0, 1, 0));
+        transform = glm::rotate(transform, glm::radians(rotation.y), glm::vec3(1, 0, 0));
         transform = glm::translate(transform, -anchor); 
         return transform;
     }

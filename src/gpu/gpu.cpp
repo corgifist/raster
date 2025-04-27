@@ -345,8 +345,7 @@ namespace Raster {
         static int s_viewportWidth = 0, s_viewportHeight = 0;
         s_running = true;
         s_renderingThread = std::thread([&]() {
-
-            while (!GPU::MustTerminate()) {
+            while (s_running) {
                 glfwMakeContextCurrent((GLFWwindow*) info.display); 
                 if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
                     glViewport(0, 0, s_width, s_height);
