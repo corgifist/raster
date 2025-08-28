@@ -7,7 +7,7 @@
 #include <filesystem>
 
 namespace Raster {
-    std::vector<AbstractPlugin> Plugins::s_plugins;
+    std::vector<AbstractPlugin> Plugins::s_plugins = {};
 
     void Plugins::Initialize() {
         auto pluginIterator = std::filesystem::recursive_directory_iterator("plugins");

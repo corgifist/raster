@@ -2,7 +2,6 @@
 #include "common/audio_memory_management.h"
 #include "common/rendering.h"
 #include <chrono>
-#include <ratio>
 #include <thread>
 
 namespace Raster {
@@ -29,6 +28,7 @@ namespace Raster {
             if (Workspace::IsProjectLoaded()) {
                 auto& project = Workspace::GetProject();
                 while ((!project.playing && !Rendering::MustRenderFrame()) && m_running) {
+                    if (!m_running) break;
                     continue;
                 }
                 if (!m_running) break;
@@ -74,7 +74,7 @@ namespace Raster {
                 DoubleBufferingIndex::s_index = (DoubleBufferingIndex::s_index + 1) % 2;
                 m_allowRendering = false;
             } else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         }
     }

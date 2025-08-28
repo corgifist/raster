@@ -263,11 +263,6 @@ namespace Raster {
 
         SetupContextState();
 
-        glfwSetFramebufferSizeCallback(display, [](GLFWwindow* display, int width, int height) {
-            s_width = width;
-            s_height = height;
-        });
-
         glfwSetDropCallback(display, [](GLFWwindow* d, int pathCount, const char** paths) {
             std::vector<std::string> dragDropPaths;
             for (int i = 0; i < pathCount; i++) {
@@ -276,6 +271,11 @@ namespace Raster {
                 s_dragDropPaths.GetReference() = dragDropPaths;
                 s_dragDropPaths.Unlock();
             }
+        });
+
+        glfwSetFramebufferSizeCallback(display, [](GLFWwindow* t_display, int t_width, int t_height) {
+            s_width = t_width;
+            s_height = t_height;
         });
 
         info.version = std::string((const char*) glGetString(GL_VERSION));
@@ -345,8 +345,8 @@ namespace Raster {
         static int s_viewportWidth = 0, s_viewportHeight = 0;
         s_running = true;
         s_renderingThread = std::thread([&]() {
+            glfwMakeContextCurrent((GLFWwindow*) info.display); 
             while (s_running) {
-                glfwMakeContextCurrent((GLFWwindow*) info.display); 
                 if (s_viewportWidth != s_width || s_viewportHeight != s_height) {
                     glViewport(0, 0, s_width, s_height);
                     s_viewportWidth = s_width;
@@ -355,8 +355,9 @@ namespace Raster {
                 s_renderingFunction();
                 glfwSwapBuffers((GLFWwindow*) info.display);
             }
-       });
-       glfwMakeContextCurrent(nullptr);
+            glfwPostEmptyEvent();
+        });
+        glfwMakeContextCurrent(nullptr);
         while (!GPU::MustTerminate()) {
             glfwWaitEvents();
             auto targetTitle = s_targetTitle.Get();
@@ -601,7 +602,6 @@ namespace Raster {
         }
         if (clipRectCandidate) {
             auto clipRect = *clipRectCandidate;
-            // print(clipRect.x << ' ' << clipRect.y << ' ' << clipRect.z << ' ' << clipRect.w);
             auto targetResolution = fbo.has_value() ? glm::vec2(fbo->width, fbo->height) : glm::vec2(s_width, s_height);
             auto aspectRatio = targetResolution.x / targetResolution.y;
             auto processedClipRect = clipRect;

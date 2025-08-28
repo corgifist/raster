@@ -70,6 +70,7 @@ namespace Raster {
         while (m_running) {
             if (SyncIsInfosEmpty()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (!m_running) break;
                 continue;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));

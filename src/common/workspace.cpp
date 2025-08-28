@@ -979,12 +979,18 @@ namespace Raster {
 
     void Workspace::CreateEmptyProject(Project &t_project, std::string t_projectPath) {
         auto serializedProject = t_project.Serialize();
-        if (!std::filesystem::exists("project/")) {
-            std::filesystem::create_directory("project/");
+        auto originalWd = std::filesystem::current_path();
+        if (!std::filesystem::exists("new_project/")) {
+            std::filesystem::create_directory("new_project/");
         }
+        if (!std::filesystem::exists("new_project/project/")) {
+            std::filesystem::create_directory("new_project/project/");
+        }
+        std::filesystem::current_path("./new_project/");
         WriteFile("project/project.json", serializedProject.dump());
         ZIP::Pack(t_projectPath, "project");
-        std::filesystem::remove_all("project/");
+        std::filesystem::current_path(originalWd);
+        std::filesystem::remove_all("new_project/");
     }
 
     void Workspace::DeleteComposition(int t_id) {

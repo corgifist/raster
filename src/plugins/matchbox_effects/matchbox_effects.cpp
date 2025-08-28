@@ -36,10 +36,10 @@ namespace Raster {
 
             xml_document doc;
             if (!doc.load_file(entry.path().string().c_str())) {
-                print("failed to load matchbox effect '" << entry << "'");
+                RASTER_LOG("failed to load matchbox effect '" << entry << "'");
                 continue;
             }
-            print("loading matchbox effect '" << entry.path().string() << "'");
+            RASTER_LOG("loading matchbox effect '" << entry.path().string() << "'");
 
             auto metadata = MatchboxEffectProvider::ParseMetadata(doc);
 

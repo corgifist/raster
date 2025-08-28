@@ -10,7 +10,7 @@ hash_build_files/
 .hash_build_files/
 raster
 internal/
-HashBuild/__pycache__/
+build/*.pyc
 *.a
 *.exe
 misc/projects/*
@@ -19,3 +19,4 @@ compile_commands.json
 .cache
 dist/
 raster.h.gch
+compile_commands.json

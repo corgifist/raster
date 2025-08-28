@@ -98,8 +98,12 @@ namespace Raster {
     }
 
     void PreferencesPlugin::AbstractWriteConfigs() {
+        static std::string s_cachedConfig = "";
         auto dump = Workspace::s_configuration.Serialize().dump();
-        WriteFile(GetHomePath() + "/.raster/config.json", dump);
+        if (s_cachedConfig != dump) {
+            s_cachedConfig = dump;
+            WriteFile(GetHomePath() + "/.raster/config.json", dump);
+        }
     }
 
     void PreferencesPlugin::AbstractRenderProperties() {

@@ -8,8 +8,9 @@ import subprocess
 import sys
 import shutil
 import re
-
 from colorama import init, just_fix_windows_console, Fore, Style
+
+devnull = subprocess.DEVNULL
 
 just_fix_windows_console()
 init()
@@ -60,6 +61,14 @@ def warn(text: str):
 
 def error(text: str):
     colored_text(text, "error", Fore.RED)
+
+if subprocess.run("cc --version", shell=True, stdout=devnull, stderr=devnull).returncode != 0:
+    error("cc (gcc/clang) is not installed!")
+    exit(1)
+
+if subprocess.run("pkg-config --version", shell=True, stdout=devnull, stderr=devnull).returncode != 0:
+    print("pkg-config is not installed!")
+    exit(1)
 
 def empty_entry_point():
     error("no entry point specified!")
@@ -199,7 +208,8 @@ def spawn_subprocess(command: typing.List[str]) -> int:
 
 # wrapper around rmtree
 def rmdir(path: str):
-    shutil.rmtree(path)
+    if path_exists(path):
+        shutil.rmtree(path)
 
 # wrapper around mv
 def mv(src: str, dst: str):
@@ -209,6 +219,8 @@ def mv(src: str, dst: str):
 def clean_cache():
     if path_exists(".hash_build_files/"):
         rmdir(".hash_build_files/")
+    if path_exists("compile_commands.json"):
+        os.remove("compile_commands.json")
     ensure_cache_folder_exists()
 
 include_regex = re.compile(r"[\s+]?#[\s+]?include[\s+]?\".*\"")
@@ -222,17 +234,18 @@ source_dependencies_cache = {}
 def is_library_available(library: str):
     pkg_config_process = subprocess.run(['pkg-config', "--libs", library], capture_output=True, text=True)
     if pkg_config_process.returncode != 0:
-        ld_process = subprocess.run(f'echo "int main(){{}}" | cc -o /dev/null -x c - -l{library} 2>/dev/null', shell=True)
+        write_file(".hash_build_files/library_check.cpp", "int main(int argc, char** argv){return 0;}")
+        ld_process = subprocess.run(f'cc -o /dev/null -x c .hash_build_files/library_check.cpp -l{library} 2>/dev/null', shell=True)
         return ld_process.returncode == 0
     return pkg_config_process.returncode == 0
 
 def does_compile(code: str):
-    ld_process = subprocess.run(f'echo "{code}" | cc -o /dev/null -x c - 2>/dev/null', shell=True)
+    write_file(".hash_build_files/compile_check.cpp", code)
+    ld_process = subprocess.run(f'cc -c -o .hash_build_files/compile_check -xc++ .hash_build_files/compile_check.cpp', shell=True, stdout=devnull, stderr=devnull)
     return ld_process.returncode == 0
 
 def does_header_exist(header: str):
-    ld_process = subprocess.run(f'echo "#include <{header}>\n int main() {{}}" | cc -o /dev/null -x c++ -', shell=True)
-    return ld_process.returncode == 0
+    return does_compile(f'#include {header}\nint main(int argc, char** argv){{return 0;}}')
 
 def check_if_header_exists(header: str):
     if not does_header_exist(header):
@@ -357,8 +370,62 @@ def collect_all_dependencies(file: str, previous_acc: list[str] = []):
         acc = list(set(acc))
     return acc
 
+compilation_jobs = []
+max_concurrent_jobs = os.cpu_count() if os.cpu_count() is not None else 1
+
+def finalize_job(process, log=True) -> int:
+    compiler_return_code = process["process"].poll()
+    hash_path = process["hash_path"]
+    source_code_hash = process["source_code_hash"]
+    all_dependencies = process["all_dependencies"]
+    file = process["file"]
+    if compiler_return_code == 0:
+        write_file(hash_path, source_code_hash)
+        for dependency in all_dependencies:
+            dependency_hash_file = ensure_hash_file_exists(dependency + file)
+            write_file(dependency_hash_file, hash_string(read_file(dependency)))
+        return 1
+    else:
+        if log:
+            error(f"compiler returned non-zero code while compiling {file}")
+        finalize_all_jobs(False)
+        exit(1)
+
+def finalize_all_jobs(log=True):
+    if len(compilation_jobs) == 0:
+        return
+    
+    if log and len(compilation_jobs) > 1:
+        info(f"finalizing remaining compilation jobs:")
+        for job in compilation_jobs:
+            info(f"\t{job["file"]}")
+
+    while len(compilation_jobs) != 0:
+        for job in compilation_jobs:
+            process: subprocess.Popen = job["process"]
+            if process.poll() is not None:
+                compilation_jobs.remove(job)
+                finalize_job(job, log=log)
+
+def add_compilation_job(args: str, hash_path: str, source_code_hash: str, all_dependencies: list[str], file: str):
+    while len(compilation_jobs) + 1 > max_concurrent_jobs:
+        for job in compilation_jobs:
+            process: subprocess.Popen = job["process"]
+            if process.poll() is not None:
+                finalize_job(job)
+                compilation_jobs.remove(job)
+                break
+
+    compilation_jobs.append({
+        "process": subprocess.Popen(args, shell=True, stdout=sys.stdout, stderr=sys.stderr),
+        "hash_path": hash_path,
+        "source_code_hash": source_code_hash,
+        "all_dependencies": all_dependencies,
+        "file": file
+    })
+
 # compiles one single file using `cc` command (c/c++)
-def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=None, log_compiler_commands=False, pch_cxx=False, custom_output_path=None):
+def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=None, log_compiler_commands=False, pch_cxx=False, custom_output_path=None, finalize=True):
     if not path_exists(file):
         error(f"file {file} doesn't exist!")
         exit(1)
@@ -383,36 +450,37 @@ def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=
 
     all_dependencies = collect_all_dependencies(file)
 
+    architecture_flag = f"-m{build_arch}"
+    compiler_flags = local_compiler_flags + global_compiler_flags
+    compiler_command = []
+    compiler_command.append("cc")
+    if pch_cxx:
+        compiler_command.append("-x")
+        compiler_command.append("c++-header")
+    compiler_command.append("-c")
+    compiler_command.append(architecture_flag)
+    compiler_command.append("-o")
+    compiler_command.append(object_file_path)
+    if std_cxx is not None:
+        compiler_command.append(f"--std=c++{std_cxx}")
+    elif std_c is not None:
+        compiler_command.append(f"--std=c{std_c}")
+    compiler_command.append(file)
+    compiler_command += compiler_flags
+
+    for include_path in global_include_paths:
+        compiler_command.append(f"-I{include_path}")
+
+    compiler_command = filter_list_from_empty_strings(compiler_command)
+
+    compilation_database.append({
+        'directory': os.getcwd(),
+        'arguments': compiler_command,
+        'file': file,
+        'output': object_file_path
+    })
+
     if file_must_be_recompiled:
-        architecture_flag = f"-m{build_arch}"
-        compiler_flags = local_compiler_flags + global_compiler_flags
-        compiler_command = []
-        compiler_command.append("cc")
-        if pch_cxx:
-            compiler_command.append("-x")
-            compiler_command.append("c++-header")
-        compiler_command.append("-c")
-        compiler_command.append(architecture_flag)
-        compiler_command.append("-o")
-        compiler_command.append(object_file_path)
-        if std_cxx is not None:
-            compiler_command.append(f"--std=c++{std_cxx}")
-        elif std_c is not None:
-            compiler_command.append(f"--std=c{std_c}")
-        compiler_command.append(file)
-        compiler_command += compiler_flags
-
-        for include_path in global_include_paths:
-            compiler_command.append(f"-I{include_path}")
-
-        compilation_database.append({
-            'directory': os.getcwd(),
-            'arguments': compiler_command,
-            'file': file,
-            'output': object_file_path
-        })
-
-        compiler_command = filter_list_from_empty_strings(compiler_command)
         
         compilation_message = f"compiling {file} ({object_file_path})"
         if progress is not None and files_count is not None:
@@ -420,22 +488,16 @@ def compile_file(file: str, local_compiler_flags=[], progress=None, files_count=
         info(compilation_message)
         if log_compiler_commands:
             print(f"\t{' '.join(compiler_command)}")
-        compiler_return_code = subprocess.run(" ".join(compiler_command), shell=True, stdout=sys.stdout, stderr=sys.stderr).returncode
-        if compiler_return_code == 0:
-            write_file(hash_path, source_code_hash)
-            for dependency in all_dependencies:
-                dependency_hash_file = ensure_hash_file_exists(dependency + file)
-                write_file(dependency_hash_file, hash_string(read_file(dependency)))
-                # print(f"saving {dependency} {hash_string(read_file(dependency))}")
-        else:
-            error("compiler returned non-zero code!")
-            exit(1)
+        add_compilation_job(" ".join(compiler_command), hash_path, source_code_hash, all_dependencies, file)
     else:
         compilation_message = f"no need to recompile {file} ({object_file_path})"
         if progress is not None and files_count is not None:
             compilation_message = f"[{progress}/{files_count}] " + compilation_message
         info(compilation_message)
     
+    if finalize:
+        finalize_all_jobs()
+
     return object_file_path
 
 # returns string in format "-Wl,-rpath,{path}"
@@ -443,13 +505,15 @@ def rpath(path: str) -> str:
     return f"-Wl,-rpath,{path}"
 
 # calls compile_file on each file in files (list[str])
-def compile_files(files: typing.List[str], local_compiler_flags=[], log_compiler_commands=False):
+def compile_files(files: list[str], local_compiler_flags=[], log_compiler_commands=False):
     if type(files) is str:
         files = [files]
 
     result = []
     for index, file in enumerate(files):
-        result.append(compile_file(file, local_compiler_flags=local_compiler_flags, progress=index + 1, files_count=len(files), log_compiler_commands=log_compiler_commands))
+        result.append(compile_file(file, local_compiler_flags=local_compiler_flags, progress=index + 1, files_count=len(files), log_compiler_commands=log_compiler_commands, finalize=False))
+    
+    finalize_all_jobs()
     return result
 
 def process_shared_library_name(name: str):
@@ -524,19 +588,23 @@ def entry_point(original_function=None, default=False):
 
 # enables entry points support. without this function you won't be able to use any entry points at all
 def router():
-    if arguments["clean"] is True:
-        clean_cache()
-        return
+    try:
+        if arguments["clean"] is True:
+            clean_cache()
+            return
 
-    if not arguments["entry_point"] is None:
-        global builder_entry_point
-        builder_entry_point = arguments["entry_point"]
+        if not arguments["entry_point"] is None:
+            global builder_entry_point
+            builder_entry_point = arguments["entry_point"]
 
-    if builder_entry_point is None:
-        empty_entry_point()
-    else:
-        get_entry_point(builder_entry_point)()
+        if builder_entry_point is None:
+            empty_entry_point()
+        else:
+            get_entry_point(builder_entry_point)()
 
-    if arguments["database"]:
-        ensure_file_exists("compilation_commands.json")
-        write_file("compilation_commands.json", str(compilation_database))
+        if arguments["database"]:
+            write_file("compile_commands.json", str(compilation_database).replace("'", '"'))
+    except KeyboardInterrupt:
+        info("keyboard interrupt, finalizing all jobs...")
+        finalize_all_jobs()
+        exit(130)

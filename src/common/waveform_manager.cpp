@@ -176,6 +176,7 @@ namespace Raster {
         while (s_running) {
             if (!Workspace::IsProjectLoaded()) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
+                if (!s_running) break;
                 continue;
             }
             auto& project = Workspace::GetProject();
@@ -185,6 +186,7 @@ namespace Raster {
             s_refreshTargets.Unlock();
             if (refreshTargets.empty()) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
+                if (!s_running) break;
                 continue;
             }
             for (auto& refreshTarget : refreshTargets) {

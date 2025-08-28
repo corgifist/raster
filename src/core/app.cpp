@@ -6,7 +6,6 @@
 #include "gpu/gpu.h"
 #include "gpu/async_upload.h"
 #include "font/font.h"
-#include "common/common.h"
 #include "build_number.h"
 #include "common/ui_shared.h"
 #include "compositor/compositor.h"
@@ -14,7 +13,6 @@
 #include "../ImGui/imgui.h"
 #include "../ImGui/imgui_freetype.h"
 #include "../avcpp/av.h"
-#include "../avcpp/ffmpeg.h"
 #include "../avcpp/avutils.h"
 #include "audio/audio.h"
 #include "compositor/async_rendering.h"
@@ -30,6 +28,8 @@
 #include "common/examples.h"
 #include "common/color_management.h"
 #include "../ImGui/ImGuizmo.h"
+#include <chrono>
+#include <thread>
 
 using namespace av;
 
@@ -47,10 +47,6 @@ namespace Raster {
         av::set_logging_level(AV_LOG_ERROR);
         RASTER_LOG("ffmpeg version: " << av::getversion());
 
-        s_writerThread = std::thread(App::WriterThread);
-
-        DUMP_VAR(Audio::s_backendInfo.name);
-        DUMP_VAR(Audio::s_backendInfo.version);
         GPU::Initialize();
         ImGui::SetCurrentContext((ImGuiContext*) GPU::GetImGuiContext());
         ImGuiIO& io = ImGui::GetIO();
@@ -61,6 +57,9 @@ namespace Raster {
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         GPU::InitializeImGui();
+        Audio::Initialize();
+        DUMP_VAR(Audio::s_backendInfo.name);
+        DUMP_VAR(Audio::s_backendInfo.version);
         ColorManagement::Initialize();
         AsyncUpload::Initialize();
         AsyncRendering::Initialize();
@@ -70,9 +69,9 @@ namespace Raster {
     }
 
     void App::WriterThread() {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         while (s_writerThreadRunning) {
             Plugins::WriteConfigs();
-            std::this_thread::sleep_for(std::chrono::seconds(5));
         }
     }
 
@@ -80,6 +79,8 @@ namespace Raster {
         Plugins::Initialize();
         Plugins::SetupUI();
         Plugins::EarlyInitialize();
+
+        s_writerThread = std::thread(App::WriterThread);
 
         DefaultNodeCategories::Initialize();
         Dispatchers::Initialize();

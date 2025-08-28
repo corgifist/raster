@@ -8,6 +8,7 @@ global_include_paths.append("include/")
 
 global_linker_flags.append("-lm")
 global_linker_flags.append("-L.")
+global_linker_flags.append("-L./dist/")
 global_linker_flags.append(rpath("."))
 
 global_compiler_flags.append("-fPIC")
@@ -23,30 +24,30 @@ build_dependencies = [
     "OpenColorIO"
 ]
 
-check_if_header_exists("glm/glm.hpp")
+check_if_header_exists("<glm/glm.hpp>")
 
 if get_platform() == "linux":
     build_dependencies += [
         "bfd", "unwind", "gtk+-3.0"
     ]
 
-failed_dependencies = []
-for dependency in build_dependencies:
-    info(f"checking for {dependency} library")
-    if not is_library_available(dependency):
-        failed_dependencies.append(dependency)
+if not arguments["clean"]:
+    failed_dependencies = []
+    for dependency in build_dependencies:
+        info(f"checking for {dependency} library")
+        if not is_library_available(dependency):
+            failed_dependencies.append(dependency)
 
+    if len(failed_dependencies) > 0:
+        error("missing build dependencies:")
+        for dependency in failed_dependencies:
+            print(f"\t * {dependency}")
+        info("install these libraries using your package manager")
+        exit(1)
 
 binary_extension = ""
 if current_platform == "windows":
     binary_extension = ".exe"
-
-if len(failed_dependencies) > 0:
-    error("missing build dependencies:")
-    for dependency in failed_dependencies:
-        print(f"\t * {dependency}")
-    info("install these libraries using your package manager")
-    exit(1)
 
 glfw3 = get_library("glfw3")
 rubberband = get_library("rubberband")
@@ -84,7 +85,7 @@ plugin = 6
 
 ui_deps = [raster_common, raster_ImGui, raster_gpu, raster_compositor, raster_font, nfd]
 
-build_environment = "dist/.build/"
+build_environment = "dist/"
 
 build_modules = [
     ["ImGui", shared, [freetype2]],
@@ -231,9 +232,10 @@ def clean_folder(path):
 def build():
     info("building raster")
 
+    rmdir("dist/")
     ensure_folder_exists("dist/")
-    ensure_folder_exists("dist/paks/")
     ensure_folder_exists(build_environment)
+    shutil.copytree("src/misc", "dist/", dirs_exist_ok=True)
 
     write_build_number()
     check_required_folders()
@@ -243,29 +245,10 @@ def build():
         build_module(module)
 
     move_core_libraries()
-    if path_exists("src/misc/matchbox_shaders.pak"):
-        info("moving matchbox_shaders.pak to dist/paks/")
-        if path_exists("dist/paks/matchbox_shaders.pak"):
-            rm("dist/paks/matchbox_shaders.pak")
-        shutil.copy("src/misc/matchbox_shaders.pak", "dist/paks/matchbox_shaders.pak")
-    build_starter()
-    create_paks()
-
-    rmdir(build_environment)
 
 def build_pch():
     info("compiling include/raster.h (include/raster.g.gch)")
     compile_file("include/raster.h", custom_output_path="include/raster.h.gch", pch_cxx=True, progress=1, files_count=1)
-
-def create_paks():
-    for pak in pak_targets:
-        build_pak(pak)
-
-def build_pak(pak):
-    name = pak[0]
-    input = pak[1]
-    output = pak[2]
-    create_pak_from_directory(name, input, output)
 
 def build_starter():
     info("building starter")
@@ -314,12 +297,15 @@ def build_module(module):
     output_path = "raster_" + module_name
     if folder_name is not None:
         output_path = f"raster_{hash_string(module_name)[:10]}"
+    if output_path == "raster_core":
+        output_path = "raster"
     link_objects(objects, output_path, linker_flags, executable_type=executable_type, cxx=True)
 
     if folder_name is not None:
         mv(process_shared_library_name(output_path), f"{build_environment}{folder_name}/{path_basename(process_shared_library_name(output_path))}")
     if module_type == binary:
         mv(f"{output_path}{binary_extension}", f"{build_environment}/{output_path}{'' if len(executale_extension) == 0 else '.' + executale_extension}")
+    move_core_libraries()
 
 def get_folder_name_by_module_type(module_type):
     if module_type == node:
